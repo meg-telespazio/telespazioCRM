@@ -7,8 +7,8 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton,
   SidebarFooter,
+  sidebarMenuButtonVariants,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
@@ -43,16 +44,17 @@ export function AppSidebar() {
       <SidebarMenu className="flex-1 p-4">
         {menuItems.map((item) => (
           <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith(item.href)}
-              className="w-full justify-start"
+            <Link
+              href={item.href}
+              data-active={pathname.startsWith(item.href)}
+              className={cn(
+                sidebarMenuButtonVariants({ variant: 'default', size: 'default' }),
+                'w-full justify-start'
+              )}
             >
-              <Link href={item.href}>
-                <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
+              <item.icon className="w-5 h-5" />
+              <span>{item.label}</span>
+            </Link>
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
