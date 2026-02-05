@@ -67,7 +67,10 @@ export const columns = (
   {
     accessorKey: 'createdAt',
     header: t('Table.createdDate'),
-    cell: ({ row }) => format(row.original.createdAt, 'PPP'),
+    cell: ({ row }) => {
+      const { createdAt } = row.original;
+      return createdAt instanceof Date ? format(createdAt, 'PPP') : '...';
+    },
   },
   {
     id: 'actions',
