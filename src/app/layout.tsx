@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import { FirebaseClientProvider } from '@/firebase';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 
@@ -31,9 +30,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <SidebarProvider>
-            <PageWrapper>{children}</PageWrapper>
-          </SidebarProvider>
+          <PageWrapper>{children}</PageWrapper>
         </FirebaseClientProvider>
         <Toaster />
       </body>
