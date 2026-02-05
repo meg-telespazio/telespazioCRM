@@ -14,9 +14,17 @@
           "format": "email",
           "description": "The user's email address."
         },
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The user's last name."
+        },
         "displayName": {
           "type": "string",
-          "description": "The user's display name."
+          "description": "The user's full display name."
         },
         "photoURL": {
           "type": "string",
@@ -24,7 +32,7 @@
           "description": "URL of the user's profile picture."
         }
       },
-      "required": ["uid", "email"]
+      "required": ["uid", "email", "firstName", "lastName", "displayName"]
     }
   },
   "auth": {

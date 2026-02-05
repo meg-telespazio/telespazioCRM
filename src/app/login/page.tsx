@@ -4,6 +4,9 @@ import { LoginForm } from '@/components/auth/login-form';
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-destructive p-4">
+      <div className="text-center mb-8">
+        <h1 className="text-5xl font-bold text-white tracking-tight">T-Track</h1>
+      </div>
       <AuthFormCard
         title="Login"
         description="Enter your credentials to access your account."
