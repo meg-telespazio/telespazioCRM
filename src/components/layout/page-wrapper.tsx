@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { AppNavbar } from '@/components/layout/app-navbar';
+import { SessionTimeoutController } from '@/components/auth/session-timeout-controller';
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,6 +16,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <AppNavbar />
       <main className="flex flex-1 flex-col">{children}</main>
+      <SessionTimeoutController />
     </div>
   );
 }

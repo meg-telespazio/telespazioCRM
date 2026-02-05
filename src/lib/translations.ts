@@ -43,6 +43,9 @@ export const translations = {
       operationNotAllowed:
         "El proveedor de autenticación por Correo/Contraseña no está habilitado. Por favor, ve a tu Consola de Firebase -> Authentication -> Pestaña 'Sign-in method' y habilita el proveedor 'Email/Password'.",
       cancelLabel: 'Cancelar',
+      sessionTimeoutTitle: '¿Sigues ahí?',
+      sessionTimeoutDescription: 'Tu sesión se cerrará automáticamente en {countdown} segundos por inactividad.',
+      stayLoggedInButton: 'Permanecer conectado',
     },
     Validation: {
       invalidEmail: 'Dirección de correo electrónico no válida.',
@@ -235,6 +238,9 @@ export const translations = {
       operationNotAllowed:
         "The Email/Password authentication provider is not enabled. Please go to your Firebase Console -> Authentication -> 'Sign-in method' tab and enable the 'Email/Password' provider.",
       cancelLabel: 'Cancel',
+      sessionTimeoutTitle: 'Are you still there?',
+      sessionTimeoutDescription: 'You will be logged out automatically in {countdown} seconds due to inactivity.',
+      stayLoggedInButton: 'Stay Logged In',
     },
     Validation: {
       invalidEmail: 'Invalid email address.',
