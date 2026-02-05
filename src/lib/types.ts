@@ -14,12 +14,23 @@ export type Client = {
   notes?: string;
 };
 
+export type EmailEntry = {
+  type: 'work' | 'personal' | 'other';
+  address: string;
+};
+
+export type PhoneEntry = {
+  type: 'mobile' | 'landline' | 'work' | 'home';
+  number: string;
+};
+
 export type Contact = {
   id: string;
   publicId: string;
   name: string;
-  email: string;
-  phone: string;
+  emails: EmailEntry[];
+  phones: PhoneEntry[];
+  notes?: string;
   clientId: string;
   createdAt: Date;
   createdBy: string;

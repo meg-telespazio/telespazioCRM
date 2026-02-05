@@ -153,6 +153,10 @@ export const translations = {
       name: 'Nombre',
       email: 'Correo Electrónico',
       phone: 'Teléfono',
+      emails: 'Correos Electrónicos',
+      phones: 'Teléfonos',
+      addEmail: 'Añadir Correo',
+      addPhone: 'Añadir Teléfono',
     },
     Actions: {
       title: 'Acciones',
@@ -208,6 +212,17 @@ export const translations = {
       Manager: 'Gerente',
       Executive: 'Ejecutivo',
       ProjectManager: 'Jefe de Proyecto',
+    },
+    EmailTypes: {
+      work: 'Trabajo',
+      personal: 'Personal',
+      other: 'Otro',
+    },
+    PhoneTypes: {
+      mobile: 'Móvil',
+      landline: 'Fijo',
+      work: 'Trabajo',
+      home: 'Casa',
     },
   },
   en: {
@@ -364,6 +379,10 @@ export const translations = {
       name: 'Name',
       email: 'Email',
       phone: 'Phone',
+      emails: 'Emails',
+      phones: 'Phones',
+      addEmail: 'Add Email',
+      addPhone: 'Add Phone',
     },
     Actions: {
       title: 'Actions',
@@ -419,6 +438,17 @@ export const translations = {
       Manager: 'Manager',
       Executive: 'Executive',
       ProjectManager: 'Project Manager',
+    },
+    EmailTypes: {
+      work: 'Work',
+      personal: 'Personal',
+      other: 'Other',
+    },
+    PhoneTypes: {
+      mobile: 'Mobile',
+      landline: 'Landline',
+      work: 'Work',
+      home: 'Home',
     },
   },
 };

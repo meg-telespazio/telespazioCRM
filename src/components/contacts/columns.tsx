@@ -61,15 +61,17 @@ export const columns = (
     cell: ({ row }) => getClientName(row.original.clientId, clients),
   },
   {
-    accessorKey: 'email',
+    id: 'email',
     header: t('Auth.emailLabel'),
+    cell: ({ row }) => row.original.emails?.[0]?.address || '-',
      meta: {
       className: 'hidden lg:table-cell',
     }
   },
   {
-    accessorKey: 'phone',
+    id: 'phone',
     header: t('Auth.phoneLabel'),
+    cell: ({ row }) => row.original.phones?.[0]?.number || '-',
      meta: {
       className: 'hidden sm:table-cell',
     }
