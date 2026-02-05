@@ -42,6 +42,11 @@ export type UserProfile = {
   lastName: string;
   displayName: string;
   photoURL?: string;
+  phone: string;
+  mobile?: string;
+  notes?: string;
+  status: 'active' | 'suspended';
+  position: 'Director' | 'Manager' | 'Executive' | 'Project Manager';
 };
 
 // Types for writing data to Firestore

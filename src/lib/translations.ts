@@ -192,6 +192,16 @@ export const translations = {
       crop: 'Recortar',
       userAvatarAlt: 'Avatar del usuario',
       cropImageDescription: 'Ajusta la imagen a continuación. Este será tu nuevo avatar.',
+      mobile: 'Móvil',
+      position: 'Posición',
+      status: 'Estado',
+      notes: 'Notas',
+    },
+    Positions: {
+      Director: 'Director',
+      Manager: 'Gerente',
+      Executive: 'Ejecutivo',
+      ProjectManager: 'Jefe de Proyecto',
     },
   },
   en: {
@@ -387,6 +397,16 @@ export const translations = {
       crop: 'Crop',
       userAvatarAlt: "User's avatar",
       cropImageDescription: 'Adjust the image below. This will be your new avatar.',
+      mobile: 'Mobile',
+      position: 'Position',
+      status: 'Status',
+      notes: 'Notes',
+    },
+    Positions: {
+      Director: 'Director',
+      Manager: 'Manager',
+      Executive: 'Executive',
+      ProjectManager: 'Project Manager',
     },
   },
 };

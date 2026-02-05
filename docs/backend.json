@@ -28,11 +28,41 @@
         },
         "photoURL": {
           "type": "string",
-          "format": "uri",
-          "description": "URL of the user's profile picture."
+          "description": "Data URL of the user's profile picture."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The user's primary phone number."
+        },
+        "mobile": {
+          "type": "string",
+          "description": "The user's mobile phone number."
+        },
+        "notes": {
+          "type": "string",
+          "description": "General notes about the user."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "suspended"],
+          "description": "The user's account status."
+        },
+        "position": {
+          "type": "string",
+          "enum": ["Director", "Manager", "Executive", "Project Manager"],
+          "description": "The user's job position."
         }
       },
-      "required": ["uid", "email", "firstName", "lastName", "displayName"]
+      "required": [
+        "uid",
+        "email",
+        "firstName",
+        "lastName",
+        "displayName",
+        "phone",
+        "status",
+        "position"
+      ]
     },
     "Client": {
       "title": "Client",
