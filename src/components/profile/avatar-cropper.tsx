@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,9 @@ export function AvatarCropper({
       <DialogContent className="sm:max-w-[425px] md:sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('Profile.cropImage')}</DialogTitle>
+          <DialogDescription>
+            {t('Profile.cropImageDescription')}
+          </DialogDescription>
         </DialogHeader>
         <div className="relative h-80 w-full bg-muted">
           <Cropper

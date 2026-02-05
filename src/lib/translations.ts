@@ -192,6 +192,7 @@ export const translations = {
       cropImage: 'Recortar Imagen',
       crop: 'Recortar',
       userAvatarAlt: 'Avatar del usuario',
+      cropImageDescription: 'Ajusta la imagen a continuación. Este será tu nuevo avatar.',
     },
   },
   en: {
@@ -387,6 +388,7 @@ export const translations = {
       cropImage: 'Crop Image',
       crop: 'Crop',
       userAvatarAlt: "User's avatar",
+      cropImageDescription: 'Adjust the image below. This will be your new avatar.',
     },
   },
 };
