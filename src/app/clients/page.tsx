@@ -5,7 +5,7 @@ import { useUser, useFirestore, useCollection } from '@/firebase';
 import { redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Upload } from 'lucide-react';
 import { ClientForm } from '@/components/clients/client-form';
 import { ClientTable } from '@/components/clients/client-table';
 import type { Client } from '@/lib/types';
@@ -14,6 +14,7 @@ import { collection, query, where } from 'firebase/firestore';
 import { addClient, updateClient, deleteClient } from '@/lib/firestore/clients';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { ClientImporter } from '@/components/clients/client-importer';
 
 export default function ClientsPage() {
   const { user, loading: userLoading } = useUser();
@@ -22,6 +23,7 @@ export default function ClientsPage() {
   const { toast } = useToast();
 
   const [isFormOpen, setFormOpen] = useState(false);
+  const [isImporterOpen, setImporterOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   const clientsQuery = useMemo(() => {
@@ -38,7 +40,9 @@ export default function ClientsPage() {
   const clients = useMemo(() => {
     if (!clientsData) return [];
     // Sort by publicId ascending on the client
-    return [...clientsData].sort((a, b) => (a.publicId || '').localeCompare(b.publicId || ''));
+    return [...clientsData].sort((a, b) =>
+      (a.publicId || '').localeCompare(b.publicId || '')
+    );
   }, [clientsData]);
 
   useEffect(() => {
@@ -50,18 +54,18 @@ export default function ClientsPage() {
   const handleSaveClient = async (
     clientData: Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
   ): Promise<true | Error> => {
-    if (!user) return new Error("User not authenticated.");
+    if (!user) return new Error('User not authenticated.');
     try {
       if (editingClient) {
         // publicId is not editable
         const { publicId, ...updateData } = clientData as any;
         await updateClient(firestore, editingClient.id, updateData);
       } else {
-          await addClient(firestore, user.uid, clientData);
+        await addClient(firestore, user.uid, clientData);
       }
       return true; // Indicate success
     } catch (error: any) {
-      console.error("Failed to save client:", error);
+      console.error('Failed to save client:', error);
       return error; // Return the error object
     }
   };
@@ -100,6 +104,10 @@ export default function ClientsPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Pages.clients')}>
+        <Button variant="outline" onClick={() => setImporterOpen(true)}>
+          <Upload className="mr-2 h-4 w-4" />
+          {t('Importer.button')}
+        </Button>
         <Button onClick={handleAddNew}>
           <PlusCircle className="mr-2 h-4 w-4" />
           {t('Pages.addClient')}
@@ -108,7 +116,7 @@ export default function ClientsPage() {
       <main className="flex-1 p-4 sm:p-6">
         {clientsLoading ? (
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-card rounded-t-lg border-b">
+            <div className="flex items-center justify-between rounded-t-lg border-b bg-card p-4">
               <Skeleton className="h-10 w-64" />
               <Skeleton className="h-10 w-24" />
             </div>
@@ -129,6 +137,7 @@ export default function ClientsPage() {
         onSave={handleSaveClient}
         defaultValues={editingClient || undefined}
       />
+      <ClientImporter isOpen={isImporterOpen} onOpenChange={setImporterOpen} />
     </div>
   );
 }

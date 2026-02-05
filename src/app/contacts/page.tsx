@@ -5,7 +5,7 @@ import { useUser, useFirestore, useCollection } from '@/firebase';
 import { redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Upload } from 'lucide-react';
 import { ContactForm } from '@/components/contacts/contact-form';
 import { ContactTable } from '@/components/contacts/contact-table';
 import type { Contact, Client } from '@/lib/types';
@@ -17,6 +17,7 @@ import {
   deleteContact,
 } from '@/lib/firestore/contacts';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ContactImporter } from '@/components/contacts/contact-importer';
 
 export default function ContactsPage() {
   const { user, loading: userLoading } = useUser();
@@ -24,6 +25,7 @@ export default function ContactsPage() {
   const { t } = useI18n();
 
   const [isFormOpen, setFormOpen] = useState(false);
+  const [isImporterOpen, setImporterOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
   const baseQuery = useMemo(() => {
@@ -49,7 +51,9 @@ export default function ContactsPage() {
   const contacts = useMemo(() => {
     if (!contactsData) return [];
     // Sort by publicId ascending on the client
-    return [...contactsData].sort((a, b) => (a.publicId || '').localeCompare(b.publicId || ''));
+    return [...contactsData].sort((a, b) =>
+      (a.publicId || '').localeCompare(b.publicId || '')
+    );
   }, [contactsData]);
 
   const clients = useMemo(() => {
@@ -71,12 +75,12 @@ export default function ContactsPage() {
       const { publicId, ...updateData } = contactData as any;
       updateContact(firestore, editingContact.id, updateData);
     } else {
-        try {
-            await addContact(firestore, user.uid, contactData);
-        } catch (error) {
-            console.error("Failed to add contact:", error);
-            // Error is globally emitted
-        }
+      try {
+        await addContact(firestore, user.uid, contactData);
+      } catch (error) {
+        console.error('Failed to add contact:', error);
+        // Error is globally emitted
+      }
     }
     setEditingContact(null);
     setFormOpen(false);
@@ -118,6 +122,14 @@ export default function ContactsPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Pages.contacts')}>
+        <Button
+          variant="outline"
+          onClick={() => setImporterOpen(true)}
+          disabled={clientsLoading}
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          {t('Importer.button')}
+        </Button>
         <Button onClick={handleAddNew} disabled={clientsLoading}>
           <PlusCircle className="mr-2 h-4 w-4" />
           {t('Pages.addContact')}
@@ -125,8 +137,8 @@ export default function ContactsPage() {
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">
         {pageIsLoading ? (
-           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-card rounded-t-lg border-b">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-t-lg border-b bg-card p-4">
               <Skeleton className="h-10 w-64" />
               <Skeleton className="h-10 w-24" />
             </div>
@@ -148,6 +160,10 @@ export default function ContactsPage() {
         onSave={handleSaveContact}
         defaultValues={editingContact || undefined}
         clients={clients}
+      />
+      <ContactImporter
+        isOpen={isImporterOpen}
+        onOpenChange={setImporterOpen}
       />
     </div>
   );

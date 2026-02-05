@@ -243,6 +243,12 @@ export const translations = {
       work: 'Trabajo',
       home: 'Casa',
     },
+    Importer: {
+      clientTitle: 'Importar Clientes',
+      contactTitle: 'Importar Contactos',
+      button: 'Importar',
+      wip: 'Esta función está en construcción. Pronto podrás importar datos desde un archivo CSV.',
+    },
   },
   en: {
     App: {
@@ -487,6 +493,12 @@ export const translations = {
       landline: 'Landline',
       work: 'Work',
       home: 'Home',
+    },
+    Importer: {
+      clientTitle: 'Import Clients',
+      contactTitle: 'Import Contacts',
+      button: 'Import',
+      wip: 'This feature is under construction. You will soon be able to import data from a CSV file.',
     },
   },
 };
