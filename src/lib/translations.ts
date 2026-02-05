@@ -104,6 +104,7 @@ export const translations = {
       opportunities: 'Oportunidades',
       addOpportunity: 'Añadir Oportunidad',
       profile: 'Mi Perfil',
+      reports: 'Reportes',
     },
     Table: {
       filterByName: 'Filtrar por nombre...',
@@ -288,6 +289,22 @@ export const translations = {
       importingDescription: 'Por favor espera mientras validamos tus datos. Esto puede tardar un momento.',
       clientCuit: 'CUIT del Cliente (para vincular)',
     },
+    Reports: {
+      title: 'Generador de Reportes',
+      description: 'Selecciona una fuente de datos principal y los campos que deseas incluir en tu reporte.',
+      dataSource: 'Fuente de Datos Principal',
+      selectDataSource: 'Selecciona una fuente...',
+      fields: 'Campos a Incluir',
+      noFields: 'Selecciona una fuente de datos para ver los campos disponibles.',
+      generateReport: 'Generar Reporte',
+      results: 'Resultados del Reporte',
+      noResults: 'No se encontraron resultados para tu consulta.',
+      dataSources: {
+          clients: 'Clientes',
+          contacts: 'Contactos',
+          opportunities: 'Oportunidades',
+      },
+    },
   },
   en: {
     App: {
@@ -394,6 +411,7 @@ export const translations = {
       opportunities: 'Opportunities',
       addOpportunity: 'Add Opportunity',
       profile: 'My Profile',
+      reports: 'Reports',
     },
     Table: {
       filterByName: 'Filter by name...',
@@ -577,6 +595,22 @@ export const translations = {
       importingTitle: 'Validating Data...',
       importingDescription: 'Please wait while we validate your data. This may take a moment.',
       clientCuit: 'Client CUIT (for linking)',
+    },
+    Reports: {
+      title: 'Report Builder',
+      description: 'Select a primary data source and the fields you want to include in your report.',
+      dataSource: 'Primary Data Source',
+      selectDataSource: 'Select a source...',
+      fields: 'Fields to Include',
+      noFields: 'Select a data source to see available fields.',
+      generateReport: 'Generate Report',
+      results: 'Report Results',
+      noResults: 'No results found for your query.',
+      dataSources: {
+          clients: 'Clients',
+          contacts: 'Contacts',
+          opportunities: 'Opportunities',
+      },
     },
   },
 };
