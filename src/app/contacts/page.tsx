@@ -49,7 +49,7 @@ export default function ContactsPage() {
   const contacts = useMemo(() => {
     if (!contactsData) return [];
     // Sort by publicId ascending on the client
-    return [...contactsData].sort((a, b) => a.publicId.localeCompare(b.publicId));
+    return [...contactsData].sort((a, b) => (a.publicId || '').localeCompare(b.publicId || ''));
   }, [contactsData]);
 
   const clients = useMemo(() => {

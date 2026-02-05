@@ -36,7 +36,7 @@ export default function ClientsPage() {
   const clients = useMemo(() => {
     if (!clientsData) return [];
     // Sort by publicId ascending on the client
-    return [...clientsData].sort((a, b) => a.publicId.localeCompare(b.publicId));
+    return [...clientsData].sort((a, b) => (a.publicId || '').localeCompare(b.publicId || ''));
   }, [clientsData]);
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function ClientsPage() {
     if (!user) return;
     if (editingClient) {
       // publicId is not editable
-      const { publicId, ...updateData } = clientData;
+      const { publicId, ...updateData } = clientData as any;
       updateClient(firestore, editingClient.id, updateData);
     } else {
         try {

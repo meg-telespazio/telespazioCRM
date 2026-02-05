@@ -50,7 +50,7 @@ export default function OpportunitiesPage() {
   const opportunities = useMemo(() => {
     if (!opportunitiesData) return [];
     // Sort by publicId descending on the client
-    return [...opportunitiesData].sort((a, b) => b.publicId.localeCompare(a.publicId));
+    return [...opportunitiesData].sort((a, b) => (b.publicId || '').localeCompare(a.publicId || ''));
   }, [opportunitiesData]);
 
   const clients = useMemo(() => {
