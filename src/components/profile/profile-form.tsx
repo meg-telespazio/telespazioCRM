@@ -16,6 +16,8 @@ import { useI18n } from '@/firebase/client-provider';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { AvatarCropper } from './avatar-cropper';
 import { Camera } from 'lucide-react';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const userAvatarPlaceholder = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
@@ -80,7 +82,7 @@ export function ProfileForm() {
       let photoURL = user.photoURL;
       const displayName = `${values.firstName} ${values.lastName}`.trim();
 
-      // 1. Upload cropped avatar if it exists
+      // 1. Upload cropped avatar if it exists (this is the blocking part)
       if (croppedAvatar) {
         toast({ title: t('Profile.uploadingAvatar') });
         const avatarRef = ref(storage, `avatars/${user.uid}/avatar.png`);
@@ -89,10 +91,17 @@ export function ProfileForm() {
         toast({ title: t('Profile.avatarUpdated') });
       }
 
-      // 2. Update Auth profile
-      await updateProfile(user, { displayName, photoURL });
+      // 2. Update Auth profile (fire and forget with catch)
+      updateProfile(user, { displayName, photoURL }).catch((error) => {
+         console.error("Auth profile update error:", error);
+         toast({
+            variant: 'destructive',
+            title: t('Profile.updateFailure'),
+            description: (error as Error).message,
+        });
+      });
 
-      // 3. Update Firestore profile
+      // 3. Update Firestore profile (fire and forget with catch)
       const userDocRef = doc(firestore, 'users', user.uid);
       const userProfileData = {
         firstName: values.firstName,
@@ -100,16 +109,27 @@ export function ProfileForm() {
         displayName,
         photoURL,
       };
-      await setDoc(userDocRef, userProfileData, { merge: true });
+      setDoc(userDocRef, userProfileData, { merge: true }).catch(
+        (serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: userProfileData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        }
+      );
 
+      // Optimistic UI update
       toast({ title: t('Profile.updateSuccess') });
       setCroppedAvatar(null);
-    } catch (error) {
-      console.error("Profile update error:", error);
+
+    } catch (uploadError) {
+      console.error("Profile update error:", uploadError);
       toast({
         variant: 'destructive',
         title: t('Profile.updateFailure'),
-        description: (error as Error).message,
+        description: (uploadError as Error).message,
       });
     } finally {
       setIsUploading(false);
