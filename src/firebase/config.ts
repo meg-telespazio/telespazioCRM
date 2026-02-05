@@ -4,13 +4,11 @@ import { FirebaseOptions } from 'firebase/app';
 // You must replace these values with your actual Firebase project configuration
 // from the Firebase console.
 const firebaseConfig: FirebaseOptions = {
-  apiKey: 'REPLACE_WITH_YOUR_API_KEY',
-  authDomain: 'REPLACE_WITH_YOUR_AUTH_DOMAIN',
-  projectId: 'REPLACE_WITH_YOUR_PROJECT_ID',
-  storageBucket: 'REPLACE_WITH_YOUR_STORAGE_BUCKET',
-  messagingSenderId: 'REPLACE_WITH_YOUR_MESSAGING_SENDER_ID',
-  appId: 'REPLACE_WITH_YOUR_APP_ID',
-  measurementId: 'REPLACE_WITH_YOUR_MEASUREMENT_ID',
+  projectId: 'studio-1413684383-379c9',
+  appId: '1:271369109791:web:3752b36b02a',
+  apiKey: 'AIzaSyB08ZbfRZIfdDXjYBwA5hivWJEt7cqq2lo',
+  authDomain: 'studio-1413684383-379c9.firebaseapp.com',
+  messagingSenderId: '271369109791',
 };
 
 export function getFirebaseConfig(): FirebaseOptions {
