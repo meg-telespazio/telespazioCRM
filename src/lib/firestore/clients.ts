@@ -29,13 +29,8 @@ export async function addClient(
     await runTransaction(firestore, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
       
-      let newCount = 1;
-      if (counterDoc.exists()) {
-        const currentCount = counterDoc.data().count;
-        if (typeof currentCount === 'number') {
-          newCount = currentCount + 1;
-        }
-      }
+      const currentCount = counterDoc.data()?.count;
+      const newCount = (typeof currentCount === 'number' && Number.isInteger(currentCount) ? currentCount : 0) + 1;
 
       const publicId = `CLI-${String(newCount).padStart(7, '0')}`;
       

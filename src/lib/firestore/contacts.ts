@@ -29,10 +29,8 @@ export async function addContact(
     await runTransaction(firestore, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
       
-      let newCount = 1;
-      if (counterDoc.exists() && typeof counterDoc.data().count === 'number') {
-        newCount = counterDoc.data().count + 1;
-      }
+      const currentCount = counterDoc.data()?.count;
+      const newCount = (typeof currentCount === 'number' && Number.isInteger(currentCount) ? currentCount : 0) + 1;
 
       const publicId = `CT-${String(newCount).padStart(7, '0')}`;
       

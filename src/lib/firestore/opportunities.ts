@@ -30,10 +30,8 @@ export async function addOpportunity(
     await runTransaction(firestore, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
 
-      let newCount = 1;
-      if (counterDoc.exists() && typeof counterDoc.data().count === 'number') {
-        newCount = counterDoc.data().count + 1;
-      }
+      const currentCount = counterDoc.data()?.count;
+      const newCount = (typeof currentCount === 'number' && Number.isInteger(currentCount) ? currentCount : 0) + 1;
       
       const publicId = `OP-${year}-${String(newCount).padStart(6, '0')}`;
 
