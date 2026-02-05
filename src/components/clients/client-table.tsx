@@ -33,7 +33,13 @@ import { columns } from './columns';
 import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 
-export function ClientTable({ data }: { data: Client[] }) {
+type ClientTableProps = {
+  data: Client[];
+  onEdit: (client: Client) => void;
+  onDelete: (clientId: string) => void;
+};
+
+export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -45,7 +51,7 @@ export function ClientTable({ data }: { data: Client[] }) {
 
   const table = useReactTable({
     data,
-    columns: columns(t),
+    columns: columns(t, onEdit, onDelete),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -93,7 +99,9 @@ export function ClientTable({ data }: { data: Client[] }) {
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {column.id}
+                    {column.id === 'createdAt'
+                      ? t('Table.createdDate')
+                      : t(`Forms.${column.id}`) || t(`Table.${column.id}`) || column.id}
                   </DropdownMenuCheckboxItem>
                 );
               })}
@@ -140,7 +148,7 @@ export function ClientTable({ data }: { data: Client[] }) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns(t).length}
+                  colSpan={columns(t, onEdit, onDelete).length}
                   className="h-24 text-center"
                 >
                   {t('Table.noResults')}

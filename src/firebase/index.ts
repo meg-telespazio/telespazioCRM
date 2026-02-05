@@ -11,6 +11,8 @@ import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 import { getFirebaseConfig } from './config';
 import { useUser } from './auth/use-user';
+import { useCollection } from './firestore/use-collection';
+import { useDoc } from './firestore/use-doc';
 import {
   FirebaseProvider,
   useFirebaseApp,
@@ -40,6 +42,8 @@ export {
   FirebaseProvider,
   FirebaseClientProvider,
   useUser,
+  useCollection,
+  useDoc,
   useFirebaseApp,
   useAuth,
   useFirestore,

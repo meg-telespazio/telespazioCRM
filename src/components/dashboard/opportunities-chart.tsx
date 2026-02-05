@@ -7,11 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { opportunities } from '@/lib/data';
 import type { Opportunity } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 
-export function OpportunitiesChart() {
+export function OpportunitiesChart({ opportunities }: { opportunities: Opportunity[] }) {
   const { t } = useI18n();
 
   const getOpportunitiesByStage = () => {
@@ -52,6 +51,7 @@ export function OpportunitiesChart() {
               tickLine={false}
               axisLine={false}
               tickFormatter={(value) => `${value}`}
+              allowDecimals={false}
             />
             <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
           </BarChart>

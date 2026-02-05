@@ -1,3 +1,5 @@
+import type { FieldValue } from "firebase/firestore";
+
 export type Client = {
   id: string;
   name: string;
@@ -17,6 +19,8 @@ export type Contact = {
   email: string;
   phone: string;
   clientId: string;
+  createdAt: Date;
+  createdBy: string;
 };
 
 export type Opportunity = {
@@ -27,6 +31,8 @@ export type Opportunity = {
   stage: 'Prospecting' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
   probability: number;
   closeDate: Date;
+  createdAt: Date;
+  createdBy: string;
 };
 
 export type UserProfile = {
@@ -37,3 +43,8 @@ export type UserProfile = {
   displayName: string;
   photoURL?: string;
 };
+
+// Types for writing data to Firestore
+export type ClientWrite = Omit<Client, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type ContactWrite = Omit<Contact, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type OpportunityWrite = Omit<Opportunity, 'id' | 'createdAt'> & { createdAt: FieldValue };

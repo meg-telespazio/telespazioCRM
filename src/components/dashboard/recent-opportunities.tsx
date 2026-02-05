@@ -16,8 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { opportunities, clients } from '@/lib/data';
-import type { Opportunity } from '@/lib/types';
+import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 
 const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "destructive" } = {
@@ -28,9 +27,14 @@ const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "
   Lost: "destructive",
 };
 
-export function RecentOpportunities() {
+type RecentOpportunitiesProps = {
+  opportunities: Opportunity[];
+  clients: Client[];
+}
+
+export function RecentOpportunities({ opportunities, clients }: RecentOpportunitiesProps) {
   const { t } = useI18n();
-  const recentOpportunities = opportunities
+  const recentOpportunities = [...opportunities]
     .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
     .slice(0, 5);
 

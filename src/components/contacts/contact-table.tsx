@@ -30,10 +30,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { columns } from './columns';
-import type { Contact } from '@/lib/types';
+import type { Contact, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 
-export function ContactTable({ data }: { data: Contact[] }) {
+type ContactTableProps = {
+  data: Contact[];
+  clients: Client[];
+  onEdit: (contact: Contact) => void;
+  onDelete: (contactId: string) => void;
+};
+
+export function ContactTable({
+  data,
+  clients,
+  onEdit,
+  onDelete,
+}: ContactTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -43,9 +55,14 @@ export function ContactTable({ data }: { data: Contact[] }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const { t } = useI18n();
 
+  const tableColumns = React.useMemo(
+    () => columns(t, clients, onEdit, onDelete),
+    [t, clients, onEdit, onDelete]
+  );
+
   const table = useReactTable({
     data,
-    columns: columns(t),
+    columns: tableColumns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -93,7 +110,13 @@ export function ContactTable({ data }: { data: Contact[] }) {
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {column.id}
+                    {column.id === 'clientId'
+                      ? t('Pages.clients')
+                      : column.id === 'createdAt'
+                      ? t('Table.createdDate')
+                      : t(`Forms.${column.id}`) ||
+                        t(`Auth.${column.id}`) ||
+                        column.id}
                   </DropdownMenuCheckboxItem>
                 );
               })}
@@ -140,7 +163,7 @@ export function ContactTable({ data }: { data: Contact[] }) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns(t).length}
+                  colSpan={tableColumns.length}
                   className="h-24 text-center"
                 >
                   {t('Table.noResults')}

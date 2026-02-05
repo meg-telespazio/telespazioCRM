@@ -33,6 +33,146 @@
         }
       },
       "required": ["uid", "email", "firstName", "lastName", "displayName"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Represents a business client.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the client company."
+        },
+        "website": {
+          "type": "string",
+          "format": "uri",
+          "description": "Client's official website."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Contact email for the client."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number for the client."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the client was created."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of the user who created the client."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "suspended", "canceled"]
+        },
+        "industry": {
+          "type": "string",
+          "description": "The industry the client belongs to."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the client."
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "phone",
+        "createdAt",
+        "createdBy",
+        "status",
+        "industry"
+      ]
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "Represents a contact person at a client company.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the contact person."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the contact."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the contact."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "ID of the client this contact is associated with."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the contact was created."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of the user who created the contact."
+        }
+      },
+      "required": ["name", "email", "phone", "clientId", "createdAt", "createdBy"]
+    },
+    "Opportunity": {
+      "title": "Opportunity",
+      "description": "Represents a sales opportunity.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the opportunity."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "ID of the associated client."
+        },
+        "value": {
+          "type": "number",
+          "description": "Estimated value of the opportunity."
+        },
+        "stage": {
+          "type": "string",
+          "enum": ["Prospecting", "Proposal", "Negotiation", "Won", "Lost"]
+        },
+        "probability": {
+          "type": "number",
+          "description": "Probability of winning the opportunity (0-100)."
+        },
+        "closeDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Estimated close date for the opportunity."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the opportunity was created."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of the user who created the opportunity."
+        }
+      },
+      "required": [
+        "title",
+        "clientId",
+        "value",
+        "stage",
+        "probability",
+        "closeDate",
+        "createdAt",
+        "createdBy"
+      ]
     }
   },
   "auth": {
@@ -44,6 +184,24 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Stores public information about a user."
+    },
+    "/clients/{clientId}": {
+      "schema": {
+        "$ref": "#/entities/Client"
+      },
+      "description": "Stores information about clients."
+    },
+    "/contacts/{contactId}": {
+      "schema": {
+        "$ref": "#/entities/Contact"
+      },
+      "description": "Stores contact information for clients."
+    },
+    "/opportunities/{opportunityId}": {
+      "schema": {
+        "$ref": "#/entities/Opportunity"
+      },
+      "description": "Stores sales opportunities."
     }
   }
 }

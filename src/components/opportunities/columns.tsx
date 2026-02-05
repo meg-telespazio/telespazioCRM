@@ -14,22 +14,29 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import type { Opportunity } from '@/lib/types';
-import { clients } from '@/lib/data';
+import type { Opportunity, Client } from '@/lib/types';
+import { format } from 'date-fns';
 
-const getClientName = (clientId: string) => {
+const getClientName = (clientId: string, clients: Client[]) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
 };
 
-const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "destructive" } = {
-  Prospecting: "secondary",
-  Proposal: "secondary",
-  Negotiation: "secondary",
-  Won: "default",
-  Lost: "destructive",
+const stageVariant: {
+  [key in Opportunity['stage']]: 'default' | 'secondary' | 'destructive';
+} = {
+  Prospecting: 'secondary',
+  Proposal: 'secondary',
+  Negotiation: 'secondary',
+  Won: 'default',
+  Lost: 'destructive',
 };
 
-export const columns = (t: (key: string) => string): ColumnDef<Opportunity>[] => [
+export const columns = (
+  t: (key: string) => string,
+  clients: Client[],
+  onEdit: (opportunity: Opportunity) => void,
+  onDelete: (opportunityId: string) => void
+): ColumnDef<Opportunity>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -59,7 +66,7 @@ export const columns = (t: (key: string) => string): ColumnDef<Opportunity>[] =>
   {
     accessorKey: 'clientId',
     header: t('Dashboard.recentOpportunities.clientHeader'),
-    cell: ({ row }) => getClientName(row.original.clientId),
+    cell: ({ row }) => getClientName(row.original.clientId, clients),
   },
   {
     accessorKey: 'value',
@@ -77,7 +84,9 @@ export const columns = (t: (key: string) => string): ColumnDef<Opportunity>[] =>
     accessorKey: 'stage',
     header: t('Dashboard.recentOpportunities.stageHeader'),
     cell: ({ row }) => (
-      <Badge variant={stageVariant[row.original.stage]}>{t(`Stages.${row.original.stage}`)}</Badge>
+      <Badge variant={stageVariant[row.original.stage]}>
+        {t(`Stages.${row.original.stage}`)}
+      </Badge>
     ),
   },
   {
@@ -93,9 +102,7 @@ export const columns = (t: (key: string) => string): ColumnDef<Opportunity>[] =>
   {
     accessorKey: 'closeDate',
     header: t('Forms.estCloseDate'),
-    cell: ({ row }) => (
-      <div>{row.original.closeDate.toLocaleDateString()}</div>
-    ),
+    cell: ({ row }) => <div>{format(row.original.closeDate, 'PPP')}</div>,
   },
   {
     id: 'actions',
@@ -117,8 +124,13 @@ export const columns = (t: (key: string) => string): ColumnDef<Opportunity>[] =>
               {t('Actions.copyOpportunityId')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>{t('Actions.editOpportunity')}</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem onClick={() => onEdit(opportunity)}>
+              {t('Actions.editOpportunity')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => onDelete(opportunity.id)}
+            >
               {t('Actions.deleteOpportunity')}
             </DropdownMenuItem>
           </DropdownMenuContent>

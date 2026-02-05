@@ -7,10 +7,15 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { DollarSign, Briefcase, Users } from 'lucide-react';
-import { opportunities, clients } from '@/lib/data';
+import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 
-export function StatsCards() {
+type StatsCardsProps = {
+    opportunities: Opportunity[];
+    clients: Client[];
+}
+
+export function StatsCards({ opportunities, clients }: StatsCardsProps) {
   const { t } = useI18n();
   const totalRevenue = opportunities
     .filter((opp) => opp.stage === 'Won')

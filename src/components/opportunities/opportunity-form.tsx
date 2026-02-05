@@ -38,8 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { clients } from '@/lib/data';
-import type { Opportunity } from '@/lib/types';
+import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useMemo } from 'react';
 
@@ -56,8 +55,9 @@ const getFormSchema = (t: (key: string) => string) =>
 type OpportunityFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (opportunity: Omit<Opportunity, 'id'>) => void;
-  defaultValues?: Partial<Opportunity>;
+  onSave: (opportunity: Omit<Opportunity, 'id' | 'createdAt' | 'createdBy'>) => void;
+  defaultValues?: Partial<Omit<Opportunity, 'id' | 'createdAt' | 'createdBy'>>;
+  clients: Client[];
 };
 
 export function OpportunityForm({
@@ -65,6 +65,7 @@ export function OpportunityForm({
   onOpenChange,
   onSave,
   defaultValues,
+  clients,
 }: OpportunityFormProps) {
   const { t } = useI18n();
   const formSchema = useMemo(() => getFormSchema(t), [t]);
@@ -94,19 +95,29 @@ export function OpportunityForm({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {defaultValues ? t('Forms.editOpportunity') : t('Forms.addOpportunity')}
+            {defaultValues
+              ? t('Forms.editOpportunity')
+              : t('Forms.addOpportunity')}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
             <FormField
               control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Dashboard.recentOpportunities.opportunityHeader')}</FormLabel>
+                  <FormLabel>
+                    {t('Dashboard.recentOpportunities.opportunityHeader')}
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder={t('Forms.opportunityTitlePlaceholder')} {...field} />
+                    <Input
+                      placeholder={t('Forms.opportunityTitlePlaceholder')}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -118,7 +129,9 @@ export function OpportunityForm({
                 name="clientId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Dashboard.recentOpportunities.clientHeader')}</FormLabel>
+                    <FormLabel>
+                      {t('Dashboard.recentOpportunities.clientHeader')}
+                    </FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
@@ -145,9 +158,15 @@ export function OpportunityForm({
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Dashboard.recentOpportunities.valueHeader')} (USD)</FormLabel>
+                    <FormLabel>
+                      {t('Dashboard.recentOpportunities.valueHeader')} (USD)
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder={t('Forms.opportunityValuePlaceholder')} {...field} />
+                      <Input
+                        type="number"
+                        placeholder={t('Forms.opportunityValuePlaceholder')}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -159,7 +178,9 @@ export function OpportunityForm({
               name="stage"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Dashboard.recentOpportunities.stageHeader')}</FormLabel>
+                  <FormLabel>
+                    {t('Dashboard.recentOpportunities.stageHeader')}
+                  </FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -170,13 +191,11 @@ export function OpportunityForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {stages.map(
-                        (stage) => (
-                          <SelectItem key={stage} value={stage}>
-                            {t(`Stages.${stage}`)}
-                          </SelectItem>
-                        )
-                      )}
+                      {stages.map((stage) => (
+                        <SelectItem key={stage} value={stage}>
+                          {t(`Stages.${stage}`)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -188,7 +207,9 @@ export function OpportunityForm({
               name="probability"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Forms.probability')} ({field.value}%)</FormLabel>
+                  <FormLabel>
+                    {t('Forms.probability')} ({field.value}%)
+                  </FormLabel>
                   <FormControl>
                     <Slider
                       min={0}
@@ -232,7 +253,6 @@ export function OpportunityForm({
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) => date < new Date('1900-01-01')}
                         initialFocus
                       />
                     </PopoverContent>

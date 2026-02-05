@@ -12,14 +12,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { Contact } from '@/lib/types';
-import { clients } from '@/lib/data';
+import type { Contact, Client } from '@/lib/types';
+import { format } from 'date-fns';
 
-const getClientName = (clientId: string) => {
+const getClientName = (clientId: string, clients: Client[]) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
 };
 
-export const columns = (t: (key: string) => string): ColumnDef<Contact>[] => [
+export const columns = (
+  t: (key: string) => string,
+  clients: Client[],
+  onEdit: (contact: Contact) => void,
+  onDelete: (contactId: string) => void
+): ColumnDef<Contact>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -44,12 +49,12 @@ export const columns = (t: (key: string) => string): ColumnDef<Contact>[] => [
   },
   {
     accessorKey: 'name',
-    header: t('Auth.firstNameLabel'),
+    header: t('Forms.contactName'),
   },
   {
     accessorKey: 'clientId',
     header: t('Pages.clients'),
-    cell: ({ row }) => getClientName(row.original.clientId),
+    cell: ({ row }) => getClientName(row.original.clientId, clients),
   },
   {
     accessorKey: 'email',
@@ -58,6 +63,11 @@ export const columns = (t: (key: string) => string): ColumnDef<Contact>[] => [
   {
     accessorKey: 'phone',
     header: t('Auth.phoneLabel'),
+  },
+  {
+    accessorKey: 'createdAt',
+    header: t('Table.createdDate'),
+    cell: ({ row }) => format(row.original.createdAt, 'PPP'),
   },
   {
     id: 'actions',
@@ -79,8 +89,13 @@ export const columns = (t: (key: string) => string): ColumnDef<Contact>[] => [
               {t('Actions.copyContactId')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>{t('Actions.editContact')}</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem onClick={() => onEdit(contact)}>
+              {t('Actions.editContact')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => onDelete(contact.id)}
+            >
               {t('Actions.deleteContact')}
             </DropdownMenuItem>
           </DropdownMenuContent>

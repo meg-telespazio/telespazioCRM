@@ -14,6 +14,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import type { Client } from '@/lib/types';
+import { format } from 'date-fns';
 
 const statusVariant: {
   [key in Client['status']]: 'default' | 'secondary' | 'destructive';
@@ -23,7 +24,11 @@ const statusVariant: {
   canceled: 'destructive',
 };
 
-export const columns = (t: (key: string) => string): ColumnDef<Client>[] => [
+export const columns = (
+  t: (key: string) => string,
+  onEdit: (client: Client) => void,
+  onDelete: (clientId: string) => void
+): ColumnDef<Client>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -73,6 +78,11 @@ export const columns = (t: (key: string) => string): ColumnDef<Client>[] => [
     cell: ({ row }) => t(`Industries.${row.original.industry}`),
   },
   {
+    accessorKey: 'createdAt',
+    header: t('Table.createdDate'),
+    cell: ({ row }) => format(row.original.createdAt, 'PPP'),
+  },
+  {
     id: 'actions',
     cell: ({ row }) => {
       const client = row.original;
@@ -92,8 +102,13 @@ export const columns = (t: (key: string) => string): ColumnDef<Client>[] => [
               {t('Actions.copyClientId')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>{t('Actions.editClient')}</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem onClick={() => onEdit(client)}>
+              {t('Actions.editClient')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => onDelete(client.id)}
+            >
               {t('Actions.deleteClient')}
             </DropdownMenuItem>
           </DropdownMenuContent>

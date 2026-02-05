@@ -27,8 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { clients } from '@/lib/data';
-import type { Contact } from '@/lib/types';
+import type { Contact, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useMemo } from 'react';
 
@@ -43,8 +42,9 @@ const getFormSchema = (t: (key: string) => string) =>
 type ContactFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (contact: Omit<Contact, 'id'>) => void;
-  defaultValues?: Partial<Contact>;
+  onSave: (contact: Omit<Contact, 'id' | 'createdAt' | 'createdBy'>) => void;
+  defaultValues?: Partial<Omit<Contact, 'id' | 'createdAt' | 'createdBy'>>;
+  clients: Client[];
 };
 
 export function ContactForm({
@@ -52,6 +52,7 @@ export function ContactForm({
   onOpenChange,
   onSave,
   defaultValues,
+  clients,
 }: ContactFormProps) {
   const { t } = useI18n();
   const formSchema = useMemo(() => getFormSchema(t), [t]);
@@ -87,9 +88,12 @@ export function ContactForm({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Auth.firstNameLabel')}</FormLabel>
+                  <FormLabel>{t('Forms.contactName')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('Forms.contactNamePlaceholder')} {...field} />
+                    <Input
+                      placeholder={t('Forms.contactNamePlaceholder')}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -102,7 +106,10 @@ export function ContactForm({
                 <FormItem>
                   <FormLabel>{t('Auth.emailLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('Forms.contactEmailPlaceholder')} {...field} />
+                    <Input
+                      placeholder={t('Forms.contactEmailPlaceholder')}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,7 +122,10 @@ export function ContactForm({
                 <FormItem>
                   <FormLabel>{t('Auth.phoneLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('Forms.clientPhonePlaceholder')} {...field} />
+                    <Input
+                      placeholder={t('Forms.clientPhonePlaceholder')}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

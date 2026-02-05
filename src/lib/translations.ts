@@ -107,6 +107,7 @@ export const translations = {
       noResults: 'No hay resultados.',
       status: 'Estado',
       industry: 'Industria',
+      createdDate: 'Fecha de Creación',
     },
     Forms: {
       editClient: 'Editar Cliente',
@@ -126,6 +127,7 @@ export const translations = {
       saveClient: 'Guardar Cliente',
       editContact: 'Editar Contacto',
       addContact: 'Añadir Nuevo Contacto',
+      contactName: 'Nombre del Contacto',
       contactNamePlaceholder: 'Alice Johnson',
       contactEmailPlaceholder: 'alice@example.com',
       selectClient: 'Seleccione un cliente',
@@ -154,6 +156,7 @@ export const translations = {
       copyOpportunityId: 'Copiar ID de oportunidad',
       editOpportunity: 'Editar oportunidad',
       deleteOpportunity: 'Eliminar oportunidad',
+      confirmDelete: '¿Estás seguro de que quieres eliminar este elemento?',
     },
     Stages: {
       Prospecting: 'Prospección',
@@ -296,6 +299,7 @@ export const translations = {
       noResults: 'No results.',
       status: 'Status',
       industry: 'Industry',
+      createdDate: 'Created Date',
     },
     Forms: {
       editClient: 'Edit Client',
@@ -315,6 +319,7 @@ export const translations = {
       saveClient: 'Save Client',
       editContact: 'Edit Contact',
       addContact: 'Add New Contact',
+      contactName: 'Contact Name',
       contactNamePlaceholder: 'Alice Johnson',
       contactEmailPlaceholder: 'alice@example.com',
       selectClient: 'Select a client',
@@ -343,6 +348,7 @@ export const translations = {
       copyOpportunityId: 'Copy opportunity ID',
       editOpportunity: 'Edit opportunity',
       deleteOpportunity: 'Delete opportunity',
+      confirmDelete: 'Are you sure you want to delete this item?',
     },
     Stages: {
       Prospecting: 'Prospecting',
