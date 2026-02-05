@@ -2,18 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { OpportunityForm } from '@/components/opportunities/opportunity-form';
 import { OpportunityTable } from '@/components/opportunities/opportunity-table';
 import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where } from 'firebase/firestore';
 import {
-  addOpportunity,
-  updateOpportunity,
   deleteOpportunity,
 } from '@/lib/firestore/opportunities';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,11 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function OpportunitiesPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
   const { t } = useI18n();
-
-  const [isFormOpen, setFormOpen] = useState(false);
-  const [editingOpportunity, setEditingOpportunity] =
-    useState<Opportunity | null>(null);
 
   const baseQuery = useMemo(() => {
     if (!user) return null;
@@ -64,27 +58,8 @@ export default function OpportunitiesPage() {
     }
   }, [user, userLoading]);
 
-  const handleSaveOpportunity = async (
-    opportunityData: Omit<Opportunity, 'id' | 'publicId' |'createdAt' | 'createdBy'>
-  ) => {
-    if (!user) return;
-    if (editingOpportunity) {
-      updateOpportunity(firestore, editingOpportunity.id, opportunityData);
-    } else {
-        try {
-            await addOpportunity(firestore, user.uid, opportunityData);
-        } catch (error) {
-            console.error("Failed to add opportunity:", error);
-            // Error is globally emitted
-        }
-    }
-    setEditingOpportunity(null);
-    setFormOpen(false);
-  };
-
   const handleEditOpportunity = (opportunity: Opportunity) => {
-    setEditingOpportunity(opportunity);
-    setFormOpen(true);
+    router.push(`/opportunities/${opportunity.id}`);
   };
 
   const handleDeleteOpportunity = (opportunityId: string) => {
@@ -93,16 +68,8 @@ export default function OpportunitiesPage() {
     }
   };
 
-  const handleFormOpenChange = (isOpen: boolean) => {
-    setFormOpen(isOpen);
-    if (!isOpen) {
-      setEditingOpportunity(null);
-    }
-  };
-
   const handleAddNew = () => {
-    setEditingOpportunity(null);
-    setFormOpen(true);
+    router.push('/opportunities/new');
   };
 
   if (userLoading) {
@@ -141,14 +108,6 @@ export default function OpportunitiesPage() {
           />
         )}
       </main>
-      <OpportunityForm
-        key={editingOpportunity?.id || 'new'}
-        isOpen={isFormOpen}
-        onOpenChange={handleFormOpenChange}
-        onSave={handleSaveOpportunity}
-        defaultValues={editingOpportunity || undefined}
-        clients={clients}
-      />
     </div>
   );
 }

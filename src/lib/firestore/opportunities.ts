@@ -68,13 +68,14 @@ export function updateOpportunity(
   // publicId should not be editable
   const { publicId, ...updateData } = opportunityData as any;
 
-  updateDoc(opportunityRef, updateData).catch((serverError) => {
+  return updateDoc(opportunityRef, updateData).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: opportunityRef.path,
       operation: 'update',
       requestResourceData: opportunityData,
     });
     errorEmitter.emit('permission-error', permissionError);
+    throw serverError;
   });
 }
 
