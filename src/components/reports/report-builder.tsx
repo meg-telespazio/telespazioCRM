@@ -159,37 +159,42 @@ export function ReportBuilder() {
         .map(([key]) => key);
     
         const newColumns = activeFields.map(fieldKey => {
-        const [source, field] = fieldKey.split('.');
-        const sourceName = source as keyof typeof reportableFields;
-        const fieldName = field as keyof typeof reportableFields[typeof sourceName]['fields'];
-        const header = t(reportableFields[sourceName].fields[fieldName]);
-        return {
-            accessorKey: fieldKey,
-            header,
-        };
+            const [source, field] = fieldKey.split('.');
+            const sourceName = source as keyof typeof reportableFields;
+            const fieldName = field as keyof typeof reportableFields[typeof sourceName]['fields'];
+            const header = t(reportableFields[sourceName].fields[fieldName]);
+            return {
+                accessorKey: fieldKey,
+                header,
+            };
         });
 
         const newData = baseData.map(primaryRecord => {
             const row: Record<string, any> = {};
-
+            
+            // Define all possible related records for the primaryRecord
             let client: Client | undefined;
             let contact: Contact | undefined;
             let opportunity: Opportunity | undefined;
-
-            if (dataSource === 'clients') client = primaryRecord;
-            if (dataSource === 'contacts') contact = primaryRecord;
-            if (dataSource === 'opportunities') opportunity = primaryRecord;
-
-            if (dataSource === 'contacts') {
-                client = clientMap.get(primaryRecord.clientId);
-            }
+    
             if (dataSource === 'opportunities') {
-                client = clientMap.get(primaryRecord.clientId);
-                if (primaryRecord.contactId) {
-                contact = contactMap.get(primaryRecord.contactId);
+                opportunity = primaryRecord;
+                if (opportunity) {
+                    client = clientMap.get(opportunity.clientId);
+                    if (opportunity.contactId) {
+                        contact = contactMap.get(opportunity.contactId);
+                    }
                 }
+            } else if (dataSource === 'contacts') {
+                contact = primaryRecord;
+                if (contact) {
+                    client = clientMap.get(contact.clientId);
+                }
+            } else if (dataSource === 'clients') {
+                client = primaryRecord;
             }
-
+    
+            // Now populate the row using the found records
             for (const fieldKey of activeFields) {
                 const [source, field] = fieldKey.split('.');
                 let value;
@@ -297,7 +302,7 @@ export function ReportBuilder() {
             )}
           </div>
            <Button onClick={generateReport} disabled={!dataSource || Object.values(selectedFields).every(v => !v) || pageIsLoading || isGenerating}>
-            {pageIsLoading || isGenerating ? t('App.loading') : t('Reports.generateReport')}
+            {isGenerating ? t('App.loading') : t('Reports.generateReport')}
            </Button>
         </CardContent>
       </Card>

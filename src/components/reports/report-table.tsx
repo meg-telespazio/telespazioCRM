@@ -56,7 +56,7 @@ export function ReportTable({ columns, data }: ReportTableProps) {
   const tableColumns = React.useMemo<ColumnDef<any>[]>(() => 
     columns.map(col => ({
         ...col,
-        cell: ({ getValue }) => formatCell(getValue())
+        cell: (props) => formatCell(props.getValue())
     })), [columns]);
 
 
