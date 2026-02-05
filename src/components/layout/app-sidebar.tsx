@@ -45,12 +45,6 @@ export function AppSidebar() {
     { href: '/contacts', label: 'Contacts', icon: Contact },
   ];
 
-  const isAuthPage = pathname === '/login' || pathname === '/register';
-
-  if (isAuthPage) {
-    return null;
-  }
-
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="p-4">

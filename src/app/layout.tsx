@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { FirebaseClientProvider } from '@/firebase';
+import { PageWrapper } from '@/components/layout/page-wrapper';
 
 export const metadata: Metadata = {
   title: 'T-Track Sales',
@@ -32,10 +32,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <FirebaseClientProvider>
           <SidebarProvider>
-            <div className="flex min-h-screen">
-              <AppSidebar />
-              <main className="flex flex-1 flex-col">{children}</main>
-            </div>
+            <PageWrapper>{children}</PageWrapper>
           </SidebarProvider>
         </FirebaseClientProvider>
         <Toaster />
