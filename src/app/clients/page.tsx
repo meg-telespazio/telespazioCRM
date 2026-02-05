@@ -10,7 +10,7 @@ import { ClientForm } from '@/components/clients/client-form';
 import { ClientTable } from '@/components/clients/client-table';
 import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { addClient, updateClient, deleteClient } from '@/lib/firestore/clients';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -26,13 +26,18 @@ export default function ClientsPage() {
     if (!user) return null;
     return query(
       collection(firestore, 'clients'),
-      where('createdBy', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('createdBy', '==', user.uid)
     );
   }, [user, firestore]);
 
-  const { data: clients, loading: clientsLoading } =
+  const { data: clientsData, loading: clientsLoading } =
     useCollection<Client>(clientsQuery);
+
+  const clients = useMemo(() => {
+    if (!clientsData) return [];
+    // Sort by createdAt descending on the client
+    return [...clientsData].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }, [clientsData]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -103,7 +108,7 @@ export default function ClientsPage() {
           </div>
         ) : (
           <ClientTable
-            data={clients || []}
+            data={clients}
             onEdit={handleEditClient}
             onDelete={handleDeleteClient}
           />

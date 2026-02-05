@@ -10,7 +10,7 @@ import { OpportunityForm } from '@/components/opportunities/opportunity-form';
 import { OpportunityTable } from '@/components/opportunities/opportunity-table';
 import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import {
   addOpportunity,
   updateOpportunity,
@@ -34,26 +34,28 @@ export default function OpportunitiesPage() {
 
   const opportunitiesQuery = useMemo(() => {
     if (!baseQuery) return null;
-    return query(
-      collection(firestore, 'opportunities'),
-      baseQuery,
-      orderBy('createdAt', 'desc')
-    );
+    return query(collection(firestore, 'opportunities'), baseQuery);
   }, [firestore, baseQuery]);
 
   const clientsQuery = useMemo(() => {
     if (!baseQuery) return null;
-    return query(
-      collection(firestore, 'clients'),
-      baseQuery,
-      orderBy('name', 'asc')
-    );
+    return query(collection(firestore, 'clients'), baseQuery);
   }, [firestore, baseQuery]);
 
-  const { data: opportunities, loading: opportunitiesLoading } =
+  const { data: opportunitiesData, loading: opportunitiesLoading } =
     useCollection<Opportunity>(opportunitiesQuery);
-  const { data: clients, loading: clientsLoading } =
+  const { data: clientsData, loading: clientsLoading } =
     useCollection<Client>(clientsQuery);
+
+  const opportunities = useMemo(() => {
+    if (!opportunitiesData) return [];
+    return [...opportunitiesData].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }, [opportunitiesData]);
+
+  const clients = useMemo(() => {
+    if (!clientsData) return [];
+    return [...clientsData].sort((a, b) => a.name.localeCompare(b.name));
+  }, [clientsData]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -126,8 +128,8 @@ export default function OpportunitiesPage() {
           </div>
         ) : (
           <OpportunityTable
-            data={opportunities || []}
-            clients={clients || []}
+            data={opportunities}
+            clients={clients}
             onEdit={handleEditOpportunity}
             onDelete={handleDeleteOpportunity}
           />
@@ -139,7 +141,7 @@ export default function OpportunitiesPage() {
         onOpenChange={handleFormOpenChange}
         onSave={handleSaveOpportunity}
         defaultValues={editingOpportunity || undefined}
-        clients={clients || []}
+        clients={clients}
       />
     </div>
   );

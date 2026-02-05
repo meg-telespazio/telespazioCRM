@@ -10,7 +10,7 @@ import { ContactForm } from '@/components/contacts/contact-form';
 import { ContactTable } from '@/components/contacts/contact-table';
 import type { Contact, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import {
   addContact,
   updateContact,
@@ -33,26 +33,28 @@ export default function ContactsPage() {
 
   const contactsQuery = useMemo(() => {
     if (!baseQuery) return null;
-    return query(
-      collection(firestore, 'contacts'),
-      baseQuery,
-      orderBy('createdAt', 'desc')
-    );
+    return query(collection(firestore, 'contacts'), baseQuery);
   }, [firestore, baseQuery]);
 
   const clientsQuery = useMemo(() => {
     if (!baseQuery) return null;
-    return query(
-      collection(firestore, 'clients'),
-      baseQuery,
-      orderBy('name', 'asc')
-    );
+    return query(collection(firestore, 'clients'), baseQuery);
   }, [firestore, baseQuery]);
 
-  const { data: contacts, loading: contactsLoading } =
+  const { data: contactsData, loading: contactsLoading } =
     useCollection<Contact>(contactsQuery);
-  const { data: clients, loading: clientsLoading } =
+  const { data: clientsData, loading: clientsLoading } =
     useCollection<Client>(clientsQuery);
+
+  const contacts = useMemo(() => {
+    if (!contactsData) return [];
+    return [...contactsData].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }, [contactsData]);
+
+  const clients = useMemo(() => {
+    if (!clientsData) return [];
+    return [...clientsData].sort((a, b) => a.name.localeCompare(b.name));
+  }, [clientsData]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -125,8 +127,8 @@ export default function ContactsPage() {
           </div>
         ) : (
           <ContactTable
-            data={contacts || []}
-            clients={clients || []}
+            data={contacts}
+            clients={clients}
             onEdit={handleEditContact}
             onDelete={handleDeleteContact}
           />
@@ -138,7 +140,7 @@ export default function ContactsPage() {
         onOpenChange={handleFormOpenChange}
         onSave={handleSaveContact}
         defaultValues={editingContact || undefined}
-        clients={clients || []}
+        clients={clients}
       />
     </div>
   );
