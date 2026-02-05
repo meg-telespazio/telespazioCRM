@@ -181,15 +181,17 @@ export function RegisterForm() {
       router.push('/login');
     } catch (error: any) {
       const errorCode = error.code;
-      let description = error.message;
+      let description = error.message; // Default to Firebase's message
 
       if (errorCode === 'auth/email-already-in-use') {
         description = t('Auth.emailAlreadyInUse');
       } else if (errorCode === 'auth/operation-not-allowed') {
         description = t('Auth.operationNotAllowed');
-      } else {
+      } else if (errorCode) {
+        // A fallback for any other Firebase error with a code
         description = `Error (${errorCode}): ${description}`;
       }
+      // If no code, 'description' remains error.message
 
       toast({
         variant: 'destructive',

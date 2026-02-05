@@ -40,7 +40,7 @@ export const translations = {
       registerFailedTitle: 'Falló el registro',
       emailAlreadyInUse: 'Esta dirección de correo electrónico ya está en uso.',
       operationNotAllowed:
-        'El inicio de sesión con correo electrónico/contraseña no está habilitado. Por favor, actívelo en la consola de Firebase.',
+        "El proveedor de autenticación por Correo/Contraseña no está habilitado. Por favor, ve a tu Consola de Firebase -> Authentication -> Pestaña 'Sign-in method' y habilita el proveedor 'Email/Password'.",
     },
     Validation: {
       invalidEmail: 'Dirección de correo electrónico no válida.',
@@ -186,7 +186,7 @@ export const translations = {
       registerFailedTitle: 'Registration failed',
       emailAlreadyInUse: 'This email address is already in use.',
       operationNotAllowed:
-        'Email/Password sign-in is not enabled. Please enable it in the Firebase console.',
+        "The Email/Password authentication provider is not enabled. Please go to your Firebase Console -> Authentication -> 'Sign-in method' tab and enable the 'Email/Password' provider.",
     },
     Validation: {
       invalidEmail: 'Invalid email address.',
