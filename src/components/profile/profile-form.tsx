@@ -3,10 +3,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useUser, useAuth, useFirestore, useStorage } from '@/firebase';
+import { useUser, useAuth, useFirestore } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,13 +30,12 @@ export function ProfileForm() {
   const { user } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
-  const storage = useStorage();
   const { toast } = useToast();
   const { t } = useI18n();
 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedAvatar, setCroppedAvatar] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const profileFormSchema = useMemo(() => getProfileFormSchema(t), [t]);
 
@@ -76,63 +74,56 @@ export function ProfileForm() {
   
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
     if (!user) return;
-    setIsUploading(true);
+    setIsSaving(true);
+    toast({ title: t('Profile.savingProfile') });
 
     try {
-      let photoURL = user.photoURL;
+      const photoURL = croppedAvatar || user.photoURL;
       const displayName = `${values.firstName} ${values.lastName}`.trim();
-
-      // 1. Upload cropped avatar if it exists (this is the blocking part)
-      if (croppedAvatar) {
-        toast({ title: t('Profile.uploadingAvatar') });
-        const avatarRef = ref(storage, `avatars/${user.uid}/avatar.png`);
-        const uploadTask = await uploadString(avatarRef, croppedAvatar, 'data_url');
-        photoURL = await getDownloadURL(uploadTask.ref);
-        toast({ title: t('Profile.avatarUpdated') });
-      }
-
-      // 2. Update Auth profile (fire and forget with catch)
-      updateProfile(user, { displayName, photoURL }).catch((error) => {
-         console.error("Auth profile update error:", error);
-         toast({
-            variant: 'destructive',
-            title: t('Profile.updateFailure'),
-            description: (error as Error).message,
-        });
-      });
-
-      // 3. Update Firestore profile (fire and forget with catch)
-      const userDocRef = doc(firestore, 'users', user.uid);
+      
       const userProfileData = {
         firstName: values.firstName,
         lastName: values.lastName,
         displayName,
         photoURL,
       };
-      setDoc(userDocRef, userProfileData, { merge: true }).catch(
-        (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'update',
-            requestResourceData: userProfileData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        }
-      );
 
-      // Optimistic UI update
+      // Update Auth and Firestore in parallel
+      const authPromise = updateProfile(user, { displayName, photoURL });
+      
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const firestorePromise = setDoc(userDocRef, userProfileData, { merge: true });
+
+      await Promise.all([authPromise, firestorePromise]);
+
       toast({ title: t('Profile.updateSuccess') });
       setCroppedAvatar(null);
 
-    } catch (uploadError) {
-      console.error("Profile update error:", uploadError);
-      toast({
-        variant: 'destructive',
-        title: t('Profile.updateFailure'),
-        description: (uploadError as Error).message,
-      });
+    } catch (error: any) {
+      console.error("Profile update error:", error);
+      // Let the global error handler manage permission errors
+      if (error?.code?.includes('permission-denied')) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const permissionError = new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: {
+              firstName: values.firstName,
+              lastName: values.lastName,
+              displayName: `${values.firstName} ${values.lastName}`.trim(),
+              photoURL: croppedAvatar || user.photoURL,
+            },
+          });
+        errorEmitter.emit('permission-error', permissionError);
+      } else {
+        toast({
+            variant: 'destructive',
+            title: t('Profile.updateFailure'),
+            description: error.message,
+        });
+      }
     } finally {
-      setIsUploading(false);
+      setIsSaving(false);
     }
   }
 
@@ -151,7 +142,7 @@ export function ProfileForm() {
               <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full">
                 <label htmlFor="avatar-upload" className="cursor-pointer">
                   <Camera className="h-4 w-4" />
-                  <input id="avatar-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} disabled={isUploading} />
+                  <input id="avatar-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} disabled={isSaving} />
                 </label>
               </Button>
             </div>
@@ -185,8 +176,8 @@ export function ProfileForm() {
               )}
             />
           </div>
-          <Button type="submit" disabled={isUploading} className="w-full sm:w-auto">
-            {isUploading ? t('App.loading') : t('Profile.saveChanges')}
+          <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
+            {isSaving ? t('App.loading') : t('Profile.saveChanges')}
           </Button>
         </form>
       </Form>

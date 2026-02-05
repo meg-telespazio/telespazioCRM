@@ -35,17 +35,21 @@ export default async function getCroppedImg(
   );
 
   return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        console.error('Canvas is empty');
-        resolve(null);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve(reader.result as string);
-      };
-      reader.readAsDataURL(blob);
-    }, 'image/png');
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          console.error('Canvas is empty');
+          resolve(null);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      },
+      'image/jpeg',
+      0.9
+    ); // Compress to JPEG with 90% quality
   });
 }
