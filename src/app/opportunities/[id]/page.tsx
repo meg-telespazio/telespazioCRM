@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -73,7 +74,8 @@ export default function OpportunityFormPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const params = useParams();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const datePickerLocale = locale === 'es' ? es : enUS;
 
   const opportunityId = params.id as string;
   const isNew = opportunityId === 'new';
@@ -203,14 +205,7 @@ export default function OpportunityFormPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader
         title={isNew ? t('Forms.addOpportunity') : t('Forms.editOpportunity')}
-      >
-        <Button variant="outline" onClick={() => router.back()}>
-          {t('Auth.cancelLabel')}
-        </Button>
-        <Button onClick={form.handleSubmit(onSubmit)}>
-          {t('Forms.saveOpportunity')}
-        </Button>
-      </AppHeader>
+      />
       <main className="flex-1 p-4 sm:p-6">
         <div className="mx-auto max-w-4xl">
           <Form {...form}>
@@ -390,12 +385,12 @@ export default function OpportunityFormPage() {
                         <FormLabel>{t('Forms.requestDate')}</FormLabel>
                         <Popover><PopoverTrigger asChild><FormControl>
                           <Button variant={'outline'} className={cn('w-full pl-3 text-left font-normal',!field.value && 'text-muted-foreground')}>
-                            {field.value ? (format(field.value, 'PPP')) : (<span>{t('Forms.pickDate')}</span>)}
+                            {field.value ? (format(field.value, 'PPP', { locale: datePickerLocale })) : (<span>{t('Forms.pickDate')}</span>)}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl></PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={datePickerLocale} />
                           </PopoverContent>
                         </Popover>
                         <FormMessage />
@@ -410,12 +405,12 @@ export default function OpportunityFormPage() {
                         <FormLabel>{t('Forms.offerSentDate')}</FormLabel>
                         <Popover><PopoverTrigger asChild><FormControl>
                           <Button variant={'outline'} className={cn('w-full pl-3 text-left font-normal',!field.value && 'text-muted-foreground')}>
-                            {field.value ? (format(field.value, 'PPP')) : (<span>{t('Forms.pickDate')}</span>)}
+                            {field.value ? (format(field.value, 'PPP', { locale: datePickerLocale })) : (<span>{t('Forms.pickDate')}</span>)}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl></PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={datePickerLocale} />
                           </PopoverContent>
                         </Popover>
                         <FormMessage />
@@ -439,7 +434,7 @@ export default function OpportunityFormPage() {
                                 )}
                               >
                                 {field.value ? (
-                                  format(field.value, 'PPP')
+                                  format(field.value, 'PPP', { locale: datePickerLocale })
                                 ) : (
                                   <span>{t('Forms.pickDate')}</span>
                                 )}
@@ -453,6 +448,7 @@ export default function OpportunityFormPage() {
                               selected={field.value}
                               onSelect={field.onChange}
                               initialFocus
+                              locale={datePickerLocale}
                             />
                           </PopoverContent>
                         </Popover>
@@ -512,6 +508,14 @@ export default function OpportunityFormPage() {
                   />
                 </CardContent>
               </Card>
+              <div className="flex items-center justify-end gap-4 pt-4">
+                 <Button type="button" variant="outline" onClick={() => router.back()}>
+                    {t('Auth.cancelLabel')}
+                 </Button>
+                 <Button type="submit">
+                   {t('Forms.saveOpportunity')}
+                 </Button>
+              </div>
             </form>
           </Form>
         </div>
