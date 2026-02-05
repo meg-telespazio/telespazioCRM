@@ -180,25 +180,10 @@ export function RegisterForm() {
       });
       router.push('/dashboard');
     } catch (error: any) {
-      let description = error.message;
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          description = t('Auth.emailAlreadyInUse');
-          break;
-        case 'auth/invalid-email':
-          description = t('Validation.invalidEmail');
-          break;
-        case 'auth/weak-password':
-          description = t('Validation.passwordPattern');
-          break;
-        case 'auth/operation-not-allowed':
-          description = t('Auth.operationNotAllowed');
-          break;
-      }
       toast({
         variant: 'destructive',
         title: t('Auth.registerFailedTitle'),
-        description,
+        description: error.message,
       });
     }
   }
