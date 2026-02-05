@@ -7,6 +7,7 @@ export type Client = {
   email: string;
   phone: string;
   website?: string;
+  cuit: string;
   createdAt: Date;
   createdBy: string;
   status: 'active' | 'suspended' | 'canceled';

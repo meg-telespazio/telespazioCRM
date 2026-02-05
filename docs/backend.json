@@ -91,6 +91,10 @@
           "type": "string",
           "description": "Contact phone number for the client."
         },
+        "cuit": {
+          "type": "string",
+          "description": "Client's CUIT number (11 digits)."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -118,6 +122,7 @@
         "name",
         "email",
         "phone",
+        "cuit",
         "createdAt",
         "createdBy",
         "status",

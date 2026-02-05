@@ -13,11 +13,13 @@ import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where } from 'firebase/firestore';
 import { addClient, updateClient, deleteClient } from '@/lib/firestore/clients';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ClientsPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { t } = useI18n();
+  const { toast } = useToast();
 
   const [isFormOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -47,22 +49,21 @@ export default function ClientsPage() {
 
   const handleSaveClient = async (
     clientData: Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
-  ) => {
-    if (!user) return;
-    if (editingClient) {
-      // publicId is not editable
-      const { publicId, ...updateData } = clientData as any;
-      updateClient(firestore, editingClient.id, updateData);
-    } else {
-        try {
-            await addClient(firestore, user.uid, clientData);
-        } catch (error) {
-            console.error("Failed to add client:", error);
-            // Error is globally emitted by addClient, no need for specific toast here.
-        }
+  ): Promise<true | Error> => {
+    if (!user) return new Error("User not authenticated.");
+    try {
+      if (editingClient) {
+        // publicId is not editable
+        const { publicId, ...updateData } = clientData as any;
+        await updateClient(firestore, editingClient.id, updateData);
+      } else {
+          await addClient(firestore, user.uid, clientData);
+      }
+      return true; // Indicate success
+    } catch (error: any) {
+      console.error("Failed to save client:", error);
+      return error; // Return the error object
     }
-    setEditingClient(null);
-    setFormOpen(false);
   };
 
   const handleEditClient = (client: Client) => {

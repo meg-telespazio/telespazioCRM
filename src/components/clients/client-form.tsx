@@ -32,6 +32,12 @@ import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useMemo } from 'react';
 import { translations } from '@/lib/translations';
+import { useToast } from '@/hooks/use-toast';
+
+const formatCuit = (cuit: string): string => {
+  if (!cuit || cuit.length !== 11) return cuit;
+  return `${cuit.slice(0, 2)}-${cuit.slice(2, 10)}-${cuit.slice(10)}`;
+};
 
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
@@ -43,6 +49,13 @@ const getFormSchema = (t: (key: string) => string) =>
       .or(z.literal('')),
     email: z.string().email(t('Validation.invalidEmail')),
     phone: z.string().min(10, t('Validation.phoneMin')),
+    cuit: z
+      .string()
+      .min(1, t('Validation.cuitRequired'))
+      .transform((val) => val.replace(/\D/g, ''))
+      .refine((val) => val.length === 11, {
+        message: t('Validation.cuitInvalid'),
+      }),
     status: z.enum(['active', 'suspended', 'canceled']),
     industry: z.string().min(1, t('Validation.selectIndustry')),
     notes: z.string().optional(),
@@ -53,7 +66,7 @@ type ClientFormProps = {
   onOpenChange: (isOpen: boolean) => void;
   onSave: (
     client: Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
-  ) => void;
+  ) => Promise<true | Error>;
   defaultValues?: Partial<Omit<Client, 'id' | 'createdAt' | 'createdBy'>>;
 };
 
@@ -63,26 +76,47 @@ export function ClientForm({
   onSave,
   defaultValues,
 }: ClientFormProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
+  const { toast } = useToast();
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues || {
-      name: '',
-      website: '',
-      email: '',
-      phone: '',
-      status: 'active',
-      industry: '',
-      notes: '',
-    },
+    defaultValues: defaultValues
+      ? {
+          ...defaultValues,
+          website: defaultValues.website || '',
+          notes: defaultValues.notes || '',
+          cuit: defaultValues.cuit ? formatCuit(defaultValues.cuit) : '',
+        }
+      : {
+          name: '',
+          website: '',
+          email: '',
+          phone: '',
+          cuit: '00-00000000-0',
+          status: 'active',
+          industry: '',
+          notes: '',
+        },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    onSave(values);
-    form.reset();
-    onOpenChange(false);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const result = await onSave(values);
+    if (result === true) {
+      form.reset();
+      onOpenChange(false);
+    } else if (result instanceof Error) {
+      if (result.message.includes('CUIT')) {
+        form.setError('cuit', { type: 'manual', message: result.message });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: t('Auth.registerFailedTitle'),
+          description: result.message,
+        });
+      }
+    }
   }
 
   const statusOptions: Client['status'][] = ['active', 'suspended', 'canceled'];
@@ -168,6 +202,19 @@ export function ClientForm({
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="cuit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Forms.cuit')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder="XX-XXXXXXXX-X" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}

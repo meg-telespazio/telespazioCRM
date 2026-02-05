@@ -23,6 +23,11 @@ const statusClasses: { [key in Client['status']]: string } = {
   canceled: 'bg-gray-200 text-gray-800 hover:bg-gray-300 border-gray-300',
 };
 
+const formatCuit = (cuit: string): string => {
+  if (!cuit || cuit.length !== 11) return cuit;
+  return `${cuit.slice(0, 2)}-${cuit.slice(2, 10)}-${cuit.slice(10)}`;
+};
+
 
 export const columns = (
   t: (key: string) => string,
@@ -58,6 +63,11 @@ export const columns = (
   {
     accessorKey: 'name',
     header: t('Forms.clientName'),
+  },
+  {
+    accessorKey: 'cuit',
+    header: t('Forms.cuit'),
+    cell: ({ row }) => formatCuit(row.original.cuit),
   },
   {
     accessorKey: 'email',

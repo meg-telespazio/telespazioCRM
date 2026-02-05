@@ -8,6 +8,9 @@ import {
   serverTimestamp,
   runTransaction,
   type Firestore,
+  query,
+  where,
+  getDocs,
 } from 'firebase/firestore';
 import type { Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -22,8 +25,18 @@ export async function addClient(
   uid: string,
   clientData: ClientData
 ) {
-  const counterRef = doc(firestore, 'counters', 'clients');
   const clientCollectionRef = collection(firestore, CLIENTS_COLLECTION);
+  const cleanCuit = clientData.cuit;
+
+  if (cleanCuit && cleanCuit !== '00000000000') {
+    const q = query(clientCollectionRef, where('cuit', '==', cleanCuit));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      throw new Error('This CUIT is already registered.');
+    }
+  }
+  
+  const counterRef = doc(firestore, 'counters', 'clients');
 
   try {
     await runTransaction(firestore, async (transaction) => {
@@ -48,6 +61,9 @@ export async function addClient(
     });
   } catch (error) {
     console.error("Client creation transaction failed: ", error);
+    if (error instanceof Error && error.message.includes('CUIT')) {
+      throw error;
+    }
     const permissionError = new FirestorePermissionError({
       path: `/${CLIENTS_COLLECTION} or /counters/clients`,
       operation: 'create',
@@ -58,20 +74,36 @@ export async function addClient(
   }
 }
 
-export function updateClient(
+export async function updateClient(
   firestore: Firestore,
   clientId: string,
   clientData: Partial<ClientData>
 ) {
+  const clientCollectionRef = collection(firestore, CLIENTS_COLLECTION);
+  
+  if (clientData.cuit && clientData.cuit !== '00000000000') {
+      const q = query(clientCollectionRef, where("cuit", "==", clientData.cuit));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+          const docExists = snapshot.docs.some(doc => doc.id !== clientId);
+          if (docExists) {
+              throw new Error("This CUIT is already registered.");
+          }
+      }
+  }
+
   const clientRef = doc(firestore, CLIENTS_COLLECTION, clientId);
-  updateDoc(clientRef, clientData).catch((serverError) => {
+  try {
+    await updateDoc(clientRef, clientData);
+  } catch(serverError) {
     const permissionError = new FirestorePermissionError({
       path: clientRef.path,
       operation: 'update',
       requestResourceData: clientData,
     });
     errorEmitter.emit('permission-error', permissionError);
-  });
+    throw serverError; // rethrow after emitting
+  }
 }
 
 export function deleteClient(firestore: Firestore, clientId: string) {
