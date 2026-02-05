@@ -46,6 +46,7 @@ import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import type { WeekdayLabelFormatter } from 'react-day-picker';
 
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
@@ -76,6 +77,10 @@ export default function OpportunityFormPage() {
   const params = useParams();
   const { t, locale } = useI18n();
   const datePickerLocale = locale === 'es' ? es : enUS;
+
+  const formatWeekdayName: WeekdayLabelFormatter = (day, options) => {
+    return format(day, 'cccccc', { locale: options?.locale });
+  };
 
   const opportunityId = params.id as string;
   const isNew = opportunityId === 'new';
@@ -146,7 +151,11 @@ export default function OpportunityFormPage() {
     if (opportunityData) {
       form.reset({
         ...opportunityData,
-        offerSentDate: opportunityData.offerSentDate || undefined,
+        closeDate: new Date(opportunityData.closeDate),
+        requestDate: new Date(opportunityData.requestDate),
+        offerSentDate: opportunityData.offerSentDate
+          ? new Date(opportunityData.offerSentDate)
+          : undefined,
         contactId: opportunityData.contactId || '',
       });
     }
@@ -390,7 +399,7 @@ export default function OpportunityFormPage() {
                           </Button>
                         </FormControl></PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={datePickerLocale} />
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={datePickerLocale} formatters={{ formatWeekdayName }} />
                           </PopoverContent>
                         </Popover>
                         <FormMessage />
@@ -410,7 +419,7 @@ export default function OpportunityFormPage() {
                           </Button>
                         </FormControl></PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={datePickerLocale} />
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={datePickerLocale} formatters={{ formatWeekdayName }} />
                           </PopoverContent>
                         </Popover>
                         <FormMessage />
@@ -449,6 +458,7 @@ export default function OpportunityFormPage() {
                               onSelect={field.onChange}
                               initialFocus
                               locale={datePickerLocale}
+                              formatters={{ formatWeekdayName }}
                             />
                           </PopoverContent>
                         </Popover>
