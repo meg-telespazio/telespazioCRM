@@ -7,11 +7,11 @@ import {
   Users,
   Briefcase,
   Contact,
-  Telescope,
   LogOut,
   Menu,
   User as UserIcon,
 } from 'lucide-react';
+import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useUser, useAuth } from '@/firebase';
@@ -103,7 +103,12 @@ export function AppNavbar() {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Telescope className="h-8 w-8" />
+            <Image
+              src="/img/logoSmall.png"
+              alt="T-Track Logo"
+              width={32}
+              height={32}
+            />
             <h1 className="hidden text-xl font-bold sm:inline-block">
               {t('App.appName')}
             </h1>
@@ -189,17 +194,24 @@ export function AppNavbar() {
                 side="left"
                 className="w-full border-0 bg-destructive text-destructive-foreground sm:max-w-xs"
               >
-                <SheetHeader className="sr-only">
-                  <SheetTitle>{t('App.appName')} Menu</SheetTitle>
+                <SheetHeader className="p-6">
+                  <SheetTitle className="sr-only">
+                    {t('App.appName')} Menu
+                  </SheetTitle>
                 </SheetHeader>
                 <div className="flex h-full flex-col">
-                  <div className="p-6">
+                  <div className="p-6 pt-0">
                     <Link
                       href="/dashboard"
                       className="mb-6 flex items-center gap-2"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Telescope className="h-8 w-8" />
+                      <Image
+                        src="/img/logoSmall.png"
+                        alt="T-Track Logo"
+                        width={32}
+                        height={32}
+                      />
                       <h1 className="text-xl font-bold">{t('App.appName')}</h1>
                     </Link>
                     <nav className="flex flex-col gap-4">
@@ -241,7 +253,11 @@ export function AppNavbar() {
                         <span className="truncate font-semibold">
                           {user?.displayName || user?.email}
                         </span>
-                         <Link href="/profile" className="text-sm text-white/80 hover:underline" onClick={() => setMobileMenuOpen(false)}>
+                        <Link
+                          href="/profile"
+                          className="text-sm text-white/80 hover:underline"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
                           {t('Pages.profile')}
                         </Link>
                       </div>
