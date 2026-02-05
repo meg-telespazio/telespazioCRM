@@ -21,12 +21,15 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { Client } from '@/lib/types';
+import { useI18n } from '@/firebase/client-provider';
+import { useMemo } from 'react';
 
-const formSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
-  email: z.string().email('Invalid email address.'),
-  phone: z.string().min(10, 'Phone number seems too short.'),
-});
+const getFormSchema = (t: (key: string) => string) =>
+  z.object({
+    name: z.string().min(2, t('Validation.nameMin')),
+    email: z.string().email(t('Validation.invalidEmail')),
+    phone: z.string().min(10, t('Validation.phoneMin')),
+  });
 
 type ClientFormProps = {
   isOpen: boolean;
@@ -41,6 +44,9 @@ export function ClientForm({
   onSave,
   defaultValues,
 }: ClientFormProps) {
+  const { t } = useI18n();
+  const formSchema = useMemo(() => getFormSchema(t), [t]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues || {
@@ -61,7 +67,7 @@ export function ClientForm({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {defaultValues ? 'Edit Client' : 'Add New Client'}
+            {defaultValues ? t('Forms.editClient') : t('Forms.addClient')}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
@@ -71,9 +77,9 @@ export function ClientForm({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t('Auth.firstNameLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Innovate Corp" {...field} />
+                    <Input placeholder={t('Forms.clientNamePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -84,9 +90,9 @@ export function ClientForm({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t('Auth.emailLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="contact@innovate.com" {...field} />
+                    <Input placeholder={t('Forms.clientEmailPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -97,16 +103,16 @@ export function ClientForm({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone</FormLabel>
+                  <FormLabel>{t('Auth.phoneLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="123-456-7890" {...field} />
+                    <Input placeholder={t('Forms.clientPhonePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <DialogFooter>
-              <Button type="submit">Save Client</Button>
+              <Button type="submit">{t('Forms.saveClient')}</Button>
             </DialogFooter>
           </form>
         </Form>

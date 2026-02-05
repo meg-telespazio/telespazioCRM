@@ -19,7 +19,7 @@ const getClientName = (clientId: string) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
 };
 
-export const columns: ColumnDef<Contact>[] = [
+export const columns = (t: (key: string) => string): ColumnDef<Contact>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -44,20 +44,20 @@ export const columns: ColumnDef<Contact>[] = [
   },
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: t('Auth.firstNameLabel'),
   },
   {
     accessorKey: 'clientId',
-    header: 'Client',
+    header: t('Pages.clients'),
     cell: ({ row }) => getClientName(row.original.clientId),
   },
   {
     accessorKey: 'email',
-    header: 'Email',
+    header: t('Auth.emailLabel'),
   },
   {
     accessorKey: 'phone',
-    header: 'Phone',
+    header: t('Auth.phoneLabel'),
   },
   {
     id: 'actions',
@@ -72,16 +72,16 @@ export const columns: ColumnDef<Contact>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(contact.id)}
             >
-              Copy contact ID
+              {t('Actions.copyContactId')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Edit contact</DropdownMenuItem>
+            <DropdownMenuItem>{t('Actions.editContact')}</DropdownMenuItem>
             <DropdownMenuItem className="text-destructive">
-              Delete contact
+              {t('Actions.deleteContact')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

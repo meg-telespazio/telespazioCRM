@@ -10,11 +10,13 @@ import { ContactForm } from '@/components/contacts/contact-form';
 import { ContactTable } from '@/components/contacts/contact-table';
 import { contacts as initialContacts } from '@/lib/data';
 import type { Contact } from '@/lib/types';
+import { useI18n } from '@/firebase/client-provider';
 
 export default function ContactsPage() {
   const { user, loading } = useUser();
   const [contacts, setContacts] = useState<Contact[]>(initialContacts);
   const [isFormOpen, setFormOpen] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,17 +34,17 @@ export default function ContactsPage() {
   if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading...</p>
+        <p>{t('App.loading')}</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title="Contacts">
+      <AppHeader title={t('Pages.contacts')}>
         <Button onClick={() => setFormOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Contact
+          {t('Pages.addContact')}
         </Button>
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">

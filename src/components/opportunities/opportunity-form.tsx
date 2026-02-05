@@ -40,15 +40,18 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { clients } from '@/lib/data';
 import type { Opportunity } from '@/lib/types';
+import { useI18n } from '@/firebase/client-provider';
+import { useMemo } from 'react';
 
-const formSchema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters.'),
-  clientId: z.string().min(1, 'Please select a client.'),
-  value: z.coerce.number().min(0, 'Value must be a positive number.'),
-  stage: z.enum(['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost']),
-  probability: z.number().min(0).max(100),
-  closeDate: z.date(),
-});
+const getFormSchema = (t: (key: string) => string) =>
+  z.object({
+    title: z.string().min(2, t('Validation.titleMin')),
+    clientId: z.string().min(1, t('Validation.selectClient')),
+    value: z.coerce.number().min(0, t('Validation.valuePositive')),
+    stage: z.enum(['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost']),
+    probability: z.number().min(0).max(100),
+    closeDate: z.date(),
+  });
 
 type OpportunityFormProps = {
   isOpen: boolean;
@@ -63,6 +66,9 @@ export function OpportunityForm({
   onSave,
   defaultValues,
 }: OpportunityFormProps) {
+  const { t } = useI18n();
+  const formSchema = useMemo(() => getFormSchema(t), [t]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues || {
@@ -81,12 +87,14 @@ export function OpportunityForm({
     onOpenChange(false);
   }
 
+  const stages = ['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost'];
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {defaultValues ? 'Edit Opportunity' : 'Add New Opportunity'}
+            {defaultValues ? t('Forms.editOpportunity') : t('Forms.addOpportunity')}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
@@ -96,9 +104,9 @@ export function OpportunityForm({
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>{t('Dashboard.recentOpportunities.opportunityHeader')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Website Redesign" {...field} />
+                    <Input placeholder={t('Forms.opportunityTitlePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -110,14 +118,14 @@ export function OpportunityForm({
                 name="clientId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Client</FormLabel>
+                    <FormLabel>{t('Dashboard.recentOpportunities.clientHeader')}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a client" />
+                          <SelectValue placeholder={t('Forms.selectClient')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -137,9 +145,9 @@ export function OpportunityForm({
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Value (USD)</FormLabel>
+                    <FormLabel>{t('Dashboard.recentOpportunities.valueHeader')} (USD)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="50000" {...field} />
+                      <Input type="number" placeholder={t('Forms.opportunityValuePlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -151,21 +159,21 @@ export function OpportunityForm({
               name="stage"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Stage</FormLabel>
+                  <FormLabel>{t('Dashboard.recentOpportunities.stageHeader')}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a stage" />
+                        <SelectValue placeholder={t('Forms.selectStage')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost'].map(
+                      {stages.map(
                         (stage) => (
                           <SelectItem key={stage} value={stage}>
-                            {stage}
+                            {t(`Stages.${stage}`)}
                           </SelectItem>
                         )
                       )}
@@ -180,7 +188,7 @@ export function OpportunityForm({
               name="probability"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Probability ({field.value}%)</FormLabel>
+                  <FormLabel>{t('Forms.probability')} ({field.value}%)</FormLabel>
                   <FormControl>
                     <Slider
                       min={0}
@@ -199,7 +207,7 @@ export function OpportunityForm({
               name="closeDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Estimated Close Date</FormLabel>
+                  <FormLabel>{t('Forms.estCloseDate')}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -213,7 +221,7 @@ export function OpportunityForm({
                           {field.value ? (
                             format(field.value, 'PPP')
                           ) : (
-                            <span>Pick a date</span>
+                            <span>{t('Forms.pickDate')}</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -234,7 +242,7 @@ export function OpportunityForm({
               )}
             />
             <DialogFooter>
-              <Button type="submit">Save Opportunity</Button>
+              <Button type="submit">{t('Forms.saveOpportunity')}</Button>
             </DialogFooter>
           </form>
         </Form>

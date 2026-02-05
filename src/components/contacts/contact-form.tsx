@@ -29,13 +29,16 @@ import {
 } from '@/components/ui/select';
 import { clients } from '@/lib/data';
 import type { Contact } from '@/lib/types';
+import { useI18n } from '@/firebase/client-provider';
+import { useMemo } from 'react';
 
-const formSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
-  email: z.string().email('Invalid email address.'),
-  phone: z.string().min(10, 'Phone number seems too short.'),
-  clientId: z.string().min(1, 'Please select a client.'),
-});
+const getFormSchema = (t: (key: string) => string) =>
+  z.object({
+    name: z.string().min(2, t('Validation.nameMin')),
+    email: z.string().email(t('Validation.invalidEmail')),
+    phone: z.string().min(10, t('Validation.phoneMin')),
+    clientId: z.string().min(1, t('Validation.selectClient')),
+  });
 
 type ContactFormProps = {
   isOpen: boolean;
@@ -50,6 +53,9 @@ export function ContactForm({
   onSave,
   defaultValues,
 }: ContactFormProps) {
+  const { t } = useI18n();
+  const formSchema = useMemo(() => getFormSchema(t), [t]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues || {
@@ -71,7 +77,7 @@ export function ContactForm({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {defaultValues ? 'Edit Contact' : 'Add New Contact'}
+            {defaultValues ? t('Forms.editContact') : t('Forms.addContact')}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
@@ -81,9 +87,9 @@ export function ContactForm({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t('Auth.firstNameLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Alice Johnson" {...field} />
+                    <Input placeholder={t('Forms.contactNamePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -94,9 +100,9 @@ export function ContactForm({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t('Auth.emailLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="alice@example.com" {...field} />
+                    <Input placeholder={t('Forms.contactEmailPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -107,9 +113,9 @@ export function ContactForm({
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone</FormLabel>
+                  <FormLabel>{t('Auth.phoneLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="123-456-7890" {...field} />
+                    <Input placeholder={t('Forms.clientPhonePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -120,14 +126,14 @@ export function ContactForm({
               name="clientId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Client</FormLabel>
+                  <FormLabel>{t('Pages.clients')}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a client" />
+                        <SelectValue placeholder={t('Forms.selectClient')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -143,7 +149,7 @@ export function ContactForm({
               )}
             />
             <DialogFooter>
-              <Button type="submit">Save Contact</Button>
+              <Button type="submit">{t('Forms.saveContact')}</Button>
             </DialogFooter>
           </form>
         </Form>

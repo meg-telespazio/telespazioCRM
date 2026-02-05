@@ -29,7 +29,7 @@ const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "
   Lost: "destructive",
 };
 
-export const columns: ColumnDef<Opportunity>[] = [
+export const columns = (t: (key: string) => string): ColumnDef<Opportunity>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -54,16 +54,16 @@ export const columns: ColumnDef<Opportunity>[] = [
   },
   {
     accessorKey: 'title',
-    header: 'Title',
+    header: t('Dashboard.recentOpportunities.opportunityHeader'),
   },
   {
     accessorKey: 'clientId',
-    header: 'Client',
+    header: t('Dashboard.recentOpportunities.clientHeader'),
     cell: ({ row }) => getClientName(row.original.clientId),
   },
   {
     accessorKey: 'value',
-    header: 'Value (USD)',
+    header: t('Dashboard.recentOpportunities.valueHeader') + ' (USD)',
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('value'));
       const formatted = new Intl.NumberFormat('en-US', {
@@ -75,14 +75,14 @@ export const columns: ColumnDef<Opportunity>[] = [
   },
   {
     accessorKey: 'stage',
-    header: 'Stage',
+    header: t('Dashboard.recentOpportunities.stageHeader'),
     cell: ({ row }) => (
-      <Badge variant={stageVariant[row.original.stage]}>{row.original.stage}</Badge>
+      <Badge variant={stageVariant[row.original.stage]}>{t(`Stages.${row.original.stage}`)}</Badge>
     ),
   },
   {
     accessorKey: 'probability',
-    header: 'Probability',
+    header: t('Forms.probability'),
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <Progress value={row.original.probability} className="w-24" />
@@ -92,7 +92,7 @@ export const columns: ColumnDef<Opportunity>[] = [
   },
   {
     accessorKey: 'closeDate',
-    header: 'Est. Close Date',
+    header: t('Forms.estCloseDate'),
     cell: ({ row }) => (
       <div>{row.original.closeDate.toLocaleDateString()}</div>
     ),
@@ -110,16 +110,16 @@ export const columns: ColumnDef<Opportunity>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(opportunity.id)}
             >
-              Copy opportunity ID
+              {t('Actions.copyOpportunityId')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Edit opportunity</DropdownMenuItem>
+            <DropdownMenuItem>{t('Actions.editOpportunity')}</DropdownMenuItem>
             <DropdownMenuItem className="text-destructive">
-              Delete opportunity
+              {t('Actions.deleteOpportunity')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

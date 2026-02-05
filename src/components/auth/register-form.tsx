@@ -23,39 +23,37 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useI18n } from '@/firebase/client-provider';
 
 // Password validation: min 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
 const passwordValidation =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-const formSchema = z
-  .object({
-    firstName: z
-      .string()
-      .min(2, 'First name must be at least 2 characters.'),
-    lastName: z.string().min(2, 'Last name must be at least 2 characters.'),
-    email: z.string().email('Invalid email address.'),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters.')
-      .regex(
-        passwordValidation,
-        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
-      ),
-    confirmPassword: z.string(),
-    humanCheck: z.string().min(1, 'Please solve the math problem.'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
-    path: ['confirmPassword'],
-  });
+const getFormSchema = (t: (key: string) => string) =>
+  z
+    .object({
+      firstName: z.string().min(2, t('Validation.firstNameMin')),
+      lastName: z.string().min(2, t('Validation.lastNameMin')),
+      email: z.string().email(t('Validation.invalidEmail')),
+      password: z
+        .string()
+        .min(8, t('Validation.passwordMin'))
+        .regex(passwordValidation, t('Validation.passwordPattern')),
+      confirmPassword: z.string(),
+      humanCheck: z.string().min(1, t('Validation.humanCheck')),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('Validation.passwordsDontMatch'),
+      path: ['confirmPassword'],
+    });
 
 export function RegisterForm() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useI18n();
 
   const [num1, setNum1] = useState(0);
   const [num2, setNum2] = useState(0);
@@ -91,6 +89,8 @@ export function RegisterForm() {
     generateHumanCheck();
   }, []);
 
+  const formSchema = useMemo(() => getFormSchema(t), [t]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -107,7 +107,7 @@ export function RegisterForm() {
     if (parseInt(values.humanCheck) !== answer) {
       form.setError('humanCheck', {
         type: 'manual',
-        message: 'Incorrect answer. Try again.',
+        message: t('Validation.humanCheckError'),
       });
       generateHumanCheck();
       return;
@@ -146,14 +146,14 @@ export function RegisterForm() {
       );
 
       toast({
-        title: 'Account created',
-        description: 'You have been successfully registered.',
+        title: t('Auth.registerSuccessTitle'),
+        description: t('Auth.registerSuccessDescription'),
       });
       router.push('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Registration failed',
+        title: t('Auth.registerFailedTitle'),
         description: error.message,
       });
     }
@@ -168,7 +168,7 @@ export function RegisterForm() {
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel>{t('Auth.firstNameLabel')}</FormLabel>
                 <FormControl>
                   <Input placeholder="John" {...field} />
                 </FormControl>
@@ -181,7 +181,7 @@ export function RegisterForm() {
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name</FormLabel>
+                <FormLabel>{t('Auth.lastNameLabel')}</FormLabel>
                 <FormControl>
                   <Input placeholder="Doe" {...field} />
                 </FormControl>
@@ -195,7 +195,7 @@ export function RegisterForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{t('Auth.emailLabel')}</FormLabel>
               <FormControl>
                 <Input placeholder="m@example.com" {...field} />
               </FormControl>
@@ -208,7 +208,7 @@ export function RegisterForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>{t('Auth.passwordLabel')}</FormLabel>
               <FormControl>
                 <Input type="password" {...field} />
               </FormControl>
@@ -221,7 +221,7 @@ export function RegisterForm() {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
+              <FormLabel>{t('Auth.confirmPasswordLabel')}</FormLabel>
               <FormControl>
                 <Input type="password" {...field} />
               </FormControl>
@@ -235,17 +235,17 @@ export function RegisterForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                Are you human? What is {num1} {operation} {num2}?
+                {t('Auth.humanCheckLabel', { num1, operation, num2 })}
               </FormLabel>
               <FormControl>
-                <Input placeholder="Your answer" {...field} />
+                <Input placeholder={t('Forms.yourAnswer')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <Button type="submit" className="w-full">
-          Create account
+          {t('Auth.createAccountButton')}
         </Button>
       </form>
     </Form>

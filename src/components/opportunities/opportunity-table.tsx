@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { columns } from './columns';
 import type { Opportunity } from '@/lib/types';
+import { useI18n } from '@/firebase/client-provider';
 
 export function OpportunityTable({ data }: { data: Opportunity[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -40,10 +41,11 @@ export function OpportunityTable({ data }: { data: Opportunity[] }) {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const { t } = useI18n();
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columns(t),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -64,7 +66,7 @@ export function OpportunityTable({ data }: { data: Opportunity[] }) {
     <div className="w-full">
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter by title..."
+          placeholder={t('Table.filterByTitle')}
           value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
             table.getColumn('title')?.setFilterValue(event.target.value)
@@ -74,7 +76,7 @@ export function OpportunityTable({ data }: { data: Opportunity[] }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Columns
+              {t('Table.columns')}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -138,10 +140,10 @@ export function OpportunityTable({ data }: { data: Opportunity[] }) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={columns(t).length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  {t('Table.noResults')}
                 </TableCell>
               </TableRow>
             )}
@@ -155,7 +157,7 @@ export function OpportunityTable({ data }: { data: Opportunity[] }) {
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
-          Previous
+          {t('Table.previous')}
         </Button>
         <Button
           variant="outline"
@@ -163,7 +165,7 @@ export function OpportunityTable({ data }: { data: Opportunity[] }) {
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          Next
+          {t('Table.next')}
         </Button>
       </div>
     </div>

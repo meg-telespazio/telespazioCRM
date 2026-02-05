@@ -9,29 +9,32 @@ import {
 } from '@/components/ui/card';
 import { opportunities } from '@/lib/data';
 import type { Opportunity } from '@/lib/types';
-
-const getOpportunitiesByStage = () => {
-  const stages: Opportunity['stage'][] = [
-    'Prospecting',
-    'Proposal',
-    'Negotiation',
-    'Won',
-    'Lost',
-  ];
-  const data = stages.map((stage) => ({
-    name: stage,
-    total: opportunities.filter((opp) => opp.stage === stage).length,
-  }));
-  return data;
-};
+import { useI18n } from '@/firebase/client-provider';
 
 export function OpportunitiesChart() {
+  const { t } = useI18n();
+
+  const getOpportunitiesByStage = () => {
+    const stages: Opportunity['stage'][] = [
+      'Prospecting',
+      'Proposal',
+      'Negotiation',
+      'Won',
+      'Lost',
+    ];
+    const data = stages.map((stage) => ({
+      name: t(`Stages.${stage}`),
+      total: opportunities.filter((opp) => opp.stage === stage).length,
+    }));
+    return data;
+  };
+
   const data = getOpportunitiesByStage();
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Opportunities by Stage</CardTitle>
+        <CardTitle>{t('Dashboard.opportunitiesChart.title')}</CardTitle>
       </CardHeader>
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>

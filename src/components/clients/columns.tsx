@@ -14,7 +14,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import type { Client } from '@/lib/types';
 
-export const columns: ColumnDef<Client>[] = [
+export const columns = (t: (key: string) => string): ColumnDef<Client>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -39,15 +39,15 @@ export const columns: ColumnDef<Client>[] = [
   },
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: t('Auth.firstNameLabel'),
   },
   {
     accessorKey: 'email',
-    header: 'Email',
+    header: t('Auth.emailLabel'),
   },
   {
     accessorKey: 'phone',
-    header: 'Phone',
+    header: t('Auth.phoneLabel'),
   },
   {
     id: 'actions',
@@ -62,16 +62,16 @@ export const columns: ColumnDef<Client>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(client.id)}
             >
-              Copy client ID
+              {t('Actions.copyClientId')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Edit client</DropdownMenuItem>
+            <DropdownMenuItem>{t('Actions.editClient')}</DropdownMenuItem>
             <DropdownMenuItem className="text-destructive">
-              Delete client
+              {t('Actions.deleteClient')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

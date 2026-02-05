@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '../ui/button';
+import { useI18n } from '@/firebase/client-provider';
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
@@ -32,6 +33,7 @@ export function AppSidebar() {
   const { user, loading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const { t } = useI18n();
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -39,10 +41,10 @@ export function AppSidebar() {
   };
 
   const menuItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/opportunities', label: 'Opportunities', icon: Briefcase },
-    { href: '/clients', label: 'Clients', icon: Users },
-    { href: '/contacts', label: 'Contacts', icon: Contact },
+    { href: '/dashboard', label: t('Sidebar.dashboard'), icon: LayoutDashboard },
+    { href: '/opportunities', label: t('Sidebar.opportunities'), icon: Briefcase },
+    { href: '/clients', label: t('Sidebar.clients'), icon: Users },
+    { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
   ];
 
   return (
@@ -50,7 +52,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
           <Telescope className="w-8 h-8 text-primary" />
-          <h2 className="text-xl font-bold">T-Track</h2>
+          <h2 className="text-xl font-bold">{t('App.appName')}</h2>
         </div>
       </SidebarHeader>
       {user && (
@@ -98,7 +100,7 @@ export function AppSidebar() {
                   className="h-auto p-0 justify-start text-muted-foreground hover:text-foreground"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                  {t('Sidebar.logout')}
                 </Button>
               </div>
             </div>
@@ -108,14 +110,14 @@ export function AppSidebar() {
       {!user && !loading && (
         <div className="p-4">
           <p className="text-sm text-muted-foreground mb-4">
-            Please log in to continue.
+            {t('Sidebar.loginPrompt')}
           </p>
           <div className="flex flex-col gap-2">
             <Button asChild>
-              <Link href="/login">Login</Link>
+              <Link href="/login">{t('Sidebar.login')}</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/register">Register</Link>
+              <Link href="/register">{t('Sidebar.register')}</Link>
             </Button>
           </div>
         </div>

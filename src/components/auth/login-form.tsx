@@ -17,16 +17,23 @@ import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-
-const formSchema = z.object({
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
-});
+import { useI18n } from '@/firebase/client-provider';
+import { useMemo } from 'react';
 
 export function LoginForm() {
   const auth = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useI18n();
+
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t('Validation.invalidEmail')),
+        password: z.string().min(6, t('Validation.passwordMin')),
+      }),
+    [t]
+  );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,14 +47,14 @@ export function LoginForm() {
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
-        title: 'Logged in',
-        description: 'You have been successfully logged in.',
+        title: t('Auth.loginSuccessTitle'),
+        description: t('Auth.loginSuccessDescription'),
       });
       router.push('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Login failed',
+        title: t('Auth.loginFailedTitle'),
         description: error.message,
       });
     }
@@ -61,7 +68,7 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{t('Auth.emailLabel')}</FormLabel>
               <FormControl>
                 <Input placeholder="m@example.com" {...field} />
               </FormControl>
@@ -74,7 +81,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>{t('Auth.passwordLabel')}</FormLabel>
               <FormControl>
                 <Input type="password" {...field} />
               </FormControl>
@@ -83,7 +90,7 @@ export function LoginForm() {
           )}
         />
         <Button type="submit" className="w-full">
-          Login
+          {t('Auth.loginButton')}
         </Button>
       </form>
     </Form>

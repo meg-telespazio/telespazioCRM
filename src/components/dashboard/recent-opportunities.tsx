@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -16,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { opportunities, clients } from '@/lib/data';
 import type { Opportunity } from '@/lib/types';
+import { useI18n } from '@/firebase/client-provider';
 
 const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "destructive" } = {
   Prospecting: "secondary",
@@ -26,6 +29,7 @@ const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "
 };
 
 export function RecentOpportunities() {
+  const { t } = useI18n();
   const recentOpportunities = opportunities
     .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
     .slice(0, 5);
@@ -37,19 +41,19 @@ export function RecentOpportunities() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Opportunities</CardTitle>
+        <CardTitle>{t('Dashboard.recentOpportunities.title')}</CardTitle>
         <CardDescription>
-          A quick look at the latest opportunities.
+          {t('Dashboard.recentOpportunities.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Opportunity</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead>Stage</TableHead>
+              <TableHead>{t('Dashboard.recentOpportunities.opportunityHeader')}</TableHead>
+              <TableHead>{t('Dashboard.recentOpportunities.clientHeader')}</TableHead>
+              <TableHead>{t('Dashboard.recentOpportunities.valueHeader')}</TableHead>
+              <TableHead>{t('Dashboard.recentOpportunities.stageHeader')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -59,7 +63,7 @@ export function RecentOpportunities() {
                 <TableCell>{getClientName(opp.clientId)}</TableCell>
                 <TableCell>${opp.value.toLocaleString()}</TableCell>
                 <TableCell>
-                  <Badge variant={stageVariant[opp.stage]}>{opp.stage}</Badge>
+                  <Badge variant={stageVariant[opp.stage]}>{t(`Stages.${opp.stage}`)}</Badge>
                 </TableCell>
               </TableRow>
             ))}
