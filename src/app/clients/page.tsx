@@ -137,7 +137,11 @@ export default function ClientsPage() {
         onSave={handleSaveClient}
         defaultValues={editingClient || undefined}
       />
-      <ClientImporter isOpen={isImporterOpen} onOpenChange={setImporterOpen} />
+      <ClientImporter
+        isOpen={isImporterOpen}
+        onOpenChange={setImporterOpen}
+        clients={clients}
+      />
     </div>
   );
 }

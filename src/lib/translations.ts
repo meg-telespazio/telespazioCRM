@@ -265,6 +265,26 @@ export const translations = {
       unmapped: 'No importar',
       fileReadError: "Error al leer el archivo. Asegúrate de que sea un CSV válido.",
       noHeaderError: "No se pudieron detectar las cabeceras en el archivo CSV.",
+      validationSummary: 'Resumen de la Validación',
+      readyForImport: '{count} registros listos para importar.',
+      recordsWithErrors: '{count} registros con errores que serán omitidos.',
+      noDataToImport: 'No hay datos válidos para importar.',
+      previewTable: {
+        status: 'Estado',
+        errors: 'Errores',
+      },
+      importStatus: {
+        valid: 'Válido',
+        invalid: 'Inválido',
+      },
+      error: {
+        missingMapping: 'Por favor, mapea los campos obligatorios: {fields}.',
+        duplicateInFile: 'Valor de {field} duplicado en la fila {row} del archivo.',
+        duplicateInDB: 'El valor de {field} ya existe en la base de datos.',
+        invalidField: '{field}: {message}',
+      },
+      importingTitle: 'Validando Datos...',
+      importingDescription: 'Por favor espera mientras validamos tus datos. Esto puede tardar un momento.',
     },
   },
   en: {
@@ -533,6 +553,26 @@ export const translations = {
       unmapped: "Don't import",
       fileReadError: "Error reading file. Please make sure it's a valid CSV.",
       noHeaderError: "Could not detect headers in the CSV file.",
+      validationSummary: 'Validation Summary',
+      readyForImport: '{count} records are ready for import.',
+      recordsWithErrors: '{count} records have errors and will be skipped.',
+      noDataToImport: 'There is no valid data to import.',
+      previewTable: {
+        status: 'Status',
+        errors: 'Errors',
+      },
+      importStatus: {
+        valid: 'Valid',
+        invalid: 'Invalid',
+      },
+      error: {
+        missingMapping: 'Please map the required fields: {fields}.',
+        duplicateInFile: '{field} value is duplicated at row {row} in the file.',
+        duplicateInDB: '{field} value already exists in the database.',
+        invalidField: '{field}: {message}',
+      },
+      importingTitle: 'Validating Data...',
+      importingDescription: 'Please wait while we validate your data. This may take a moment.',
     },
   },
 };
