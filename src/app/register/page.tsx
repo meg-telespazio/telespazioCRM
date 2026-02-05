@@ -3,7 +3,7 @@ import { RegisterForm } from '@/components/auth/register-form';
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-destructive">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-destructive p-4">
       <AuthFormCard
         title="Register"
         description="Create a new account."
