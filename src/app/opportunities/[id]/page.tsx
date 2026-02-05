@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
@@ -77,6 +77,10 @@ export default function OpportunityFormPage() {
   const params = useParams();
   const { t, locale } = useI18n();
   const datePickerLocale = locale === 'es' ? es : enUS;
+
+  const [isRequestDatePickerOpen, setRequestDatePickerOpen] = useState(false);
+  const [isOfferDatePickerOpen, setOfferDatePickerOpen] = useState(false);
+  const [isCloseDatePickerOpen, setCloseDatePickerOpen] = useState(false);
 
   const formatWeekdayName: WeekdayLabelFormatter = (day, options) => {
     return format(day, 'cccccc', { locale: options?.locale });
@@ -392,14 +396,24 @@ export default function OpportunityFormPage() {
                     render={({ field }) => (
                       <FormItem className="flex flex-col pt-2">
                         <FormLabel>{t('Forms.requestDate')}</FormLabel>
-                        <Popover><PopoverTrigger asChild><FormControl>
+                        <Popover open={isRequestDatePickerOpen} onOpenChange={setRequestDatePickerOpen}><PopoverTrigger asChild><FormControl>
                           <Button variant={'outline'} className={cn('w-full pl-3 text-left font-normal',!field.value && 'text-muted-foreground')}>
                             {field.value ? (format(field.value, 'PPP', { locale: datePickerLocale })) : (<span>{t('Forms.pickDate')}</span>)}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl></PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={datePickerLocale} formatters={{ formatWeekdayName }} />
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={(date) => {
+                                field.onChange(date);
+                                setRequestDatePickerOpen(false);
+                              }}
+                              initialFocus
+                              locale={datePickerLocale}
+                              formatters={{ formatWeekdayName }}
+                            />
                           </PopoverContent>
                         </Popover>
                         <FormMessage />
@@ -412,14 +426,24 @@ export default function OpportunityFormPage() {
                     render={({ field }) => (
                       <FormItem className="flex flex-col pt-2">
                         <FormLabel>{t('Forms.offerSentDate')}</FormLabel>
-                        <Popover><PopoverTrigger asChild><FormControl>
+                        <Popover open={isOfferDatePickerOpen} onOpenChange={setOfferDatePickerOpen}><PopoverTrigger asChild><FormControl>
                           <Button variant={'outline'} className={cn('w-full pl-3 text-left font-normal',!field.value && 'text-muted-foreground')}>
                             {field.value ? (format(field.value, 'PPP', { locale: datePickerLocale })) : (<span>{t('Forms.pickDate')}</span>)}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl></PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={datePickerLocale} formatters={{ formatWeekdayName }} />
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={(date) => {
+                                field.onChange(date);
+                                setOfferDatePickerOpen(false);
+                              }}
+                              initialFocus
+                              locale={datePickerLocale}
+                              formatters={{ formatWeekdayName }}
+                            />
                           </PopoverContent>
                         </Popover>
                         <FormMessage />
@@ -432,7 +456,7 @@ export default function OpportunityFormPage() {
                     render={({ field }) => (
                       <FormItem className="flex flex-col pt-2">
                         <FormLabel>{t('Forms.estCloseDate')}</FormLabel>
-                        <Popover>
+                        <Popover open={isCloseDatePickerOpen} onOpenChange={setCloseDatePickerOpen}>
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
@@ -455,7 +479,10 @@ export default function OpportunityFormPage() {
                             <Calendar
                               mode="single"
                               selected={field.value}
-                              onSelect={field.onChange}
+                              onSelect={(date) => {
+                                field.onChange(date);
+                                setCloseDatePickerOpen(false);
+                              }}
                               initialFocus
                               locale={datePickerLocale}
                               formatters={{ formatWeekdayName }}
