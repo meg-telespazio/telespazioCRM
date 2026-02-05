@@ -12,7 +12,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import type { Client } from '@/lib/types';
+
+const statusVariant: {
+  [key in Client['status']]: 'default' | 'secondary' | 'destructive';
+} = {
+  active: 'default',
+  suspended: 'secondary',
+  canceled: 'destructive',
+};
 
 export const columns = (t: (key: string) => string): ColumnDef<Client>[] => [
   {
@@ -39,15 +48,29 @@ export const columns = (t: (key: string) => string): ColumnDef<Client>[] => [
   },
   {
     accessorKey: 'name',
-    header: t('Auth.firstNameLabel'),
+    header: t('Forms.clientName'),
   },
   {
     accessorKey: 'email',
-    header: t('Auth.emailLabel'),
+    header: t('Forms.clientEmail'),
   },
   {
     accessorKey: 'phone',
-    header: t('Auth.phoneLabel'),
+    header: t('Forms.clientPhone'),
+  },
+  {
+    accessorKey: 'status',
+    header: t('Table.status'),
+    cell: ({ row }) => (
+      <Badge variant={statusVariant[row.original.status]}>
+        {t(`Status.${row.original.status}`)}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: 'industry',
+    header: t('Table.industry'),
+    cell: ({ row }) => t(`Industries.${row.original.industry}`),
   },
   {
     id: 'actions',

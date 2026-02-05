@@ -24,10 +24,18 @@ export default function ClientsPage() {
     }
   }, [user, loading]);
 
-  const addClient = (client: Omit<Client, 'id'>) => {
+  const addClient = (
+    client: Omit<Client, 'id' | 'createdAt' | 'createdBy'>
+  ) => {
+    if (!user) return; // Should not happen if page is protected
     setClients((prev) => [
       ...prev,
-      { ...client, id: `cli-${Date.now()}` },
+      {
+        ...client,
+        id: `cli-${Date.now()}`,
+        createdAt: new Date(),
+        createdBy: user.uid,
+      },
     ]);
   };
 

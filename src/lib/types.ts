@@ -3,6 +3,12 @@ export type Client = {
   name: string;
   email: string;
   phone: string;
+  website?: string;
+  createdAt: Date;
+  createdBy: string;
+  status: 'active' | 'suspended' | 'canceled';
+  industry: string;
+  notes?: string;
 };
 
 export type Contact = {

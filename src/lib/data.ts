@@ -1,10 +1,53 @@
 import type { Client, Contact, Opportunity } from './types';
 
 export const clients: Client[] = [
-  { id: 'cli-1', name: 'Innovate Corp', email: 'contact@innovate.com', phone: '123-456-7890' },
-  { id: 'cli-2', name: 'Solutions LLC', email: 'info@solutions.llc', phone: '234-567-8901' },
-  { id: 'cli-3', name: 'Synergy Group', email: 'hello@synergy.com', phone: '345-678-9012' },
-  { id: 'cli-4', name: 'Quantum Inc', email: 'support@quantum.inc', phone: '456-789-0123' },
+  {
+    id: 'cli-1',
+    name: 'Innovate Corp',
+    email: 'contact@innovate.com',
+    phone: '123-456-7890',
+    website: 'https://innovate.com',
+    createdAt: new Date('2023-01-15'),
+    createdBy: 'user-1',
+    status: 'active',
+    industry: 'Technology',
+    notes: 'Long-term client, very reliable.',
+  },
+  {
+    id: 'cli-2',
+    name: 'Solutions LLC',
+    email: 'info@solutions.llc',
+    phone: '234-567-8901',
+    website: 'https://solutions.llc',
+    createdAt: new Date('2023-03-20'),
+    createdBy: 'user-2',
+    status: 'active',
+    industry: 'Healthcare',
+    notes: '',
+  },
+  {
+    id: 'cli-3',
+    name: 'Synergy Group',
+    email: 'hello@synergy.com',
+    phone: '345-678-9012',
+    createdAt: new Date('2023-05-10'),
+    createdBy: 'user-1',
+    status: 'suspended',
+    industry: 'Finance',
+    notes: 'Paused services temporarily.',
+  },
+  {
+    id: 'cli-4',
+    name: 'Quantum Inc',
+    email: 'support@quantum.inc',
+    phone: '456-789-0123',
+    website: 'https://quantum.inc',
+    createdAt: new Date('2023-07-01'),
+    createdBy: 'user-3',
+    status: 'canceled',
+    industry: 'Retail',
+    notes: 'Contract ended.',
+  },
 ];
 
 export const contacts: Contact[] = [
