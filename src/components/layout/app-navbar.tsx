@@ -18,7 +18,13 @@ import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '../ui/button';
 import { useI18n } from '@/firebase/client-provider';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -183,6 +189,9 @@ export function AppNavbar() {
                 side="left"
                 className="w-full border-0 bg-destructive text-destructive-foreground sm:max-w-xs"
               >
+                <SheetHeader className="sr-only">
+                  <SheetTitle>{t('App.appName')} Menu</SheetTitle>
+                </SheetHeader>
                 <div className="flex h-full flex-col">
                   <div className="p-6">
                     <Link
