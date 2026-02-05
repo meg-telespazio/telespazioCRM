@@ -16,7 +16,7 @@ service cloud.firestore {
       allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
 
       // An authenticated user can list their own clients. The client-side query MUST include
-      // a where() clause to filter by their UID.
+      // a where() clause to filter by their UID. This rule only checks for authentication.
       allow list: if request.auth != null;
     }
 
@@ -28,7 +28,7 @@ service cloud.firestore {
       allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
       
       // An authenticated user can list their own contacts. The client-side query MUST include
-      // a where() clause to filter by their UID.
+      // a where() clause to filter by their UID. This rule only checks for authentication.
       allow list: if request.auth != null;
     }
 
@@ -40,7 +40,7 @@ service cloud.firestore {
       allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
 
       // An authenticated user can list their own opportunities. The client-side query MUST include
-      // a where() clause to filter by their UID.
+      // a where() clause to filter by their UID. This rule only checks for authentication.
       allow list: if request.auth != null;
     }
   }
