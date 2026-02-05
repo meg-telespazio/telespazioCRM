@@ -1,8 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { AppSidebar } from '@/components/layout/app-sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { AppNavbar } from '@/components/layout/app-navbar';
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,11 +12,9 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen">
-        <AppSidebar />
-        <main className="flex flex-1 flex-col">{children}</main>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-screen flex-col">
+      <AppNavbar />
+      <main className="flex flex-1 flex-col">{children}</main>
+    </div>
   );
 }
