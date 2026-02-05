@@ -282,9 +282,11 @@ export const translations = {
         duplicateInFile: 'Valor de {field} duplicado en la fila {row} del archivo.',
         duplicateInDB: 'El valor de {field} ya existe en la base de datos.',
         invalidField: '{field}: {message}',
+        clientNotFound: 'No se encontró un cliente con el CUIT proporcionado.',
       },
       importingTitle: 'Validando Datos...',
       importingDescription: 'Por favor espera mientras validamos tus datos. Esto puede tardar un momento.',
+      clientCuit: 'CUIT del Cliente (para vincular)',
     },
   },
   en: {
@@ -570,9 +572,11 @@ export const translations = {
         duplicateInFile: '{field} value is duplicated at row {row} in the file.',
         duplicateInDB: '{field} value already exists in the database.',
         invalidField: '{field}: {message}',
+        clientNotFound: 'A client with the provided CUIT was not found.',
       },
       importingTitle: 'Validating Data...',
       importingDescription: 'Please wait while we validate your data. This may take a moment.',
+      clientCuit: 'Client CUIT (for linking)',
     },
   },
 };

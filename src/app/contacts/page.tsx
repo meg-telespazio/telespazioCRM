@@ -164,6 +164,8 @@ export default function ContactsPage() {
       <ContactImporter
         isOpen={isImporterOpen}
         onOpenChange={setImporterOpen}
+        clients={clients}
+        contacts={contacts}
       />
     </div>
   );
