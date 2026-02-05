@@ -47,6 +47,12 @@ export type Opportunity = {
   closeDate: Date;
   createdAt: Date;
   createdBy: string;
+  contractMonths: 12 | 24 | 36;
+  requestDate: Date;
+  offerSentDate?: Date;
+  description?: string;
+  isTender: boolean;
+  contactId?: string;
 };
 
 export type UserProfile = {

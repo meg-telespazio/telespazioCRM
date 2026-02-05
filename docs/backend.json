@@ -225,7 +225,13 @@
         },
         "stage": {
           "type": "string",
-          "enum": ["Prospecting", "Proposal", "Negotiation", "Won", "Lost"]
+          "enum": [
+            "Prospecting",
+            "Proposal",
+            "Negotiation",
+            "Won",
+            "Lost"
+          ]
         },
         "probability": {
           "type": "number",
@@ -244,6 +250,33 @@
         "createdBy": {
           "type": "string",
           "description": "UID of the user who created the opportunity."
+        },
+        "contractMonths": {
+          "type": "number",
+          "enum": [12, 24, 36],
+          "description": "Duration of the contract in months."
+        },
+        "requestDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date when the opportunity was requested."
+        },
+        "offerSentDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date when the offer was sent to the client."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the opportunity."
+        },
+        "isTender": {
+          "type": "boolean",
+          "description": "Indicates if the opportunity is a tender/bid."
+        },
+        "contactId": {
+          "type": "string",
+          "description": "ID of the reference contact person from the client."
         }
       },
       "required": [
@@ -255,7 +288,10 @@
         "probability",
         "closeDate",
         "createdAt",
-        "createdBy"
+        "createdBy",
+        "contractMonths",
+        "requestDate",
+        "isTender"
       ]
     }
   },
