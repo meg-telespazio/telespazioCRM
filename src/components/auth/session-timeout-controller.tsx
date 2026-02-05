@@ -38,9 +38,10 @@ export function SessionTimeoutController() {
     if (logoutTimer.current) clearTimeout(logoutTimer.current);
 
     // If warning is open, user activity means they want to stay, so close it.
-    if (isWarningOpen) {
-       setWarningOpen(false);
-    }
+    setWarningOpen(current => {
+        if (current) return false;
+        return current;
+    });
     
     // Set new timers
     warningTimer.current = setTimeout(() => {
@@ -50,7 +51,7 @@ export function SessionTimeoutController() {
     logoutTimer.current = setTimeout(() => {
       handleLogout();
     }, INACTIVITY_MS);
-  }, [handleLogout, isWarningOpen]);
+  }, [handleLogout]);
 
 
   // Add/remove event listeners for activity
