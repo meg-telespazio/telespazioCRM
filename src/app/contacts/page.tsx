@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useUser } from '@/firebase';
+import { redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -10,8 +12,15 @@ import { contacts as initialContacts } from '@/lib/data';
 import type { Contact } from '@/lib/types';
 
 export default function ContactsPage() {
+  const { user, loading } = useUser();
   const [contacts, setContacts] = useState<Contact[]>(initialContacts);
   const [isFormOpen, setFormOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      redirect('/login');
+    }
+  }, [user, loading]);
 
   const addContact = (contact: Omit<Contact, 'id'>) => {
     setContacts((prev) => [
@@ -19,6 +28,14 @@ export default function ContactsPage() {
       { ...contact, id: `con-${Date.now()}` },
     ]);
   };
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col">

@@ -1,9 +1,30 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useUser } from '@/firebase';
+import { redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { OpportunitiesChart } from '@/components/dashboard/opportunities-chart';
 import { RecentOpportunities } from '@/components/dashboard/recent-opportunities';
 
 export default function DashboardPage() {
+  const { user, loading } = useUser();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      redirect('/login');
+    }
+  }, [user, loading]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title="Dashboard" />
