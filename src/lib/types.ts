@@ -16,6 +16,7 @@ export type Client = {
 
 export type Contact = {
   id: string;
+  publicId: string;
   name: string;
   email: string;
   phone: string;
@@ -26,6 +27,7 @@ export type Contact = {
 
 export type Opportunity = {
   id: string;
+  publicId: string;
   title: string;
   clientId: string;
   value: number;

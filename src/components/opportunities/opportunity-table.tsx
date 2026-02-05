@@ -51,7 +51,10 @@ export function OpportunityTable({
     []
   );
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+    React.useState<VisibilityState>({
+      'closeDate': false,
+      'probability': false,
+    });
   const [rowSelection, setRowSelection] = React.useState({});
   const { t } = useI18n();
 
@@ -79,9 +82,22 @@ export function OpportunityTable({
     },
   });
 
+  const getColumnName = (key: string) => {
+    const map: { [key: string]: string } = {
+      'publicId': t('Table.opportunityId'),
+      'title': t('Dashboard.recentOpportunities.opportunityHeader'),
+      'clientId': t('Dashboard.recentOpportunities.clientHeader'),
+      'value': t('Dashboard.recentOpportunities.valueHeader'),
+      'stage': t('Dashboard.recentOpportunities.stageHeader'),
+      'probability': t('Forms.probability'),
+      'closeDate': t('Forms.estCloseDate'),
+    };
+    return map[key] || key;
+  }
+
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4">
+    <div className="w-full bg-card rounded-lg border shadow-sm">
+      <div className="flex items-center p-4">
         <Input
           placeholder={t('Table.filterByTitle')}
           value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
@@ -110,14 +126,14 @@ export function OpportunityTable({
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {column.id}
+                    {getColumnName(column.id)}
                   </DropdownMenuCheckboxItem>
                 );
               })}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border">
+      <div className="border-y">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -167,7 +183,7 @@ export function OpportunityTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-end space-x-2 p-4">
         <Button
           variant="outline"
           size="sm"

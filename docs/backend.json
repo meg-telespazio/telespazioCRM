@@ -129,6 +129,10 @@
       "description": "Represents a contact person at a client company.",
       "type": "object",
       "properties": {
+        "publicId": {
+          "type": "string",
+          "description": "Public-facing sequential contact ID (CT-0000001)."
+        },
         "name": {
           "type": "string",
           "description": "Full name of the contact person."
@@ -156,13 +160,25 @@
           "description": "UID of the user who created the contact."
         }
       },
-      "required": ["name", "email", "phone", "clientId", "createdAt", "createdBy"]
+      "required": [
+        "publicId",
+        "name",
+        "email",
+        "phone",
+        "clientId",
+        "createdAt",
+        "createdBy"
+      ]
     },
     "Opportunity": {
       "title": "Opportunity",
       "description": "Represents a sales opportunity.",
       "type": "object",
       "properties": {
+        "publicId": {
+          "type": "string",
+          "description": "Public-facing yearly sequential opportunity ID (OP-YYYY-000001)."
+        },
         "title": {
           "type": "string",
           "description": "Title of the opportunity."
@@ -199,6 +215,7 @@
         }
       },
       "required": [
+        "publicId",
         "title",
         "clientId",
         "value",

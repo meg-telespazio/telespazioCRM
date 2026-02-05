@@ -112,6 +112,8 @@ export const translations = {
       industry: 'Industria',
       createdDate: 'Fecha de Creación',
       clientId: 'ID Cliente',
+      contactId: 'ID Contacto',
+      opportunityId: 'ID Oportunidad',
     },
     Forms: {
       editClient: 'Editar Cliente',
@@ -148,6 +150,9 @@ export const translations = {
       pickDate: 'Elige una fecha',
       saveOpportunity: 'Guardar Oportunidad',
       yourAnswer: 'Tu respuesta',
+      name: 'Nombre',
+      email: 'Correo Electrónico',
+      phone: 'Teléfono',
     },
     Actions: {
       title: 'Acciones',
@@ -318,6 +323,8 @@ export const translations = {
       industry: 'Industry',
       createdDate: 'Created Date',
       clientId: 'Client ID',
+      contactId: 'Contact ID',
+      opportunityId: 'Opportunity ID',
     },
     Forms: {
       editClient: 'Edit Client',
@@ -354,6 +361,9 @@ export const translations = {
       pickDate: 'Pick a date',
       saveOpportunity: 'Save Opportunity',
       yourAnswer: 'Your answer',
+      name: 'Name',
+      email: 'Email',
+      phone: 'Phone',
     },
     Actions: {
       title: 'Actions',

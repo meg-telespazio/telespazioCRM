@@ -60,6 +60,10 @@ export const columns = (
     enableHiding: false,
   },
   {
+    accessorKey: 'publicId',
+    header: t('Table.opportunityId'),
+  },
+  {
     accessorKey: 'title',
     header: t('Dashboard.recentOpportunities.opportunityHeader'),
   },
@@ -98,11 +102,17 @@ export const columns = (
         <span>{row.original.probability}%</span>
       </div>
     ),
+     meta: {
+      className: 'hidden md:table-cell',
+    },
   },
   {
     accessorKey: 'closeDate',
     header: t('Forms.estCloseDate'),
     cell: ({ row }) => <div>{format(row.original.closeDate, 'PPP')}</div>,
+     meta: {
+      className: 'hidden lg:table-cell',
+    },
   },
   {
     id: 'actions',

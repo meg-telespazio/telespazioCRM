@@ -48,7 +48,8 @@ export default function ContactsPage() {
 
   const contacts = useMemo(() => {
     if (!contactsData) return [];
-    return [...contactsData].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    // Sort by publicId ascending on the client
+    return [...contactsData].sort((a, b) => a.publicId.localeCompare(b.publicId));
   }, [contactsData]);
 
   const clients = useMemo(() => {
@@ -62,14 +63,20 @@ export default function ContactsPage() {
     }
   }, [user, userLoading]);
 
-  const handleSaveContact = (
-    contactData: Omit<Contact, 'id' | 'createdAt' | 'createdBy'>
+  const handleSaveContact = async (
+    contactData: Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
   ) => {
     if (!user) return;
     if (editingContact) {
-      updateContact(firestore, editingContact.id, contactData);
+      const { publicId, ...updateData } = contactData as any;
+      updateContact(firestore, editingContact.id, updateData);
     } else {
-      addContact(firestore, user.uid, contactData);
+        try {
+            await addContact(firestore, user.uid, contactData);
+        } catch (error) {
+            console.error("Failed to add contact:", error);
+            // Error is globally emitted
+        }
     }
     setEditingContact(null);
     setFormOpen(false);
@@ -118,12 +125,12 @@ export default function ContactsPage() {
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">
         {pageIsLoading ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
+           <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-card rounded-t-lg border-b">
               <Skeleton className="h-10 w-64" />
               <Skeleton className="h-10 w-24" />
             </div>
-            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-96 w-full rounded-b-lg" />
           </div>
         ) : (
           <ContactTable

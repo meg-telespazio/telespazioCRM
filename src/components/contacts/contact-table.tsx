@@ -51,7 +51,11 @@ export function ContactTable({
     []
   );
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+    React.useState<VisibilityState>({
+      'email': false,
+      'createdAt': false,
+      'phone': false,
+    });
   const [rowSelection, setRowSelection] = React.useState({});
   const { t } = useI18n();
 
@@ -80,8 +84,8 @@ export function ContactTable({
   });
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4">
+    <div className="w-full bg-card rounded-lg border shadow-sm">
+      <div className="flex items-center p-4">
         <Input
           placeholder={t('Table.filterByName')}
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
@@ -101,6 +105,11 @@ export function ContactTable({
               .getAllColumns()
               .filter((column) => column.getCanHide())
               .map((column) => {
+                 const translationKey = 
+                    column.id === 'createdAt' ? 'Table.createdDate' 
+                  : column.id === 'publicId' ? 'Table.contactId'
+                  : column.id === 'clientId' ? 'Pages.clients'
+                  : `Forms.${column.id}`;
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
@@ -110,20 +119,14 @@ export function ContactTable({
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {column.id === 'clientId'
-                      ? t('Pages.clients')
-                      : column.id === 'createdAt'
-                      ? t('Table.createdDate')
-                      : t(`Forms.${column.id}`) ||
-                        t(`Auth.${column.id}`) ||
-                        column.id}
+                    {t(translationKey) || column.id}
                   </DropdownMenuCheckboxItem>
                 );
               })}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border">
+      <div className="border-y">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -173,7 +176,7 @@ export function ContactTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-end space-x-2 p-4">
         <Button
           variant="outline"
           size="sm"

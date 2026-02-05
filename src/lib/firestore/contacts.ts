@@ -6,6 +6,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  runTransaction,
   type Firestore,
 } from 'firebase/firestore';
 import type { Contact } from '@/lib/types';
@@ -14,29 +15,49 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 const CONTACTS_COLLECTION = 'contacts';
 
-type ContactData = Omit<Contact, 'id' | 'createdAt' | 'createdBy'>;
+type ContactData = Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
 
-export function addContact(
+export async function addContact(
   firestore: Firestore,
   uid: string,
   contactData: ContactData
 ) {
-  const data = {
-    ...contactData,
-    createdBy: uid,
-    createdAt: serverTimestamp(),
-  };
+  const counterRef = doc(firestore, 'counters', 'contacts');
+  const contactCollectionRef = collection(firestore, CONTACTS_COLLECTION);
 
-  addDoc(collection(firestore, CONTACTS_COLLECTION), data).catch(
-    (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: `/${CONTACTS_COLLECTION}`,
-        operation: 'create',
-        requestResourceData: data,
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    }
-  );
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+      
+      let newCount = 1;
+      if (counterDoc.exists() && typeof counterDoc.data().count === 'number') {
+        newCount = counterDoc.data().count + 1;
+      }
+
+      const publicId = `CT-${String(newCount).padStart(7, '0')}`;
+      
+      const newContactRef = doc(contactCollectionRef);
+      
+      const data = {
+        ...contactData,
+        publicId,
+        createdBy: uid,
+        createdAt: serverTimestamp(),
+      };
+
+      transaction.set(newContactRef, data);
+      transaction.set(counterRef, { count: newCount }, { merge: true });
+    });
+  } catch (error) {
+    console.error("Contact creation transaction failed: ", error);
+    const permissionError = new FirestorePermissionError({
+      path: `/${CONTACTS_COLLECTION} or /counters/contacts`,
+      operation: 'create',
+      requestResourceData: contactData,
+    });
+    errorEmitter.emit('permission-error', permissionError);
+    throw error;
+  }
 }
 
 export function updateContact(

@@ -49,7 +49,8 @@ export default function OpportunitiesPage() {
 
   const opportunities = useMemo(() => {
     if (!opportunitiesData) return [];
-    return [...opportunitiesData].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    // Sort by publicId descending on the client
+    return [...opportunitiesData].sort((a, b) => b.publicId.localeCompare(a.publicId));
   }, [opportunitiesData]);
 
   const clients = useMemo(() => {
@@ -63,14 +64,19 @@ export default function OpportunitiesPage() {
     }
   }, [user, userLoading]);
 
-  const handleSaveOpportunity = (
-    opportunityData: Omit<Opportunity, 'id' | 'createdAt' | 'createdBy'>
+  const handleSaveOpportunity = async (
+    opportunityData: Omit<Opportunity, 'id' | 'publicId' |'createdAt' | 'createdBy'>
   ) => {
     if (!user) return;
     if (editingOpportunity) {
       updateOpportunity(firestore, editingOpportunity.id, opportunityData);
     } else {
-      addOpportunity(firestore, user.uid, opportunityData);
+        try {
+            await addOpportunity(firestore, user.uid, opportunityData);
+        } catch (error) {
+            console.error("Failed to add opportunity:", error);
+            // Error is globally emitted
+        }
     }
     setEditingOpportunity(null);
     setFormOpen(false);
@@ -119,12 +125,12 @@ export default function OpportunitiesPage() {
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">
         {pageIsLoading ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
+           <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-card rounded-t-lg border-b">
               <Skeleton className="h-10 w-64" />
               <Skeleton className="h-10 w-24" />
             </div>
-            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-96 w-full rounded-b-lg" />
           </div>
         ) : (
           <OpportunityTable

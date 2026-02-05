@@ -48,6 +48,10 @@ export const columns = (
     enableHiding: false,
   },
   {
+    accessorKey: 'publicId',
+    header: t('Table.contactId'),
+  },
+  {
     accessorKey: 'name',
     header: t('Forms.contactName'),
   },
@@ -59,10 +63,16 @@ export const columns = (
   {
     accessorKey: 'email',
     header: t('Auth.emailLabel'),
+     meta: {
+      className: 'hidden lg:table-cell',
+    }
   },
   {
     accessorKey: 'phone',
     header: t('Auth.phoneLabel'),
+     meta: {
+      className: 'hidden sm:table-cell',
+    }
   },
   {
     accessorKey: 'createdAt',
@@ -70,6 +80,9 @@ export const columns = (
     cell: ({ row }) => {
       const { createdAt } = row.original;
       return createdAt instanceof Date ? format(createdAt, 'PPP') : '...';
+    },
+    meta: {
+      className: 'hidden lg:table-cell',
     },
   },
   {

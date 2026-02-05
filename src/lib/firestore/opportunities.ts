@@ -6,6 +6,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  runTransaction,
   type Firestore,
 } from 'firebase/firestore';
 import type { Opportunity } from '@/lib/types';
@@ -14,29 +15,50 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 const OPPORTUNITIES_COLLECTION = 'opportunities';
 
-type OpportunityData = Omit<Opportunity, 'id' | 'createdAt' | 'createdBy'>;
+type OpportunityData = Omit<Opportunity, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
 
-export function addOpportunity(
+export async function addOpportunity(
   firestore: Firestore,
   uid: string,
   opportunityData: OpportunityData
 ) {
-  const data = {
-    ...opportunityData,
-    createdBy: uid,
-    createdAt: serverTimestamp(),
-  };
+  const year = new Date().getFullYear();
+  const counterRef = doc(firestore, 'counters', `opportunities_${year}`);
+  const opportunityCollectionRef = collection(firestore, OPPORTUNITIES_COLLECTION);
 
-  addDoc(collection(firestore, OPPORTUNITIES_COLLECTION), data).catch(
-    (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: `/${OPPORTUNITIES_COLLECTION}`,
-        operation: 'create',
-        requestResourceData: data,
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    }
-  );
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+
+      let newCount = 1;
+      if (counterDoc.exists() && typeof counterDoc.data().count === 'number') {
+        newCount = counterDoc.data().count + 1;
+      }
+      
+      const publicId = `OP-${year}-${String(newCount).padStart(6, '0')}`;
+
+      const newOppRef = doc(opportunityCollectionRef);
+
+      const data = {
+        ...opportunityData,
+        publicId,
+        createdBy: uid,
+        createdAt: serverTimestamp(),
+      };
+
+      transaction.set(newOppRef, data);
+      transaction.set(counterRef, { count: newCount }, { merge: true });
+    });
+  } catch (error) {
+    console.error("Opportunity creation transaction failed: ", error);
+     const permissionError = new FirestorePermissionError({
+      path: `/${OPPORTUNITIES_COLLECTION} or /counters/opportunities_${year}`,
+      operation: 'create',
+      requestResourceData: opportunityData,
+    });
+    errorEmitter.emit('permission-error', permissionError);
+    throw error;
+  }
 }
 
 export function updateOpportunity(
@@ -45,7 +67,10 @@ export function updateOpportunity(
   opportunityData: Partial<OpportunityData>
 ) {
   const opportunityRef = doc(firestore, OPPORTUNITIES_COLLECTION, opportunityId);
-  updateDoc(opportunityRef, opportunityData).catch((serverError) => {
+  // publicId should not be editable
+  const { publicId, ...updateData } = opportunityData as any;
+
+  updateDoc(opportunityRef, updateData).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: opportunityRef.path,
       operation: 'update',
