@@ -71,12 +71,20 @@ export default function ContactsPage() {
     contactData: Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
   ) => {
     if (!user) return;
+    
+    // Firestore doesn't allow `undefined` values. We need to clean the object.
+    const cleanedData = Object.fromEntries(
+      Object.entries(contactData).filter(([_, v]) => v !== undefined)
+    );
+
     if (editingContact) {
-      const { publicId, ...updateData } = contactData as any;
-      updateContact(firestore, editingContact.id, updateData);
+      // `cleanedData` is a partial object, which is what updateDoc expects.
+      updateContact(firestore, editingContact.id, cleanedData);
     } else {
       try {
-        await addContact(firestore, user.uid, contactData);
+        // For addContact, we need to ensure all required fields are present via form validation.
+        // The type assertion is needed because Object.fromEntries returns a generic object.
+        await addContact(firestore, user.uid, cleanedData as Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy'>);
       } catch (error) {
         console.error('Failed to add contact:', error);
         // Error is globally emitted
