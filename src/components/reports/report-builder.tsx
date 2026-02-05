@@ -101,22 +101,31 @@ export function ReportBuilder() {
   const [selectedFields, setSelectedFields] = useState<Record<string, boolean>>({});
   const [reportData, setReportData] = useState<any[] | null>(null);
   const [reportColumns, setReportColumns] = useState<any[] | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const baseQuery = useMemo(() => {
     if (!user) return null;
     return where('createdBy', '==', user.uid);
   }, [user]);
 
-  // Fetch all data upfront to allow for joins
-  const { data: clientsData, loading: clientsLoading } = useCollection<Client>(
-    baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null
-  );
-  const { data: contactsData, loading: contactsLoading } = useCollection<Contact>(
-    baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null
-  );
-  const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(
-    baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null
-  );
+  const clientsQuery = useMemo(() => {
+    if (!baseQuery) return null;
+    return query(collection(firestore, 'clients'), baseQuery);
+  }, [firestore, baseQuery]);
+
+  const contactsQuery = useMemo(() => {
+    if (!baseQuery) return null;
+    return query(collection(firestore, 'contacts'), baseQuery);
+  }, [firestore, baseQuery]);
+
+  const opportunitiesQuery = useMemo(() => {
+    if (!baseQuery) return null;
+    return query(collection(firestore, 'opportunities'), baseQuery);
+  }, [firestore, baseQuery]);
+
+  const { data: clientsData, loading: clientsLoading } = useCollection<Client>(clientsQuery);
+  const { data: contactsData, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
+  const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(opportunitiesQuery);
 
   const handleDataSourceChange = (value: DataSource | '') => {
     setDataSource(value);
@@ -134,68 +143,72 @@ export function ReportBuilder() {
   
   const generateReport = () => {
     if (!dataSource) return;
-  
-    const clientMap = new Map(clientsData?.map(c => [c.id, c]));
-    const contactMap = new Map(contactsData?.map(c => [c.id, c]));
-  
-    let baseData: any[] = [];
-    if (dataSource === 'clients') baseData = clientsData || [];
-    if (dataSource === 'contacts') baseData = contactsData || [];
-    if (dataSource === 'opportunities') baseData = opportunitiesData || [];
-  
-    const activeFields = Object.entries(selectedFields)
-      .filter(([, isSelected]) => isSelected)
-      .map(([key]) => key);
-  
-    const newColumns = activeFields.map(fieldKey => {
-      const [source, field] = fieldKey.split('.');
-      const sourceName = source as keyof typeof reportableFields;
-      const fieldName = field as keyof typeof reportableFields[typeof sourceName]['fields'];
-      const header = t(reportableFields[sourceName].fields[fieldName]);
-      return {
-        accessorKey: fieldKey,
-        header,
-      };
-    });
+    setIsGenerating(true);
 
-    const newData = baseData.map(primaryRecord => {
-        const row: Record<string, any> = {};
+    setTimeout(() => {
+        const clientMap = new Map(clientsData?.map(c => [c.id, c]));
+        const contactMap = new Map(contactsData?.map(c => [c.id, c]));
+    
+        let baseData: any[] = [];
+        if (dataSource === 'clients') baseData = clientsData || [];
+        if (dataSource === 'contacts') baseData = contactsData || [];
+        if (dataSource === 'opportunities') baseData = opportunitiesData || [];
+    
+        const activeFields = Object.entries(selectedFields)
+        .filter(([, isSelected]) => isSelected)
+        .map(([key]) => key);
+    
+        const newColumns = activeFields.map(fieldKey => {
+        const [source, field] = fieldKey.split('.');
+        const sourceName = source as keyof typeof reportableFields;
+        const fieldName = field as keyof typeof reportableFields[typeof sourceName]['fields'];
+        const header = t(reportableFields[sourceName].fields[fieldName]);
+        return {
+            accessorKey: fieldKey,
+            header,
+        };
+        });
 
-        let client: Client | undefined;
-        let contact: Contact | undefined;
-        let opportunity: Opportunity | undefined;
+        const newData = baseData.map(primaryRecord => {
+            const row: Record<string, any> = {};
 
-        if (dataSource === 'clients') client = primaryRecord;
-        if (dataSource === 'contacts') contact = primaryRecord;
-        if (dataSource === 'opportunities') opportunity = primaryRecord;
+            let client: Client | undefined;
+            let contact: Contact | undefined;
+            let opportunity: Opportunity | undefined;
 
-        if (dataSource === 'contacts') {
-            client = clientMap.get(primaryRecord.clientId);
-        }
-        if (dataSource === 'opportunities') {
-            client = clientMap.get(primaryRecord.clientId);
-            if (primaryRecord.contactId) {
-              contact = contactMap.get(primaryRecord.contactId);
+            if (dataSource === 'clients') client = primaryRecord;
+            if (dataSource === 'contacts') contact = primaryRecord;
+            if (dataSource === 'opportunities') opportunity = primaryRecord;
+
+            if (dataSource === 'contacts') {
+                client = clientMap.get(primaryRecord.clientId);
             }
-        }
-
-        for (const fieldKey of activeFields) {
-            const [source, field] = fieldKey.split('.');
-            let value;
-            if (source === 'clients' && client) {
-                value = client[field as keyof Client];
-            } else if (source === 'contacts' && contact) {
-                value = contact[field as keyof Contact];
-            } else if (source === 'opportunities' && opportunity) {
-                value = opportunity[field as keyof Opportunity];
+            if (dataSource === 'opportunities') {
+                client = clientMap.get(primaryRecord.clientId);
+                if (primaryRecord.contactId) {
+                contact = contactMap.get(primaryRecord.contactId);
+                }
             }
-            row[fieldKey] = value;
-        }
-        return row;
-    });
-  
-    setReportColumns(newColumns);
-    setReportData(newData);
+
+            for (const fieldKey of activeFields) {
+                const [source, field] = fieldKey.split('.');
+                let value;
+                if (source === 'clients' && client) {
+                    value = client[field as keyof Client];
+                } else if (source === 'contacts' && contact) {
+                    value = contact[field as keyof Contact];
+                } else if (source === 'opportunities' && opportunity) {
+                    value = opportunity[field as keyof Opportunity];
+                }
+                row[fieldKey] = value;
+            }
+            return row;
+        });
+    
+        setReportColumns(newColumns);
+        setReportData(newData);
+        setIsGenerating(false);
+    }, 50);
   };
   
   const handleDownload = () => {
@@ -283,8 +296,8 @@ export function ReportBuilder() {
                 </div>
             )}
           </div>
-           <Button onClick={generateReport} disabled={!dataSource || Object.values(selectedFields).every(v => !v) || pageIsLoading}>
-            {pageIsLoading ? t('App.loading') : t('Reports.generateReport')}
+           <Button onClick={generateReport} disabled={!dataSource || Object.values(selectedFields).every(v => !v) || pageIsLoading || isGenerating}>
+            {pageIsLoading || isGenerating ? t('App.loading') : t('Reports.generateReport')}
            </Button>
         </CardContent>
       </Card>
