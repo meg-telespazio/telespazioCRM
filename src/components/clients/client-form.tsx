@@ -120,7 +120,9 @@ export function ClientForm({
   }
 
   const statusOptions: Client['status'][] = ['active', 'suspended', 'canceled'];
-  const industryOptions = Object.keys(translations.en.Industries);
+  const industryOptions = Object.keys(translations.en.Industries).sort((a, b) =>
+    t(`Industries.${a}`).localeCompare(t(`Industries.${b}`))
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

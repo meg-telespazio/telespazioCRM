@@ -208,6 +208,7 @@ export const translations = {
       RetailAndMassConsumption: 'Retail y Consumo Masivo',
       Mining: 'Minería',
       TransportAndLogistics: 'Transporte y Logística',
+      PublicAdministration: 'Administración Pública',
     },
     Profile: {
       title: 'Editar Perfil',
@@ -452,6 +453,7 @@ export const translations = {
       RetailAndMassConsumption: 'Retail and Mass Consumption',
       Mining: 'Mining',
       TransportAndLogistics: 'Transport and Logistics',
+      PublicAdministration: 'Public Administration',
     },
     Profile: {
       title: 'Edit Profile',
