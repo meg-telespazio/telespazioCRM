@@ -35,11 +35,12 @@ export const translations = {
       loginSuccessDescription: 'Has iniciado sesión correctamente.',
       loginFailedTitle: 'Falló el inicio de sesión',
       registerSuccessTitle: 'Cuenta creada',
-      registerSuccessDescription: 'Te has registrado correctamente.',
+      registerSuccessDescription:
+        'Cuenta creada. Ahora serás redirigido para iniciar sesión.',
       registerFailedTitle: 'Falló el registro',
       emailAlreadyInUse: 'Esta dirección de correo electrónico ya está en uso.',
       operationNotAllowed:
-        'El inicio de sesión con correo electrónico/contraseña no está habilitado. Por favor, contacte con el soporte.',
+        'El inicio de sesión con correo electrónico/contraseña no está habilitado. Por favor, actívelo en la consola de Firebase.',
     },
     Validation: {
       invalidEmail: 'Dirección de correo electrónico no válida.',
@@ -180,11 +181,12 @@ export const translations = {
       loginSuccessDescription: 'You have been successfully logged in.',
       loginFailedTitle: 'Login failed',
       registerSuccessTitle: 'Account created',
-      registerSuccessDescription: 'You have been successfully registered.',
+      registerSuccessDescription:
+        'Account created. You will now be redirected to log in.',
       registerFailedTitle: 'Registration failed',
       emailAlreadyInUse: 'This email address is already in use.',
       operationNotAllowed:
-        'Email/Password sign-in is not enabled. Please contact support.',
+        'Email/Password sign-in is not enabled. Please enable it in the Firebase console.',
     },
     Validation: {
       invalidEmail: 'Invalid email address.',

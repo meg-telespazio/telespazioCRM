@@ -178,12 +178,18 @@ export function RegisterForm() {
         title: t('Auth.registerSuccessTitle'),
         description: t('Auth.registerSuccessDescription'),
       });
-      router.push('/dashboard');
+      router.push('/login');
     } catch (error: any) {
+      let description = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        description = t('Auth.emailAlreadyInUse');
+      } else if (error.code === 'auth/operation-not-allowed') {
+        description = t('Auth.operationNotAllowed');
+      }
       toast({
         variant: 'destructive',
         title: t('Auth.registerFailedTitle'),
-        description: error.message,
+        description: description,
       });
     }
   }
