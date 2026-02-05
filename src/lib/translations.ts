@@ -37,11 +37,15 @@ export const translations = {
       registerSuccessTitle: 'Cuenta creada',
       registerSuccessDescription: 'Te has registrado correctamente.',
       registerFailedTitle: 'Falló el registro',
+      emailAlreadyInUse: 'Esta dirección de correo electrónico ya está en uso.',
+      operationNotAllowed:
+        'El inicio de sesión con correo electrónico/contraseña no está habilitado. Por favor, contacte con el soporte.',
     },
     Validation: {
       invalidEmail: 'Dirección de correo electrónico no válida.',
       passwordMin: 'La contraseña debe tener al menos 8 caracteres.',
-      passwordPattern: 'La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial.',
+      passwordPattern:
+        'La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial.',
       passwordsDontMatch: 'Las contraseñas no coinciden.',
       humanCheck: 'Por favor, resuelva el problema matemático.',
       humanCheckError: 'Respuesta incorrecta. Inténtalo de nuevo.',
@@ -178,11 +182,15 @@ export const translations = {
       registerSuccessTitle: 'Account created',
       registerSuccessDescription: 'You have been successfully registered.',
       registerFailedTitle: 'Registration failed',
+      emailAlreadyInUse: 'This email address is already in use.',
+      operationNotAllowed:
+        'Email/Password sign-in is not enabled. Please contact support.',
     },
     Validation: {
       invalidEmail: 'Invalid email address.',
       passwordMin: 'Password must be at least 8 characters.',
-      passwordPattern: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
+      passwordPattern:
+        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
       passwordsDontMatch: "Passwords don't match.",
       humanCheck: 'Please solve the math problem.',
       humanCheckError: 'Incorrect answer. Try again.',
