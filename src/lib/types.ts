@@ -22,3 +22,10 @@ export type Opportunity = {
   probability: number;
   closeDate: Date;
 };
+
+export type UserProfile = {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+};
