@@ -180,12 +180,17 @@ export function RegisterForm() {
       });
       router.push('/login');
     } catch (error: any) {
+      const errorCode = error.code;
       let description = error.message;
-      if (error.code === 'auth/email-already-in-use') {
+
+      if (errorCode === 'auth/email-already-in-use') {
         description = t('Auth.emailAlreadyInUse');
-      } else if (error.code === 'auth/operation-not-allowed') {
+      } else if (errorCode === 'auth/operation-not-allowed') {
         description = t('Auth.operationNotAllowed');
+      } else {
+        description = `Error (${errorCode}): ${description}`;
       }
+
       toast({
         variant: 'destructive',
         title: t('Auth.registerFailedTitle'),
