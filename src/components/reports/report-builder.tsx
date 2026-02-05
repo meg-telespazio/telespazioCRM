@@ -166,13 +166,13 @@ export function ReportBuilder() {
             return {
                 accessorKey: fieldKey,
                 header,
+                accessorFn: (row: any) => row[fieldKey],
             };
         });
 
         const newData = baseData.map(primaryRecord => {
             const row: Record<string, any> = {};
             
-            // Define all possible related records for the primaryRecord
             let client: Client | undefined;
             let contact: Contact | undefined;
             let opportunity: Opportunity | undefined;
@@ -194,7 +194,6 @@ export function ReportBuilder() {
                 client = primaryRecord;
             }
     
-            // Now populate the row using the found records
             for (const fieldKey of activeFields) {
                 const [source, field] = fieldKey.split('.');
                 let value;
@@ -244,7 +243,7 @@ export function ReportBuilder() {
 
   const renderFieldGroup = (source: DataSource) => (
     <div key={source}>
-        <h4 className='text-md font-semibold mb-2 mt-4'>{t(reportableFields[source].header)}</h4>
+        <h4 className='text-md font-semibold mb-2'>{t(reportableFields[source].header)}</h4>
         <div className="grid grid-cols-2 gap-4 rounded-md border p-4 md:grid-cols-4 lg:grid-cols-5">
         {Object.keys(reportableFields[source].fields).map((field) => {
             const fieldKey = `${source}.${field}`;
@@ -290,10 +289,10 @@ export function ReportBuilder() {
           <div className="space-y-2">
             <Label>{t('Reports.fields')}</Label>
             {dataSource ? (
-                <div>
+                <div className="space-y-4">
                     {renderFieldGroup('clients')}
-                    {(dataSource === 'contacts' || dataSource === 'opportunities') && renderFieldGroup('contacts')}
-                    {dataSource === 'opportunities' && renderFieldGroup('opportunities')}
+                    {renderFieldGroup('contacts')}
+                    {renderFieldGroup('opportunities')}
                 </div>
             ) : (
                 <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
@@ -307,7 +306,7 @@ export function ReportBuilder() {
         </CardContent>
       </Card>
       
-      {pageIsLoading && reportData === null && (
+      {(pageIsLoading && !dataSource) && (
           <Card>
             <CardHeader><Skeleton className='h-8 w-48' /></CardHeader>
             <CardContent><Skeleton className='h-64 w-full' /></CardContent>
