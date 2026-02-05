@@ -36,7 +36,11 @@ import { translations } from '@/lib/translations';
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
     name: z.string().min(2, t('Validation.nameMin')),
-    website: z.string().url({ message: t('Validation.invalidUrl') }).optional().or(z.literal('')),
+    website: z
+      .string()
+      .url({ message: t('Validation.invalidUrl') })
+      .optional()
+      .or(z.literal('')),
     email: z.string().email(t('Validation.invalidEmail')),
     phone: z.string().min(10, t('Validation.phoneMin')),
     status: z.enum(['active', 'suspended', 'canceled']),
@@ -47,7 +51,9 @@ const getFormSchema = (t: (key: string) => string) =>
 type ClientFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (client: Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>) => void;
+  onSave: (
+    client: Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
+  ) => void;
   defaultValues?: Partial<Omit<Client, 'id' | 'createdAt' | 'createdBy'>>;
 };
 
@@ -84,56 +90,27 @@ export function ClientForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg bg-card p-0 flex flex-col max-h-[90vh]">
+        <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle>
             {defaultValues ? t('Forms.editClient') : t('Forms.addClient')}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Forms.clientName')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('Forms.clientNamePlaceholder')}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Forms.website')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('Forms.websitePlaceholder')}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="flex-1 overflow-y-auto">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4 px-6 py-4"
+            >
               <FormField
                 control={form.control}
-                name="email"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Forms.clientEmail')}</FormLabel>
+                    <FormLabel>{t('Forms.clientName')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('Forms.clientEmailPlaceholder')}
+                        placeholder={t('Forms.clientNamePlaceholder')}
                         {...field}
                       />
                     </FormControl>
@@ -143,13 +120,13 @@ export function ClientForm({
               />
               <FormField
                 control={form.control}
-                name="phone"
+                name="website"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Forms.clientPhone')}</FormLabel>
+                    <FormLabel>{t('Forms.website')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('Forms.clientPhonePlaceholder')}
+                        placeholder={t('Forms.websitePlaceholder')}
                         {...field}
                       />
                     </FormControl>
@@ -157,85 +134,132 @@ export function ClientForm({
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.clientEmail')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t('Forms.clientEmailPlaceholder')}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.clientPhone')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t('Forms.clientPhonePlaceholder')}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.status')}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={t('Forms.selectStatus')}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {statusOptions.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {t(`Status.${status}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.industry')}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={t('Forms.selectIndustry')}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {industryOptions.map((industry) => (
+                            <SelectItem key={industry} value={industry}>
+                              {t(`Industries.${industry}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="status"
+                name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Forms.status')}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('Forms.selectStatus')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {t(`Status.${status}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>{t('Forms.notes')}</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder={t('Forms.notesPlaceholder')}
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('Forms.industry')}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('Forms.selectIndustry')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {industryOptions.map((industry) => (
-                          <SelectItem key={industry} value={industry}>
-                            {t(`Industries.${industry}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Forms.notes')}</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder={t('Forms.notesPlaceholder')}
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="submit">{t('Forms.saveClient')}</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
+        <DialogFooter className="p-6 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            {t('Auth.cancelLabel')}
+          </Button>
+          <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+            {t('Forms.saveClient')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
