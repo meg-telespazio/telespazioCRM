@@ -35,8 +35,8 @@ export default function ClientsPage() {
 
   const clients = useMemo(() => {
     if (!clientsData) return [];
-    // Sort by createdAt descending on the client
-    return [...clientsData].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    // Sort by publicId ascending on the client
+    return [...clientsData].sort((a, b) => a.publicId.localeCompare(b.publicId));
   }, [clientsData]);
 
   useEffect(() => {
@@ -45,14 +45,21 @@ export default function ClientsPage() {
     }
   }, [user, userLoading]);
 
-  const handleSaveClient = (
-    clientData: Omit<Client, 'id' | 'createdAt' | 'createdBy'>
+  const handleSaveClient = async (
+    clientData: Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
   ) => {
     if (!user) return;
     if (editingClient) {
-      updateClient(firestore, editingClient.id, clientData);
+      // publicId is not editable
+      const { publicId, ...updateData } = clientData;
+      updateClient(firestore, editingClient.id, updateData);
     } else {
-      addClient(firestore, user.uid, clientData);
+        try {
+            await addClient(firestore, user.uid, clientData);
+        } catch (error) {
+            console.error("Failed to add client:", error);
+            // Error is globally emitted by addClient, no need for specific toast here.
+        }
     }
     setEditingClient(null);
     setFormOpen(false);
@@ -100,11 +107,11 @@ export default function ClientsPage() {
       <main className="flex-1 p-4 sm:p-6">
         {clientsLoading ? (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 bg-card rounded-t-lg border-b">
               <Skeleton className="h-10 w-64" />
               <Skeleton className="h-10 w-24" />
             </div>
-            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-96 w-full rounded-b-lg" />
           </div>
         ) : (
           <ClientTable

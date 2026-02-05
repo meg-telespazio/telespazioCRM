@@ -2,6 +2,7 @@ import type { FieldValue } from "firebase/firestore";
 
 export type Client = {
   id: string;
+  publicId: string;
   name: string;
   email: string;
   phone: string;

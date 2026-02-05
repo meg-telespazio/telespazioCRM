@@ -2,46 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      // A user can read or update their own profile
       allow get, update: if request.auth != null && request.auth.uid == userId;
-      // A user can create their own profile document during sign-up
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
     }
 
     match /clients/{clientId} {
-      // A user can create a client if they are logged in and the createdBy field matches their uid.
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      
-      // An authenticated user can read, update, and delete a client if they are the owner.
       allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-
-      // An authenticated user can list their own clients. The client-side query MUST include
-      // a where() clause to filter by their UID. This rule only checks for authentication.
       allow list: if request.auth != null;
     }
 
     match /contacts/{contactId} {
-      // A user can create a contact if they are logged in and the createdBy field matches their uid.
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-
-      // An authenticated user can read, update, and delete a contact if they are the owner.
       allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-      
-      // An authenticated user can list their own contacts. The client-side query MUST include
-      // a where() clause to filter by their UID. This rule only checks for authentication.
       allow list: if request.auth != null;
     }
 
     match /opportunities/{opportunityId} {
-       // A user can create an opportunity if they are logged in and the createdBy field matches their uid.
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-
-      // An authenticated user can read, update, and delete an opportunity if they are the owner.
       allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-
-      // An authenticated user can list their own opportunities. The client-side query MUST include
-      // a where() clause to filter by their UID. This rule only checks for authentication.
       allow list: if request.auth != null;
+    }
+
+    match /counters/{counterId} {
+      allow read, write: if request.auth != null;
     }
   }
 }

@@ -6,6 +6,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  runTransaction,
   type Firestore,
 } from 'firebase/firestore';
 import type { Client } from '@/lib/types';
@@ -14,29 +15,52 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 const CLIENTS_COLLECTION = 'clients';
 
-type ClientData = Omit<Client, 'id' | 'createdAt' | 'createdBy'>;
+type ClientData = Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
 
-export function addClient(
+export async function addClient(
   firestore: Firestore,
   uid: string,
   clientData: ClientData
 ) {
-  const data = {
-    ...clientData,
-    createdBy: uid,
-    createdAt: serverTimestamp(),
-  };
+  const counterRef = doc(firestore, 'counters', 'clients');
+  const clientCollectionRef = collection(firestore, CLIENTS_COLLECTION);
 
-  addDoc(collection(firestore, CLIENTS_COLLECTION), data).catch(
-    (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: `/${CLIENTS_COLLECTION}`,
-        operation: 'create',
-        requestResourceData: data,
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    }
-  );
+  try {
+    await runTransaction(firestore, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+      
+      let newCount = 1;
+      if (counterDoc.exists()) {
+        const currentCount = counterDoc.data().count;
+        if (typeof currentCount === 'number') {
+          newCount = currentCount + 1;
+        }
+      }
+
+      const publicId = `CLI-${String(newCount).padStart(7, '0')}`;
+      
+      const newClientRef = doc(clientCollectionRef);
+      
+      const data = {
+        ...clientData,
+        publicId,
+        createdBy: uid,
+        createdAt: serverTimestamp(),
+      };
+
+      transaction.set(newClientRef, data);
+      transaction.set(counterRef, { count: newCount }, { merge: true });
+    });
+  } catch (error) {
+    console.error("Client creation transaction failed: ", error);
+    const permissionError = new FirestorePermissionError({
+      path: `/${CLIENTS_COLLECTION} or /counters/clients`,
+      operation: 'create',
+      requestResourceData: clientData,
+    });
+    errorEmitter.emit('permission-error', permissionError);
+    throw error;
+  }
 }
 
 export function updateClient(

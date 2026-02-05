@@ -15,14 +15,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import type { Client } from '@/lib/types';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
-const statusVariant: {
-  [key in Client['status']]: 'default' | 'secondary' | 'destructive';
-} = {
-  active: 'default',
-  suspended: 'secondary',
-  canceled: 'destructive',
+const statusClasses: { [key in Client['status']]: string } = {
+  active: 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200',
+  suspended: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-200',
+  canceled: 'bg-gray-200 text-gray-800 hover:bg-gray-300 border-gray-300',
 };
+
 
 export const columns = (
   t: (key: string) => string,
@@ -52,22 +52,32 @@ export const columns = (
     enableHiding: false,
   },
   {
+    accessorKey: 'publicId',
+    header: t('Table.clientId'),
+  },
+  {
     accessorKey: 'name',
     header: t('Forms.clientName'),
   },
   {
     accessorKey: 'email',
     header: t('Forms.clientEmail'),
+    meta: {
+      className: 'hidden lg:table-cell',
+    }
   },
   {
     accessorKey: 'phone',
     header: t('Forms.clientPhone'),
+    meta: {
+      className: 'hidden sm:table-cell',
+    }
   },
   {
     accessorKey: 'status',
     header: t('Table.status'),
     cell: ({ row }) => (
-      <Badge variant={statusVariant[row.original.status]}>
+      <Badge variant="outline" className={cn(statusClasses[row.original.status])}>
         {t(`Status.${row.original.status}`)}
       </Badge>
     ),
@@ -76,6 +86,9 @@ export const columns = (
     accessorKey: 'industry',
     header: t('Table.industry'),
     cell: ({ row }) => t(`Industries.${row.original.industry}`),
+    meta: {
+      className: 'hidden md:table-cell',
+    },
   },
   {
     accessorKey: 'createdAt',
@@ -83,6 +96,9 @@ export const columns = (
     cell: ({ row }) => {
       const { createdAt } = row.original;
       return createdAt instanceof Date ? format(createdAt, 'PPP') : '...';
+    },
+    meta: {
+      className: 'hidden lg:table-cell',
     },
   },
   {

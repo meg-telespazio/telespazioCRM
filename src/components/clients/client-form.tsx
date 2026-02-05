@@ -47,7 +47,7 @@ const getFormSchema = (t: (key: string) => string) =>
 type ClientFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (client: Omit<Client, 'id' | 'createdAt' | 'createdBy'>) => void;
+  onSave: (client: Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>) => void;
   defaultValues?: Partial<Omit<Client, 'id' | 'createdAt' | 'createdBy'>>;
 };
 

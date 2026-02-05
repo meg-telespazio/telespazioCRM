@@ -69,6 +69,10 @@
       "description": "Represents a business client.",
       "type": "object",
       "properties": {
+        "publicId": {
+          "type": "string",
+          "description": "Public-facing sequential client ID."
+        },
         "name": {
           "type": "string",
           "description": "Name of the client company."
@@ -110,6 +114,7 @@
         }
       },
       "required": [
+        "publicId",
         "name",
         "email",
         "phone",

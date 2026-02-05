@@ -111,6 +111,7 @@ export const translations = {
       status: 'Estado',
       industry: 'Industria',
       createdDate: 'Fecha de Creación',
+      clientId: 'ID Cliente',
     },
     Forms: {
       editClient: 'Editar Cliente',
@@ -316,6 +317,7 @@ export const translations = {
       status: 'Status',
       industry: 'Industry',
       createdDate: 'Created Date',
+      clientId: 'Client ID',
     },
     Forms: {
       editClient: 'Edit Client',
