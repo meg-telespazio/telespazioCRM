@@ -41,6 +41,7 @@ export const translations = {
       emailAlreadyInUse: 'Esta dirección de correo electrónico ya está en uso.',
       operationNotAllowed:
         "El proveedor de autenticación por Correo/Contraseña no está habilitado. Por favor, ve a tu Consola de Firebase -> Authentication -> Pestaña 'Sign-in method' y habilita el proveedor 'Email/Password'.",
+      cancelLabel: 'Cancelar',
     },
     Validation: {
       invalidEmail: 'Dirección de correo electrónico no válida.',
@@ -92,6 +93,7 @@ export const translations = {
       addContact: 'Añadir Contacto',
       opportunities: 'Oportunidades',
       addOpportunity: 'Añadir Oportunidad',
+      profile: 'Mi Perfil',
     },
     Table: {
       filterByName: 'Filtrar por nombre...',
@@ -144,6 +146,18 @@ export const translations = {
       Won: 'Ganada',
       Lost: 'Perdida',
     },
+    Profile: {
+      title: 'Editar Perfil',
+      updateSuccess: 'Perfil actualizado correctamente.',
+      updateFailure: 'No se pudo actualizar el perfil.',
+      uploadingAvatar: 'Subiendo avatar...',
+      avatarUpdated: 'Avatar actualizado.',
+      saveChanges: 'Guardar Cambios',
+      editAvatar: 'Editar Avatar',
+      cropImage: 'Recortar Imagen',
+      crop: 'Recortar',
+      userAvatarAlt: 'Avatar del usuario',
+    },
   },
   en: {
     App: {
@@ -187,6 +201,7 @@ export const translations = {
       emailAlreadyInUse: 'This email address is already in use.',
       operationNotAllowed:
         "The Email/Password authentication provider is not enabled. Please go to your Firebase Console -> Authentication -> 'Sign-in method' tab and enable the 'Email/Password' provider.",
+      cancelLabel: 'Cancel',
     },
     Validation: {
       invalidEmail: 'Invalid email address.',
@@ -238,6 +253,7 @@ export const translations = {
       addContact: 'Add Contact',
       opportunities: 'Opportunities',
       addOpportunity: 'Add Opportunity',
+      profile: 'My Profile',
     },
     Table: {
       filterByName: 'Filter by name...',
@@ -289,6 +305,18 @@ export const translations = {
       Negotiation: 'Negotiation',
       Won: 'Won',
       Lost: 'Lost',
+    },
+    Profile: {
+      title: 'Edit Profile',
+      updateSuccess: 'Profile updated successfully.',
+      updateFailure: 'Failed to update profile.',
+      uploadingAvatar: 'Uploading avatar...',
+      avatarUpdated: 'Avatar updated.',
+      saveChanges: 'Save Changes',
+      editAvatar: 'Edit Avatar',
+      cropImage: 'Crop Image',
+      crop: 'Crop',
+      userAvatarAlt: "User's avatar",
     },
   },
 };

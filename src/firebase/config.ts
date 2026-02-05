@@ -8,6 +8,7 @@ const firebaseConfig: FirebaseOptions = {
   appId: '1:271369109791:web:3752b36b02a',
   apiKey: 'AIzaSyB08ZbfRZIfdDXjYBwA5hivWJEt7cqq2lo',
   authDomain: 'studio-1413684383-379c9.firebaseapp.com',
+  storageBucket: 'studio-1413684383-379c9.appspot.com',
   messagingSenderId: '271369109791',
 };
 

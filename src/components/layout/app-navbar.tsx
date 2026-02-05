@@ -10,6 +10,7 @@ import {
   Telescope,
   LogOut,
   Menu,
+  User as UserIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -25,6 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -114,27 +123,51 @@ export function AppNavbar() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex">
             <LanguageSwitcher className="text-white hover:bg-red-700" />
-            <Avatar className="h-9 w-9">
-              <AvatarImage
-                src={user?.photoURL || userAvatar?.imageUrl}
-                alt="User Avatar"
-                data-ai-hint={userAvatar?.imageHint}
-              />
-              <AvatarFallback>
-                {user?.email?.[0].toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="hover:bg-red-700"
-            >
-              <LogOut className="h-5 w-5" />
-              <span className="sr-only">{t('Sidebar.logout')}</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-9 w-9 rounded-full hover:bg-red-700"
+                >
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage
+                      src={user?.photoURL || userAvatar?.imageUrl}
+                      alt="User Avatar"
+                      data-ai-hint={userAvatar?.imageHint}
+                    />
+                    <AvatarFallback>
+                      {user?.email?.[0].toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user?.displayName}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>{t('Pages.profile')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>{t('Sidebar.logout')}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Menu */}
@@ -180,20 +213,28 @@ export function AppNavbar() {
 
                   <div className="mt-auto border-t border-red-600 p-6">
                     <div className="mb-4 flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage
-                          src={user?.photoURL || userAvatar?.imageUrl}
-                          alt="User Avatar"
-                          data-ai-hint={userAvatar?.imageHint}
-                        />
-                        <AvatarFallback>
-                          {user?.email?.[0].toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
+                      <Link
+                        href="/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage
+                            src={user?.photoURL || userAvatar?.imageUrl}
+                            alt="User Avatar"
+                            data-ai-hint={userAvatar?.imageHint}
+                          />
+                          <AvatarFallback>
+                            {user?.email?.[0].toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
                       <div className="flex flex-col overflow-hidden">
                         <span className="truncate font-semibold">
                           {user?.displayName || user?.email}
                         </span>
+                         <Link href="/profile" className="text-sm text-white/80 hover:underline" onClick={() => setMobileMenuOpen(false)}>
+                          {t('Pages.profile')}
+                        </Link>
                       </div>
                     </div>
                     <LanguageSwitcher className="mb-2 w-full justify-start text-white hover:bg-red-700" />
