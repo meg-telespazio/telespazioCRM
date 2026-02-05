@@ -18,45 +18,80 @@ import { Label } from '@/components/ui/label';
 import type { Client, Contact, Opportunity } from '@/lib/types';
 import { ReportTable } from './report-table';
 import { Skeleton } from '../ui/skeleton';
+import { Download } from 'lucide-react';
+import Papa from 'papaparse';
+import { format } from 'date-fns';
 
 type DataSource = 'clients' | 'contacts' | 'opportunities';
 
-const fieldLabels: Record<DataSource, Record<string, string>> = {
+const reportableFields: Record<
+  DataSource,
+  { header: string; fields: Record<string, string> }
+> = {
   clients: {
-    publicId: 'Table.clientId',
-    name: 'Forms.clientName',
-    cuit: 'Forms.cuit',
-    email: 'Forms.clientEmail',
-    phone: 'Forms.clientPhone',
-    website: 'Forms.website',
-    status: 'Table.status',
-    industry: 'Table.industry',
-    createdAt: 'Table.createdDate',
+    header: 'Reports.dataSources.clients',
+    fields: {
+      publicId: 'Table.clientId',
+      name: 'Forms.clientName',
+      cuit: 'Forms.cuit',
+      email: 'Forms.clientEmail',
+      phone: 'Forms.clientPhone',
+      website: 'Forms.website',
+      status: 'Table.status',
+      industry: 'Table.industry',
+      createdAt: 'Table.createdDate',
+    },
   },
   contacts: {
-    publicId: 'Table.contactId',
-    name: 'Forms.contactName',
-    clientId: 'Pages.clients', // Special handling to show client name
-    emails: 'Forms.emails',
-    phones: 'Forms.phones',
-    createdAt: 'Table.createdDate',
+    header: 'Reports.dataSources.contacts',
+    fields: {
+      publicId: 'Table.contactId',
+      name: 'Forms.contactName',
+      emails: 'Forms.emails',
+      phones: 'Forms.phones',
+      createdAt: 'Table.createdDate',
+    },
   },
   opportunities: {
-    publicId: 'Table.opportunityId',
-    title: 'Dashboard.recentOpportunities.opportunityHeader',
-    clientId: 'Dashboard.recentOpportunities.clientHeader', // Special handling
-    value: 'Dashboard.recentOpportunities.valueHeader',
-    stage: 'Dashboard.recentOpportunities.stageHeader',
-    probability: 'Forms.probability',
-    closeDate: 'Forms.estCloseDate',
-    contractMonths: 'Forms.contractMonths',
-    requestDate: 'Forms.requestDate',
-    offerSentDate: 'Forms.offerSentDate',
-    isTender: 'Forms.isTender',
-    createdAt: 'Table.createdDate',
+    header: 'Reports.dataSources.opportunities',
+    fields: {
+      publicId: 'Table.opportunityId',
+      title: 'Dashboard.recentOpportunities.opportunityHeader',
+      value: 'Dashboard.recentOpportunities.valueHeader',
+      stage: 'Dashboard.recentOpportunities.stageHeader',
+      probability: 'Forms.probability',
+      closeDate: 'Forms.estCloseDate',
+      contractMonths: 'Forms.contractMonths',
+      requestDate: 'Forms.requestDate',
+      offerSentDate: 'Forms.offerSentDate',
+      isTender: 'Forms.isTender',
+      createdAt: 'Table.createdDate',
+    },
   },
 };
 
+const formatCellForExport = (value: any): string => {
+    if (value instanceof Date) {
+        return format(value, 'P');
+    }
+    if (Array.isArray(value)) {
+        if (value.length === 0) return '';
+        if(typeof value[0] === 'object' && value[0] !== null) {
+             return value.map(item => item.address || item.number || JSON.stringify(item)).join('; ');
+        }
+        return value.join('; ');
+    }
+    if (typeof value === 'object' && value !== null) {
+        return JSON.stringify(value);
+    }
+    if(typeof value === 'boolean') {
+        return value ? 'Yes' : 'No';
+    }
+    if (typeof value === 'number') {
+        return value.toString();
+    }
+    return String(value ?? '');
+}
 
 export function ReportBuilder() {
   const { t } = useI18n();
@@ -72,26 +107,16 @@ export function ReportBuilder() {
     return where('createdBy', '==', user.uid);
   }, [user]);
 
-  const clientsQuery = useMemo(() => {
-    if (!baseQuery || (dataSource !== 'clients' && dataSource !== 'contacts' && dataSource !== 'opportunities')) return null;
-    return query(collection(firestore, 'clients'), baseQuery);
-  }, [firestore, baseQuery, dataSource]);
-
-  const contactsQuery = useMemo(() => {
-    if (!baseQuery || dataSource !== 'contacts') return null;
-    return query(collection(firestore, 'contacts'), baseQuery);
-  }, [firestore, baseQuery, dataSource]);
-
-  const opportunitiesQuery = useMemo(() => {
-    if (!baseQuery || dataSource !== 'opportunities') return null;
-    return query(collection(firestore, 'opportunities'), baseQuery);
-  }, [firestore, baseQuery, dataSource]);
-
-  const { data: clientsData, loading: clientsLoading } = useCollection<Client>(clientsQuery);
-  const { data: contactsData, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
-  const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(opportunitiesQuery);
-
-  const availableFields = dataSource ? Object.keys(fieldLabels[dataSource]) : [];
+  // Fetch all data upfront to allow for joins
+  const { data: clientsData, loading: clientsLoading } = useCollection<Client>(
+    baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null
+  );
+  const { data: contactsData, loading: contactsLoading } = useCollection<Contact>(
+    baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null
+  );
+  const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(
+    baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null
+  );
 
   const handleDataSourceChange = (value: DataSource | '') => {
     setDataSource(value);
@@ -100,58 +125,128 @@ export function ReportBuilder() {
     setReportColumns(null);
   };
 
-  const handleFieldToggle = (field: string) => {
+  const handleFieldToggle = (fieldKey: string) => {
     setSelectedFields((prev) => ({
       ...prev,
-      [field]: !prev[field],
+      [fieldKey]: !prev[fieldKey],
     }));
   };
   
   const generateReport = () => {
     if (!dataSource) return;
   
-    let data: any[] = [];
-    switch (dataSource) {
-      case 'clients':
-        data = clientsData || [];
-        break;
-      case 'contacts':
-        data = contactsData || [];
-        break;
-      case 'opportunities':
-        data = opportunitiesData || [];
-        break;
-    }
+    const clientMap = new Map(clientsData?.map(c => [c.id, c]));
+    const contactMap = new Map(contactsData?.map(c => [c.id, c]));
   
-    const finalColumns = availableFields
-      .filter((field) => selectedFields[field])
-      .map((field) => ({
-        accessorKey: field,
-        header: t(fieldLabels[dataSource][field]),
-      }));
+    let baseData: any[] = [];
+    if (dataSource === 'clients') baseData = clientsData || [];
+    if (dataSource === 'contacts') baseData = contactsData || [];
+    if (dataSource === 'opportunities') baseData = opportunitiesData || [];
   
-    let finalData = data;
-    // Handle special cases for displaying related data
-    if (dataSource === 'contacts' && selectedFields.clientId) {
-      const clientMap = new Map(clientsData?.map(c => [c.id, c.name]));
-      finalData = finalData.map(contact => ({
-          ...contact,
-          clientId: clientMap.get(contact.clientId) || contact.clientId,
-      }));
-    }
-     if (dataSource === 'opportunities' && selectedFields.clientId) {
-      const clientMap = new Map(clientsData?.map(c => [c.id, c.name]));
-      finalData = finalData.map(opp => ({
-          ...opp,
-          clientId: clientMap.get(opp.clientId) || opp.clientId,
-      }));
-    }
+    const activeFields = Object.entries(selectedFields)
+      .filter(([, isSelected]) => isSelected)
+      .map(([key]) => key);
   
-    setReportColumns(finalColumns);
-    setReportData(finalData);
+    const newColumns = activeFields.map(fieldKey => {
+      const [source, field] = fieldKey.split('.');
+      const sourceName = source as keyof typeof reportableFields;
+      const fieldName = field as keyof typeof reportableFields[typeof sourceName]['fields'];
+      const header = t(reportableFields[sourceName].fields[fieldName]);
+      return {
+        accessorKey: fieldKey,
+        header,
+      };
+    });
+
+    const newData = baseData.map(primaryRecord => {
+        const row: Record<string, any> = {};
+
+        let client: Client | undefined;
+        let contact: Contact | undefined;
+        let opportunity: Opportunity | undefined;
+
+        if (dataSource === 'clients') client = primaryRecord;
+        if (dataSource === 'contacts') contact = primaryRecord;
+        if (dataSource === 'opportunities') opportunity = primaryRecord;
+
+        if (dataSource === 'contacts') {
+            client = clientMap.get(primaryRecord.clientId);
+        }
+        if (dataSource === 'opportunities') {
+            client = clientMap.get(primaryRecord.clientId);
+            if (primaryRecord.contactId) {
+              contact = contactMap.get(primaryRecord.contactId);
+            }
+        }
+
+        for (const fieldKey of activeFields) {
+            const [source, field] = fieldKey.split('.');
+            let value;
+            if (source === 'clients' && client) {
+                value = client[field as keyof Client];
+            } else if (source === 'contacts' && contact) {
+                value = contact[field as keyof Contact];
+            } else if (source === 'opportunities' && opportunity) {
+                value = opportunity[field as keyof Opportunity];
+            }
+            row[fieldKey] = value;
+        }
+        return row;
+    });
+  
+    setReportColumns(newColumns);
+    setReportData(newData);
   };
   
+  const handleDownload = () => {
+    if (!reportData || !reportColumns) return;
+
+    const headers = reportColumns.map(col => col.header);
+    
+    const dataForCsv = reportData.map(row => {
+        return reportColumns.map(col => {
+            const value = row[col.accessorKey];
+            return formatCellForExport(value);
+        });
+    });
+
+    const csv = Papa.unparse([headers, ...dataForCsv]);
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'report.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   const pageIsLoading = clientsLoading || contactsLoading || opportunitiesLoading;
+
+  const renderFieldGroup = (source: DataSource) => (
+    <div key={source}>
+        <h4 className='text-md font-semibold mb-2 mt-4'>{t(reportableFields[source].header)}</h4>
+        <div className="grid grid-cols-2 gap-4 rounded-md border p-4 md:grid-cols-4 lg:grid-cols-5">
+        {Object.keys(reportableFields[source].fields).map((field) => {
+            const fieldKey = `${source}.${field}`;
+            return (
+            <div key={fieldKey} className="flex items-center space-x-2">
+                <Checkbox
+                id={`field-${fieldKey}`}
+                checked={!!selectedFields[fieldKey]}
+                onCheckedChange={() => handleFieldToggle(fieldKey)}
+                />
+                <Label htmlFor={`field-${fieldKey}`} className="font-normal">
+                {t(reportableFields[source].fields[field])}
+                </Label>
+            </div>
+            );
+        })}
+        </div>
+    </div>
+  );
+
 
   return (
     <div className="space-y-6">
@@ -177,20 +272,11 @@ export function ReportBuilder() {
           <div className="space-y-2">
             <Label>{t('Reports.fields')}</Label>
             {dataSource ? (
-              <div className="grid grid-cols-2 gap-4 rounded-md border p-4 md:grid-cols-4 lg:grid-cols-5">
-                {availableFields.map((field) => (
-                  <div key={field} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`field-${field}`}
-                      checked={!!selectedFields[field]}
-                      onCheckedChange={() => handleFieldToggle(field)}
-                    />
-                    <Label htmlFor={`field-${field}`} className="font-normal">
-                      {t(fieldLabels[dataSource][field])}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+                <div>
+                    {renderFieldGroup('clients')}
+                    {(dataSource === 'contacts' || dataSource === 'opportunities') && renderFieldGroup('contacts')}
+                    {dataSource === 'opportunities' && renderFieldGroup('opportunities')}
+                </div>
             ) : (
                 <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
                     <p className="text-sm text-muted-foreground">{t('Reports.noFields')}</p>
@@ -212,8 +298,12 @@ export function ReportBuilder() {
 
       {reportData && reportColumns && (
           <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{t('Reports.results')}</CardTitle>
+                  <Button onClick={handleDownload} variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
+                    {t('Reports.downloadCsv')}
+                  </Button>
               </CardHeader>
               <CardContent>
                   <ReportTable columns={reportColumns} data={reportData} />

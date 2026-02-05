@@ -299,6 +299,7 @@ export const translations = {
       generateReport: 'Generar Reporte',
       results: 'Resultados del Reporte',
       noResults: 'No se encontraron resultados para tu consulta.',
+      downloadCsv: 'Descargar CSV',
       dataSources: {
           clients: 'Clientes',
           contacts: 'Contactos',
@@ -606,6 +607,7 @@ export const translations = {
       generateReport: 'Generate Report',
       results: 'Report Results',
       noResults: 'No results found for your query.',
+      downloadCsv: 'Download CSV',
       dataSources: {
           clients: 'Clients',
           contacts: 'Contacts',
