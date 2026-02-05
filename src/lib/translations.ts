@@ -52,6 +52,11 @@ export const translations = {
       selectClient: 'Por favor, seleccione un cliente.',
       titleMin: 'El título debe tener al menos 2 caracteres.',
       valuePositive: 'El valor debe ser un número positivo.',
+      passwordLength: 'Al menos 8 caracteres',
+      passwordUppercase: 'Al menos una letra mayúscula',
+      passwordLowercase: 'Al menos una letra minúscula',
+      passwordNumber: 'Al menos un número',
+      passwordSpecial: 'Al menos un caracter especial (@$!%*?&)',
     },
     Dashboard: {
       title: 'Dashboard',
@@ -113,6 +118,7 @@ export const translations = {
       estCloseDate: 'Fecha de Cierre Est.',
       pickDate: 'Elige una fecha',
       saveOpportunity: 'Guardar Oportunidad',
+      yourAnswer: 'Tu respuesta',
     },
     Actions: {
       title: 'Acciones',
@@ -187,6 +193,11 @@ export const translations = {
       selectClient: 'Please select a client.',
       titleMin: 'Title must be at least 2 characters.',
       valuePositive: 'Value must be a positive number.',
+      passwordLength: 'At least 8 characters',
+      passwordUppercase: 'At least one uppercase letter',
+      passwordLowercase: 'At least one lowercase letter',
+      passwordNumber: 'At least one number',
+      passwordSpecial: 'At least one special character (@$!%*?&)',
     },
     Dashboard: {
       title: 'Dashboard',
@@ -248,6 +259,7 @@ export const translations = {
       estCloseDate: 'Est. Close Date',
       pickDate: 'Pick a date',
       saveOpportunity: 'Save Opportunity',
+      yourAnswer: 'Your answer',
     },
     Actions: {
       title: 'Actions',

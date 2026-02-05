@@ -25,6 +25,8 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useState, useEffect, useMemo } from 'react';
 import { useI18n } from '@/firebase/client-provider';
+import { Check, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Password validation: min 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
 const passwordValidation =
@@ -102,6 +104,33 @@ export function RegisterForm() {
       humanCheck: '',
     },
   });
+
+  const password = form.watch('password', '');
+
+  const passwordChecks = useMemo(() => {
+    return [
+      {
+        labelKey: 'Validation.passwordLength',
+        met: password.length >= 8,
+      },
+      {
+        labelKey: 'Validation.passwordUppercase',
+        met: /[A-Z]/.test(password),
+      },
+      {
+        labelKey: 'Validation.passwordLowercase',
+        met: /[a-z]/.test(password),
+      },
+      {
+        labelKey: 'Validation.passwordNumber',
+        met: /\d/.test(password),
+      },
+      {
+        labelKey: 'Validation.passwordSpecial',
+        met: /[@$!%*?&]/.test(password),
+      },
+    ];
+  }, [password]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (parseInt(values.humanCheck) !== answer) {
@@ -216,6 +245,26 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
+        {password && (
+          <div className="space-y-1">
+            {passwordChecks.map((check) => (
+              <p
+                key={check.labelKey}
+                className={cn(
+                  'flex items-center text-sm',
+                  check.met ? 'text-green-600' : 'text-muted-foreground'
+                )}
+              >
+                {check.met ? (
+                  <Check className="mr-2 h-4 w-4" />
+                ) : (
+                  <X className="mr-2 h-4 w-4" />
+                )}
+                {t(check.labelKey)}
+              </p>
+            ))}
+          </div>
+        )}
         <FormField
           control={form.control}
           name="confirmPassword"
