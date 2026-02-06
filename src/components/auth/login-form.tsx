@@ -47,6 +47,7 @@ export function LoginForm() {
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
+        variant: 'success',
         title: t('Auth.loginSuccessTitle'),
         description: t('Auth.loginSuccessDescription'),
       });

@@ -33,6 +33,11 @@ body {
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Custom Toast Colors */
+    --toast-success-background: 160 100% 97%;
+    --toast-success-foreground: 160 80% 25%;
+    --toast-destructive-background: 350 100% 97%;
   }
 
   .dark {
@@ -60,6 +65,11 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Custom Toast Colors */
+    --toast-success-background: 160 40% 10%;
+    --toast-success-foreground: 160 70% 80%;
+    --toast-destructive-background: 350 40% 10%;
   }
 }
 

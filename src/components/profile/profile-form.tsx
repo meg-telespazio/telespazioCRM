@@ -147,7 +147,7 @@ export function ProfileForm() {
 
       await Promise.all([authPromise, firestorePromise]);
 
-      toast({ title: t('Profile.updateSuccess') });
+      toast({ variant: 'success', title: t('Profile.updateSuccess') });
       setCroppedAvatar(null);
     } catch (error: any) {
       console.error('Profile update error:', error);

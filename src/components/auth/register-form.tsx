@@ -175,6 +175,7 @@ export function RegisterForm() {
       );
 
       toast({
+        variant: 'success',
         title: t('Auth.registerSuccessTitle'),
         description: t('Auth.registerSuccessDescription'),
       });
