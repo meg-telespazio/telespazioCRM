@@ -282,6 +282,43 @@
         "contactId": {
           "type": "string",
           "description": "ID of the reference contact person from the client."
+        },
+        "lineItems": {
+          "type": "array",
+          "description": "List of products or services included in the opportunity.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "itemId": {
+                "type": "string",
+                "description": "ID of the catalog item from the productsAndServices collection."
+              },
+              "name": {
+                "type": "string",
+                "description": "Denormalized name of the item at the time of adding."
+              },
+              "description": {
+                "type": "string",
+                "description": "Denormalized or edited description of the item."
+              },
+              "quantity": {
+                "type": "number"
+              },
+              "oneTimeCharge": {
+                "type": "number",
+                "description": "The one-time charge per unit for this specific opportunity."
+              },
+              "recurringCharge": {
+                "type": "number",
+                "description": "The recurring charge per unit for this specific opportunity."
+              },
+              "discount": {
+                "type": "number",
+                "description": "The discount percentage applied."
+              }
+            },
+            "required": ["itemId", "name", "quantity"]
+          }
         }
       },
       "required": [

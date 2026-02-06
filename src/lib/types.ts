@@ -37,6 +37,16 @@ export type Contact = {
   createdBy: string;
 };
 
+export type OpportunityLineItem = {
+  itemId: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  oneTimeCharge: number;
+  recurringCharge: number;
+  discount: number;
+};
+
 export type Opportunity = {
   id: string;
   publicId: string;
@@ -54,6 +64,7 @@ export type Opportunity = {
   description?: string;
   isTender: boolean;
   contactId?: string;
+  lineItems?: OpportunityLineItem[];
 };
 
 export type ProductOrService = {
