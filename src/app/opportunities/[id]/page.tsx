@@ -67,6 +67,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Label } from '@/components/ui/label';
 
 const getFormSchema = (t: (key: string) => string) => {
   const lineItemSchema = z.object({
