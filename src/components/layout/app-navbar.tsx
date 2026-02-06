@@ -11,6 +11,7 @@ import {
   Menu,
   User as UserIcon,
   BarChartHorizontal,
+  Package,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -95,6 +96,7 @@ export function AppNavbar() {
     },
     { href: '/clients', label: t('Sidebar.clients'), icon: Users },
     { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
+    { href: '/products-and-services', label: t('Sidebar.ps'), icon: Package },
     { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal },
   ];
 

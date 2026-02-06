@@ -56,6 +56,23 @@ export type Opportunity = {
   contactId?: string;
 };
 
+export type ProductOrService = {
+  id: string;
+  publicId: string;
+  type: 'product' | 'service';
+  name: string;
+  description?: string;
+  status: 'active' | 'inactive';
+  unitOfMeasure: 'units' | 'meters' | 'kg' | 'liters' | 'GB';
+  oneTimeCharge?: number;
+  recurringCharge?: number;
+  currency: 'USD' | 'EUR' | 'ARS';
+  isEditable: boolean;
+  availableDiscounts?: number[];
+  createdAt: Date;
+  createdBy: string;
+};
+
 export type UserProfile = {
   uid: string;
   email: string;
@@ -74,3 +91,4 @@ export type UserProfile = {
 export type ClientWrite = Omit<Client, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ContactWrite = Omit<Contact, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type OpportunityWrite = Omit<Opportunity, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> & { createdAt: FieldValue };

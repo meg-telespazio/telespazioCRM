@@ -298,6 +298,84 @@
         "requestDate",
         "isTender"
       ]
+    },
+    "ProductOrService": {
+      "title": "Product or Service",
+      "description": "Represents a product or a service in the catalog.",
+      "type": "object",
+      "properties": {
+        "publicId": {
+          "type": "string",
+          "description": "Public-facing sequential ID (C-PO-00000001 for product, C-SRV-00000001 for service)."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["product", "service"],
+          "description": "Indicates if the item is a product or a service."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product or service."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the item."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive"],
+          "description": "The status of the item in the catalog."
+        },
+        "unitOfMeasure": {
+          "type": "string",
+          "enum": ["units", "meters", "kg", "liters", "GB"],
+          "description": "The unit of measure for the item."
+        },
+        "oneTimeCharge": {
+          "type": "number",
+          "description": "One-time charge per unit."
+        },
+        "recurringCharge": {
+          "type": "number",
+          "description": "Recurring charge (subscription) per unit."
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["USD", "EUR", "ARS"],
+          "description": "The currency for the charges."
+        },
+        "isEditable": {
+          "type": "boolean",
+          "description": "Indicates if the item's properties can be edited when added to an opportunity."
+        },
+        "availableDiscounts": {
+          "type": "array",
+          "description": "Array of available discount percentages.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "createdBy": {
+            "type": "string",
+            "description": "UID of the user who created the item."
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of when the item was created."
+        }
+      },
+      "required": [
+        "publicId",
+        "type",
+        "name",
+        "status",
+        "unitOfMeasure",
+        "currency",
+        "isEditable",
+        "createdBy",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -327,6 +405,12 @@
         "$ref": "#/entities/Opportunity"
       },
       "description": "Stores sales opportunities."
+    },
+    "/productsAndServices/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/ProductOrService"
+      },
+      "description": "Stores catalog products and services."
     }
   }
 }
