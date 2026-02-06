@@ -1,7 +1,7 @@
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import type { ProductOrService } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const statusClasses: { [key in ProductOrService['status']]: string } = {
   active: 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200',
@@ -53,6 +54,23 @@ export const columns = (
         aria-label="Select row"
       />
     ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    id: 'photo',
+    header: () => null,
+    cell: ({ row }) => {
+      const item = row.original;
+      return (
+        <Avatar className="h-10 w-10 rounded-md">
+          <AvatarImage src={item.photoURL} alt={item.name} />
+          <AvatarFallback className="rounded-md">
+            <Package className="h-5 w-5 text-muted-foreground" />
+          </AvatarFallback>
+        </Avatar>
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },

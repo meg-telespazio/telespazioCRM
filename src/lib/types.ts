@@ -62,6 +62,7 @@ export type ProductOrService = {
   type: 'product' | 'service';
   name: string;
   description?: string;
+  photoURL?: string;
   status: 'active' | 'inactive';
   unitOfMeasure: 'units' | 'meters' | 'kg' | 'liters' | 'GB';
   oneTimeCharge?: number;

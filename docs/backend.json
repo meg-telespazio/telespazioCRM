@@ -321,6 +321,10 @@
           "type": "string",
           "description": "Detailed description of the item."
         },
+        "photoURL": {
+          "type": "string",
+          "description": "Data URL of the product or service's photo."
+        },
         "status": {
           "type": "string",
           "enum": ["active", "inactive"],

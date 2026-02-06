@@ -2,18 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
-import { ProductServiceForm } from '@/components/products-and-services/product-service-form';
 import { ProductServiceTable } from '@/components/products-and-services/product-service-table';
 import type { ProductOrService } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where } from 'firebase/firestore';
 import {
-  addProductOrService,
-  updateProductOrService,
   deleteProductOrService,
 } from '@/lib/firestore/products-and-services';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,9 +19,7 @@ export default function ProductsAndServicesPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { t } = useI18n();
-
-  const [isFormOpen, setFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<ProductOrService | null>(null);
+  const router = useRouter();
 
   const itemsQuery = useMemo(() => {
     if (!user) return null;
@@ -50,27 +45,8 @@ export default function ProductsAndServicesPage() {
     }
   }, [user, userLoading]);
 
-  const handleSaveItem = async (
-    itemData: Omit<ProductOrService, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
-  ) => {
-    if (!user) return;
-    
-    const cleanedData = Object.fromEntries(
-      Object.entries(itemData).filter(([_, v]) => v !== undefined)
-    );
-
-    if (editingItem) {
-      updateProductOrService(firestore, editingItem.id, cleanedData);
-    } else {
-      await addProductOrService(firestore, user.uid, cleanedData as any);
-    }
-    setEditingItem(null);
-    setFormOpen(false);
-  };
-
   const handleEditItem = (item: ProductOrService) => {
-    setEditingItem(item);
-    setFormOpen(true);
+    router.push(`/products-and-services/${item.id}`);
   };
 
   const handleDeleteItem = (itemId: string) => {
@@ -79,16 +55,8 @@ export default function ProductsAndServicesPage() {
     }
   };
 
-  const handleFormOpenChange = (isOpen: boolean) => {
-    setFormOpen(isOpen);
-    if (!isOpen) {
-      setEditingItem(null);
-    }
-  };
-
   const handleAddNew = () => {
-    setEditingItem(null);
-    setFormOpen(true);
+    router.push('/products-and-services/new');
   };
 
   if (userLoading) {
@@ -124,13 +92,6 @@ export default function ProductsAndServicesPage() {
           />
         )}
       </main>
-      <ProductServiceForm
-        key={editingItem?.id || 'new'}
-        isOpen={isFormOpen}
-        onOpenChange={handleFormOpenChange}
-        onSave={handleSaveItem}
-        defaultValues={editingItem || undefined}
-      />
     </div>
   );
 }
