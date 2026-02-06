@@ -261,7 +261,9 @@ export default function OpportunityFormPage() {
   }, [watchedLineItems, watchedContractMonths]);
 
   useEffect(() => {
-    form.setValue('value', totalFcv, { shouldValidate: true });
+    // Round to 2 decimal places for consistent display
+    const roundedFcv = parseFloat(totalFcv.toFixed(2));
+    form.setValue('value', roundedFcv, { shouldValidate: true });
   }, [totalFcv, form]);
 
   const handleAddLineItem = () => {
