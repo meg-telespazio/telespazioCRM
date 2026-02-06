@@ -197,71 +197,57 @@ export default function ProductServiceFormPage() {
           <div className="mx-auto max-w-4xl">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="relative">
-                    <Avatar className="h-32 w-32 rounded-lg">
-                      <AvatarImage src={currentImageSrc} alt={t('PS.itemName')} />
-                      <AvatarFallback className="rounded-lg">
-                        <Package className="h-16 w-16 text-muted-foreground" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full">
-                      <label htmlFor="item-photo-upload" className="cursor-pointer">
-                        <Camera className="h-4 w-4" />
-                        <input id="item-photo-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} disabled={isSaving} />
-                      </label>
-                    </Button>
-                  </div>
-                </div>
-
-                <FormField control={form.control} name="type" render={({ field }) => (
-                  <FormItem className="space-y-3"><FormLabel>{t('PS.itemType')}</FormLabel>
-                    <FormControl>
-                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-4">
-                        <FormItem className="flex items-center space-x-2 space-y-0">
-                          <FormControl><RadioGroupItem value="product" /></FormControl>
-                          <FormLabel className="font-normal">{t('PS.product')}</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2 space-y-0">
-                          <FormControl><RadioGroupItem value="service" /></FormControl>
-                          <FormLabel className="font-normal">{t('PS.service')}</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('PS.itemName')}</FormLabel>
-                    <FormControl><Input placeholder={t('PS.itemNamePlaceholder')} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="description" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('PS.itemDescription')}</FormLabel>
-                    <FormControl><Textarea placeholder={t('PS.itemDescriptionPlaceholder')} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="status" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('PS.status')}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder={t('PS.selectStatus')} /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status} value={status}>{t(`Status.${status}`)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                <Card>
+                  <CardContent className="p-6 space-y-6">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="relative">
+                        <Avatar className="h-32 w-32 rounded-lg">
+                          <AvatarImage src={currentImageSrc} alt={t('PS.itemName')} />
+                          <AvatarFallback className="rounded-lg">
+                            <Package className="h-16 w-16 text-muted-foreground" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full">
+                          <label htmlFor="item-photo-upload" className="cursor-pointer">
+                            <Camera className="h-4 w-4" />
+                            <input id="item-photo-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} disabled={isSaving} />
+                          </label>
+                        </Button>
+                      </div>
+                    </div>
+                    <FormField control={form.control} name="type" render={({ field }) => (
+                      <FormItem className="space-y-3"><FormLabel>{t('PS.itemType')}</FormLabel>
+                        <FormControl>
+                          <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-4">
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl><RadioGroupItem value="product" /></FormControl>
+                              <FormLabel className="font-normal">{t('PS.product')}</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl><RadioGroupItem value="service" /></FormControl>
+                              <FormLabel className="font-normal">{t('PS.service')}</FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('PS.itemName')}</FormLabel>
+                        <FormControl><Input placeholder={t('PS.itemNamePlaceholder')} {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="description" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('PS.itemDescription')}</FormLabel>
+                        <FormControl><Textarea placeholder={t('PS.itemDescriptionPlaceholder')} {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </CardContent>
+                </Card>
 
                 <Card>
                   <CardContent className="p-6 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -307,27 +293,46 @@ export default function ProductServiceFormPage() {
                         <FormMessage />
                       </FormItem>
                     )} />
+                    <FormField control={form.control} name="availableDiscounts" render={({ field }) => (
+                      <FormItem className='md:col-span-2'>
+                        <FormLabel>{t('PS.availableDiscounts')}</FormLabel>
+                        <FormControl><Input placeholder={t('PS.discountsPlaceholder')} {...field} /></FormControl>
+                        <FormDescription>{t('Validation.itemDiscountFormat')}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                   </CardContent>
                 </Card>
 
-                <FormField control={form.control} name="availableDiscounts" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('PS.availableDiscounts')}</FormLabel>
-                    <FormControl><Input placeholder={t('PS.discountsPlaceholder')} {...field} /></FormControl>
-                    <FormDescription>{t('Validation.itemDiscountFormat')}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                <Card>
+                    <CardContent className='p-6 space-y-6'>
+                        <FormField control={form.control} name="status" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t('PS.status')}</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder={t('PS.selectStatus')} /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                {statusOptions.map((status) => (
+                                <SelectItem key={status} value={status}>{t(`Status.${status}`)}</SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
 
-                <FormField control={form.control} name="isEditable" render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>{t('PS.isEditable')}</FormLabel>
-                      <FormDescription>{t('PS.isEditableDesc')}</FormDescription>
-                    </div>
-                  </FormItem>
-                )} />
+                        <FormField control={form.control} name="isEditable" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            <div className="space-y-1 leading-none">
+                            <FormLabel>{t('PS.isEditable')}</FormLabel>
+                            <FormDescription>{t('PS.isEditableDesc')}</FormDescription>
+                            </div>
+                        </FormItem>
+                        )} />
+                    </CardContent>
+                </Card>
+
 
                 <div className="flex items-center justify-end gap-4 pt-4">
                   <Button type="button" variant="outline" onClick={() => router.back()}>
