@@ -27,7 +27,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Trash2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -760,11 +760,11 @@ export default function OpportunityFormPage() {
                     <CardTitle>{t('Forms.lineItems')}</CardTitle>
                 </CardHeader>
                 <CardContent className='space-y-6'>
-                    <div className='grid grid-cols-1 gap-4 items-end md:grid-cols-6'>
+                    <div className='grid grid-cols-1 gap-4 items-end md:grid-cols-7'>
                         <div className='md:col-span-2'>
-                          <Label>{t('PS.itemName')}</Label>
+                          <Label className="text-xs">{t('PS.itemName')}</Label>
                            <Select value={adderState.selectedCatalogItemId} onValueChange={(id) => setAdderState(prev => ({ ...prev, selectedCatalogItemId: id }))}>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-9">
                                 <SelectValue placeholder={t('Forms.selectItem')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -773,32 +773,31 @@ export default function OpportunityFormPage() {
                         </Select>
                         </div>
                         <div>
-                          <Label>{t('Forms.quantity')}</Label>
-                          <Input type='number' value={adderState.quantity} onChange={e => setAdderState(prev => ({ ...prev, quantity: Number(e.target.value) }))} min={1} />
+                          <Label className="text-xs">{t('Forms.quantity')}</Label>
+                          <Input className="h-9" type='number' value={adderState.quantity} onChange={e => setAdderState(prev => ({ ...prev, quantity: Number(e.target.value) }))} min={1} />
                         </div>
                         <div>
-                          <Label>{t('Table.nrc')}</Label>
-                          <Input type='number' value={adderState.oneTimeCharge} onChange={e => setAdderState(prev => ({...prev, oneTimeCharge: Number(e.target.value)}))} disabled={!selectedCatalogItem?.isEditable}/>
+                          <Label className="text-xs">{t('Table.nrc')}</Label>
+                          <Input className="h-9" type='number' value={adderState.oneTimeCharge} onChange={e => setAdderState(prev => ({...prev, oneTimeCharge: Number(e.target.value)}))} disabled={!selectedCatalogItem?.isEditable}/>
                         </div>
                         <div>
-                           <Label>{t('Table.mrc')}</Label>
-                          <Input type='number' value={adderState.recurringCharge} onChange={e => setAdderState(prev => ({...prev, recurringCharge: Number(e.target.value)}))} disabled={!selectedCatalogItem?.isEditable}/>
+                           <Label className="text-xs">{t('Table.mrc')}</Label>
+                          <Input className="h-9" type='number' value={adderState.recurringCharge} onChange={e => setAdderState(prev => ({...prev, recurringCharge: Number(e.target.value)}))} disabled={!selectedCatalogItem?.isEditable}/>
                         </div>
-                        <div className='flex gap-2'>
-                           <div className='flex-1'>
-                             <Label>{t('Forms.discount')}</Label>
-                            <Select value={String(adderState.discount)} onValueChange={val => setAdderState(prev => ({...prev, discount: Number(val)}))} disabled={!selectedCatalogItem || !selectedCatalogItem.availableDiscounts?.length}>
-                                <SelectTrigger><SelectValue/></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="0">0%</SelectItem>
-                                    {selectedCatalogItem?.availableDiscounts?.map(d => <SelectItem key={d} value={String(d)}>{d}%</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                           </div>
-                           <Button type='button' onClick={handleAddLineItem} disabled={!selectedCatalogItem} className='self-end'>
-                             {t('Forms.addItem')}
-                           </Button>
-                        </div>
+                        <div>
+                         <Label className="text-xs">{t('Forms.discount')}</Label>
+                        <Select value={String(adderState.discount)} onValueChange={val => setAdderState(prev => ({...prev, discount: Number(val)}))} disabled={!selectedCatalogItem || !selectedCatalogItem.availableDiscounts?.length}>
+                            <SelectTrigger className="h-9"><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="0">0%</SelectItem>
+                                {selectedCatalogItem?.availableDiscounts?.map(d => <SelectItem key={d} value={String(d)}>{d}%</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                       </div>
+                       <Button type='button' size="icon" onClick={handleAddLineItem} disabled={!selectedCatalogItem} className="self-end">
+                         <Plus className="h-4 w-4" />
+                         <span className="sr-only">{t('Forms.addItem')}</span>
+                       </Button>
                     </div>
 
                     <Separator />
