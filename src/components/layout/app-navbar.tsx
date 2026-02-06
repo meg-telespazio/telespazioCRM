@@ -117,25 +117,24 @@ export function AppNavbar() {
               {t('App.appName')}
             </h1>
           </Link>
+          {/* Desktop Menu */}
+          <nav className="hidden items-center gap-6 md:flex">
+            {menuItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'text-sm font-medium transition-colors hover:text-white/90',
+                  pathname.startsWith(item.href)
+                    ? 'text-white'
+                    : 'text-white/70'
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
-
-        {/* Desktop Menu */}
-        <nav className="hidden items-center gap-6 md:flex">
-          {menuItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'text-sm font-medium transition-colors hover:text-white/90',
-                pathname.startsWith(item.href)
-                  ? 'text-white'
-                  : 'text-white/70'
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
 
         <div className="flex items-center gap-4">
           <div className="hidden items-center gap-2 md:flex">
