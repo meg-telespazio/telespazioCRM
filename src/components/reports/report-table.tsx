@@ -17,9 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
 import { useI18n } from '@/firebase/client-provider';
 import { format } from 'date-fns';
+import { DataTablePagination } from '../ui/data-table-pagination';
 
 type ReportTableProps = {
   columns: ColumnDef<any>[];
@@ -119,24 +119,7 @@ export function ReportTable({ columns, data }: ReportTableProps) {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 p-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          {t('Table.previous')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          {t('Table.next')}
-        </Button>
-      </div>
+      <DataTablePagination table={table} />
     </div>
   );
 }

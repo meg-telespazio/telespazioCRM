@@ -138,6 +138,10 @@ export const translations = {
       actions: 'Acciones',
       totals: 'Totales',
       subtotal: 'Subtotal',
+      pagination: {
+        rowsPerPage: 'Filas por página',
+        pageInfo: 'Página {page} de {totalPages}',
+      },
     },
     Forms: {
       editClient: 'Editar Cliente',
@@ -518,6 +522,10 @@ export const translations = {
       actions: 'Actions',
       totals: 'Totals',
       subtotal: 'Subtotal',
+      pagination: {
+        rowsPerPage: 'Rows per page',
+        pageInfo: 'Page {page} of {totalPages}',
+      },
     },
     Forms: {
       editClient: 'Edit Client',

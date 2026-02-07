@@ -32,6 +32,7 @@ import {
 import { columns } from './columns';
 import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
+import { DataTablePagination } from '../ui/data-table-pagination';
 
 type ClientTableProps = {
   data: Client[];
@@ -165,24 +166,7 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 p-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          {t('Table.previous')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          {t('Table.next')}
-        </Button>
-      </div>
+      <DataTablePagination table={table} />
     </div>
   );
 }
