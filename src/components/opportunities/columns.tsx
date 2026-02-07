@@ -1,7 +1,12 @@
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+  MoreHorizontal,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -61,20 +66,100 @@ export const columns = (
   },
   {
     accessorKey: 'publicId',
-    header: t('Table.opportunityId'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Table.opportunityId')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
   },
   {
     accessorKey: 'title',
-    header: t('Dashboard.recentOpportunities.opportunityHeader'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Dashboard.recentOpportunities.opportunityHeader')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
   },
   {
     accessorKey: 'clientId',
-    header: t('Dashboard.recentOpportunities.clientHeader'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Dashboard.recentOpportunities.clientHeader')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => getClientName(row.original.clientId, clients),
   },
   {
     accessorKey: 'value',
-    header: t('Dashboard.recentOpportunities.valueHeader') + ' (USD)',
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Dashboard.recentOpportunities.valueHeader')} (USD)
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('value'));
       const formatted = new Intl.NumberFormat('en-US', {
@@ -86,7 +171,27 @@ export const columns = (
   },
   {
     accessorKey: 'stage',
-    header: t('Dashboard.recentOpportunities.stageHeader'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Dashboard.recentOpportunities.stageHeader')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => (
       <Badge variant={stageVariant[row.original.stage]}>
         {t(`Stages.${row.original.stage}`)}
@@ -95,22 +200,62 @@ export const columns = (
   },
   {
     accessorKey: 'probability',
-    header: t('Forms.probability'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Forms.probability')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <Progress value={row.original.probability} className="w-24" />
         <span>{row.original.probability}%</span>
       </div>
     ),
-     meta: {
+    meta: {
       className: 'hidden md:table-cell',
     },
   },
   {
     accessorKey: 'closeDate',
-    header: t('Forms.estCloseDate'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Forms.estCloseDate')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => <div>{format(row.original.closeDate, 'PPP')}</div>,
-     meta: {
+    meta: {
       className: 'hidden lg:table-cell',
     },
   },

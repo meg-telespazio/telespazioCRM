@@ -1,7 +1,12 @@
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+  MoreHorizontal,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -49,36 +54,160 @@ export const columns = (
   },
   {
     accessorKey: 'publicId',
-    header: t('Table.contactId'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Table.contactId')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
   },
   {
     accessorKey: 'name',
-    header: t('Forms.contactName'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Forms.contactName')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
   },
   {
     accessorKey: 'clientId',
-    header: t('Pages.clients'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Pages.clients')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => getClientName(row.original.clientId, clients),
   },
   {
     id: 'email',
-    header: t('Auth.emailLabel'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Auth.emailLabel')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => row.original.emails?.[0]?.address || '-',
-     meta: {
+    meta: {
       className: 'hidden lg:table-cell',
-    }
+    },
+    accessorFn: (row) => row.emails?.[0]?.address,
+    enableSorting: true,
   },
   {
     id: 'phone',
-    header: t('Auth.phoneLabel'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Auth.phoneLabel')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => row.original.phones?.[0]?.number || '-',
-     meta: {
+    meta: {
       className: 'hidden sm:table-cell',
-    }
+    },
+    accessorFn: (row) => row.phones?.[0]?.number,
+    enableSorting: true,
   },
   {
     accessorKey: 'createdAt',
-    header: t('Table.createdDate'),
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+        >
+          {t('Table.createdDate')}
+          <div className="ml-auto">
+            {isSorted === 'asc' ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : isSorted === 'desc' ? (
+              <ArrowDown className="h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="h-4 w-4" />
+            )}
+          </div>
+        </Button>
+      );
+    },
     cell: ({ row }) => {
       const { createdAt } = row.original;
       return createdAt instanceof Date ? format(createdAt, 'PPP') : '...';
