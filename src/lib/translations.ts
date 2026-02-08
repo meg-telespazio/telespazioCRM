@@ -226,6 +226,9 @@ export const translations = {
       availableDiscounts: 'Descuentos Disponibles (%)',
       discountsPlaceholder: 'Ej: 5, 10, 15.5',
       saveItem: 'Guardar Ítem',
+      bulkUpdateSaving: 'Actualizando ítems...',
+      bulkUpdateSuccess: 'Ítems actualizados exitosamente',
+      bulkUpdateError: 'Error al actualizar ítems',
     },
     Actions: {
       title: 'Acciones',
@@ -242,6 +245,9 @@ export const translations = {
       editItem: 'Editar ítem',
       deleteItem: 'Eliminar ítem',
       confirmDelete: '¿Estás seguro de que quieres eliminar este elemento?',
+      bulkActions: 'Acciones Masivas',
+      bulkStatusUpdate: 'Actualizar Estado',
+      confirmBulkUpdate: '¿Estás seguro que quieres actualizar el estado de {count} ítems a {status}?',
     },
     Stages: {
       Prospecting: 'Prospección',
@@ -611,6 +617,9 @@ export const translations = {
       availableDiscounts: 'Available Discounts (%)',
       discountsPlaceholder: 'e.g., 5, 10, 15.5',
       saveItem: 'Save Item',
+      bulkUpdateSaving: 'Updating items...',
+      bulkUpdateSuccess: 'Items updated successfully',
+      bulkUpdateError: 'Error updating items',
     },
     Actions: {
       title: 'Actions',
@@ -627,6 +636,9 @@ export const translations = {
       editItem: 'Edit item',
       deleteItem: 'Delete item',
       confirmDelete: 'Are you sure you want to delete this item?',
+      bulkActions: 'Bulk Actions',
+      bulkStatusUpdate: 'Update Status',
+      confirmBulkUpdate: 'Are you sure you want to update the status of {count} items to {status}?',
     },
     Stages: {
       Prospecting: 'Prospecting',

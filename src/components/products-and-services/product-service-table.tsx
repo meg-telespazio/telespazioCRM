@@ -27,12 +27,17 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { columns } from './columns';
 import type { ProductOrService } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { DataTablePagination } from '../ui/data-table-pagination';
+import { useFirestore } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { updateProductOrService } from '@/lib/firestore/products-and-services';
 
 type ProductServiceTableProps = {
   data: ProductOrService[];
@@ -51,6 +56,8 @@ export function ProductServiceTable({ data, onEdit, onDelete }: ProductServiceTa
     });
   const [rowSelection, setRowSelection] = React.useState({});
   const { t } = useI18n();
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
   const table = useReactTable({
     data,
@@ -70,6 +77,29 @@ export function ProductServiceTable({ data, onEdit, onDelete }: ProductServiceTa
       rowSelection,
     },
   });
+  
+  const handleBulkStatusUpdate = async (status: 'active' | 'inactive') => {
+    const selectedRows = table.getFilteredSelectedRowModel().rows;
+    if (!selectedRows.length || !window.confirm(t('Actions.confirmBulkUpdate', { count: selectedRows.length, status: t(`Status.${status}`) }))) {
+      return;
+    }
+    
+    toast({ title: t('PS.bulkUpdateSaving') });
+
+    const promises = selectedRows.map(row => {
+      return updateProductOrService(firestore, row.original.id, { status });
+    });
+
+    try {
+        await Promise.all(promises);
+        toast({ variant: 'success', title: t('PS.bulkUpdateSuccess') });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: t('PS.bulkUpdateError'), description: error.message });
+    } finally {
+        table.resetRowSelection();
+    }
+  };
+
 
   const getColumnName = (key: string) => {
     const map: { [key: string]: string } = {
@@ -96,6 +126,24 @@ export function ProductServiceTable({ data, onEdit, onDelete }: ProductServiceTa
           }
           className="max-w-sm"
         />
+         {table.getFilteredSelectedRowModel().rows.length > 0 && (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="ml-4">
+                        {t('Actions.bulkActions')} ({table.getFilteredSelectedRowModel().rows.length})
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                    <DropdownMenuLabel>{t('Actions.bulkStatusUpdate')}</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => handleBulkStatusUpdate('active')}>
+                        {t('Status.active')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkStatusUpdate('inactive')}>
+                        {t('Status.inactive')}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">

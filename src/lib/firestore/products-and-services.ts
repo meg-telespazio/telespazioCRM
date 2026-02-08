@@ -66,13 +66,14 @@ export function updateProductOrService(
   itemData: Partial<PSData>
 ) {
   const itemRef = doc(firestore, PS_COLLECTION, itemId);
-  updateDoc(itemRef, itemData).catch((serverError) => {
+  return updateDoc(itemRef, itemData).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: itemRef.path,
       operation: 'update',
       requestResourceData: itemData,
     });
     errorEmitter.emit('permission-error', permissionError);
+    throw serverError;
   });
 }
 
