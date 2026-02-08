@@ -30,22 +30,31 @@ export function SessionTimeoutDialog({
   const [countdown, setCountdown] = useState(countdownStart);
 
   useEffect(() => {
-    if (isOpen) {
-      setCountdown(countdownStart);
-      const interval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            onLogout(); // Trigger logout when countdown finishes
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(interval);
+    if (!isOpen) {
+      return;
     }
-  }, [isOpen, onLogout, countdownStart]);
+
+    setCountdown(countdownStart); // Reset countdown when dialog opens
+
+    const intervalId = setInterval(() => {
+      setCountdown((prevCountdown) => {
+        if (prevCountdown <= 1) {
+          clearInterval(intervalId);
+          return 0;
+        }
+        return prevCountdown - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [isOpen, countdownStart]);
+
+  useEffect(() => {
+    if (isOpen && countdown === 0) {
+      onLogout();
+    }
+  }, [isOpen, countdown, onLogout]);
+
 
   return (
     <AlertDialog open={isOpen}>
