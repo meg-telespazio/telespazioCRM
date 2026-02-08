@@ -142,6 +142,7 @@ export const translations = {
         rowsPerPage: 'Filas por página',
         pageInfo: 'Página {page} de {totalPages}',
       },
+      all: 'Todos',
     },
     Forms: {
       editClient: 'Editar Cliente',
@@ -526,6 +527,7 @@ export const translations = {
         rowsPerPage: 'Rows per page',
         pageInfo: 'Page {page} of {totalPages}',
       },
+      all: 'All',
     },
     Forms: {
       editClient: 'Edit Client',

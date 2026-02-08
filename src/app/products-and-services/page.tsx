@@ -14,12 +14,15 @@ import {
   deleteProductOrService,
 } from '@/lib/firestore/products-and-services';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProductsAndServicesPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { t } = useI18n();
   const router = useRouter();
+
+  const [typeFilter, setTypeFilter] = useState<'all' | 'product' | 'service'>('all');
 
   const itemsQuery = useMemo(() => {
     if (!user) return null;
@@ -34,10 +37,15 @@ export default function ProductsAndServicesPage() {
 
   const items = useMemo(() => {
     if (!itemsData) return [];
-    return [...itemsData].sort((a, b) =>
+    
+    const filteredItems = typeFilter === 'all'
+      ? itemsData
+      : itemsData.filter(item => item.type === typeFilter);
+
+    return [...filteredItems].sort((a, b) =>
       (a.publicId || '').localeCompare(b.publicId || '')
     );
-  }, [itemsData]);
+  }, [itemsData, typeFilter]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -76,6 +84,15 @@ export default function ProductsAndServicesPage() {
         </Button>
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">
+        <div className="mb-4">
+          <Tabs value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
+            <TabsList>
+              <TabsTrigger value="all">{t('Table.all')}</TabsTrigger>
+              <TabsTrigger value="product">{t('PS.product')}</TabsTrigger>
+              <TabsTrigger value="service">{t('PS.service')}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
         {itemsLoading ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-t-lg border-b bg-card p-4">
