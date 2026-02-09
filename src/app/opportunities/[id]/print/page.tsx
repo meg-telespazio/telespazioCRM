@@ -14,7 +14,7 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import Image from 'next/image';
-import { numeroALetras } from 'numero-a-letras';
+import numeroALetras from 'numero-a-letras';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
