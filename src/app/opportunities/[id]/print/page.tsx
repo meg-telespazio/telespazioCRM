@@ -14,7 +14,6 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import Image from 'next/image';
-import numeroALetras from 'numero-a-letras';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,37 +22,6 @@ import { Separator } from '@/components/ui/separator';
 
 type EnrichedLineItem = Opportunity['lineItems'][0] & {
   type: ProductOrService['type'];
-};
-
-const numberToWords = (num: number, currency: 'USD' | 'EUR' | 'ARS') => {
-  const currencyMap = {
-    USD: {
-      plural: 'DÓLARES ESTADOUNIDENSES',
-      singular: 'DÓLAR ESTADOUNIDENSE',
-      centPlural: 'CENTAVOS',
-      centSingular: 'CENTAVO',
-    },
-    ARS: {
-      plural: 'PESOS ARGENTINOS',
-      singular: 'PESO ARGENTINO',
-      centPlural: 'CENTAVOS',
-      centSingular: 'CENTAVO',
-    },
-    EUR: {
-      plural: 'EUROS',
-      singular: 'EURO',
-      centPlural: 'CÉNTIMOS',
-      centSingular: 'CÉNTIMO',
-    },
-  };
-  try {
-    // This library can have CJS/ESM interop issues, so we robustly find the function.
-    const converter = (numeroALetras as any).default || numeroALetras;
-    return converter(num, { ...currencyMap[currency] }).toUpperCase();
-  } catch (e) {
-    console.error('Error converting number to words:', e);
-    return 'Error';
-  }
 };
 
 export default function PrintOpportunityPage() {
@@ -425,7 +393,7 @@ export default function PrintOpportunityPage() {
               </div>
               <div className="font-bold text-red-700">
                 <span>{t('Proposal.total_contract_value')}: </span>
-                <span>{numberToWords(finalFcv, 'USD')} ({opportunity.currency} {finalFcv.toFixed(2)})</span>
+                <span>{opportunity.currency} {finalFcv.toFixed(2)}</span>
               </div>
               {customNote && <div><p className='font-bold'>{t('Forms.notes').toUpperCase()}:</p><p>{customNote}</p></div>}
               <div className='border-2 border-red-700 p-2'>
