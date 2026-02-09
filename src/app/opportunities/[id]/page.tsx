@@ -98,6 +98,9 @@ const getFormSchema = (t: (key: string) => string) => {
     isTender: z.boolean().default(false),
     contactId: z.string().optional().or(z.literal('')),
     lineItems: z.array(lineItemSchema).optional(),
+    generalDiscountPercentage: z.coerce.number().min(0).max(100).optional(),
+    applyDiscountToNrc: z.boolean().optional().default(false),
+    applyDiscountToMrc: z.boolean().optional().default(false),
   });
 };
 
@@ -209,6 +212,9 @@ export default function OpportunityFormPage() {
       isTender: false,
       contactId: '',
       lineItems: [],
+      generalDiscountPercentage: 0,
+      applyDiscountToNrc: false,
+      applyDiscountToMrc: false,
     },
   });
 
@@ -224,6 +230,9 @@ export default function OpportunityFormPage() {
   const selectedClientId = form.watch('clientId');
   const watchedLineItems = form.watch('lineItems', []);
   const watchedContractMonths = form.watch('contractMonths');
+  const watchedGeneralDiscount = form.watch('generalDiscountPercentage', 0);
+  const watchedApplyToNrc = form.watch('applyDiscountToNrc', false);
+  const watchedApplyToMrc = form.watch('applyDiscountToMrc', false);
 
   const selectedCatalogItem = useMemo(() => {
     if (!adderState.selectedCatalogItemId || !catalogItems) return null;
@@ -244,21 +253,46 @@ export default function OpportunityFormPage() {
     }
   }, [selectedCatalogItem]);
 
-  const { totalNrc, totalMrc, totalFcv } = useMemo(() => {
-    const totals = (watchedLineItems || []).reduce(
-      (acc, item) => {
-        const nrc = item.quantity * item.oneTimeCharge * (1 - item.discount / 100);
-        const mrc = item.quantity * item.recurringCharge * (1 - item.discount / 100);
-        acc.nrc += nrc;
-        acc.mrc += mrc;
-        return acc;
-      },
-      { nrc: 0, mrc: 0 }
-    );
+  const { lineItemTotalNrc, lineItemTotalMrc, totalNrc, totalMrc, totalFcv } =
+    useMemo(() => {
+      const lineTotals = (watchedLineItems || []).reduce(
+        (acc, item) => {
+          const nrc =
+            item.quantity * item.oneTimeCharge * (1 - item.discount / 100);
+          const mrc =
+            item.quantity * item.recurringCharge * (1 - item.discount / 100);
+          acc.nrc += nrc;
+          acc.mrc += mrc;
+          return acc;
+        },
+        { nrc: 0, mrc: 0 }
+      );
 
-    const fcv = totals.nrc + totals.mrc * watchedContractMonths;
-    return { totalNrc: totals.nrc, totalMrc: totals.mrc, totalFcv: fcv };
-  }, [watchedLineItems, watchedContractMonths]);
+      const discountMultiplier = 1 - (watchedGeneralDiscount || 0) / 100;
+
+      const finalNrc = watchedApplyToNrc
+        ? lineTotals.nrc * discountMultiplier
+        : lineTotals.nrc;
+      const finalMrc = watchedApplyToMrc
+        ? lineTotals.mrc * discountMultiplier
+        : lineTotals.mrc;
+
+      const fcv = finalNrc + finalMrc * watchedContractMonths;
+
+      return {
+        lineItemTotalNrc: lineTotals.nrc,
+        lineItemTotalMrc: lineTotals.mrc,
+        totalNrc: finalNrc,
+        totalMrc: finalMrc,
+        totalFcv: fcv,
+      };
+    }, [
+      watchedLineItems,
+      watchedContractMonths,
+      watchedGeneralDiscount,
+      watchedApplyToNrc,
+      watchedApplyToMrc,
+    ]);
 
   useEffect(() => {
     // Round to 2 decimal places for consistent display
@@ -305,6 +339,10 @@ export default function OpportunityFormPage() {
           : undefined,
         contactId: opportunityData.contactId || '',
         lineItems: opportunityData.lineItems || [],
+        generalDiscountPercentage:
+          opportunityData.generalDiscountPercentage || 0,
+        applyDiscountToNrc: opportunityData.applyDiscountToNrc || false,
+        applyDiscountToMrc: opportunityData.applyDiscountToMrc || false,
       });
     }
   }, [opportunityData, form]);
@@ -331,6 +369,7 @@ export default function OpportunityFormPage() {
 
   const stages = ['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost'];
   const contractMonthsOptions = [12, 24, 36];
+  const discountOptions = [0, 5, 10, 15, 20, 25, 30];
 
   const pageIsLoading =
     userLoading ||
@@ -852,12 +891,38 @@ export default function OpportunityFormPage() {
                        <div className='w-full max-w-sm space-y-2'>
                           <div className='flex justify-between'>
                             <span className='text-muted-foreground'>{t('Table.subtotal')} {t('Table.nrc')}</span>
-                            <span className='font-medium'>${totalNrc.toFixed(2)}</span>
+                            <span className='font-medium'>${lineItemTotalNrc.toFixed(2)}</span>
                           </div>
                           <div className='flex justify-between'>
                             <span className='text-muted-foreground'>{t('Table.subtotal')} {t('Table.mrc')}</span>
-                            <span className='font-medium'>${totalMrc.toFixed(2)}</span>
+                            <span className='font-medium'>${lineItemTotalMrc.toFixed(2)}</span>
                           </div>
+                          
+                           {watchedGeneralDiscount > 0 && (watchedApplyToNrc || watchedApplyToMrc) && <Separator/>}
+
+                           {watchedApplyToNrc && watchedGeneralDiscount > 0 && (
+                            <div className='flex justify-between text-muted-foreground'>
+                                <span>{t('Forms.generalDiscount')} ({watchedGeneralDiscount}%) {t('Table.nrc')}</span>
+                                <span>- ${(lineItemTotalNrc - totalNrc).toFixed(2)}</span>
+                            </div>
+                           )}
+                           {watchedApplyToMrc && watchedGeneralDiscount > 0 && (
+                            <div className='flex justify-between text-muted-foreground'>
+                                <span>{t('Forms.generalDiscount')} ({watchedGeneralDiscount}%) {t('Table.mrc')}</span>
+                                <span>- ${(lineItemTotalMrc - totalMrc).toFixed(2)}</span>
+                            </div>
+                           )}
+
+                           <Separator/>
+                           <div className='flex justify-between font-medium'>
+                            <span>{t('Table.totalNrc')}</span>
+                            <span>${totalNrc.toFixed(2)}</span>
+                          </div>
+                          <div className='flex justify-between font-medium'>
+                            <span>{t('Table.totalMrc')}</span>
+                            <span>${totalMrc.toFixed(2)}</span>
+                          </div>
+
                           <Separator/>
                            <div className='flex justify-between text-lg font-bold'>
                             <span>{t('Forms.fcv')}</span>
@@ -865,10 +930,63 @@ export default function OpportunityFormPage() {
                           </div>
                        </div>
                     </div>
-
                 </CardContent>
               </Card>
 
+              <Card>
+                <CardHeader>
+                    <CardTitle>{t('Forms.generalDiscount')}</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <FormField
+                        control={form.control}
+                        name="generalDiscountPercentage"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t('Forms.discount')}</FormLabel>
+                                <Select
+                                    onValueChange={(value) => field.onChange(Number(value))}
+                                    value={String(field.value || 0)}
+                                >
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        {discountOptions.map((d) => (
+                                            <SelectItem key={d} value={String(d)}>{d}%</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <div className="space-y-4 pt-8">
+                        <FormField
+                            control={form.control}
+                            name="applyDiscountToNrc"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center gap-x-3 space-y-0">
+                                    <FormControl>
+                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">{t('Forms.applyToNrc')}</FormLabel>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="applyDiscountToMrc"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center gap-x-3 space-y-0">
+                                    <FormControl>
+                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">{t('Forms.applyToMrc')}</FormLabel>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
 
               <div className="flex items-center justify-end gap-4 pt-4">
                 <Button

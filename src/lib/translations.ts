@@ -202,6 +202,9 @@ export const translations = {
       quantity: 'Cantidad',
       discount: 'Descuento (%)',
       noItems: 'Aún no se han añadido ítems a esta oportunidad.',
+      generalDiscount: 'Descuento General',
+      applyToNrc: 'Aplicar a Cargos Únicos',
+      applyToMrc: 'Aplicar a Abonos',
     },
     PS: {
       editItem: 'Editar Ítem',
@@ -593,6 +596,9 @@ export const translations = {
       quantity: 'Quantity',
       discount: 'Discount (%)',
       noItems: 'No items have been added to this opportunity yet.',
+      generalDiscount: 'General Discount',
+      applyToNrc: 'Apply to One-Time Charges',
+      applyToMrc: 'Apply to Recurring Charges',
     },
     PS: {
       editItem: 'Edit Item',

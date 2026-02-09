@@ -319,6 +319,18 @@
             },
             "required": ["itemId", "name", "quantity"]
           }
+        },
+        "generalDiscountPercentage": {
+          "type": "number",
+          "description": "The general discount percentage to apply to the whole opportunity."
+        },
+        "applyDiscountToNrc": {
+          "type": "boolean",
+          "description": "Indicates if the general discount applies to one-time charges."
+        },
+        "applyDiscountToMrc": {
+          "type": "boolean",
+          "description": "Indicates if the general discount applies to recurring charges."
         }
       },
       "required": [

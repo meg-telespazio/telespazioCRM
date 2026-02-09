@@ -65,6 +65,9 @@ export type Opportunity = {
   isTender: boolean;
   contactId?: string;
   lineItems?: OpportunityLineItem[];
+  generalDiscountPercentage?: number;
+  applyDiscountToNrc?: boolean;
+  applyDiscountToMrc?: boolean;
 };
 
 export type ProductOrService = {
