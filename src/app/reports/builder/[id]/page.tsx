@@ -70,7 +70,7 @@ const reportableFields: Record<
       phone: { label: 'Forms.clientPhone', type: 'string' },
       website: { label: 'Forms.website', type: 'string' },
       status: { label: 'Table.status', type: 'enum', enumValues: ['active', 'suspended', 'canceled'] },
-      industry: { label: 'Table.industry', type: 'string' }, // Could be enum if predefined
+      industry: { label: 'Table.industry', type: 'string' },
       createdAt: { label: 'Table.createdDate', type: 'date' },
     },
   },
@@ -82,8 +82,6 @@ const reportableFields: Record<
       emails: { label: 'Forms.emails', type: 'array' },
       phones: { label: 'Forms.phones', type: 'array' },
       createdAt: { label: 'Table.createdDate', type: 'date' },
-      // Relational
-      'client.name': { label: "Client's Name", type: 'string', isRelational: true },
     },
   },
   opportunities: {
@@ -100,9 +98,6 @@ const reportableFields: Record<
       offerSentDate: { label: 'Forms.offerSentDate', type: 'date' },
       isTender: { label: 'Forms.isTender', type: 'boolean' },
       createdAt: { label: 'Table.createdDate', type: 'date' },
-      // Relational
-      'client.name': { label: "Client's Name", type: 'string', isRelational: true },
-      'contact.name': { label: "Contact's Name", type: 'string', isRelational: true },
     },
   },
   productsAndServices: {
@@ -167,7 +162,6 @@ const operatorsByType = {
   enum: [
     { value: 'is', label: 'is' },
     { value: 'is_not', label: 'is not' },
-    { value: 'in', label: 'is one of' },
   ],
   boolean: [
     { value: 'is', label: 'is' }
@@ -204,6 +198,8 @@ export default function ReportBuilderPage() {
   const { data: contactsData, loading: contactsLoading } = useCollection<Contact>(useMemo(() => baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null, [firestore, baseQuery]));
   const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(useMemo(() => baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null, [firestore, baseQuery]));
   const { data: psData, loading: psLoading } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery) : null, [firestore, baseQuery]));
+  
+  const pageIsLoading = userLoading || reportLoading || clientsLoading || contactsLoading || opportunitiesLoading || psLoading;
 
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
@@ -226,6 +222,8 @@ export default function ReportBuilderPage() {
     else if (watchedDataSource === 'contacts') baseData = contactsData || [];
     else if (watchedDataSource === 'opportunities') baseData = opportunitiesData || [];
     else if (watchedDataSource === 'productsAndServices') baseData = psData || [];
+
+    if (!baseData || baseData.length === 0) return [];
 
     const clientMap = new Map(clientsData?.map(c => [c.id, c]));
     const contactMap = new Map(contactsData?.map(c => [c.id, c]));
@@ -263,12 +261,12 @@ export default function ReportBuilderPage() {
                     let itemValue: any;
                     const [source, fieldName] = filter.field.split('.');
 
-                    if (source === 'clients') {
+                    if (source === watchedDataSource) {
+                        itemValue = item[fieldName];
+                    } else if (source === 'clients') {
                         itemValue = item.__client?.[fieldName];
                     } else if (source === 'contacts') {
                         itemValue = item.__contact?.[fieldName];
-                    } else if (source === watchedDataSource) {
-                        itemValue = item[fieldName];
                     }
                     
                     const filterValue = filter.value;
@@ -279,7 +277,8 @@ export default function ReportBuilderPage() {
 
                     if (itemValue === undefined || itemValue === null) return false;
 
-                    const type = reportableFields[source as DataSource]?.fields[fieldName]?.type;
+                    const fieldInfo = reportableFields[source as DataSource]?.fields[fieldName];
+                    const type = fieldInfo?.type;
                     
                     switch (filter.operator) {
                         case 'contains': return String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase());
@@ -294,7 +293,6 @@ export default function ReportBuilderPage() {
                         case 'lte': return itemValue <= Number(filterValue);
                         case 'is': return String(itemValue) === String(filterValue);
                         case 'is_not': return String(itemValue) !== String(filterValue);
-                        case 'in': return Array.isArray(filterValue) ? filterValue.includes(itemValue) : false;
                         default: return true;
                     }
                 });
@@ -307,15 +305,15 @@ export default function ReportBuilderPage() {
               const [source, fieldName] = sort.field.split('.');
               let valA, valB;
 
-              if (source === 'clients') {
+              if (source === watchedDataSource) {
+                  valA = a[fieldName];
+                  valB = b[fieldName];
+              } else if (source === 'clients') {
                   valA = a.__client?.[fieldName];
                   valB = b.__client?.[fieldName];
               } else if (source === 'contacts') {
                   valA = a.__contact?.[fieldName];
                   valB = b.__contact?.[fieldName];
-              } else if (source === watchedDataSource) {
-                  valA = a[fieldName];
-                  valB = b[fieldName];
               }
               
               if (valA === undefined || valA === null) return sort.direction === 'asc' ? 1 : -1;
@@ -331,16 +329,21 @@ export default function ReportBuilderPage() {
         const newColumns = fields.map(fieldKey => {
           const [source, field] = fieldKey.split('.');
           const sourceName = source as keyof typeof reportableFields;
-          return { accessorKey: fieldKey, header: t(reportableFields[sourceName]?.fields[field]?.label || fieldKey) };
+          const fieldConfig = reportableFields[sourceName]?.fields[field];
+          return { accessorKey: fieldKey, header: t(fieldConfig?.label || fieldKey) };
         });
 
         const newData = filtered.map(item => {
           const row: Record<string, any> = {};
           fields.forEach(fieldKey => {
             const [source, field] = fieldKey.split('.');
-            if (source === 'clients') row[fieldKey] = item.__client?.[field];
-            else if (source === 'contacts') row[fieldKey] = item.__contact?.[field];
-            else row[fieldKey] = item[field];
+            if (source === watchedDataSource) {
+                row[fieldKey] = item[field];
+            } else if (source === 'clients') {
+                row[fieldKey] = item.__client?.[field];
+            } else if (source === 'contacts') {
+                row[fieldKey] = item.__contact?.[field];
+            }
           });
           return row;
         });
@@ -406,8 +409,6 @@ export default function ReportBuilderPage() {
   if ((reportLoading && !isNew) || userLoading) {
     return <div className="flex-1 p-6"><Skeleton className="h-96 w-full" /></div>
   }
-  
-  const pageIsLoading = userLoading || reportLoading || clientsLoading || contactsLoading || opportunitiesLoading || psLoading;
 
   const renderFilterValueInput = (index: number) => {
     const fieldKey = form.watch(`filters.${index}.field`);
@@ -415,7 +416,9 @@ export default function ReportBuilderPage() {
     if (!fieldKey || !operator) return null;
 
     const [source, field] = fieldKey.split('.');
-    const type = reportableFields[source as DataSource]?.fields[field]?.type;
+    const fieldInfo = reportableFields[source as DataSource]?.fields[field];
+    if (!fieldInfo) return null;
+    const type = fieldInfo.type;
 
     if (type === 'date') {
       return <Popover><PopoverTrigger asChild>
@@ -427,7 +430,7 @@ export default function ReportBuilderPage() {
     }
 
     if (type === 'enum') {
-        const options = reportableFields[source as DataSource]?.fields[field]?.enumValues || [];
+        const options = fieldInfo.enumValues || [];
         const specialOptions: Record<string, string[]> = {
             'opportunities.stage': ['Open']
         }
@@ -603,8 +606,8 @@ export default function ReportBuilderPage() {
                 <div className="flex items-center justify-end gap-4">
                     <Button type="button" variant="outline" onClick={() => router.push('/reports')}>{t('Auth.cancelLabel')}</Button>
                     <Button type="submit" disabled={isSaving}>{isSaving ? <Loader2 className="animate-spin" /> : t('Reports.saveReport')}</Button>
-                    <Button type="button" onClick={() => generateReport(form.getValues('primaryDataSource'), form.getValues('selectedFields'), form.getValues('filters'), form.getValues('sorting'))} disabled={isGenerating || watchedSelectedFields.length === 0}>
-                        {isGenerating ? <Loader2 className="animate-spin" /> : t('Reports.generateReport')}
+                    <Button type="button" onClick={() => generateReport(form.getValues('primaryDataSource'), form.getValues('selectedFields'), form.getValues('filters'), form.getValues('sorting'))} disabled={isGenerating || pageIsLoading || watchedSelectedFields.length === 0}>
+                        {isGenerating || pageIsLoading ? <Loader2 className="animate-spin" /> : t('Reports.generateReport')}
                     </Button>
                 </div>
             </form>
