@@ -362,10 +362,10 @@ export default function ReportBuilderPage() {
                 {hasField('status') && (
                     <FormItem>
                          <FormLabel>{t('Table.status')}</FormLabel>
-                         <Select value={filters.status || ''} onValueChange={value => handleFilterChange('status', value)}>
+                         <Select value={filters.status} onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}>
                             <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">{t('Table.all')}</SelectItem>
+                                <SelectItem value="all">{t('Table.all')}</SelectItem>
                                 {(sourceFields.status.enumValues || []).map(val => (
                                     <SelectItem key={val} value={val}>{t(`Status.${val}`)}</SelectItem>
                                 ))}
@@ -376,10 +376,10 @@ export default function ReportBuilderPage() {
                  {hasField('stage') && (
                     <FormItem>
                          <FormLabel>{t('Table.status')}</FormLabel>
-                         <Select value={filters.stage || ''} onValueChange={value => handleFilterChange('stage', value)}>
+                         <Select value={filters.stage} onValueChange={value => handleFilterChange('stage', value === 'all' ? undefined : value)}>
                             <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">{t('Table.all')}</SelectItem>
+                                <SelectItem value="all">{t('Table.all')}</SelectItem>
                                 {(sourceFields.stage.enumValues || []).map(val => (
                                     <SelectItem key={val} value={val}>{t(`Stages.${val}`)}</SelectItem>
                                 ))}
@@ -390,10 +390,10 @@ export default function ReportBuilderPage() {
                  {hasField('type') && (
                     <FormItem>
                          <FormLabel>{t('Table.type')}</FormLabel>
-                         <Select value={filters.type || ''} onValueChange={value => handleFilterChange('type', value)}>
+                         <Select value={filters.type} onValueChange={value => handleFilterChange('type', value === 'all' ? undefined : value)}>
                             <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">{t('Table.all')}</SelectItem>
+                                <SelectItem value="all">{t('Table.all')}</SelectItem>
                                 {(sourceFields.type.enumValues || []).map(val => (
                                     <SelectItem key={val} value={val}>{t(`PS.${val}`)}</SelectItem>
                                 ))}
