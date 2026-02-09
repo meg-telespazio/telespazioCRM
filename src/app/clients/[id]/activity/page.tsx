@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   useUser,
   useFirestore,
@@ -44,6 +44,7 @@ import {
   Calendar,
   MessageSquare,
   ListFilter,
+  ArrowLeft,
 } from 'lucide-react';
 import { ActivityCard } from '@/components/activity/activity-card';
 
@@ -56,6 +57,7 @@ const newActivitySchema = z.object({
 export default function ClientActivityPage() {
   const { t } = useI18n();
   const params = useParams();
+  const router = useRouter();
   const clientId = params.id as string;
   
   const { user, loading: userLoading } = useUser();
@@ -149,6 +151,10 @@ export default function ClientActivityPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={client.name}>
+          <Button variant="outline" onClick={() => router.push('/clients')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {t('Actions.backToClientList')}
+          </Button>
           <Badge variant={client.status === 'active' ? 'default' : 'destructive'} className={client.status === 'active' ? 'bg-green-600' : ''}>
               {t(`Status.${client.status}`)}
           </Badge>

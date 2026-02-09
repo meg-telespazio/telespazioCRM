@@ -268,6 +268,7 @@ export const translations = {
       confirmBulkUpdate: '¿Estás seguro que quieres actualizar el estado de {count} ítems a {status}?',
       editReport: 'Editar Reporte',
       deleteReport: 'Eliminar Reporte',
+      backToClientList: 'Volver al listado de clientes',
     },
     Stages: {
       Prospecting: 'Prospección',
@@ -799,6 +800,7 @@ export const translations = {
       confirmBulkUpdate: 'Are you sure you want to update the status of {count} items to {status}?',
       editReport: 'Edit Report',
       deleteReport: 'Delete Report',
+      backToClientList: 'Back to client list',
     },
     Stages: {
       Prospecting: 'Prospecting',
