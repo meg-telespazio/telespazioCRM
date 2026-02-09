@@ -13,26 +13,26 @@ service cloud.firestore {
 
     match /clients/{clientId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-      allow list: if request.auth != null;
+      allow get, list: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
     match /contacts/{contactId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-      allow list: if request.auth != null;
+      allow get, list: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
     match /opportunities/{opportunityId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-      allow list: if request.auth != null;
+      allow get, list: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
     
     match /productsAndServices/{itemId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-      allow list: if request.auth != null;
+      allow get, list: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
     match /activities/{activityId} {

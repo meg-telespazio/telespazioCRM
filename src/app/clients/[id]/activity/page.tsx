@@ -63,21 +63,28 @@ export default function ClientActivityPage() {
   const [activityFilter, setActivityFilter] = useState<ActivityType | 'all'>('all');
 
   // Data fetching
-  const clientDocRef = useMemo(() => doc(firestore, 'clients', clientId), [firestore, clientId]);
+  const clientDocRef = useMemo(() => {
+    if (!user) return null;
+    return doc(firestore, 'clients', clientId);
+  }, [firestore, clientId, user]);
   const { data: client, loading: clientLoading } = useDoc<Client>(clientDocRef);
 
   const activitiesQuery = useMemo(() => {
+    if (!user) return null;
     const q = query(
       collection(firestore, 'activities'),
       where('clientId', '==', clientId),
       orderBy('createdAt', 'desc')
     );
     return q;
-  }, [firestore, clientId]);
+  }, [firestore, clientId, user]);
   
   const { data: activities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
 
-  const usersQuery = useMemo(() => collection(firestore, 'users'), [firestore]);
+  const usersQuery = useMemo(() => {
+    if (!user) return null;
+    return collection(firestore, 'users');
+  }, [firestore, user]);
   const { data: users, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
 
   const usersMap = useMemo(() => {
