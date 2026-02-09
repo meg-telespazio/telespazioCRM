@@ -48,7 +48,7 @@ const numberToWords = (num: number, currency: 'USD' | 'EUR' | 'ARS') => {
   };
   try {
     // This library can have CJS/ESM interop issues, so we robustly find the function.
-    const converter = (numeroALetras as any).default || numeroALetras;
+    const converter = typeof numeroALetras === 'function' ? numeroALetras : (numeroALetras as any).default;
     return converter(num, { ...currencyMap[currency] }).toUpperCase();
   } catch (e) {
     console.error('Error converting number to words:', e);
