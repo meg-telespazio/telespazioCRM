@@ -403,7 +403,7 @@ export const translations = {
       client: "Cliente",
       framework_agreement: "Contrato Marco #",
       contract_duration: "Contrato",
-      products_services: "PRODUCTOS",
+      products_services: "PRODUCTOS Y SERVICIOS",
       item: "Item",
       type: "Tipo",
       description: "Descripción",
@@ -430,7 +430,9 @@ export const translations = {
       delivery_time_placeholder: "Ej: 45 días corridos a partir de la firma de la orden de compra y confirmación del pago inicial.",
       custom_note_placeholder: "Añada una nota particular para esta oferta...",
       generate_pdf: "Generar PDF",
-      back_to_opportunity: "Volver a la Oportunidad"
+      back_to_opportunity: "Volver a la Oportunidad",
+      customization: "Personalización",
+      customization_desc: "Ajusta los detalles de la propuesta antes de imprimir.",
     }
   },
   en: {
@@ -837,7 +839,7 @@ export const translations = {
       client: "Client",
       framework_agreement: "Framework Agreement #",
       contract_duration: "Contract",
-      products_services: "PRODUCTS",
+      products_services: "PRODUCTS & SERVICES",
       item: "Item",
       type: "Type",
       description: "Description",
@@ -864,7 +866,9 @@ export const translations = {
       delivery_time_placeholder: "e.g., 45 calendar days from the signing of the purchase order and confirmation of the initial payment.",
       custom_note_placeholder: "Add a particular note for this offer...",
       generate_pdf: "Generate PDF",
-      back_to_opportunity: "Back to Opportunity"
+      back_to_opportunity: "Back to Opportunity",
+      customization: "Customization",
+      customization_desc: "Adjust the proposal details before printing.",
     }
   },
 };
