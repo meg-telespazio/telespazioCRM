@@ -102,7 +102,7 @@ export default function ReportsPage() {
                 </CardContent>
                 <CardFooter>
                   <p className="text-xs text-muted-foreground">
-                    {t('Table.createdDate')}: {format(report.createdAt, 'P', { locale: dateLocale })}
+                    {t('Table.createdDate')}: {format(new Date(report.createdAt), 'P', { locale: dateLocale })}
                   </p>
                 </CardFooter>
               </Card>

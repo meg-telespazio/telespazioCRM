@@ -163,7 +163,7 @@ export default function ReportBuilderPage() {
         generateReport(existingReport.selectedFields, existingReport.primaryDataSource);
       }
     }
-  }, [existingReport]);
+  }, [existingReport, shouldRunOnLoad]);
 
 
   const watchedDataSource = form.watch('primaryDataSource');
@@ -239,11 +239,10 @@ export default function ReportBuilderPage() {
           for (const fieldKey of fields) {
             const [source, field] = fieldKey.split('.');
             let value;
-            if (source === 'clients' && client) value = client[field as keyof Client];
-            if (source === 'contacts' && contact) value = contact[field as keyof Contact];
-            if (source === 'opportunities' && opportunity) value = opportunity[field as keyof Opportunity];
+            if (source === 'clients' && client) value = (client as any)[field];
+            if (source === 'contacts' && contact) value = (contact as any)[field];
+            if (source === 'opportunities' && opportunity) value = (opportunity as any)[field];
             
-            // Add related data
              if (fieldKey === 'contacts.name' && opportunity?.contactId) {
                 value = contactsData?.find(c => c.id === opportunity.contactId)?.name;
             }
@@ -265,11 +264,6 @@ export default function ReportBuilderPage() {
       ? currentFields.filter(f => f !== fieldKey)
       : [...currentFields, fieldKey];
     
-    // Auto-include related sources' fields
-    if (source === 'opportunities' && !currentFields.some(f => f.startsWith('clients'))) {
-        newFields.push('clients.name');
-    }
-
     form.setValue('selectedFields', newFields, { shouldValidate: true });
   };
   
@@ -335,20 +329,18 @@ export default function ReportBuilderPage() {
                         <CardContent className="space-y-4">
                             {Object.entries(reportableFields).map(([source, group]) => {
                                 const isPrimary = source === watchedDataSource;
-                                let isDisabled = !isPrimary;
-
-                                if (watchedDataSource === 'opportunities' && source === 'clients') isDisabled = false;
-                                if (watchedDataSource === 'opportunities' && source === 'contacts') isDisabled = false;
-                                if (watchedDataSource === 'contacts' && source === 'clients') isDisabled = false;
+                                let isRelatedAvailable = false;
+                                if (watchedDataSource === 'opportunities' && (source === 'clients' || source === 'contacts')) isRelatedAvailable = true;
+                                if (watchedDataSource === 'contacts' && source === 'clients') isRelatedAvailable = true;
                                 
-                                if (isDisabled && !watchedSelectedFields.some(f => f.startsWith(source))) return null;
+                                if (!isPrimary && !isRelatedAvailable) return null;
 
                                 return (
                                 <div key={source}>
                                     <h4 className="mb-2 text-md font-semibold flex items-center gap-2">
                                         {t(group.header)} 
                                         {isPrimary && <Badge>{t('Reports.primary')}</Badge>}
-                                        {isDisabled && <Badge variant="secondary">{t('Reports.related')}</Badge>}
+                                        {isRelatedAvailable && <Badge variant="secondary">{t('Reports.related')}</Badge>}
                                     </h4>
                                     <div className="grid grid-cols-2 gap-4 rounded-md border p-4 md:grid-cols-4 lg:grid-cols-5">
                                     {Object.keys(group.fields).map(field => {
@@ -359,7 +351,6 @@ export default function ReportBuilderPage() {
                                                 id={fieldKey}
                                                 checked={watchedSelectedFields.includes(fieldKey)}
                                                 onCheckedChange={() => handleFieldToggle(fieldKey, source as DataSource)}
-                                                disabled={!isPrimary && !isDisabled && source !== watchedDataSource}
                                                 />
                                                 <Label htmlFor={fieldKey} className="font-normal">{t(group.fields[field])}</Label>
                                             </div>
