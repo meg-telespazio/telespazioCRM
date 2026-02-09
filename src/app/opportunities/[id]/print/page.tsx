@@ -212,17 +212,17 @@ export default function PrintOpportunityPage() {
   );
 
   const ProposalFooter = ({ page, totalPages }: { page: number, totalPages: number }) => (
-    <footer className="mt-auto pt-12">
-      <Separator className="mb-4 bg-black" />
+    <footer className="mt-auto pt-6">
+      <Separator className="mb-2 bg-black" />
       <div className="flex items-end justify-between">
-        <p className="text-xs font-bold">{t('Proposal.confidential')}</p>
+        <p className="text-[9px] font-bold">{t('Proposal.confidential')}</p>
         <div className="text-right text-xs">
           <p className="font-bold">{t('Proposal.signature_name')}</p>
           <p>{t('Proposal.signature_company')}</p>
           <p>{t('Proposal.signature_title')}</p>
         </div>
       </div>
-      <div className="mt-4 border-t pt-2 text-right text-xs">
+      <div className="mt-2 border-t pt-1 text-right text-[9px]">
         {t('Proposal.page')} {page} de {totalPages}
       </div>
     </footer>
@@ -231,7 +231,7 @@ export default function PrintOpportunityPage() {
   const Page1Content = () => (
     <>
       <ProposalHeader />
-      <p className="mt-8 text-right">
+      <p className="mt-6 text-right">
         {t('Proposal.date_location', {
           city: 'Ciudad Autónoma de Buenos Aires',
           date: format(new Date(), 'EEEE, d [de] MMMM [de] yyyy', {
@@ -239,11 +239,11 @@ export default function PrintOpportunityPage() {
           }),
         })}
       </p>
-      <div className="mt-8">
+      <div className="mt-6">
         <p className="font-bold">{t('Proposal.to')}</p>
         <p>{recipientName.toUpperCase()}</p>
       </div>
-      <section className="mt-8">
+      <section className="mt-6">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.proposalData')}
         </h2>
@@ -274,36 +274,36 @@ export default function PrintOpportunityPage() {
           </tbody>
         </table>
       </section>
-      <section className="mt-8 flex-grow">
+      <section className="mt-6 flex-grow">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.products_services')}
         </h2>
-        <table className="mt-2 w-full border-collapse text-xs">
+        <table className="mt-2 w-full border-collapse text-[11px]">
           <thead>
             <tr className="bg-red-700 text-white">
-              <th className="w-[5%] border border-red-700 p-1 text-center">
+              <th className="w-[5%] border border-red-700 p-0.5 text-center">
                 {t('Proposal.item')}
               </th>
-              <th className="w-[10%] border border-red-700 p-1 text-left">
+              <th className="w-[10%] border border-red-700 p-0.5 text-left">
                 {t('Proposal.type')}
               </th>
-              <th className="border border-red-700 p-1 text-left">
+              <th className="border border-red-700 p-0.5 text-left">
                 {t('Proposal.description')}
               </th>
-              <th className="w-[5%] border border-red-700 p-1 text-center">
+              <th className="w-[5%] border border-red-700 p-0.5 text-center">
                 {t('Proposal.qty')}
               </th>
-              <th className="w-[5%] border border-red-700 p-1 text-center">
+              <th className="w-[5%] border border-red-700 p-0.5 text-center">
                 {t('Proposal.disc')}
               </th>
               <th
-                className="w-[20%] border border-red-700 p-1 text-center"
+                className="w-[20%] border border-red-700 p-0.5 text-center"
                 colSpan={2}
               >
                 {t('Proposal.unit_price')}
               </th>
               <th
-                className="w-[20%] border border-red-700 p-1 text-center"
+                className="w-[20%] border border-red-700 p-0.5 text-center"
                 colSpan={2}
               >
                 {t('Proposal.subtotals')}
@@ -311,16 +311,16 @@ export default function PrintOpportunityPage() {
             </tr>
             <tr className="bg-red-700 text-white">
               <th colSpan={5}></th>
-              <th className="border border-red-700 p-1 text-center font-normal">
+              <th className="border border-red-700 p-0.5 text-center font-normal">
                 {t('Proposal.otc')}
               </th>
-              <th className="border border-red-700 p-1 text-center font-normal">
+              <th className="border border-red-700 p-0.5 text-center font-normal">
                 {t('Proposal.mrc')}
               </th>
-              <th className="border border-red-700 p-1 text-center font-normal">
+              <th className="border border-red-700 p-0.5 text-center font-normal">
                 {t('Proposal.otc')}
               </th>
-              <th className="border border-red-700 p-1 text-center font-normal">
+              <th className="border border-red-700 p-0.5 text-center font-normal">
                 {t('Proposal.mrc')}
               </th>
             </tr>
@@ -333,21 +333,21 @@ export default function PrintOpportunityPage() {
                 line.quantity * line.recurringCharge * (1 - line.discount / 100);
               return (
                 <tr key={line.itemId} className="even:bg-gray-50">
-                  <td className="border p-1 text-center">{index + 1}</td>
-                  <td className="border p-1">{t(`PS.${line.type}`)}</td>
-                  <td className="border p-1">{line.name}</td>
-                  <td className="border p-1 text-center">{line.quantity}</td>
-                  <td className="border p-1 text-center">{line.discount}%</td>
-                  <td className="border p-1 text-right">
+                  <td className="border p-0.5 text-center">{index + 1}</td>
+                  <td className="border p-0.5">{t(`PS.${line.type}`)}</td>
+                  <td className="border p-0.5">{line.name}</td>
+                  <td className="border p-0.5 text-center">{line.quantity}</td>
+                  <td className="border p-0.5 text-center">{line.discount}%</td>
+                  <td className="border p-0.5 text-right">
                     {line.oneTimeCharge.toFixed(2)}
                   </td>
-                  <td className="border p-1 text-right">
+                  <td className="border p-0.5 text-right">
                     {line.recurringCharge.toFixed(2)}
                   </td>
-                  <td className="border p-1 text-right">
+                  <td className="border p-0.5 text-right">
                     {subtotalNrc.toFixed(2)}
                   </td>
-                  <td className="border p-1 text-right">
+                  <td className="border p-0.5 text-right">
                     {subtotalMrc.toFixed(2)}
                   </td>
                 </tr>
@@ -363,40 +363,40 @@ export default function PrintOpportunityPage() {
   const Page2Content = () => (
     <>
       <ProposalHeader />
-      <section className="mt-8 flex-grow">
+      <section className="mt-6 flex-grow">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Table.totals')}
         </h2>
-        <table className="mt-2 w-full border-collapse text-xs">
+        <table className="mt-2 w-full border-collapse text-[11px]">
           <tbody>
             <tr className="bg-gray-200 font-bold">
-              <td colSpan={7} className="border p-1 text-right">
+              <td colSpan={7} className="border p-0.5 text-right">
                 {t('Proposal.subtotal_products')}
               </td>
-              <td className="border p-1 text-right">
+              <td className="border p-0.5 text-right">
                 {productSubtotalNrc.toFixed(2)}
               </td>
-              <td className="border p-1 text-right">
+              <td className="border p-0.5 text-right">
                 {productSubtotalMrc.toFixed(2)}
               </td>
             </tr>
             <tr className="bg-gray-200 font-bold">
-              <td colSpan={7} className="border p-1 text-right">
+              <td colSpan={7} className="border p-0.5 text-right">
                 {t('Proposal.subtotal_services')}
               </td>
-              <td className="border p-1 text-right">
+              <td className="border p-0.5 text-right">
                 {serviceSubtotalNrc.toFixed(2)}
               </td>
-              <td className="border p-1 text-right">
+              <td className="border p-0.5 text-right">
                 {serviceSubtotalMrc.toFixed(2)}
               </td>
             </tr>
             <tr className="bg-gray-300 font-bold">
-              <td colSpan={7} className="border p-1 text-right">
+              <td colSpan={7} className="border p-0.5 text-right">
                 {t('Proposal.totals')}
               </td>
-              <td className="border p-1 text-right">{totalNrc.toFixed(2)}</td>
-              <td className="border p-1 text-right">{totalMrc.toFixed(2)}</td>
+              <td className="border p-0.5 text-right">{totalNrc.toFixed(2)}</td>
+              <td className="border p-0.5 text-right">{totalMrc.toFixed(2)}</td>
             </tr>
           </tbody>
         </table>
@@ -420,14 +420,14 @@ export default function PrintOpportunityPage() {
             </div>
           )}
           <div className="border-2 border-red-700 p-2">
-            <p>
+            <p className="text-[8pt]">
               <span className="font-bold">{t('Proposal.notes_title')}: </span>
               {t('Proposal.notes_text')}
             </p>
           </div>
           <div>
             <p className="font-bold">{t('Proposal.legal_title')}</p>
-            <p className="text-justify">{t('Proposal.legal_text')}</p>
+            <p className="text-justify text-[8pt]">{t('Proposal.legal_text')}</p>
           </div>
         </div>
       </section>
@@ -463,7 +463,7 @@ export default function PrintOpportunityPage() {
         }
         @page {
           size: A4;
-          margin: 0.75in;
+          margin: 0.5in;
         }
       `}</style>
       
@@ -484,26 +484,26 @@ export default function PrintOpportunityPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            <div className="md:col-span-8 lg:col-span-9 flex justify-center">
+            <div className="md:col-span-8 lg:col-span-9 flex justify-center group">
               <Carousel className="w-full max-w-[210mm]">
                 <CarouselContent>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
-                      <div className="aspect-[210/297] bg-white p-[0.75in] text-[10pt] shadow-lg font-sans flex flex-col">
+                      <div className="aspect-[210/297] bg-white p-10 text-[9pt] shadow-lg font-sans flex flex-col">
                         <Page1Content />
                       </div>
                     </div>
                   </CarouselItem>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
-                       <div className="aspect-[210/297] bg-white p-[0.75in] text-[10pt] shadow-lg font-sans flex flex-col">
+                       <div className="aspect-[210/297] bg-white p-10 text-[9pt] shadow-lg font-sans flex flex-col">
                         <Page2Content />
                       </div>
                     </div>
                   </CarouselItem>
                 </CarouselContent>
-                <CarouselPrevious className="left-[-20px] sm:left-[-50px]" />
-                <CarouselNext className="right-[-20px] sm:right-[-50px]" />
+                <CarouselPrevious className="left-4 opacity-30 group-hover:opacity-100 transition-opacity duration-300" />
+                <CarouselNext className="right-4 opacity-30 group-hover:opacity-100 transition-opacity duration-300" />
               </Carousel>
             </div>
             
@@ -563,3 +563,5 @@ export default function PrintOpportunityPage() {
     </>
   );
 }
+
+    
