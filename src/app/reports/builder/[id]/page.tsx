@@ -90,7 +90,7 @@ const reportableFields: Record<
       publicId: { label: 'Table.opportunityId', type: 'string' },
       title: { label: 'Dashboard.recentOpportunities.opportunityHeader', type: 'string' },
       value: { label: 'Dashboard.recentOpportunities.valueHeader', type: 'number' },
-      stage: { label: 'Dashboard.recentOpportunities.stageHeader', type: 'enum', enumValues: ['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost'] },
+      stage: { label: 'Dashboard.recentOpportunities.stageHeader', type: 'enum', enumValues: ['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost', 'Canceled', 'Suspended'] },
       probability: { label: 'Forms.probability', type: 'number' },
       closeDate: { label: 'Forms.estCloseDate', type: 'date' },
       contractMonths: { label: 'Forms.contractMonths', type: 'number' },
@@ -98,6 +98,8 @@ const reportableFields: Record<
       offerSentDate: { label: 'Forms.offerSentDate', type: 'date' },
       isTender: { label: 'Forms.isTender', type: 'boolean' },
       createdAt: { label: 'Table.createdDate', type: 'date' },
+      reason: { label: 'Forms.reason', type: 'string' },
+      competition: { label: 'Forms.competition', type: 'array' },
     },
   },
   productsAndServices: {

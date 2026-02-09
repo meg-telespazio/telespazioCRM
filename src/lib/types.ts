@@ -53,7 +53,7 @@ export type Opportunity = {
   title: string;
   clientId: string;
   value: number;
-  stage: 'Prospecting' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
+  stage: 'Prospecting' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost' | 'Canceled' | 'Suspended';
   probability: number;
   closeDate: Date;
   createdAt: Date;
@@ -62,6 +62,8 @@ export type Opportunity = {
   requestDate: Date;
   offerSentDate?: Date;
   description?: string;
+  reason?: string;
+  competition?: string[];
   isTender: boolean;
   contactId?: string;
   lineItems?: OpportunityLineItem[];

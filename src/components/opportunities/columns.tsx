@@ -34,6 +34,8 @@ const stageVariant: {
   Negotiation: 'secondary',
   Won: 'default',
   Lost: 'destructive',
+  Canceled: 'destructive',
+  Suspended: 'secondary',
 };
 
 export const columns = (

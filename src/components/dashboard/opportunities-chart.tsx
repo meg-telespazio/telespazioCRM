@@ -20,6 +20,8 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
       'Negotiation',
       'Won',
       'Lost',
+      'Canceled',
+      'Suspended'
     ];
     const data = stages.map((stage) => ({
       name: t(`Stages.${stage}`),

@@ -235,7 +235,9 @@
             "Proposal",
             "Negotiation",
             "Won",
-            "Lost"
+            "Lost",
+            "Canceled",
+            "Suspended"
           ]
         },
         "probability": {
@@ -274,6 +276,17 @@
         "description": {
           "type": "string",
           "description": "Detailed description of the opportunity."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for Lost, Canceled, or Suspended status."
+        },
+        "competition": {
+          "type": "array",
+          "description": "List of competitors for this opportunity.",
+          "items": {
+            "type": "string"
+          }
         },
         "isTender": {
           "type": "boolean",

@@ -25,6 +25,8 @@ const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "
   Negotiation: "secondary",
   Won: "default",
   Lost: "destructive",
+  Canceled: "destructive",
+  Suspended: "secondary",
 };
 
 type RecentOpportunitiesProps = {

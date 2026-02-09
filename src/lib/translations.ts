@@ -78,6 +78,7 @@ export const translations = {
       itemChargeMin: 'El cargo debe ser un número positivo.',
       itemDiscountFormat: 'Ingrese porcentajes separados por comas (ej: 10, 20.5, 30)',
       quantityMin: 'La cantidad debe ser al menos 1.',
+      reasonRequired: 'El motivo es obligatorio para este estado y debe tener al menos 10 caracteres.',
     },
     Dashboard: {
       title: 'Dashboard',
@@ -206,6 +207,11 @@ export const translations = {
       applyToNrc: 'Aplicar a Cargos Únicos',
       applyToMrc: 'Aplicar a Abonos',
       printOffer: 'Imprimir Oferta',
+      reason: 'Motivo',
+      reasonPlaceholder: 'Añada el motivo del estado (al menos 10 caracteres)...',
+      competition: 'Competencia',
+      competitionPlaceholder: 'Competidor A, Competidor B, ...',
+      competitionDescription: 'Ingrese competidores separados por comas.',
     },
     PS: {
       editItem: 'Editar Ítem',
@@ -261,6 +267,8 @@ export const translations = {
       Negotiation: 'Negociación',
       Won: 'Ganada',
       Lost: 'Perdida',
+      Canceled: 'Cancelada',
+      Suspended: 'Suspendida',
     },
     Status: {
       active: 'Activo',
@@ -552,6 +560,7 @@ export const translations = {
       itemChargeMin: 'Charge must be a positive number.',
       itemDiscountFormat: 'Enter comma-separated percentages (e.g., 10, 20.5, 30)',
       quantityMin: 'Quantity must be at least 1.',
+      reasonRequired: 'The reason is required for this status and must be at least 10 characters long.',
     },
     Dashboard: {
       title: 'Dashboard',
@@ -680,6 +689,11 @@ export const translations = {
       applyToNrc: 'Apply to One-Time Charges',
       applyToMrc: 'Apply to Recurring Charges',
       printOffer: 'Print Offer',
+      reason: 'Reason',
+      reasonPlaceholder: 'Add the reason for this status (at least 10 characters)...',
+      competition: 'Competition',
+      competitionPlaceholder: 'Competitor A, Competitor B, ...',
+      competitionDescription: 'Enter competitors separated by commas.',
     },
     PS: {
       editItem: 'Edit Item',
@@ -735,6 +749,8 @@ export const translations = {
       Negotiation: 'Negotiation',
       Won: 'Won',
       Lost: 'Lost',
+      Canceled: 'Canceled',
+      Suspended: 'Suspended',
     },
     Status: {
       active: 'Active',
