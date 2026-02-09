@@ -348,15 +348,34 @@ export default function OpportunityFormPage() {
 
   const handleAddLineItem = () => {
     if (!selectedCatalogItem) return;
-    append({
-      itemId: selectedCatalogItem.id,
-      name: selectedCatalogItem.name,
-      description: selectedCatalogItem.description,
-      quantity: adderState.quantity,
-      oneTimeCharge: adderState.oneTimeCharge,
-      recurringCharge: adderState.recurringCharge,
-      discount: adderState.discount,
-    });
+  
+    if (selectedCatalogItem.type === 'bundle' && selectedCatalogItem.bundleItems) {
+      selectedCatalogItem.bundleItems.forEach(bundleItem => {
+        const fullItem = catalogItems.find(ci => ci.id === bundleItem.itemId);
+        if (fullItem) {
+          append({
+            itemId: fullItem.id,
+            name: fullItem.name,
+            description: fullItem.description,
+            quantity: bundleItem.quantity,
+            oneTimeCharge: fullItem.oneTimeCharge || 0,
+            recurringCharge: fullItem.recurringCharge || 0,
+            discount: 0, // Bundles apply their own logic, start with 0 discount
+          });
+        }
+      });
+    } else {
+      append({
+        itemId: selectedCatalogItem.id,
+        name: selectedCatalogItem.name,
+        description: selectedCatalogItem.description,
+        quantity: adderState.quantity,
+        oneTimeCharge: adderState.oneTimeCharge,
+        recurringCharge: adderState.recurringCharge,
+        discount: adderState.discount,
+      });
+    }
+  
     // Reset adder
     setAdderState({
       selectedCatalogItemId: '',
@@ -1297,3 +1316,5 @@ export default function OpportunityFormPage() {
     </div>
   );
 }
+
+    

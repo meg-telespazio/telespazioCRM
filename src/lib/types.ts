@@ -72,20 +72,26 @@ export type Opportunity = {
   applyDiscountToMrc?: boolean;
 };
 
+export type BundleItem = {
+  itemId: string;
+  quantity: number;
+};
+
 export type ProductOrService = {
   id: string;
   publicId: string;
-  type: 'product' | 'service';
+  type: 'product' | 'service' | 'bundle';
   name: string;
   description?: string;
   photoURL?: string;
   status: 'active' | 'inactive';
-  unitOfMeasure: 'units' | 'meters' | 'kg' | 'liters' | 'GB';
+  unitOfMeasure?: 'units' | 'meters' | 'kg' | 'liters' | 'GB';
   oneTimeCharge?: number;
   recurringCharge?: number;
-  currency: 'USD' | 'EUR' | 'ARS';
+  currency?: 'USD' | 'EUR' | 'ARS';
   isEditable: boolean;
   availableDiscounts?: number[];
+  bundleItems?: BundleItem[];
   createdAt: Date;
   createdBy: string;
 };
@@ -135,3 +141,5 @@ export type ContactWrite = Omit<Contact, 'id' | 'createdAt'> & { createdAt: Fiel
 export type OpportunityWrite = Omit<Opportunity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldValue };
+
+    

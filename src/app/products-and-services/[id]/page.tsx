@@ -1,18 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useUser, useFirestore, useDoc } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { ProductOrService } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import {
   addProductOrService,
   updateProductOrService,
 } from '@/lib/firestore/products-and-services';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,27 +32,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Package } from 'lucide-react';
+import { Camera, Package, Plus, Trash2 } from 'lucide-react';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
-    type: z.enum(['product', 'service']),
+    type: z.enum(['product', 'service', 'bundle']),
     name: z.string().min(2, t('Validation.itemNameMin')),
     description: z.string().optional(),
     photoURL: z.string().optional(),
     status: z.enum(['active', 'inactive']),
-    unitOfMeasure: z.enum(['units', 'meters', 'kg', 'liters', 'GB']),
+    unitOfMeasure: z.enum(['units', 'meters', 'kg', 'liters', 'GB']).optional(),
     oneTimeCharge: z.coerce.number().min(0, t('Validation.itemChargeMin')).optional(),
     recurringCharge: z.coerce.number().min(0, t('Validation.itemChargeMin')).optional(),
-    currency: z.enum(['USD', 'EUR', 'ARS']),
+    currency: z.enum(['USD', 'EUR', 'ARS']).optional(),
     isEditable: z.boolean().default(false),
     availableDiscounts: z
       .string()
@@ -60,6 +62,10 @@ const getFormSchema = (t: (key: string) => string) =>
       .transform((val) =>
         val ? val.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)) : []
       ),
+    bundleItems: z.array(z.object({
+      itemId: z.string().min(1),
+      quantity: z.coerce.number().min(1),
+    })).optional(),
   });
 
 type ItemFormData = z.infer<ReturnType<typeof getFormSchema>>;
@@ -75,6 +81,8 @@ export default function ProductServiceFormPage() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  const [bundleItemToAdd, setBundleItemToAdd] = useState<{itemId: string, quantity: number}>({ itemId: '', quantity: 1 });
 
   const itemId = params.id as string;
   const isNew = itemId === 'new';
@@ -86,6 +94,15 @@ export default function ProductServiceFormPage() {
 
   const { data: itemData, loading: itemLoading } =
     useDoc<ProductOrService>(itemDocRef);
+    
+  const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
+  const { data: catalogData, loading: catalogLoading } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery, where('type', '!=', 'bundle')) : null, [firestore, baseQuery]));
+
+  const catalogItems = useMemo(() => {
+    if (!catalogData) return [];
+    return [...catalogData].sort((a, b) => a.name.localeCompare(b.name));
+  }, [catalogData]);
+
 
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
@@ -103,14 +120,23 @@ export default function ProductServiceFormPage() {
       currency: 'USD',
       isEditable: false,
       availableDiscounts: '',
+      bundleItems: [],
     },
   });
+  
+  const { fields: bundleItemFields, append: appendBundleItem, remove: removeBundleItem } = useFieldArray({
+    control: form.control,
+    name: 'bundleItems',
+  });
+
+  const watchedType = form.watch('type');
 
   useEffect(() => {
     if (itemData) {
       form.reset({
         ...itemData,
         availableDiscounts: itemData.availableDiscounts?.join(', ') || '',
+        bundleItems: itemData.bundleItems || [],
       });
     }
   }, [itemData, form]);
@@ -136,16 +162,32 @@ export default function ProductServiceFormPage() {
     setCroppedImage(croppedImageUrl);
     setImageToCrop(null);
   };
+  
+  const handleAddBundleItem = () => {
+    if (!bundleItemToAdd.itemId || bundleItemToAdd.quantity < 1) return;
+    appendBundleItem({ itemId: bundleItemToAdd.itemId, quantity: bundleItemToAdd.quantity });
+    setBundleItemToAdd({ itemId: '', quantity: 1 });
+  };
+
 
   async function onSubmit(values: ItemFormData) {
     if (!user) return;
     setIsSaving(true);
     toast({ title: t('PS.saveItem') });
     
-    const dataToSave = {
+    let dataToSave: Partial<ItemFormData> = {
       ...values,
       photoURL: croppedImage || itemData?.photoURL || '',
     };
+    
+    if (values.type !== 'bundle') {
+        dataToSave.bundleItems = [];
+    } else {
+        delete dataToSave.oneTimeCharge;
+        delete dataToSave.recurringCharge;
+        delete dataToSave.unitOfMeasure;
+        delete dataToSave.currency;
+    }
 
     try {
       if (isNew) {
@@ -167,7 +209,7 @@ export default function ProductServiceFormPage() {
     }
   }
 
-  const pageIsLoading = userLoading || (itemLoading && !isNew);
+  const pageIsLoading = userLoading || (itemLoading && !isNew) || catalogLoading;
   const currentImageSrc = croppedImage || form.watch('photoURL');
   
   if (pageIsLoading) {
@@ -188,6 +230,7 @@ export default function ProductServiceFormPage() {
   const statusOptions: ProductOrService['status'][] = ['active', 'inactive'];
   const unitOptions: ProductOrService['unitOfMeasure'][] = ['units', 'meters', 'kg', 'liters', 'GB'];
   const currencyOptions: ProductOrService['currency'][] = ['USD', 'EUR', 'ARS'];
+  const typeOptions: ProductOrService['type'][] = ['product', 'service', 'bundle'];
 
   return (
     <>
@@ -219,14 +262,12 @@ export default function ProductServiceFormPage() {
                       <FormItem className="space-y-3"><FormLabel>{t('PS.itemType')}</FormLabel>
                         <FormControl>
                           <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center space-x-4">
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                              <FormControl><RadioGroupItem value="product" /></FormControl>
-                              <FormLabel className="font-normal">{t('PS.product')}</FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                              <FormControl><RadioGroupItem value="service" /></FormControl>
-                              <FormLabel className="font-normal">{t('PS.service')}</FormLabel>
-                            </FormItem>
+                            {typeOptions.map(type => (
+                               <FormItem key={type} className="flex items-center space-x-2 space-y-0">
+                                <FormControl><RadioGroupItem value={type} /></FormControl>
+                                <FormLabel className="font-normal">{t(`PS.${type}`)}</FormLabel>
+                              </FormItem>
+                            ))}
                           </RadioGroup>
                         </FormControl>
                         <FormMessage />
@@ -248,61 +289,110 @@ export default function ProductServiceFormPage() {
                     )} />
                   </CardContent>
                 </Card>
+                
+                {watchedType !== 'bundle' && (
+                    <Card>
+                    <CardContent className="p-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <FormField control={form.control} name="unitOfMeasure" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t('PS.unitOfMeasure')}</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder={t('PS.selectUnit')} /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                {unitOptions.map((unit) => (
+                                <SelectItem key={unit} value={unit}>{t(`UnitOfMeasures.${unit}`)}</SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
+                        <FormField control={form.control} name="currency" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t('PS.currency')}</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                {currencyOptions.map((currency) => (
+                                <SelectItem key={currency} value={currency}>{t(`Currencies.${currency}`)}</SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
+                        <FormField control={form.control} name="oneTimeCharge" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t('PS.oneTimeCharge')}</FormLabel>
+                            <FormControl><Input type="number" placeholder={t('PS.chargePlaceholder')} {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
+                        <FormField control={form.control} name="recurringCharge" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t('PS.recurringCharge')}</FormLabel>
+                            <FormControl><Input type="number" placeholder={t('PS.chargePlaceholder')} {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
+                        <FormField control={form.control} name="availableDiscounts" render={({ field }) => (
+                        <FormItem className='md:col-span-2'>
+                            <FormLabel>{t('PS.availableDiscounts')}</FormLabel>
+                            <FormControl><Input placeholder={t('PS.discountsPlaceholder')} {...field} /></FormControl>
+                            <FormDescription>{t('Validation.itemDiscountFormat')}</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
+                    </CardContent>
+                    </Card>
+                )}
+                
+                {watchedType === 'bundle' && (
+                    <Card>
+                        <CardHeader><CardTitle>{t('PS.bundleItems')}</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[2fr,1fr,auto]">
+                                <div className="md:col-span-1">
+                                    <Label>{t('PS.itemName')}</Label>
+                                    <Select value={bundleItemToAdd.itemId} onValueChange={(id) => setBundleItemToAdd(prev => ({...prev, itemId: id}))}>
+                                        <SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger>
+                                        <SelectContent>
+                                            {catalogItems.map(item => (
+                                                <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                 <div>
+                                    <Label>{t('Forms.quantity')}</Label>
+                                    <Input type="number" value={bundleItemToAdd.quantity} onChange={(e) => setBundleItemToAdd(prev => ({...prev, quantity: Number(e.target.value)}))} min={1} />
+                                </div>
+                                <Button type="button" size="icon" onClick={handleAddBundleItem} disabled={!bundleItemToAdd.itemId}>
+                                    <Plus /><span className="sr-only">{t('PS.addBundleItem')}</span>
+                                </Button>
+                             </div>
+                             <Separator />
+                              {bundleItemFields.length > 0 ? (
+                                <ul className="space-y-2">
+                                  {bundleItemFields.map((field, index) => {
+                                    const item = catalogItems.find(i => i.id === field.itemId);
+                                    return (
+                                      <li key={field.id} className="flex items-center justify-between rounded-md border p-2">
+                                        <span>{item?.name || field.itemId} (x{field.quantity})</span>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeBundleItem(index)}>
+                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                      </li>
+                                    )
+                                  })}
+                                </ul>
+                              ) : (
+                                <p className="text-sm text-muted-foreground text-center py-4">{t('PS.noBundleItems')}</p>
+                              )}
+                        </CardContent>
+                    </Card>
+                )}
 
-                <Card>
-                  <CardContent className="p-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <FormField control={form.control} name="unitOfMeasure" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('PS.unitOfMeasure')}</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder={t('PS.selectUnit')} /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            {unitOptions.map((unit) => (
-                              <SelectItem key={unit} value={unit}>{t(`UnitOfMeasures.${unit}`)}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="currency" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('PS.currency')}</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            {currencyOptions.map((currency) => (
-                              <SelectItem key={currency} value={currency}>{t(`Currencies.${currency}`)}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="oneTimeCharge" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('PS.oneTimeCharge')}</FormLabel>
-                        <FormControl><Input type="number" placeholder={t('PS.chargePlaceholder')} {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="recurringCharge" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('PS.recurringCharge')}</FormLabel>
-                        <FormControl><Input type="number" placeholder={t('PS.chargePlaceholder')} {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="availableDiscounts" render={({ field }) => (
-                      <FormItem className='md:col-span-2'>
-                        <FormLabel>{t('PS.availableDiscounts')}</FormLabel>
-                        <FormControl><Input placeholder={t('PS.discountsPlaceholder')} {...field} /></FormControl>
-                        <FormDescription>{t('Validation.itemDiscountFormat')}</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </CardContent>
-                </Card>
 
                 <Card>
                     <CardContent className='p-6 space-y-6'>
@@ -355,3 +445,5 @@ export default function ProductServiceFormPage() {
     </>
   );
 }
+
+    

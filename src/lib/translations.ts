@@ -219,6 +219,7 @@ export const translations = {
       itemType: 'Tipo de Ítem',
       product: 'Producto',
       service: 'Servicio',
+      bundle: 'Paquete',
       itemName: 'Nombre del Ítem',
       itemNamePlaceholder: 'Ej: Licencia de Software Anual',
       itemDescription: 'Descripción',
@@ -239,6 +240,9 @@ export const translations = {
       bulkUpdateSaving: 'Actualizando ítems...',
       bulkUpdateSuccess: 'Ítems actualizados exitosamente',
       bulkUpdateError: 'Error al actualizar ítems',
+      bundleItems: 'Ítems del Paquete',
+      addBundleItem: 'Añadir Ítem al Paquete',
+      noBundleItems: 'Este paquete aún no tiene ítems.',
     },
     Actions: {
       title: 'Acciones',
@@ -701,6 +705,7 @@ export const translations = {
       itemType: 'Item Type',
       product: 'Product',
       service: 'Service',
+      bundle: 'Bundle',
       itemName: 'Item Name',
       itemNamePlaceholder: 'e.g., Annual Software License',
       itemDescription: 'Description',
@@ -721,6 +726,9 @@ export const translations = {
       bulkUpdateSaving: 'Updating items...',
       bulkUpdateSuccess: 'Items updated successfully',
       bulkUpdateError: 'Error updating items',
+      bundleItems: 'Bundle Items',
+      addBundleItem: 'Add Item to Bundle',
+      noBundleItems: 'This bundle does not have any items yet.',
     },
     Actions: {
       title: 'Actions',
@@ -964,3 +972,5 @@ export const translations = {
     }
   },
 };
+
+    

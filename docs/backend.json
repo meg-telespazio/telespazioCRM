@@ -372,7 +372,7 @@
         },
         "type": {
           "type": "string",
-          "enum": ["product", "service"],
+          "enum": ["product", "service", "bundle"],
           "description": "Indicates if the item is a product or a service."
         },
         "name": {
@@ -429,6 +429,23 @@
             "type": "string",
             "format": "date-time",
             "description": "Timestamp of when the item was created."
+        },
+        "bundleItems": {
+          "type": "array",
+          "description": "List of items included in the bundle.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "itemId": {
+                "type": "string",
+                "description": "ID of the catalog item."
+              },
+              "quantity": {
+                "type": "number"
+              }
+            },
+            "required": ["itemId", "quantity"]
+          }
         }
       },
       "required": [
@@ -436,9 +453,6 @@
         "type",
         "name",
         "status",
-        "unitOfMeasure",
-        "currency",
-        "isEditable",
         "createdBy",
         "createdAt"
       ]
@@ -558,3 +572,5 @@
     }
   }
 }
+
+    
