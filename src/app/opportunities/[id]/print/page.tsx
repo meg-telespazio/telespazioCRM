@@ -37,13 +37,6 @@ type EnrichedLineItem = Opportunity['lineItems'][0] & {
   type: ProductOrService['type'];
 };
 
-const numberToWords = (
-  num: number,
-  currency: 'USD' | 'EUR' | 'ARS' = 'USD'
-): string => {
-  return `${currency} ${num.toFixed(2)}`;
-};
-
 export default function PrintOpportunityPage() {
   const { t, locale } = useI18n();
   const dateLocale = locale === 'es' ? es : enUS;
@@ -212,9 +205,10 @@ export default function PrintOpportunityPage() {
 
   const Signature = () => (
     <div className="pt-16 text-right text-[10px]">
-      <p className="font-bold">{t('Proposal.signature_name')}</p>
+      <p className="font-bold">{user?.displayName?.toUpperCase()}</p>
       <p>{t('Proposal.signature_company')}</p>
       <p>{t('Proposal.signature_title')}</p>
+      <p>{user?.email}</p>
     </div>
   );
 
@@ -246,13 +240,13 @@ export default function PrintOpportunityPage() {
           }),
         })}
       </p>
-      <div className="mt-6">
+      <div className="mt-4">
         <p>
           <span className="font-bold">{t('Proposal.to')} </span>
           {recipientName.toUpperCase()}
         </p>
       </div>
-      <section className="mt-4">
+      <section className="mt-2">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.proposalData')}
         </h2>
@@ -283,7 +277,7 @@ export default function PrintOpportunityPage() {
           </tbody>
         </table>
       </section>
-      <section className="mt-4 flex-grow">
+      <section className="mt-2 flex-grow">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.products_services')}
         </h2>
@@ -374,7 +368,7 @@ export default function PrintOpportunityPage() {
   const Page2Content = () => (
     <>
       <ProposalHeader />
-      <section className="mt-6">
+      <section className="mt-6 flex-grow">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Table.totals')}
         </h2>
@@ -420,7 +414,7 @@ export default function PrintOpportunityPage() {
           </div>
           <div className="font-bold text-red-700">
             <span>{t('Proposal.total_contract_value')}: </span>
-            <span>{numberToWords(finalFcv, opportunity.currency)}</span>
+            <span>{`${opportunity.currency} ${finalFcv.toFixed(2)}`}</span>
           </div>
           {customNote && (
             <div>
@@ -442,7 +436,6 @@ export default function PrintOpportunityPage() {
           </div>
         </div>
       </section>
-      <div className="flex-grow" />
       <Signature />
       <ProposalFooter page={2} totalPages={2} />
     </>

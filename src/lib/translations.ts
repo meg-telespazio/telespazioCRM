@@ -395,7 +395,7 @@ export const translations = {
     },
     Proposal: {
       title: "Presupuesto Comercial",
-      date_location: "Ciudad Autónoma de Buenos Aires, {date}",
+      date_location: "{city}, {date}",
       to: "Sr/Srs:",
       proposalData: "Datos Propuesta",
       quote_id: "Cotización #",
@@ -422,7 +422,6 @@ export const translations = {
       notes_text: "Todos los precios expresados en la presente cotización están denominados en dólares estadounidenses (USD). Los montos indicados no incluyen impuestos, tasas ni gravámenes aplicables, los cuales serán detallados al momento de la facturación según la normativa vigente. La validez de esta oferta estará sujeta a la disponibilidad de stock al momento de la adjudicación.",
       legal_title: "Confidencialidad y Aviso Legal",
       legal_text: "El presente documento es para uso exclusivo del destinatario y contiene información propiedad de Telespazio. Queda estrictamente prohibida su divulgación, copia o distribución a terceros sin autorización previa por escrito. Este presupuesto tiene carácter informativo y no constituye una orden de compra, contrato vinculante ni compromiso comercial para las partes. Telespazio se reserva el derecho de modificar, actualizar o cancelar los términos, precios y especificaciones aquí contenidos en cualquier momento y sin previo aviso, hasta la formalización del instrumento contractual correspondiente.",
-      signature_name: "MARIANO GONZALEZ",
       signature_company: "Telespazio Argentina S.A.",
       signature_title: "Sales Manager",
       confidential: "Confidencial",
@@ -831,7 +830,7 @@ export const translations = {
     },
     Proposal: {
       title: "Commercial Budget",
-      date_location: "Ciudad Autónoma de Buenos Aires, {date}",
+      date_location: "{city}, {date}",
       to: "Mr/Mrs:",
       proposalData: "Proposal Data",
       quote_id: "Quote #",
@@ -858,7 +857,6 @@ export const translations = {
       notes_text: "All prices expressed in this quote are denominated in United States dollars (USD). The amounts indicated do not include taxes, fees, or applicable levies, which will be detailed at the time of invoicing according to current regulations. The validity of this offer will be subject to stock availability at the time of award.",
       legal_title: "Confidentiality and Legal Notice",
       legal_text: "This document is for the exclusive use of the recipient and contains information proprietary to Telespazio. Its disclosure, copying, or distribution to third parties without prior written authorization is strictly prohibited. This budget is for informational purposes and does not constitute a purchase order, binding contract, or commercial commitment for the parties. Telespazio reserves the right to modify, update, or cancel the terms, prices, and specifications contained herein at any time and without prior notice, until the formalization of the corresponding contractual instrument.",
-      signature_name: "MARIANO GONZALEZ",
       signature_company: "Telespazio Argentina S.A.",
       signature_title: "Sales Manager",
       confidential: "Confidential",
