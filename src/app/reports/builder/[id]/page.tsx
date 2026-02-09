@@ -185,6 +185,7 @@ export default function ReportBuilderPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportResult, setReportResult] = useState<{ data: any[]; columns: any[] } | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   const reportDocRef = useMemo(() => {
     if (!user || isNew) return null;
@@ -214,43 +215,30 @@ export default function ReportBuilderPage() {
   const watchedDataSource = form.watch('primaryDataSource');
   const watchedSelectedFields = form.watch('selectedFields');
 
-  const getJoinedData = useCallback(() => {
-    if (!watchedDataSource) return [];
-
-    let baseData: any[] = [];
-    if (watchedDataSource === 'clients') baseData = clientsData || [];
-    else if (watchedDataSource === 'contacts') baseData = contactsData || [];
-    else if (watchedDataSource === 'opportunities') baseData = opportunitiesData || [];
-    else if (watchedDataSource === 'productsAndServices') baseData = psData || [];
-
-    if (!baseData || baseData.length === 0) return [];
-
-    const clientMap = new Map(clientsData?.map(c => [c.id, c]));
-    const contactMap = new Map(contactsData?.map(c => [c.id, c]));
-
-    return baseData.map(item => {
-      let client, contact;
-      if (item.clientId) {
-        client = clientMap.get(item.clientId);
-      }
-      if (item.contactId) {
-        contact = contactMap.get(item.contactId)
-      }
-      return {
-        ...item,
-        __client: client,
-        __contact: contact
-      };
-    });
-  }, [watchedDataSource, clientsData, contactsData, opportunitiesData, psData]);
-  
   const generateReport = useCallback((dataSource: DataSource, fields: string[], filters?: ReportFilter[], sorts?: ReportSort[]) => {
      if (!dataSource || !fields || fields.length === 0) return;
      setIsGenerating(true);
      setReportResult(null);
+     setDebugInfo(null);
 
     setTimeout(() => {
-        const joined = getJoinedData();
+        let baseData: any[] = [];
+        if (dataSource === 'clients') baseData = [...(clientsData || [])];
+        else if (dataSource === 'contacts') baseData = [...(contactsData || [])];
+        else if (dataSource === 'opportunities') baseData = [...(opportunitiesData || [])];
+        else if (dataSource === 'productsAndServices') baseData = [...(psData || [])];
+
+        const debugLines = [`- ${t('Reports.foundRecords', {count: baseData.length, source: t(`Reports.dataSources.${dataSource}`)})}`];
+
+        const clientMap = new Map(clientsData?.map(c => [c.id, c]));
+        const contactMap = new Map(contactsData?.map(c => [c.id, c]));
+
+        const joined = baseData.map(item => ({
+            ...item,
+            __client: item.clientId ? clientMap.get(item.clientId) : undefined,
+            __contact: item.contactId ? contactMap.get(item.contactId) : undefined,
+        }));
+        
         let filtered = joined;
         
         if (filters && filters.length > 0) {
@@ -261,13 +249,9 @@ export default function ReportBuilderPage() {
                     let itemValue: any;
                     const [source, fieldName] = filter.field.split('.');
 
-                    if (source === watchedDataSource) {
-                        itemValue = item[fieldName];
-                    } else if (source === 'clients') {
-                        itemValue = item.__client?.[fieldName];
-                    } else if (source === 'contacts') {
-                        itemValue = item.__contact?.[fieldName];
-                    }
+                    if (source === dataSource) itemValue = item[fieldName];
+                    else if (source === 'clients') itemValue = item.__client?.[fieldName];
+                    else if (source === 'contacts') itemValue = item.__contact?.[fieldName];
                     
                     const filterValue = filter.value;
 
@@ -297,6 +281,9 @@ export default function ReportBuilderPage() {
                     }
                 });
             });
+            debugLines.push(`- ${t('Reports.afterFilters', {count: filtered.length, filterCount: filters.length})}`);
+        } else {
+            debugLines.push(`- ${t('Reports.noFilters', {count: filtered.length})}`);
         }
         
         if (sorts && sorts.length > 0) {
@@ -305,16 +292,9 @@ export default function ReportBuilderPage() {
               const [source, fieldName] = sort.field.split('.');
               let valA, valB;
 
-              if (source === watchedDataSource) {
-                  valA = a[fieldName];
-                  valB = b[fieldName];
-              } else if (source === 'clients') {
-                  valA = a.__client?.[fieldName];
-                  valB = b.__client?.[fieldName];
-              } else if (source === 'contacts') {
-                  valA = a.__contact?.[fieldName];
-                  valB = b.__contact?.[fieldName];
-              }
+              if (source === dataSource) { valA = a[fieldName]; valB = b[fieldName]; } 
+              else if (source === 'clients') { valA = a.__client?.[fieldName]; valB = b.__client?.[fieldName]; } 
+              else if (source === 'contacts') { valA = a.__contact?.[fieldName]; valB = b.__contact?.[fieldName]; }
               
               if (valA === undefined || valA === null) return sort.direction === 'asc' ? 1 : -1;
               if (valB === undefined || valB === null) return sort.direction === 'asc' ? -1 : 1;
@@ -337,21 +317,20 @@ export default function ReportBuilderPage() {
           const row: Record<string, any> = {};
           fields.forEach(fieldKey => {
             const [source, field] = fieldKey.split('.');
-            if (source === watchedDataSource) {
-                row[fieldKey] = item[field];
-            } else if (source === 'clients') {
-                row[fieldKey] = item.__client?.[field];
-            } else if (source === 'contacts') {
-                row[fieldKey] = item.__contact?.[field];
-            }
+            if (source === dataSource) row[fieldKey] = item[field];
+            else if (source === 'clients') row[fieldKey] = item.__client?.[field];
+            else if (source === 'contacts') row[fieldKey] = item.__contact?.[field];
           });
           return row;
         });
 
+        debugLines.push(`- ${t('Reports.displayingRecords', {count: newData.length})}`);
+        setDebugInfo(debugLines.join('\n'));
+
         setReportResult({ data: newData, columns: newColumns });
         setIsGenerating(false);
      }, 500);
-  }, [getJoinedData, t, watchedDataSource]);
+  }, [clientsData, contactsData, opportunitiesData, psData, t]);
 
   useEffect(() => {
     if (existingReport) {
@@ -372,11 +351,8 @@ export default function ReportBuilderPage() {
         );
       }
     }
-  }, [existingReport, shouldRunOnLoad, form, generateReport]);
-
-  useEffect(() => {
-    if (!userLoading && !user) redirect('/login');
-  }, [user, userLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingReport, shouldRunOnLoad]);
 
   async function handleSave(values: ReportFormData) {
     if (!user) return;
@@ -613,6 +589,19 @@ export default function ReportBuilderPage() {
             </form>
         </Form>
         
+        {debugInfo && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('Reports.queryExecutionDetails')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-xs whitespace-pre-wrap bg-muted p-4 rounded-md font-mono">
+                <code>{debugInfo}</code>
+              </pre>
+            </CardContent>
+          </Card>
+        )}
+
         {isGenerating && <Skeleton className="h-64 w-full mt-8" />}
         {reportResult && <ReportResultTable columns={reportResult.columns} data={reportResult.data} />}
         </div>

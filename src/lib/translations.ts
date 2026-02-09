@@ -419,7 +419,12 @@ export const translations = {
         nameMin: 'El nombre debe tener al menos 3 caracteres.',
         dataSourceRequired: 'Debes seleccionar una fuente de datos.',
         fieldsRequired: 'Debes seleccionar al menos un campo.',
-      }
+      },
+      queryExecutionDetails: 'Detalles de Ejecución de Consulta',
+      foundRecords: 'Se encontraron {count} registros en la fuente de datos principal \'{source}\'.',
+      afterFilters: 'Se aplicaron {filterCount} filtro(s). Se encontraron {count} registros coincidentes.',
+      noFilters: 'No se aplicaron filtros. Total de registros a procesar: {count}.',
+      displayingRecords: 'Mostrando {count} registros en el reporte final.',
     },
     Proposal: {
       title: "Presupuesto Comercial",
@@ -884,7 +889,12 @@ export const translations = {
         nameMin: 'Name must be at least 3 characters.',
         dataSourceRequired: 'You must select a data source.',
         fieldsRequired: 'You must select at least one field.',
-      }
+      },
+      queryExecutionDetails: 'Query Execution Details',
+      foundRecords: 'Found {count} records in primary data source \'{source}\'.',
+      afterFilters: 'Applied {filterCount} filter(s). Found {count} matching records.',
+      noFilters: 'No filters applied. Total records to process: {count}.',
+      displayingRecords: 'Displaying {count} records in the final report.',
     },
     Proposal: {
       title: "Commercial Budget",
