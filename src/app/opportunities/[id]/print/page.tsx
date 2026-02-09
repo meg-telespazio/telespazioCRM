@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Printer } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 import {
   Card,
   CardContent,
@@ -195,7 +194,7 @@ export default function PrintOpportunityPage() {
   const recipientName = contact?.name || client?.name || '';
   const validationDate = format(
     addDays(new Date(opportunity.requestDate), 30),
-    'PPP',
+    'PPPP',
     { locale: dateLocale }
   );
 
@@ -211,19 +210,27 @@ export default function PrintOpportunityPage() {
     </header>
   );
 
-  const ProposalFooter = ({ page, totalPages }: { page: number, totalPages: number }) => (
-    <footer className="mt-auto pt-6">
-      <Separator className="mb-2 bg-black" />
-      <div className="flex items-end justify-between">
-        <p className="text-[8px] font-bold">{t('Proposal.confidential')}</p>
-        <div className="text-right text-[9px]">
-          <p className="font-bold">{t('Proposal.signature_name')}</p>
-          <p>{t('Proposal.signature_company')}</p>
-          <p>{t('Proposal.signature_title')}</p>
-        </div>
-      </div>
-      <div className="mt-2 border-t pt-1 text-right text-[8px]">
-        {t('Proposal.page')} {page} de {totalPages}
+  const Signature = () => (
+    <div className="pt-16 text-right text-[10px]">
+      <p className="font-bold">{t('Proposal.signature_name')}</p>
+      <p>{t('Proposal.signature_company')}</p>
+      <p>{t('Proposal.signature_title')}</p>
+    </div>
+  );
+
+  const ProposalFooter = ({
+    page,
+    totalPages,
+  }: {
+    page: number;
+    totalPages: number;
+  }) => (
+    <footer className="mt-auto border-t-2 border-red-700 pt-2">
+      <div className="flex items-center justify-between text-[9px]">
+        <p className="font-bold">{t('Proposal.confidential')}</p>
+        <p>
+          {t('Proposal.page')} {page} de {totalPages}
+        </p>
       </div>
     </footer>
   );
@@ -240,10 +247,12 @@ export default function PrintOpportunityPage() {
         })}
       </p>
       <div className="mt-6">
-        <p className="font-bold">{t('Proposal.to')}</p>
-        <p>{recipientName.toUpperCase()}</p>
+        <p>
+          <span className="font-bold">{t('Proposal.to')} </span>
+          {recipientName.toUpperCase()}
+        </p>
       </div>
-      <section className="mt-6">
+      <section className="mt-4">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.proposalData')}
         </h2>
@@ -274,7 +283,7 @@ export default function PrintOpportunityPage() {
           </tbody>
         </table>
       </section>
-      <section className="mt-6 flex-grow">
+      <section className="mt-4 flex-grow">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.products_services')}
         </h2>
@@ -330,7 +339,9 @@ export default function PrintOpportunityPage() {
               const subtotalNrc =
                 line.quantity * line.oneTimeCharge * (1 - line.discount / 100);
               const subtotalMrc =
-                line.quantity * line.recurringCharge * (1 - line.discount / 100);
+                line.quantity *
+                line.recurringCharge *
+                (1 - line.discount / 100);
               return (
                 <tr key={line.itemId} className="even:bg-gray-50">
                   <td className="border p-0.5 text-center">{index + 1}</td>
@@ -363,7 +374,7 @@ export default function PrintOpportunityPage() {
   const Page2Content = () => (
     <>
       <ProposalHeader />
-      <section className="mt-6 flex-grow">
+      <section className="mt-6">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Table.totals')}
         </h2>
@@ -409,9 +420,7 @@ export default function PrintOpportunityPage() {
           </div>
           <div className="font-bold text-red-700">
             <span>{t('Proposal.total_contract_value')}: </span>
-            <span>
-              {numberToWords(finalFcv, opportunity.currency)}
-            </span>
+            <span>{numberToWords(finalFcv, opportunity.currency)}</span>
           </div>
           {customNote && (
             <div>
@@ -427,10 +436,14 @@ export default function PrintOpportunityPage() {
           </div>
           <div>
             <p className="font-bold">{t('Proposal.legal_title')}</p>
-            <p className="text-justify text-[7pt]">{t('Proposal.legal_text')}</p>
+            <p className="text-justify text-[7pt]">
+              {t('Proposal.legal_text')}
+            </p>
           </div>
         </div>
       </section>
+      <div className="flex-grow" />
+      <Signature />
       <ProposalFooter page={2} totalPages={2} />
     </>
   );
@@ -466,7 +479,7 @@ export default function PrintOpportunityPage() {
           margin: 0.5in;
         }
       `}</style>
-      
+
       <div className="no-print min-h-screen bg-gray-100">
         <div className="container mx-auto max-w-7xl p-4 sm:p-8">
           <div className="mb-6 flex items-center justify-between">
@@ -483,38 +496,40 @@ export default function PrintOpportunityPage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            <div className="md:col-span-8 lg:col-span-9 flex justify-center group">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
+            <div className="flex justify-center group md:col-span-8 lg:col-span-9">
               <Carousel className="w-full max-w-[210mm]">
                 <CarouselContent>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
-                      <div className="aspect-[210/297] bg-white p-8 text-[9pt] shadow-lg font-sans flex flex-col">
+                      <div className="font-sans flex aspect-[210/297] flex-col bg-white p-6 text-[9pt] shadow-lg">
                         <Page1Content />
                       </div>
                     </div>
                   </CarouselItem>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
-                       <div className="aspect-[210/297] bg-white p-8 text-[9pt] shadow-lg font-sans flex flex-col">
+                      <div className="font-sans flex aspect-[210/297] flex-col bg-white p-6 text-[9pt] shadow-lg">
                         <Page2Content />
                       </div>
                     </div>
                   </CarouselItem>
                 </CarouselContent>
-                <CarouselPrevious className="left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <CarouselNext className="right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CarouselPrevious className="left-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <CarouselNext className="right-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               </Carousel>
             </div>
-            
+
             <div className="md:col-span-4 lg:col-span-3">
               <Card className="sticky top-24">
                 <CardHeader>
                   <CardTitle>{t('Proposal.customization')}</CardTitle>
-                  <CardDescription>{t('Proposal.customization_desc')}</CardDescription>
+                  <CardDescription>
+                    {t('Proposal.customization_desc')}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                   <div>
+                  <div>
                     <label
                       htmlFor="delivery-time"
                       className="mb-2 block text-sm font-medium text-gray-700"
@@ -547,7 +562,6 @@ export default function PrintOpportunityPage() {
                 </CardContent>
               </Card>
             </div>
-
           </div>
         </div>
       </div>
