@@ -102,8 +102,20 @@ export type UserProfile = {
   position: 'Director' | 'Manager' | 'Executive' | 'Project Manager';
 };
 
+export type Report = {
+  id: string;
+  name: string;
+  description?: string;
+  primaryDataSource: 'clients' | 'contacts' | 'opportunities';
+  selectedFields: string[];
+  filters: any; 
+  createdAt: Date;
+  createdBy: string;
+};
+
 // Types for writing data to Firestore
 export type ClientWrite = Omit<Client, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ContactWrite = Omit<Contact, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type OpportunityWrite = Omit<Opportunity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldValue };

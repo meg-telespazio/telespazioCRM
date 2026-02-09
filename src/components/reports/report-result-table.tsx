@@ -6,6 +6,8 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
   useReactTable,
 } from '@tanstack/react-table';
 
@@ -20,13 +22,17 @@ import {
 import { useI18n } from '@/firebase/client-provider';
 import { format } from 'date-fns';
 import { DataTablePagination } from '../ui/data-table-pagination';
+import { Button } from '../ui/button';
+import { Download } from 'lucide-react';
+import Papa from 'papaparse';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
-type ReportTableProps = {
-  columns: ColumnDef<any>[];
+type ReportResultTableProps = {
+  columns: { accessorKey: string, header: string }[];
   data: any[];
 };
 
-const formatCell = (value: any): string => {
+const formatCellForDisplay = (value: any): string => {
     if (value instanceof Date) {
         return format(value, 'P');
     }
@@ -49,40 +55,89 @@ const formatCell = (value: any): string => {
     return String(value ?? '-');
 }
 
+const formatCellForExport = (value: any): string => {
+  if (value instanceof Date) return format(value, 'yyyy-MM-dd');
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '';
+    if (typeof value[0] === 'object' && value[0] !== null) {
+      return value
+        .map((item) => item.address || item.number || JSON.stringify(item))
+        .join('; ');
+    }
+    return value.join('; ');
+  }
+  if (typeof value === 'object' && value !== null) return JSON.stringify(value);
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number') return value.toString();
+  return String(value ?? '');
+};
 
-export function ReportTable({ columns, data }: ReportTableProps) {
+export function ReportResultTable({ columns, data }: ReportResultTableProps) {
   const { t } = useI18n();
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const tableColumns = React.useMemo<ColumnDef<any>[]>(() => 
     columns.map(col => ({
         ...col,
-        cell: (props) => formatCell(props.getValue())
+        cell: (props) => formatCellForDisplay(props.getValue()),
+        enableSorting: true,
     })), [columns]);
-
 
   const table = useReactTable({
     data,
     columns: tableColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+  
+  const handleDownload = () => {
+    const headers = columns.map(col => col.header);
+    const dataForCsv = data.map(row => 
+        columns.map(col => formatCellForExport(row[col.accessorKey]))
+    );
+    const csv = Papa.unparse([headers, ...dataForCsv]);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'report.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   return (
-    <div className="w-full bg-card rounded-lg border shadow-sm">
-      <div className="border-y">
+    <Card className="mt-8">
+      <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>{t('Reports.results')}</CardTitle>
+            <Button onClick={handleDownload} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              {t('Reports.downloadCsv')}
+            </Button>
+          </CardHeader>
+      <CardContent>
+        <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} onClick={header.column.getToggleSortingHandler()}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
                             header.getContext()
                           )}
+                        {{
+                            asc: ' 🔼',
+                            desc: ' 🔽',
+                        }[header.column.getIsSorted() as string] ?? null}
                     </TableHead>
                   );
                 })}
@@ -120,6 +175,7 @@ export function ReportTable({ columns, data }: ReportTableProps) {
         </Table>
       </div>
       <DataTablePagination table={table} />
-    </div>
+      </CardContent>
+    </Card>
   );
 }

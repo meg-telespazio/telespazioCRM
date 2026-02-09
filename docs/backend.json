@@ -429,6 +429,54 @@
         "createdBy",
         "createdAt"
       ]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Represents a saved report configuration.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the report."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the report."
+        },
+        "primaryDataSource": {
+          "type": "string",
+          "enum": [
+            "clients",
+            "contacts",
+            "opportunities"
+          ]
+        },
+        "selectedFields": {
+          "type": "array",
+          "description": "List of field keys to include in the report.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filters": {
+          "type": "object",
+          "description": "Saved filter configuration for the report."
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "name",
+        "primaryDataSource",
+        "selectedFields",
+        "createdBy",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -440,6 +488,12 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Stores public information about a user."
+    },
+    "/users/{userId}/reports/{reportId}": {
+      "schema": {
+        "$ref": "#/entities/Report"
+      },
+      "description": "Stores user-created report configurations."
     },
     "/clients/{clientId}": {
       "schema": {
