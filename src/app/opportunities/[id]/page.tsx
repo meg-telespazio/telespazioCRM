@@ -27,7 +27,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Trash2, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, Trash2, Plus, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -402,7 +402,17 @@ export default function OpportunityFormPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader
         title={isNew ? t('Forms.addOpportunity') : t('Forms.editOpportunity')}
-      />
+      >
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push(`/opportunities/${opportunityId}/print`)}
+          disabled={isNew}
+        >
+          <Printer className="mr-2 h-4 w-4" />
+          {t('Forms.printOffer')}
+        </Button>
+      </AppHeader>
       <main className="flex-1 p-4 sm:p-6">
         <div className="mx-auto max-w-4xl">
           <Form {...form}>
@@ -965,9 +975,7 @@ export default function OpportunityFormPage() {
                             name="applyDiscountToNrc"
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center gap-x-3 space-y-0">
-                                    <FormControl>
-                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                    </FormControl>
+                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                     <FormLabel className="font-normal">{t('Forms.applyToNrc')}</FormLabel>
                                 </FormItem>
                             )}
@@ -977,9 +985,7 @@ export default function OpportunityFormPage() {
                             name="applyDiscountToMrc"
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center gap-x-3 space-y-0">
-                                    <FormControl>
-                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                    </FormControl>
+                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                     <FormLabel className="font-normal">{t('Forms.applyToMrc')}</FormLabel>
                                 </FormItem>
                             )}
