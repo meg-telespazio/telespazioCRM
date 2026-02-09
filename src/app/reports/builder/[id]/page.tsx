@@ -211,10 +211,7 @@ export default function ReportBuilderPage() {
 
   const { fields: filterFields, append: appendFilter, remove: removeFilter } = useFieldArray({ control: form.control, name: 'filters' });
   const { fields: sortFields, append: appendSort, remove: removeSort } = useFieldArray({ control: form.control, name: 'sorting' });
-
-  const watchedDataSource = form.watch('primaryDataSource');
-  const watchedSelectedFields = form.watch('selectedFields');
-
+  
   const generateReport = useCallback((dataSource: DataSource, fields: string[], filters?: ReportFilter[], sorts?: ReportSort[]) => {
      if (!dataSource || !fields || fields.length === 0) return;
      setIsGenerating(true);
@@ -314,17 +311,29 @@ export default function ReportBuilderPage() {
         });
 
         const newData = filtered.map(item => {
-          const row: Record<string, any> = {};
-          fields.forEach(fieldKey => {
-            const [source, field] = fieldKey.split('.');
-            if (source === dataSource) row[fieldKey] = item[field];
-            else if (source === 'clients') row[fieldKey] = item.__client?.[field];
-            else if (source === 'contacts') row[fieldKey] = item.__contact?.[field];
-          });
-          return row;
+            const row: any = {};
+            fields.forEach(fieldKey => {
+                const [source, field] = fieldKey.split('.');
+                
+                if (!row[source]) {
+                    row[source] = {};
+                }
+
+                if (source === dataSource) {
+                    row[source][field] = item[field];
+                } else if (source === 'clients' && item.__client) {
+                    row[source][field] = item.__client[field];
+                } else if (source === 'contacts' && item.__contact) {
+                    row[source][field] = item.__contact[field];
+                }
+            });
+            return row;
         });
 
         debugLines.push(`- ${t('Reports.displayingRecords', {count: newData.length})}`);
+        if(newData.length > 0) {
+            debugLines.push(`\n${t('Reports.sampleRecord')}:\n${JSON.stringify(newData[0], null, 2)}`);
+        }
         setDebugInfo(debugLines.join('\n'));
 
         setReportResult({ data: newData, columns: newColumns });
@@ -351,8 +360,7 @@ export default function ReportBuilderPage() {
         );
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingReport, shouldRunOnLoad]);
+  }, [existingReport, shouldRunOnLoad, form, generateReport]);
 
   async function handleSave(values: ReportFormData) {
     if (!user) return;
@@ -382,6 +390,9 @@ export default function ReportBuilderPage() {
     form.setValue('selectedFields', newFields, { shouldValidate: true });
   };
   
+  const watchedDataSource = form.watch('primaryDataSource');
+  const watchedSelectedFields = form.watch('selectedFields');
+
   if ((reportLoading && !isNew) || userLoading) {
     return <div className="flex-1 p-6"><Skeleton className="h-96 w-full" /></div>
   }
@@ -582,7 +593,7 @@ export default function ReportBuilderPage() {
                 <div className="flex items-center justify-end gap-4">
                     <Button type="button" variant="outline" onClick={() => router.push('/reports')}>{t('Auth.cancelLabel')}</Button>
                     <Button type="submit" disabled={isSaving}>{isSaving ? <Loader2 className="animate-spin" /> : t('Reports.saveReport')}</Button>
-                    <Button type="button" onClick={() => generateReport(form.getValues('primaryDataSource'), form.getValues('selectedFields'), form.getValues('filters'), form.getValues('sorting'))} disabled={isGenerating || pageIsLoading || watchedSelectedFields.length === 0}>
+                    <Button type="button" onClick={() => generateReport(form.getValues('primaryDataSource'), form.getValues('selectedFields'), form.getValues('filters'), form.getValues('sorting'))} disabled={isGenerating || pageIsLoading || !watchedDataSource || watchedSelectedFields.length === 0}>
                         {isGenerating || pageIsLoading ? <Loader2 className="animate-spin" /> : t('Reports.generateReport')}
                     </Button>
                 </div>
