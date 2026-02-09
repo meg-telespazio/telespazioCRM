@@ -212,6 +212,10 @@ export const translations = {
       competition: 'Competencia',
       competitionPlaceholder: 'Competidor A, Competidor B, ...',
       competitionDescription: 'Ingrese competidores separados por comas.',
+      position: 'Posición',
+      area: 'Área',
+      selectPosition: 'Seleccione una posición',
+      selectArea: 'Seleccione un área',
     },
     PS: {
       editItem: 'Editar Ítem',
@@ -337,6 +341,24 @@ export const translations = {
       USD: 'USD - Dólar Estadounidense',
       EUR: 'EUR - Euro',
       ARS: 'ARS - Peso Argentino',
+    },
+    ContactPositions: {
+      Analyst: 'Analista',
+      CEO: 'CEO',
+      CFO: 'CFO',
+      CIO: 'CIO',
+      CISO: 'CISO',
+      Head: 'Jefe',
+      Manager: 'Gerente'
+    },
+    ContactAreas: {
+      Administration: 'Administración',
+      IT: 'Tecnología de la Información',
+      Legal: 'Legales',
+      Marketing: 'Marketing',
+      Procurement: 'Compras',
+      Sales: 'Ventas',
+      SupplierPayments: 'Pago a Proveedores'
     },
     Importer: {
       clientTitle: 'Importar Clientes',
@@ -698,6 +720,10 @@ export const translations = {
       competition: 'Competition',
       competitionPlaceholder: 'Competitor A, Competitor B, ...',
       competitionDescription: 'Enter competitors separated by commas.',
+      position: 'Position',
+      area: 'Area',
+      selectPosition: 'Select a position',
+      selectArea: 'Select an area',
     },
     PS: {
       editItem: 'Edit Item',
@@ -823,6 +849,24 @@ export const translations = {
       USD: 'USD - United States Dollar',
       EUR: 'EUR - Euro',
       ARS: 'ARS - Argentine Peso',
+    },
+    ContactPositions: {
+      Analyst: 'Analyst',
+      CEO: 'CEO',
+      CFO: 'CFO',
+      CIO: 'CIO',
+      CISO: 'CISO',
+      Head: 'Head',
+      Manager: 'Manager'
+    },
+    ContactAreas: {
+      Administration: 'Administration',
+      IT: 'Information Technology',
+      Legal: 'Legal',
+      Marketing: 'Marketing',
+      Procurement: 'Procurement',
+      Sales: 'Sales',
+      SupplierPayments: 'Supplier Payments'
     },
     Importer: {
       clientTitle: 'Import Clients',
@@ -972,5 +1016,3 @@ export const translations = {
     }
   },
 };
-
-    

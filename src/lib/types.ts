@@ -25,10 +25,15 @@ export type PhoneEntry = {
   number: string;
 };
 
+export type ContactPosition = 'Analyst' | 'CEO' | 'CFO' | 'CIO' | 'CISO' | 'Head' | 'Manager';
+export type ContactArea = 'Administration' | 'IT' | 'Legal' | 'Marketing' | 'Procurement' | 'Sales' | 'Supplier Payments';
+
 export type Contact = {
   id: string;
   publicId: string;
   name: string;
+  position?: ContactPosition;
+  area?: ContactArea;
   emails: EmailEntry[];
   phones: PhoneEntry[];
   notes?: string;
@@ -141,5 +146,3 @@ export type ContactWrite = Omit<Contact, 'id' | 'createdAt'> & { createdAt: Fiel
 export type OpportunityWrite = Omit<Opportunity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldValue };
-
-    

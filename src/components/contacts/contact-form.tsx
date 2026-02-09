@@ -28,16 +28,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { Contact, Client, EmailEntry, PhoneEntry } from '@/lib/types';
+import type { Contact, Client, EmailEntry, PhoneEntry, ContactPosition, ContactArea } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
+const positionOptions: ContactPosition[] = ['Analyst', 'CEO', 'CFO', 'CIO', 'CISO', 'Head', 'Manager'];
+const areaOptions: ContactArea[] = ['Administration', 'IT', 'Legal', 'Marketing', 'Procurement', 'Sales', 'Supplier Payments'];
+
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
     name: z.string().min(2, t('Validation.nameMin')),
     clientId: z.string().min(1, t('Validation.selectClient')),
+    position: z.enum(positionOptions).optional(),
+    area: z.enum(areaOptions).optional(),
     emails: z
       .array(
         z.object({
@@ -82,6 +87,8 @@ export function ContactForm({
     defaultValues: defaultValues || {
       name: '',
       clientId: '',
+      position: undefined,
+      area: undefined,
       emails: [{ type: 'work', address: '' }],
       phones: [{ type: 'mobile', number: '' }],
       notes: '',
@@ -172,7 +179,56 @@ export function ContactForm({
                   </FormItem>
                 )}
               />
-
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="position"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.position')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('Forms.selectPosition')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {positionOptions.map((pos) => (
+                            <SelectItem key={pos} value={pos}>
+                              {t(`ContactPositions.${pos}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="area"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.area')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('Forms.selectArea')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {areaOptions.map((area) => (
+                            <SelectItem key={area} value={area}>
+                              {t(`ContactAreas.${area.replace(' ', '')}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <Separator />
 
               <div>
