@@ -71,15 +71,19 @@ export default function ClientActivityPage() {
 
   const activitiesQuery = useMemo(() => {
     if (!user) return null;
-    const q = query(
+    // We only filter here. Sorting will be done on the client to avoid complex query errors.
+    return query(
       collection(firestore, 'activities'),
-      where('clientId', '==', clientId),
-      orderBy('createdAt', 'desc')
+      where('clientId', '==', clientId)
     );
-    return q;
   }, [firestore, clientId, user]);
   
   const { data: activities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
+  
+  const sortedActivities = useMemo(() => {
+    if (!activities) return [];
+    return [...activities].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }, [activities]);
 
   const usersQuery = useMemo(() => {
     if (!user) return null;
@@ -96,10 +100,10 @@ export default function ClientActivityPage() {
   }, [users]);
   
   const filteredActivities = useMemo(() => {
-    if (!activities) return [];
-    if (activityFilter === 'all') return activities;
-    return activities.filter(a => a.type === activityFilter);
-  }, [activities, activityFilter]);
+    if (!sortedActivities) return [];
+    if (activityFilter === 'all') return sortedActivities;
+    return sortedActivities.filter(a => a.type === activityFilter);
+  }, [sortedActivities, activityFilter]);
 
   // Form for new activity
   const form = useForm<z.infer<typeof newActivitySchema>>({
