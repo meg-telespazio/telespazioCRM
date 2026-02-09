@@ -12,7 +12,7 @@ import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { collection, query, where, orderBy, doc } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import type { Client, Activity, ActivityType, UserProfile } from '@/lib/types';
 import { addActivity } from '@/lib/firestore/activities';
 
@@ -64,14 +64,13 @@ export default function ClientActivityPage() {
 
   // Data fetching
   const clientDocRef = useMemo(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return doc(firestore, 'clients', clientId);
   }, [firestore, clientId, user]);
   const { data: client, loading: clientLoading } = useDoc<Client>(clientDocRef);
 
   const activitiesQuery = useMemo(() => {
-    if (!user) return null;
-    // We only filter here. Sorting will be done on the client to avoid complex query errors.
+    if (!user || !firestore) return null;
     return query(
       collection(firestore, 'activities'),
       where('clientId', '==', clientId)
@@ -86,8 +85,8 @@ export default function ClientActivityPage() {
   }, [activities]);
 
   const usersQuery = useMemo(() => {
-    if (!user) return null;
-    return collection(firestore, 'users');
+    if (!user || !firestore) return null;
+    return query(collection(firestore, 'users'));
   }, [firestore, user]);
   const { data: users, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
 
@@ -159,34 +158,35 @@ export default function ClientActivityPage() {
           {/* Left Column */}
           <div className="col-span-12 md:col-span-3 space-y-6">
              <Card>
-                <CardHeader>
-                    <CardTitle>{t('Activity.clientDetails')}</CardTitle>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base font-semibold">{t('Activity.clientDetails')}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                   <div className="flex items-center gap-3">
+                <CardContent className="space-y-2 p-4 pt-0 text-xs">
+                   <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span>{client.name}</span>
                    </div>
-                   <div className="flex items-center gap-3">
+                   <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <a href={`mailto:${client.email}`} className="text-primary hover:underline">{client.email}</a>
                    </div>
-                   <div className="flex items-center gap-3">
+                   <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
                         <span>{client.phone}</span>
                    </div>
                 </CardContent>
              </Card>
              <Card>
-                <CardHeader>
-                    <CardTitle>{t('Activity.filters')}</CardTitle>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base font-semibold">{t('Activity.filters')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <ul className="space-y-2">
-                        <li><Button variant={activityFilter === 'all' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" onClick={() => setActivityFilter('all')}><ListFilter /> {t('Activity.all')}</Button></li>
-                        <li><Button variant={activityFilter === 'call' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" onClick={() => setActivityFilter('call')}><Phone /> {t('Activity.calls')}</Button></li>
-                        <li><Button variant={activityFilter === 'meeting' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" onClick={() => setActivityFilter('meeting')}><Calendar /> {t('Activity.meetings')}</Button></li>
-                        <li><Button variant={activityFilter === 'email' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2" onClick={() => setActivityFilter('email')}><Mail /> {t('Activity.emails')}</Button></li>
+                <CardContent className="p-4 pt-0">
+                    <ul className="space-y-1">
+                        <li><Button variant={activityFilter === 'all' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('all')}><ListFilter className="h-4 w-4"/> {t('Activity.all')}</Button></li>
+                        <li><Button variant={activityFilter === 'call' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('call')}><Phone className="h-4 w-4"/> {t('Activity.calls')}</Button></li>
+                        <li><Button variant={activityFilter === 'meeting' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('meeting')}><Calendar className="h-4 w-4"/> {t('Activity.meetings')}</Button></li>
+                        <li><Button variant={activityFilter === 'email' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('email')}><Mail className="h-4 w-4"/> {t('Activity.emails')}</Button></li>
+                        <li><Button variant={activityFilter === 'message' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('message')}><MessageSquare className="h-4 w-4"/> {t('Activity.types.message')}</Button></li>
                     </ul>
                 </CardContent>
              </Card>
@@ -195,10 +195,10 @@ export default function ClientActivityPage() {
           {/* Center Column */}
           <div className="col-span-12 md:col-span-9 space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>{t('Activity.logNew')}</CardTitle>
+              <CardHeader className="p-4">
+                <CardTitle className="text-lg font-semibold">{t('Activity.logNew')}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 pt-0">
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
