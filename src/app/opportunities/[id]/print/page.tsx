@@ -195,7 +195,7 @@ export default function PrintOpportunityPage() {
   const recipientName = contact?.name || client?.name || '';
   const validationDate = format(
     addDays(new Date(opportunity.requestDate), 30),
-    'd [de] MMMM [de] yyyy',
+    'PPP',
     { locale: dateLocale }
   );
 
@@ -215,14 +215,14 @@ export default function PrintOpportunityPage() {
     <footer className="mt-auto pt-6">
       <Separator className="mb-2 bg-black" />
       <div className="flex items-end justify-between">
-        <p className="text-[9px] font-bold">{t('Proposal.confidential')}</p>
-        <div className="text-right text-xs">
+        <p className="text-[8px] font-bold">{t('Proposal.confidential')}</p>
+        <div className="text-right text-[9px]">
           <p className="font-bold">{t('Proposal.signature_name')}</p>
           <p>{t('Proposal.signature_company')}</p>
           <p>{t('Proposal.signature_title')}</p>
         </div>
       </div>
-      <div className="mt-2 border-t pt-1 text-right text-[9px]">
+      <div className="mt-2 border-t pt-1 text-right text-[8px]">
         {t('Proposal.page')} {page} de {totalPages}
       </div>
     </footer>
@@ -234,7 +234,7 @@ export default function PrintOpportunityPage() {
       <p className="mt-6 text-right">
         {t('Proposal.date_location', {
           city: 'Ciudad Autónoma de Buenos Aires',
-          date: format(new Date(), 'EEEE, d [de] MMMM [de] yyyy', {
+          date: format(new Date(), 'PPPP', {
             locale: dateLocale,
           }),
         })}
@@ -278,7 +278,7 @@ export default function PrintOpportunityPage() {
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.products_services')}
         </h2>
-        <table className="mt-2 w-full border-collapse text-[11px]">
+        <table className="mt-2 w-full border-collapse text-[10px]">
           <thead>
             <tr className="bg-red-700 text-white">
               <th className="w-[5%] border border-red-700 p-0.5 text-center">
@@ -367,7 +367,7 @@ export default function PrintOpportunityPage() {
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Table.totals')}
         </h2>
-        <table className="mt-2 w-full border-collapse text-[11px]">
+        <table className="mt-2 w-full border-collapse text-[10px]">
           <tbody>
             <tr className="bg-gray-200 font-bold">
               <td colSpan={7} className="border p-0.5 text-right">
@@ -420,14 +420,14 @@ export default function PrintOpportunityPage() {
             </div>
           )}
           <div className="border-2 border-red-700 p-2">
-            <p className="text-[8pt]">
+            <p className="text-[7pt]">
               <span className="font-bold">{t('Proposal.notes_title')}: </span>
               {t('Proposal.notes_text')}
             </p>
           </div>
           <div>
             <p className="font-bold">{t('Proposal.legal_title')}</p>
-            <p className="text-justify text-[8pt]">{t('Proposal.legal_text')}</p>
+            <p className="text-justify text-[7pt]">{t('Proposal.legal_text')}</p>
           </div>
         </div>
       </section>
@@ -489,21 +489,21 @@ export default function PrintOpportunityPage() {
                 <CarouselContent>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
-                      <div className="aspect-[210/297] bg-white p-10 text-[9pt] shadow-lg font-sans flex flex-col">
+                      <div className="aspect-[210/297] bg-white p-8 text-[9pt] shadow-lg font-sans flex flex-col">
                         <Page1Content />
                       </div>
                     </div>
                   </CarouselItem>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
-                       <div className="aspect-[210/297] bg-white p-10 text-[9pt] shadow-lg font-sans flex flex-col">
+                       <div className="aspect-[210/297] bg-white p-8 text-[9pt] shadow-lg font-sans flex flex-col">
                         <Page2Content />
                       </div>
                     </div>
                   </CarouselItem>
                 </CarouselContent>
-                <CarouselPrevious className="left-4 opacity-30 group-hover:opacity-100 transition-opacity duration-300" />
-                <CarouselNext className="right-4 opacity-30 group-hover:opacity-100 transition-opacity duration-300" />
+                <CarouselPrevious className="left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <CarouselNext className="right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Carousel>
             </div>
             
@@ -563,5 +563,3 @@ export default function PrintOpportunityPage() {
     </>
   );
 }
-
-    
