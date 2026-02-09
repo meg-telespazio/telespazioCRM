@@ -204,9 +204,10 @@ export default function ReportBuilderPage() {
   const watchedSelectedFields = form.watch('selectedFields');
 
   useEffect(() => {
-    // Reset filters when data source changes
+    // Reset filters and selected fields when data source changes
     setFilters({});
-  }, [watchedDataSource]);
+    form.setValue('selectedFields', []);
+  }, [watchedDataSource, form]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -222,9 +223,9 @@ export default function ReportBuilderPage() {
 
     try {
       if (isNew) {
-        const newReport = await addReport(firestore, user.uid, reportData);
+        const newReportRef = await addReport(firestore, user.uid, reportData);
         toast({ variant: 'success', title: t('Reports.saveSuccess') });
-        router.replace(`/reports/builder/${newReport.id}`);
+        router.replace(`/reports/builder/${newReportRef.id}`);
       } else {
         await updateReport(firestore, user.uid, reportId, reportData);
         toast({ variant: 'success', title: t('Reports.updateSuccess') });
@@ -237,25 +238,32 @@ export default function ReportBuilderPage() {
   }
 
   function generateReport(fields: string[], dataSource?: DataSource, activeFilters?: any) {
-     if (!dataSource) return;
+     if (!dataSource || !fields || fields.length === 0) return;
      setIsGenerating(true);
      setReportResult(null);
 
     setTimeout(() => {
         const clientMap = new Map(clientsData?.map(c => [c.id, c]));
+        const contactMap = new Map(contactsData?.map(c => [c.id, c]));
         
         let baseData: any[] = [];
         if (dataSource === 'clients') baseData = clientsData || [];
-        if (dataSource === 'contacts') baseData = contactsData || [];
-        if (dataSource === 'opportunities') baseData = opportunitiesData || [];
-        if (dataSource === 'productsAndServices') baseData = psData || [];
+        else if (dataSource === 'contacts') baseData = contactsData || [];
+        else if (dataSource === 'opportunities') baseData = opportunitiesData || [];
+        else if (dataSource === 'productsAndServices') baseData = psData || [];
 
         // Apply filters
         let filteredData = baseData;
         if (activeFilters) {
+          const openStages = ['Prospecting', 'Proposal', 'Negotiation'];
           filteredData = baseData.filter(item => {
             return Object.entries(activeFilters).every(([key, value]) => {
               if (value === '' || value === null || value === undefined) return true;
+              
+              if(key === 'stage' && value === 'Open') {
+                return openStages.includes(item[key]);
+              }
+
               if (key === 'text') {
                 return item.name?.toLowerCase().includes(String(value).toLowerCase()) || 
                        item.title?.toLowerCase().includes(String(value).toLowerCase());
@@ -288,10 +296,17 @@ export default function ReportBuilderPage() {
 
           if (dataSource === 'opportunities') {
             opportunity = primaryRecord;
-            if (opportunity) client = clientMap.get(opportunity.clientId);
+            if (opportunity) {
+              client = clientMap.get(opportunity.clientId);
+              if (opportunity.contactId) {
+                contact = contactMap.get(opportunity.contactId);
+              }
+            }
           } else if (dataSource === 'contacts') {
              contact = primaryRecord;
-             if (contact) client = clientMap.get(contact.clientId);
+             if (contact) {
+               client = clientMap.get(contact.clientId);
+             }
           } else if (dataSource === 'clients') {
              client = primaryRecord;
           } else if (dataSource === 'productsAndServices') {
@@ -301,15 +316,12 @@ export default function ReportBuilderPage() {
           for (const fieldKey of fields) {
             const [source, field] = fieldKey.split('.');
             let value;
-            if (source === 'clients' && client) value = (client as any)[field];
-            if (source === 'contacts' && contact) value = (contact as any)[field];
-            if (source === 'opportunities' && opportunity) value = (opportunity as any)[field];
-            if (source === 'productsAndServices' && product) value = (product as any)[field];
-            
-             if (fieldKey === 'contacts.name' && opportunity?.contactId) {
-                value = contactsData?.find(c => c.id === opportunity.contactId)?.name;
-            }
 
+            if (source === 'clients' && client) value = (client as any)[field];
+            else if (source === 'contacts' && contact) value = (contact as any)[field];
+            else if (source === 'opportunities' && opportunity) value = (opportunity as any)[field];
+            else if (source === 'productsAndServices' && product) value = (product as any)[field];
+            
             row[fieldKey] = value;
           }
 
@@ -362,7 +374,7 @@ export default function ReportBuilderPage() {
                 {hasField('status') && (
                     <FormItem>
                          <FormLabel>{t('Table.status')}</FormLabel>
-                         <Select value={filters.status} onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}>
+                         <Select value={filters.status || 'all'} onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}>
                             <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">{t('Table.all')}</SelectItem>
@@ -376,10 +388,11 @@ export default function ReportBuilderPage() {
                  {hasField('stage') && (
                     <FormItem>
                          <FormLabel>{t('Table.status')}</FormLabel>
-                         <Select value={filters.stage} onValueChange={value => handleFilterChange('stage', value === 'all' ? undefined : value)}>
+                         <Select value={filters.stage || 'all'} onValueChange={value => handleFilterChange('stage', value === 'all' ? undefined : value)}>
                             <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">{t('Table.all')}</SelectItem>
+                                <SelectItem value="Open">{t('Reports.openOpportunities')}</SelectItem>
                                 {(sourceFields.stage.enumValues || []).map(val => (
                                     <SelectItem key={val} value={val}>{t(`Stages.${val}`)}</SelectItem>
                                 ))}
@@ -390,7 +403,7 @@ export default function ReportBuilderPage() {
                  {hasField('type') && (
                     <FormItem>
                          <FormLabel>{t('Table.type')}</FormLabel>
-                         <Select value={filters.type} onValueChange={value => handleFilterChange('type', value === 'all' ? undefined : value)}>
+                         <Select value={filters.type || 'all'} onValueChange={value => handleFilterChange('type', value === 'all' ? undefined : value)}>
                             <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">{t('Table.all')}</SelectItem>
@@ -495,30 +508,31 @@ export default function ReportBuilderPage() {
                         <CardContent className="space-y-4">
                             {Object.entries(reportableFields).map(([source, group]) => {
                                 const isPrimary = source === watchedDataSource;
-                                let isRelatedAvailable = false;
-                                if (watchedDataSource === 'opportunities' && (source === 'clients' || source === 'contacts')) isRelatedAvailable = true;
-                                if (watchedDataSource === 'contacts' && source === 'clients') isRelatedAvailable = true;
+                                let isRelated = false;
+                                if (watchedDataSource === 'opportunities' && (source === 'clients' || source === 'contacts')) isRelated = true;
+                                if (watchedDataSource === 'contacts' && source === 'clients') isRelated = true;
                                 
-                                if (!isPrimary && !isRelatedAvailable) return null;
+                                const isSelectable = isPrimary || isRelated;
 
                                 return (
                                 <div key={source}>
                                     <h4 className="mb-2 text-md font-semibold flex items-center gap-2">
                                         {t(group.header)} 
                                         {isPrimary && <Badge>{t('Reports.primary')}</Badge>}
-                                        {isRelatedAvailable && <Badge variant="secondary">{t('Reports.related')}</Badge>}
+                                        {isRelated && <Badge variant="secondary">{t('Reports.related')}</Badge>}
                                     </h4>
-                                    <div className="grid grid-cols-2 gap-4 rounded-md border p-4 md:grid-cols-4 lg:grid-cols-5">
+                                    <div className={cn("grid grid-cols-2 gap-4 rounded-md border p-4 md:grid-cols-4 lg:grid-cols-5", !isSelectable && "opacity-50 bg-muted")}>
                                     {Object.entries(group.fields).map(([field, fieldConfig]) => {
                                         const fieldKey = `${source}.${field}`;
                                         return (
                                             <div key={fieldKey} className="flex items-center space-x-2">
                                                 <Checkbox
-                                                id={fieldKey}
-                                                checked={watchedSelectedFields.includes(fieldKey)}
-                                                onCheckedChange={() => handleFieldToggle(fieldKey, source as DataSource)}
+                                                  id={fieldKey}
+                                                  checked={isSelectable && watchedSelectedFields.includes(fieldKey)}
+                                                  onCheckedChange={() => handleFieldToggle(fieldKey, source as DataSource)}
+                                                  disabled={!isSelectable}
                                                 />
-                                                <Label htmlFor={fieldKey} className="font-normal">{t(fieldConfig.label)}</Label>
+                                                <Label htmlFor={isSelectable ? fieldKey : undefined} className={cn("font-normal", !isSelectable && "cursor-not-allowed")}>{t(fieldConfig.label)}</Label>
                                             </div>
                                         )
                                     })}
