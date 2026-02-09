@@ -14,7 +14,7 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import Image from 'next/image';
-import { numeroALetras } from 'numero-a-letras';
+import numeroALetras from 'numero-a-letras';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,7 +48,7 @@ const numberToWords = (num: number, currency: 'USD' | 'EUR' | 'ARS') => {
   };
   try {
     // numero-a-letras library expects the number, then the options object.
-    return numeroALetras(num, currencyMap[currency]).toUpperCase();
+    return numeroALetras(num, { ...currencyMap[currency] }).toUpperCase();
   } catch (e) {
     console.error('Error converting number to words:', e);
     return 'Error';
@@ -207,7 +207,7 @@ export default function PrintOpportunityPage() {
 
   const recipientName = contact?.name || client?.name || '';
   const validationDate = format(
-    addDays(opportunity.requestDate, 30),
+    addDays(new Date(opportunity.requestDate), 30),
     'd [de] MMMM [de] yyyy',
     { locale: dateLocale }
   );
