@@ -102,13 +102,27 @@ export type UserProfile = {
   position: 'Director' | 'Manager' | 'Executive' | 'Project Manager';
 };
 
+export type ReportFilter = {
+  id: string;
+  field: string;
+  operator: string;
+  value: any;
+};
+
+export type ReportSort = {
+  id: string;
+  field: string;
+  direction: 'asc' | 'desc';
+};
+
 export type Report = {
   id: string;
   name: string;
   description?: string;
-  primaryDataSource: 'clients' | 'contacts' | 'opportunities';
+  primaryDataSource: 'clients' | 'contacts' | 'opportunities' | 'productsAndServices';
   selectedFields: string[];
-  filters: any; 
+  filters: ReportFilter[];
+  sorting: ReportSort[];
   createdAt: Date;
   createdBy: string;
 };

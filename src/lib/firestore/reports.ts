@@ -31,11 +31,14 @@ export function addReport(
     createdAt: serverTimestamp(),
   };
 
-  return addDoc(reportsCollectionRef, data).catch((serverError) => {
+  // Firestore doesn't like `undefined` values from the UI state
+  const cleanData = JSON.parse(JSON.stringify(data));
+
+  return addDoc(reportsCollectionRef, cleanData).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: `users/${uid}/${REPORTS_COLLECTION}`,
       operation: 'create',
-      requestResourceData: data,
+      requestResourceData: cleanData,
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;
@@ -49,11 +52,13 @@ export function updateReport(
   reportData: Partial<ReportData>
 ) {
   const reportRef = doc(firestore, 'users', uid, REPORTS_COLLECTION, reportId);
-  return updateDoc(reportRef, reportData).catch((serverError) => {
+  const cleanData = JSON.parse(JSON.stringify(reportData));
+  
+  return updateDoc(reportRef, cleanData).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: reportRef.path,
       operation: 'update',
-      requestResourceData: reportData,
+      requestResourceData: cleanData,
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;

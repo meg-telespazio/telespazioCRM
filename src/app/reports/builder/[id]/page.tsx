@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
-import type { Client, Contact, Opportunity, ProductOrService, Report } from '@/lib/types';
+import type { Client, Contact, Opportunity, ProductOrService, Report, ReportFilter, ReportSort } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,13 +36,13 @@ import { Label } from '@/components/ui/label';
 import { addReport, updateReport } from '@/lib/firestore/reports';
 import { useToast } from '@/hooks/use-toast';
 import { ReportResultTable } from '@/components/reports/report-result-table';
-import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Loader2, Calendar as CalendarIcon, Plus, Trash2, ArrowDown, ArrowUp } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
+import { nanoid } from 'nanoid';
 
 type DataSource = 'clients' | 'contacts' | 'opportunities' | 'productsAndServices';
 
@@ -50,6 +50,7 @@ type ReportableField = {
   label: string;
   type: 'string' | 'number' | 'date' | 'boolean' | 'enum' | 'array';
   enumValues?: readonly string[];
+  isRelational?: boolean;
 };
 
 const reportableFields: Record<
@@ -78,6 +79,8 @@ const reportableFields: Record<
       emails: { label: 'Forms.emails', type: 'array' },
       phones: { label: 'Forms.phones', type: 'array' },
       createdAt: { label: 'Table.createdDate', type: 'date' },
+      // Relational
+      'client.name': { label: "Client's Name", type: 'string', isRelational: true },
     },
   },
   opportunities: {
@@ -94,6 +97,9 @@ const reportableFields: Record<
       offerSentDate: { label: 'Forms.offerSentDate', type: 'date' },
       isTender: { label: 'Forms.isTender', type: 'boolean' },
       createdAt: { label: 'Table.createdDate', type: 'date' },
+      // Relational
+      'client.name': { label: "Client's Name", type: 'string', isRelational: true },
+      'contact.name': { label: "Contact's Name", type: 'string', isRelational: true },
     },
   },
   productsAndServices: {
@@ -119,9 +125,51 @@ const getFormSchema = (t: (key: string) => string) =>
       required_error: t('Reports.validation.dataSourceRequired'),
     }),
     selectedFields: z.array(z.string()).min(1, t('Reports.validation.fieldsRequired')),
+    filters: z.array(z.object({
+      id: z.string(),
+      field: z.string(),
+      operator: z.string(),
+      value: z.any(),
+    })).optional(),
+    sorting: z.array(z.object({
+      id: z.string(),
+      field: z.string(),
+      direction: z.enum(['asc', 'desc']),
+    })).optional(),
   });
 
 type ReportFormData = z.infer<ReturnType<typeof getFormSchema>>;
+
+const operatorsByType = {
+  string: [
+    { value: 'contains', label: 'contains' },
+    { value: 'equals', label: 'equals' },
+    { value: 'not_contains', label: 'not contains' },
+    { value: 'not_equals', label: 'not equals' },
+  ],
+  number: [
+    { value: 'eq', label: '=' },
+    { value: 'neq', label: '!=' },
+    { value: 'gt', label: '>' },
+    { value: 'gte', label: '>=' },
+    { value: 'lt', label: '<' },
+    { value: 'lte', label: '<=' },
+  ],
+  date: [
+    { value: 'eq', label: 'on' },
+    { value: 'neq', label: 'not on' },
+    { value: 'gt', label: 'after' },
+    { value: 'lt', label: 'before' },
+  ],
+  enum: [
+    { value: 'is', label: 'is' },
+    { value: 'is_not', label: 'is not' },
+    { value: 'in', label: 'is one of' },
+  ],
+  boolean: [
+    { value: 'is', label: 'is' }
+  ]
+};
 
 export default function ReportBuilderPage() {
   const { user, loading: userLoading } = useUser();
@@ -140,9 +188,6 @@ export default function ReportBuilderPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportResult, setReportResult] = useState<{ data: any[]; columns: any[] } | null>(null);
-  const [filters, setFilters] = useState<any>({});
-  const [isFromDatePickerOpen, setFromDatePickerOpen] = useState(false);
-  const [isToDatePickerOpen, setToDatePickerOpen] = useState(false);
 
   const reportDocRef = useMemo(() => {
     if (!user || isNew) return null;
@@ -151,36 +196,22 @@ export default function ReportBuilderPage() {
 
   const { data: existingReport, loading: reportLoading } = useDoc<Report>(reportDocRef);
 
-  // --- Data for generation & filtering ---
-  const baseQuery = useMemo(() => {
-    if (!user) return null;
-    return where('createdBy', '==', user.uid);
-  }, [user]);
-
-  const { data: clientsData, loading: clientsLoading } = useCollection<Client>(
-    useMemo(() => baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null, [firestore, baseQuery])
-  );
-  const { data: contactsData, loading: contactsLoading } = useCollection<Contact>(
-     useMemo(() => baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null, [firestore, baseQuery])
-  );
-  const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(
-     useMemo(() => baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null, [firestore, baseQuery])
-  );
-  const { data: psData, loading: psLoading } = useCollection<ProductOrService>(
-    useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery) : null, [firestore, baseQuery])
- );
+  const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
+  const { data: clientsData, loading: clientsLoading } = useCollection<Client>(useMemo(() => baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null, [firestore, baseQuery]));
+  const { data: contactsData, loading: contactsLoading } = useCollection<Contact>(useMemo(() => baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null, [firestore, baseQuery]));
+  const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(useMemo(() => baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null, [firestore, baseQuery]));
+  const { data: psData, loading: psLoading } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery) : null, [firestore, baseQuery]));
 
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
   const form = useForm<ReportFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      selectedFields: [],
-    },
+    defaultValues: { name: '', description: '', selectedFields: [], filters: [], sorting: [] },
   });
-  
+
+  const { fields: filterFields, append: appendFilter, remove: removeFilter } = useFieldArray({ control: form.control, name: 'filters' });
+  const { fields: sortFields, append: appendSort, remove: removeSort } = useFieldArray({ control: form.control, name: 'sorting' });
+
   useEffect(() => {
     if (existingReport) {
       form.reset({
@@ -188,46 +219,183 @@ export default function ReportBuilderPage() {
         description: existingReport.description || '',
         primaryDataSource: existingReport.primaryDataSource,
         selectedFields: existingReport.selectedFields,
+        filters: existingReport.filters || [],
+        sorting: existingReport.sorting || [],
       });
-      // Also restore filters if they are saved
-      if (existingReport.filters) {
-        setFilters(existingReport.filters);
-      }
       if (shouldRunOnLoad) {
-        generateReport(existingReport.selectedFields, existingReport.primaryDataSource, existingReport.filters);
+        generateReport(
+          existingReport.primaryDataSource,
+          existingReport.selectedFields,
+          existingReport.filters,
+          existingReport.sorting
+        );
       }
     }
-  }, [existingReport, shouldRunOnLoad]);
-
+  }, [existingReport, shouldRunOnLoad, form, generateReport]);
 
   const watchedDataSource = form.watch('primaryDataSource');
   const watchedSelectedFields = form.watch('selectedFields');
 
-  useEffect(() => {
-    // Reset filters and selected fields when data source changes
-    setFilters({});
-    form.setValue('selectedFields', []);
-  }, [watchedDataSource, form]);
+  const availableFieldsForFilter = useMemo(() => {
+    if (!watchedDataSource) return [];
+    let fields: { label: string; value: string }[] = [];
+    
+    const addFieldsFromSource = (sourceKey: DataSource) => {
+        Object.keys(reportableFields[sourceKey].fields).forEach(fieldKey => {
+            fields.push({
+                label: `${t(reportableFields[sourceKey].header)}: ${t(reportableFields[sourceKey].fields[fieldKey].label)}`,
+                value: `${sourceKey}.${fieldKey}`
+            });
+        });
+    };
+
+    addFieldsFromSource(watchedDataSource);
+    if (watchedDataSource === 'opportunities') {
+        addFieldsFromSource('clients');
+        addFieldsFromSource('contacts');
+    }
+    if (watchedDataSource === 'contacts') {
+        addFieldsFromSource('clients');
+    }
+
+    return fields.sort((a,b) => a.label.localeCompare(b.label));
+}, [watchedDataSource, t]);
 
   useEffect(() => {
-    if (!userLoading && !user) {
-      redirect('/login');
-    }
+    if (!userLoading && !user) redirect('/login');
   }, [user, userLoading]);
+
+  const getFieldType = useCallback((fieldKey: string) => {
+    if (!fieldKey) return 'string';
+    const [source, field] = fieldKey.split('.');
+    return reportableFields[source as DataSource]?.fields[field]?.type || 'string';
+  }, []);
+
+  const getEnumValues = useCallback((fieldKey: string) => {
+    if (!fieldKey) return [];
+    const [source, field] = fieldKey.split('.');
+    return reportableFields[source as DataSource]?.fields[field]?.enumValues || [];
+  }, []);
+
+  const getJoinedData = useCallback(() => {
+    if (!watchedDataSource) return [];
+
+    let baseData: any[] = [];
+    if (watchedDataSource === 'clients') baseData = clientsData || [];
+    else if (watchedDataSource === 'contacts') baseData = contactsData || [];
+    else if (watchedDataSource === 'opportunities') baseData = opportunitiesData || [];
+    else if (watchedDataSource === 'productsAndServices') baseData = psData || [];
+
+    const clientMap = new Map(clientsData?.map(c => [c.id, c]));
+    const contactMap = new Map(contactsData?.map(c => [c.id, c]));
+
+    return baseData.map(item => {
+      let client, contact;
+      if (item.clientId) {
+        client = clientMap.get(item.clientId);
+      }
+      if (item.contactId) {
+        contact = contactMap.get(item.contactId)
+      }
+      return {
+        ...item,
+        __client: client,
+        __contact: contact
+      };
+    });
+  }, [watchedDataSource, clientsData, contactsData, opportunitiesData, psData]);
+  
+  const getNestedValue = (item: any, fieldKey: string) => {
+      const [source, field] = fieldKey.split('.');
+      if (source === 'clients') return item.__client?.[field];
+      if (source === 'contacts') return item.__contact?.[field];
+      return item[field];
+  }
+
+  const generateReport = useCallback((dataSource: DataSource, fields: string[], filters?: ReportFilter[], sorts?: ReportSort[]) => {
+     if (!dataSource || !fields || fields.length === 0) return;
+     setIsGenerating(true);
+     setReportResult(null);
+
+    setTimeout(() => {
+        const joined = getJoinedData();
+        let filtered = joined;
+
+        // Apply Filters
+        if (filters && filters.length > 0) {
+            filtered = joined.filter(item => {
+                return filters.every(filter => {
+                    if (!filter.field || !filter.operator) return true;
+                    const itemValue = getNestedValue(item, filter.field);
+                    const filterValue = filter.value;
+                    if (itemValue === undefined || itemValue === null) return false;
+
+                    const type = getFieldType(filter.field);
+
+                    switch (filter.operator) {
+                        case 'contains': return String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase());
+                        case 'not_contains': return !String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase());
+                        case 'equals': return String(itemValue).toLowerCase() === String(filterValue).toLowerCase();
+                        case 'not_equals': return String(itemValue).toLowerCase() !== String(filterValue).toLowerCase();
+                        case 'eq': return type === 'date' ? format(new Date(itemValue), 'yyyy-MM-dd') === format(new Date(filterValue), 'yyyy-MM-dd') : itemValue === Number(filterValue);
+                        case 'neq': return type === 'date' ? format(new Date(itemValue), 'yyyy-MM-dd') !== format(new Date(filterValue), 'yyyy-MM-dd') : itemValue !== Number(filterValue);
+                        case 'gt': return type === 'date' ? new Date(itemValue) > new Date(filterValue) : itemValue > Number(filterValue);
+                        case 'lt': return type === 'date' ? new Date(itemValue) < new Date(filterValue) : itemValue < Number(filterValue);
+                        case 'gte': return itemValue >= Number(filterValue);
+                        case 'lte': return itemValue <= Number(filterValue);
+                        case 'is': return itemValue === filterValue;
+                        case 'is_not': return itemValue !== filterValue;
+                        case 'in': return filterValue.includes(itemValue);
+                        default: return true;
+                    }
+                });
+            });
+        }
+        
+        // Apply Sorting
+        if (sorts && sorts.length > 0) {
+          filtered.sort((a, b) => {
+            for (const sort of sorts) {
+              const valA = getNestedValue(a, sort.field);
+              const valB = getNestedValue(b, sort.field);
+              if (valA < valB) return sort.direction === 'asc' ? -1 : 1;
+              if (valA > valB) return sort.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+          });
+        }
+
+        const newColumns = fields.map(fieldKey => {
+          const [source, field] = fieldKey.split('.');
+          const sourceName = source as keyof typeof reportableFields;
+          const fieldName = field as keyof typeof reportableFields[typeof sourceName]['fields'];
+          return { accessorKey: fieldKey, header: t(reportableFields[sourceName]?.fields[fieldName]?.label || fieldKey) };
+        });
+
+        const newData = filtered.map(item => {
+          const row: Record<string, any> = {};
+          fields.forEach(fieldKey => {
+            row[fieldKey] = getNestedValue(item, fieldKey);
+          });
+          return row;
+        });
+
+        setReportResult({ data: newData, columns: newColumns });
+        setIsGenerating(false);
+     }, 500);
+  }, [getJoinedData, getFieldType, t]);
 
   async function handleSave(values: ReportFormData) {
     if (!user) return;
     setIsSaving(true);
     
-    const reportData = { ...values, filters };
-
     try {
       if (isNew) {
-        const newReportRef = await addReport(firestore, user.uid, reportData);
+        const newReportRef = await addReport(firestore, user.uid, values);
         toast({ variant: 'success', title: t('Reports.saveSuccess') });
         router.replace(`/reports/builder/${newReportRef.id}`);
       } else {
-        await updateReport(firestore, user.uid, reportId, reportData);
+        await updateReport(firestore, user.uid, reportId, values);
         toast({ variant: 'success', title: t('Reports.updateSuccess') });
       }
     } catch (error) {
@@ -237,218 +405,58 @@ export default function ReportBuilderPage() {
     }
   }
 
-  function generateReport(fields: string[], dataSource?: DataSource, activeFilters?: any) {
-     if (!dataSource || !fields || fields.length === 0) return;
-     setIsGenerating(true);
-     setReportResult(null);
-
-    setTimeout(() => {
-        const clientMap = new Map(clientsData?.map(c => [c.id, c]));
-        const contactMap = new Map(contactsData?.map(c => [c.id, c]));
-        
-        let baseData: any[] = [];
-        if (dataSource === 'clients') baseData = clientsData || [];
-        else if (dataSource === 'contacts') baseData = contactsData || [];
-        else if (dataSource === 'opportunities') baseData = opportunitiesData || [];
-        else if (dataSource === 'productsAndServices') baseData = psData || [];
-
-        // Apply filters
-        let filteredData = baseData;
-        if (activeFilters) {
-          const openStages = ['Prospecting', 'Proposal', 'Negotiation'];
-          filteredData = baseData.filter(item => {
-            return Object.entries(activeFilters).every(([key, value]) => {
-              if (value === '' || value === null || value === undefined) return true;
-              
-              if(key === 'stage' && value === 'Open') {
-                return openStages.includes(item[key]);
-              }
-
-              if (key === 'text') {
-                return item.name?.toLowerCase().includes(String(value).toLowerCase()) || 
-                       item.title?.toLowerCase().includes(String(value).toLowerCase());
-              }
-              if (key === 'fromDate' && item.createdAt) {
-                return new Date(item.createdAt) >= new Date(value as string);
-              }
-              if (key === 'toDate' && item.createdAt) {
-                return new Date(item.createdAt) <= new Date(value as string);
-              }
-              return item[key] === value;
-            });
-          });
-        }
-      
-        const newColumns = fields.map(fieldKey => {
-            const [source, field] = fieldKey.split('.');
-            const sourceName = source as keyof typeof reportableFields;
-            const fieldName = field as keyof typeof reportableFields[typeof sourceName]['fields'];
-            return { accessorKey: fieldKey, header: t(reportableFields[sourceName].fields[fieldName].label) };
-        });
-
-        const newData = filteredData.map(primaryRecord => {
-          const row: Record<string, any> = {};
-          
-          let client: Client | undefined;
-          let contact: Contact | undefined;
-          let opportunity: Opportunity | undefined;
-          let product: ProductOrService | undefined;
-
-          if (dataSource === 'opportunities') {
-            opportunity = primaryRecord;
-            if (opportunity) {
-              client = clientMap.get(opportunity.clientId);
-              if (opportunity.contactId) {
-                contact = contactMap.get(opportunity.contactId);
-              }
-            }
-          } else if (dataSource === 'contacts') {
-             contact = primaryRecord;
-             if (contact) {
-               client = clientMap.get(contact.clientId);
-             }
-          } else if (dataSource === 'clients') {
-             client = primaryRecord;
-          } else if (dataSource === 'productsAndServices') {
-             product = primaryRecord;
-          }
-          
-          for (const fieldKey of fields) {
-            const [source, field] = fieldKey.split('.');
-            let value;
-
-            if (source === 'clients' && client) value = (client as any)[field];
-            else if (source === 'contacts' && contact) value = (contact as any)[field];
-            else if (source === 'opportunities' && opportunity) value = (opportunity as any)[field];
-            else if (source === 'productsAndServices' && product) value = (product as any)[field];
-            
-            row[fieldKey] = value;
-          }
-
-          return row;
-        });
-
-        setReportResult({ data: newData, columns: newColumns });
-        setIsGenerating(false);
-     }, 500);
-  }
-
-  const handleFieldToggle = (fieldKey: string, source: DataSource) => {
+  const handleFieldToggle = (fieldKey: string) => {
     const currentFields = form.getValues('selectedFields');
     const newFields = currentFields.includes(fieldKey)
       ? currentFields.filter(f => f !== fieldKey)
       : [...currentFields, fieldKey];
-    
     form.setValue('selectedFields', newFields, { shouldValidate: true });
   };
   
-  const pageIsLoading = userLoading || reportLoading || clientsLoading || contactsLoading || opportunitiesLoading || psLoading;
-  
-  if (pageIsLoading && !isNew) {
+  if ((pageIsLoading && !isNew) || userLoading) {
     return <div className="flex-1 p-6"><Skeleton className="h-96 w-full" /></div>
   }
+  const pageIsLoading = userLoading || reportLoading || clientsLoading || contactsLoading || opportunitiesLoading || psLoading;
 
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev: any) => ({ ...prev, [key]: value }));
-  };
+  const renderFilterValueInput = (index: number) => {
+    const fieldKey = form.watch(`filters.${index}.field`);
+    const operator = form.watch(`filters.${index}.operator`);
+    if (!fieldKey || !operator) return null;
 
-  const renderFilters = () => {
-    if (!watchedDataSource) return null;
+    const type = getFieldType(fieldKey);
 
-    const sourceFields = reportableFields[watchedDataSource].fields;
-    const hasField = (name: string) => Object.keys(sourceFields).includes(name);
+    if (type === 'date') {
+      return <Popover><PopoverTrigger asChild>
+          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !form.getValues(`filters.${index}.value`) && "text-muted-foreground")}>
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {form.getValues(`filters.${index}.value`) ? format(new Date(form.getValues(`filters.${index}.value`)), 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+          </Button>
+      </PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={form.getValues(`filters.${index}.value`) ? new Date(form.getValues(`filters.${index}.value`)) : undefined} onSelect={date => form.setValue(`filters.${index}.value`, date?.toISOString())} initialFocus /></PopoverContent></Popover>
+    }
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{t('Reports.step4')}</CardTitle>
-                <CardDescription>{t('Reports.filtersDesc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(hasField('name') || hasField('title')) && (
-                    <FormItem>
-                        <FormLabel>{t('Table.filterByName')}</FormLabel>
-                        <Input value={filters.text || ''} onChange={e => handleFilterChange('text', e.target.value)} />
-                    </FormItem>
-                )}
-                {hasField('status') && (
-                    <FormItem>
-                         <FormLabel>{t('Table.status')}</FormLabel>
-                         <Select value={filters.status || 'all'} onValueChange={value => handleFilterChange('status', value === 'all' ? undefined : value)}>
-                            <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">{t('Table.all')}</SelectItem>
-                                {(sourceFields.status.enumValues || []).map(val => (
-                                    <SelectItem key={val} value={val}>{t(`Status.${val}`)}</SelectItem>
-                                ))}
-                            </SelectContent>
-                         </Select>
-                    </FormItem>
-                )}
-                 {hasField('stage') && (
-                    <FormItem>
-                         <FormLabel>{t('Table.status')}</FormLabel>
-                         <Select value={filters.stage || 'all'} onValueChange={value => handleFilterChange('stage', value === 'all' ? undefined : value)}>
-                            <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">{t('Table.all')}</SelectItem>
-                                <SelectItem value="Open">{t('Reports.openOpportunities')}</SelectItem>
-                                {(sourceFields.stage.enumValues || []).map(val => (
-                                    <SelectItem key={val} value={val}>{t(`Stages.${val}`)}</SelectItem>
-                                ))}
-                            </SelectContent>
-                         </Select>
-                    </FormItem>
-                )}
-                 {hasField('type') && (
-                    <FormItem>
-                         <FormLabel>{t('Table.type')}</FormLabel>
-                         <Select value={filters.type || 'all'} onValueChange={value => handleFilterChange('type', value === 'all' ? undefined : value)}>
-                            <SelectTrigger><SelectValue placeholder={t('Table.all')} /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">{t('Table.all')}</SelectItem>
-                                {(sourceFields.type.enumValues || []).map(val => (
-                                    <SelectItem key={val} value={val}>{t(`PS.${val}`)}</SelectItem>
-                                ))}
-                            </SelectContent>
-                         </Select>
-                    </FormItem>
-                )}
-                {hasField('createdAt') && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <FormItem>
-                       <FormLabel>{t('Reports.from')}</FormLabel>
-                       <Popover open={isFromDatePickerOpen} onOpenChange={setFromDatePickerOpen}>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !filters.fromDate && "text-muted-foreground")}>
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {filters.fromDate ? format(new Date(filters.fromDate), 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={filters.fromDate ? new Date(filters.fromDate) : undefined} onSelect={date => { handleFilterChange('fromDate', date); setFromDatePickerOpen(false); }} initialFocus />
-                          </PopoverContent>
-                        </Popover>
-                    </FormItem>
-                    <FormItem>
-                       <FormLabel>{t('Reports.to')}</FormLabel>
-                       <Popover open={isToDatePickerOpen} onOpenChange={setToDatePickerOpen}>
-                          <PopoverTrigger asChild>
-                           <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !filters.toDate && "text-muted-foreground")}>
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {filters.toDate ? format(new Date(filters.toDate), 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={filters.toDate ? new Date(filters.toDate) : undefined} onSelect={date => { handleFilterChange('toDate', date); setToDatePickerOpen(false); }} initialFocus />
-                          </PopoverContent>
-                        </Popover>
-                    </FormItem>
-                  </div>
-                )}
-            </CardContent>
-        </Card>
-    )
+    if (type === 'enum') {
+        const options = getEnumValues(fieldKey);
+        // Special case for 'Open' opportunities
+        if (fieldKey === 'opportunities.stage') {
+            options.push('Open');
+        }
+        return <Select onValueChange={value => form.setValue(`filters.${index}.value`, value)} value={form.getValues(`filters.${index}.value`)}>
+            <SelectTrigger><SelectValue placeholder={t('Reports.selectValue')} /></SelectTrigger>
+            <SelectContent>{options.map(o => <SelectItem key={o} value={o}>{o === 'Open' ? t('Reports.openOpportunities') : t(`Stages.${o}`) || t(`Status.${o}`) || o}</SelectItem>)}</SelectContent>
+        </Select>
+    }
+
+    if (type === 'boolean') {
+        return <Select onValueChange={value => form.setValue(`filters.${index}.value`, value === 'true')} value={String(form.getValues(`filters.${index}.value`))}>
+            <SelectTrigger><SelectValue placeholder={t('Reports.selectValue')} /></SelectTrigger>
+            <SelectContent>
+                <SelectItem value="true">Yes</SelectItem>
+                <SelectItem value="false">No</SelectItem>
+            </SelectContent>
+        </Select>
+    }
+    
+    return <Input type={type === 'number' ? 'number' : 'text'} {...form.register(`filters.${index}.value`)} />;
   }
 
   return (
@@ -459,10 +467,7 @@ export default function ReportBuilderPage() {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-8">
                  <Card>
-                    <CardHeader>
-                        <CardTitle>{t('Reports.step1')}</CardTitle>
-                        <CardDescription>{t('Reports.step1Desc')}</CardDescription>
-                    </CardHeader>
+                    <CardHeader><CardTitle>{t('Reports.step1')}</CardTitle><CardDescription>{t('Reports.step1Desc')}</CardDescription></CardHeader>
                     <CardContent className="space-y-4">
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="name" render={({ field }) => (
@@ -476,15 +481,12 @@ export default function ReportBuilderPage() {
                  </Card>
                  
                  <Card>
-                    <CardHeader>
-                        <CardTitle>{t('Reports.step2')}</CardTitle>
-                        <CardDescription>{t('Reports.step2Desc')}</CardDescription>
-                    </CardHeader>
+                    <CardHeader><CardTitle>{t('Reports.step2')}</CardTitle><CardDescription>{t('Reports.step2Desc')}</CardDescription></CardHeader>
                     <CardContent>
                         <FormField control={form.control} name="primaryDataSource" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>{t('Reports.dataSource')}</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={val => { field.onChange(val); form.setValue('selectedFields', []); form.setValue('filters', []); form.setValue('sorting', []); }} value={field.value}>
                                     <FormControl><SelectTrigger className="w-full md:w-1/3"><SelectValue placeholder={t('Reports.selectDataSource')} /></SelectTrigger></FormControl>
                                     <SelectContent>
                                         <SelectItem value="opportunities">{t('Reports.dataSources.opportunities')}</SelectItem>
@@ -501,10 +503,7 @@ export default function ReportBuilderPage() {
                  
                 {watchedDataSource && (
                      <Card>
-                        <CardHeader>
-                            <CardTitle>{t('Reports.step3')}</CardTitle>
-                             <CardDescription>{t('Reports.step3Desc')}</CardDescription>
-                        </CardHeader>
+                        <CardHeader><CardTitle>{t('Reports.step3')}</CardTitle><CardDescription>{t('Reports.step3Desc')}</CardDescription></CardHeader>
                         <CardContent className="space-y-4">
                             {Object.entries(reportableFields).map(([source, group]) => {
                                 const isPrimary = source === watchedDataSource;
@@ -526,12 +525,7 @@ export default function ReportBuilderPage() {
                                         const fieldKey = `${source}.${field}`;
                                         return (
                                             <div key={fieldKey} className="flex items-center space-x-2">
-                                                <Checkbox
-                                                  id={fieldKey}
-                                                  checked={isSelectable && watchedSelectedFields.includes(fieldKey)}
-                                                  onCheckedChange={() => handleFieldToggle(fieldKey, source as DataSource)}
-                                                  disabled={!isSelectable}
-                                                />
+                                                <Checkbox id={fieldKey} checked={isSelectable && watchedSelectedFields.includes(fieldKey)} onCheckedChange={() => handleFieldToggle(fieldKey)} disabled={!isSelectable} />
                                                 <Label htmlFor={isSelectable ? fieldKey : undefined} className={cn("font-normal", !isSelectable && "cursor-not-allowed")}>{t(fieldConfig.label)}</Label>
                                             </div>
                                         )
@@ -544,12 +538,60 @@ export default function ReportBuilderPage() {
                     </Card>
                 )}
 
-                {watchedDataSource && renderFilters()}
+                {watchedDataSource && <Card>
+                    <CardHeader><CardTitle>{t('Reports.step4')}</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold">{t('Reports.filters')}</h4>
+                            <div className="space-y-2 mt-2">
+                                {filterFields.map((item, index) => (
+                                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                                        <FormField control={form.control} name={`filters.${index}.field`} render={({ field }) => (
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}><SelectTrigger><SelectValue placeholder="Select field..." /></SelectTrigger>
+                                            <SelectContent>{availableFieldsForFilter.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent></Select>
+                                        )} />
+                                        <FormField control={form.control} name={`filters.${index}.operator`} render={({ field }) => (
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}><SelectTrigger><SelectValue placeholder="Select operator..." /></SelectTrigger>
+                                            <SelectContent>{operatorsByType[getFieldType(form.watch(`filters.${index}.field`)) as keyof typeof operatorsByType]?.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>
+                                        )} />
+                                        <div className="md:col-span-1">{renderFilterValueInput(index)}</div>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeFilter(index)}><Trash2 className="text-destructive"/></Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendFilter({ id: nanoid(), field: '', operator: '', value: '' })}><Plus className="mr-2"/>{t('Reports.addFilter')}</Button>
+                        </div>
+                        <div className="pt-4">
+                             <h4 className="font-semibold">{t('Reports.sorting')}</h4>
+                             <div className="space-y-2 mt-2">
+                                {sortFields.map((item, index) => (
+                                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                                        <div className="md:col-span-2">
+                                            <FormField control={form.control} name={`sorting.${index}.field`} render={({ field }) => (
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}><SelectTrigger><SelectValue placeholder="Select field..." /></SelectTrigger>
+                                                <SelectContent>{availableFieldsForFilter.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent></Select>
+                                            )} />
+                                        </div>
+                                        <FormField control={form.control} name={`sorting.${index}.direction`} render={({ field }) => (
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}><SelectTrigger><SelectValue placeholder="Select direction..." /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="asc"><ArrowUp className="inline-block mr-2"/>Ascending</SelectItem>
+                                                <SelectItem value="desc"><ArrowDown className="inline-block mr-2"/>Descending</SelectItem>
+                                            </SelectContent></Select>
+                                        )} />
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeSort(index)}><Trash2 className="text-destructive"/></Button>
+                                    </div>
+                                ))}
+                             </div>
+                              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => appendSort({ id: nanoid(), field: '', direction: 'asc' })}><Plus className="mr-2"/>{t('Reports.addSort')}</Button>
+                        </div>
+                    </CardContent>
+                </Card>}
 
                 <div className="flex items-center justify-end gap-4">
                     <Button type="button" variant="outline" onClick={() => router.push('/reports')}>{t('Auth.cancelLabel')}</Button>
                     <Button type="submit" disabled={isSaving}>{isSaving ? <Loader2 className="animate-spin" /> : t('Reports.saveReport')}</Button>
-                    <Button type="button" onClick={() => generateReport(form.getValues('selectedFields'), form.getValues('primaryDataSource'), filters)} disabled={isGenerating || watchedSelectedFields.length === 0}>
+                    <Button type="button" onClick={() => generateReport(form.getValues('primaryDataSource'), form.getValues('selectedFields'), form.getValues('filters'), form.getValues('sorting'))} disabled={isGenerating || watchedSelectedFields.length === 0}>
                         {isGenerating ? <Loader2 className="animate-spin" /> : t('Reports.generateReport')}
                     </Button>
                 </div>

@@ -448,7 +448,8 @@
           "enum": [
             "clients",
             "contacts",
-            "opportunities"
+            "opportunities",
+            "productsAndServices"
           ]
         },
         "selectedFields": {
@@ -459,8 +460,31 @@
           }
         },
         "filters": {
-          "type": "object",
-          "description": "Saved filter configuration for the report."
+          "type": "array",
+          "description": "Saved filter configuration for the report.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "field": { "type": "string" },
+              "operator": { "type": "string" },
+              "value": { "type": "any" }
+            },
+             "required": ["id", "field", "operator"]
+          }
+        },
+        "sorting": {
+           "type": "array",
+           "description": "Saved sorting configuration for the report.",
+           "items": {
+             "type": "object",
+             "properties": {
+                "id": { "type": "string" },
+                "field": { "type": "string" },
+                "direction": { "type": "string", "enum": ["asc", "desc"] }
+             },
+             "required": ["id", "field", "direction"]
+           }
         },
         "createdBy": {
           "type": "string"
