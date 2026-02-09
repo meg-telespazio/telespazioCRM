@@ -27,6 +27,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -216,24 +218,6 @@ export default function ReportBuilderPage() {
   const watchedDataSource = form.watch('primaryDataSource');
   const watchedSelectedFields = form.watch('selectedFields');
 
-  const getFieldType = useCallback((fieldKey: string) => {
-    if (!fieldKey) return 'string';
-    const [source, field] = fieldKey.split('.');
-    return reportableFields[source as DataSource]?.fields[field]?.type || 'string';
-  }, []);
-  
-  const getNestedValue = (item: any, fieldKey: string) => {
-      const path = fieldKey.split('.');
-      if(path.length === 2) {
-          const [source, field] = path;
-          if (source === 'client') return item.__client?.[field];
-          if (source === 'contact') return item.__contact?.[field];
-          // For primary source, the data is at top level
-          if (source === watchedDataSource) return item[field];
-      }
-      return item[fieldKey]; // Fallback for single key
-  }
-
   const getJoinedData = useCallback(() => {
     if (!watchedDataSource) return [];
 
@@ -253,10 +237,6 @@ export default function ReportBuilderPage() {
       }
       if (item.contactId) {
         contact = contactMap.get(item.contactId)
-      } else if (client?.id) {
-        // Fallback for contacts from client
-        const clientContacts = contactsData?.filter(c => c.clientId === client.id);
-        if(clientContacts?.length === 1) contact = clientContacts[0];
       }
       return {
         ...item,
@@ -275,7 +255,6 @@ export default function ReportBuilderPage() {
         const joined = getJoinedData();
         let filtered = joined;
         
-        // Apply Filters
         if (filters && filters.length > 0) {
             filtered = joined.filter(item => {
                 return filters.every(filter => {
@@ -283,9 +262,14 @@ export default function ReportBuilderPage() {
                     
                     let itemValue: any;
                     const [source, fieldName] = filter.field.split('.');
-                    if (source === 'client') itemValue = item.__client?.[fieldName];
-                    else if (source === 'contact') itemValue = item.__contact?.[fieldName];
-                    else itemValue = item[fieldName];
+
+                    if (source === 'clients') {
+                        itemValue = item.__client?.[fieldName];
+                    } else if (source === 'contacts') {
+                        itemValue = item.__contact?.[fieldName];
+                    } else if (source === watchedDataSource) {
+                        itemValue = item[fieldName];
+                    }
                     
                     const filterValue = filter.value;
 
@@ -295,7 +279,7 @@ export default function ReportBuilderPage() {
 
                     if (itemValue === undefined || itemValue === null) return false;
 
-                    const type = getFieldType(filter.field);
+                    const type = reportableFields[source as DataSource]?.fields[fieldName]?.type;
                     
                     switch (filter.operator) {
                         case 'contains': return String(itemValue).toLowerCase().includes(String(filterValue).toLowerCase());
@@ -317,15 +301,25 @@ export default function ReportBuilderPage() {
             });
         }
         
-        // Apply Sorting
         if (sorts && sorts.length > 0) {
           filtered.sort((a, b) => {
             for (const sort of sorts) {
-              const [sourceA, fieldNameA] = sort.field.split('.');
-              let valA = sourceA === 'client' ? a.__client?.[fieldNameA] : sourceA === 'contact' ? a.__contact?.[fieldNameA] : a[fieldNameA];
+              const [source, fieldName] = sort.field.split('.');
+              let valA, valB;
 
-              const [sourceB, fieldNameB] = sort.field.split('.');
-              let valB = sourceB === 'client' ? b.__client?.[fieldNameB] : sourceB === 'contact' ? b.__contact?.[fieldNameB] : b[fieldNameB];
+              if (source === 'clients') {
+                  valA = a.__client?.[fieldName];
+                  valB = b.__client?.[fieldName];
+              } else if (source === 'contacts') {
+                  valA = a.__contact?.[fieldName];
+                  valB = b.__contact?.[fieldName];
+              } else if (source === watchedDataSource) {
+                  valA = a[fieldName];
+                  valB = b[fieldName];
+              }
+              
+              if (valA === undefined || valA === null) return sort.direction === 'asc' ? 1 : -1;
+              if (valB === undefined || valB === null) return sort.direction === 'asc' ? -1 : 1;
 
               if (valA < valB) return sort.direction === 'asc' ? -1 : 1;
               if (valA > valB) return sort.direction === 'asc' ? 1 : -1;
@@ -344,8 +338,8 @@ export default function ReportBuilderPage() {
           const row: Record<string, any> = {};
           fields.forEach(fieldKey => {
             const [source, field] = fieldKey.split('.');
-            if (source === 'client') row[fieldKey] = item.__client?.[field];
-            else if (source === 'contact') row[fieldKey] = item.__contact?.[field];
+            if (source === 'clients') row[fieldKey] = item.__client?.[field];
+            else if (source === 'contacts') row[fieldKey] = item.__contact?.[field];
             else row[fieldKey] = item[field];
           });
           return row;
@@ -354,7 +348,7 @@ export default function ReportBuilderPage() {
         setReportResult({ data: newData, columns: newColumns });
         setIsGenerating(false);
      }, 500);
-  }, [getJoinedData, getFieldType, t, watchedDataSource]);
+  }, [getJoinedData, t, watchedDataSource]);
 
   useEffect(() => {
     if (existingReport) {
@@ -377,46 +371,9 @@ export default function ReportBuilderPage() {
     }
   }, [existingReport, shouldRunOnLoad, form, generateReport]);
 
-  const availableFieldsForFilter = useMemo(() => {
-    if (!watchedDataSource) return [];
-    let fields: { label: string; value: string }[] = [];
-    
-    const addFieldsFromSource = (sourceKey: DataSource) => {
-        Object.keys(reportableFields[sourceKey].fields).forEach(fieldKey => {
-            const fieldConfig = reportableFields[sourceKey].fields[fieldKey];
-            if (fieldConfig.type !== 'array') { // Exclude array types from filtering for now
-                const prefix = sourceKey === watchedDataSource ? '' : `${fieldConfig.isRelational ? sourceKey.replace('s', '') : sourceKey}.`;
-                fields.push({
-                    label: `${t(reportableFields[sourceKey].header)}: ${t(fieldConfig.label)}`,
-                    value: `${prefix}${fieldKey}`
-                });
-            }
-        });
-    };
-
-    addFieldsFromSource(watchedDataSource);
-    if (watchedDataSource === 'opportunities') {
-        addFieldsFromSource('clients');
-        addFieldsFromSource('contacts');
-    }
-    if (watchedDataSource === 'contacts') {
-        addFieldsFromSource('clients');
-    }
-    
-    // De-duplicate and sort
-    const uniqueFields = Array.from(new Map(fields.map(f => [f.value, f])).values());
-    return uniqueFields.sort((a,b) => a.label.localeCompare(b.label));
-}, [watchedDataSource, t]);
-
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
   }, [user, userLoading]);
-
-  const getEnumValues = useCallback((fieldKey: string) => {
-    if (!fieldKey) return [];
-    const [source, field] = fieldKey.split('.');
-    return reportableFields[source as DataSource]?.fields[field]?.enumValues || [];
-  }, []);
 
   async function handleSave(values: ReportFormData) {
     if (!user) return;
@@ -449,6 +406,7 @@ export default function ReportBuilderPage() {
   if ((reportLoading && !isNew) || userLoading) {
     return <div className="flex-1 p-6"><Skeleton className="h-96 w-full" /></div>
   }
+  
   const pageIsLoading = userLoading || reportLoading || clientsLoading || contactsLoading || opportunitiesLoading || psLoading;
 
   const renderFilterValueInput = (index: number) => {
@@ -547,8 +505,7 @@ export default function ReportBuilderPage() {
                                 if (watchedDataSource === 'contacts' && source === 'clients') isRelated = true;
                                 
                                 const isSelectable = isPrimary || isRelated;
-                                if (!isSelectable) return null;
-
+                                
                                 return (
                                 <div key={source}>
                                     <h4 className="mb-2 text-md font-semibold flex items-center gap-2">
@@ -556,17 +513,14 @@ export default function ReportBuilderPage() {
                                         {isPrimary && <Badge>{t('Reports.primary')}</Badge>}
                                         {isRelated && <Badge variant="secondary">{t('Reports.related')}</Badge>}
                                     </h4>
-                                    <div className={cn("grid grid-cols-2 gap-4 rounded-md border p-4 md:grid-cols-4 lg:grid-cols-5")}>
+                                    <div className={cn("grid grid-cols-2 gap-4 rounded-md border p-4 md:grid-cols-4 lg:grid-cols-5", !isSelectable && "opacity-50 pointer-events-none")}>
                                     {Object.entries(group.fields).map(([field, fieldConfig]) => {
-                                        const prefix = source === watchedDataSource ? '' : `${fieldConfig.isRelational ? source.replace(/s$/, '') : source}.`;
-                                        const fieldKey = `${prefix}${field}`;
-
                                         const fieldKeyForSelection = `${source}.${field}`;
                                         
                                         return (
                                             <div key={fieldKeyForSelection} className="flex items-center space-x-2">
-                                                <Checkbox id={fieldKeyForSelection} checked={watchedSelectedFields.includes(fieldKeyForSelection)} onCheckedChange={() => handleFieldToggle(fieldKeyForSelection)} />
-                                                <Label htmlFor={fieldKeyForSelection} className="font-normal">{t(fieldConfig.label)}</Label>
+                                                <Checkbox id={fieldKeyForSelection} checked={watchedSelectedFields.includes(fieldKeyForSelection)} onCheckedChange={() => handleFieldToggle(fieldKeyForSelection)} disabled={!isSelectable}/>
+                                                <Label htmlFor={fieldKeyForSelection} className={cn("font-normal", !isSelectable && "text-muted-foreground")}>{t(fieldConfig.label)}</Label>
                                             </div>
                                         )
                                     })}
