@@ -12,7 +12,7 @@ import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 import type { Client, Activity, ActivityType, UserProfile } from '@/lib/types';
 import { addActivity } from '@/lib/firestore/activities';
 
