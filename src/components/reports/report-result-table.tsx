@@ -55,6 +55,11 @@ const formatCellForDisplay = (value: any): string => {
     return String(value ?? '-');
 }
 
+const getNestedValue = (obj: any, path: string) => {
+    if (!path) return undefined;
+    return path.split('.').reduce((p, c) => (p && p[c]), obj);
+}
+
 const formatCellForExport = (value: any): string => {
   if (value instanceof Date) return format(value, 'yyyy-MM-dd');
   if (Array.isArray(value)) {
@@ -96,7 +101,7 @@ export function ReportResultTable({ columns, data }: ReportResultTableProps) {
   const handleDownload = () => {
     const headers = columns.map(col => col.header);
     const dataForCsv = data.map(row => 
-        columns.map(col => formatCellForExport(row[col.accessorKey]))
+        columns.map(col => formatCellForExport(getNestedValue(row, col.accessorKey)))
     );
     const csv = Papa.unparse([headers, ...dataForCsv]);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

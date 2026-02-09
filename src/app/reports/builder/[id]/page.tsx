@@ -185,7 +185,6 @@ export default function ReportBuilderPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportResult, setReportResult] = useState<{ data: any[]; columns: any[] } | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   const reportDocRef = useMemo(() => {
     if (!user || isNew) return null;
@@ -216,7 +215,6 @@ export default function ReportBuilderPage() {
      if (!dataSource || !fields || fields.length === 0) return;
      setIsGenerating(true);
      setReportResult(null);
-     setDebugInfo(null);
 
     setTimeout(() => {
         let baseData: any[] = [];
@@ -225,17 +223,22 @@ export default function ReportBuilderPage() {
         else if (dataSource === 'opportunities') baseData = [...(opportunitiesData || [])];
         else if (dataSource === 'productsAndServices') baseData = [...(psData || [])];
 
-        const debugLines = [`- ${t('Reports.foundRecords', {count: baseData.length, source: t(`Reports.dataSources.${dataSource}`)})}`];
-
         const clientMap = new Map(clientsData?.map(c => [c.id, c]));
         const contactMap = new Map(contactsData?.map(c => [c.id, c]));
-
-        const joined = baseData.map(item => ({
-            ...item,
-            __client: item.clientId ? clientMap.get(item.clientId) : undefined,
-            __contact: item.contactId ? contactMap.get(item.contactId) : undefined,
-        }));
         
+        const joined = baseData.map(item => {
+            const row: any = {
+                [dataSource]: item
+            };
+            if (item.clientId) {
+                row.clients = clientMap.get(item.clientId);
+            }
+            if (item.contactId) {
+                row.contacts = contactMap.get(item.contactId);
+            }
+            return row;
+        });
+
         let filtered = joined;
         
         if (filters && filters.length > 0) {
@@ -243,17 +246,13 @@ export default function ReportBuilderPage() {
                 return filters.every(filter => {
                     if (!filter.field || !filter.operator) return true;
                     
-                    let itemValue: any;
                     const [source, fieldName] = filter.field.split('.');
-
-                    if (source === dataSource) itemValue = item[fieldName];
-                    else if (source === 'clients') itemValue = item.__client?.[fieldName];
-                    else if (source === 'contacts') itemValue = item.__contact?.[fieldName];
+                    let itemValue: any = item[source]?.[fieldName];
                     
                     const filterValue = filter.value;
 
                     if(filter.field === 'opportunities.stage' && filterValue === 'Open') {
-                        return ['Prospecting', 'Proposal', 'Negotiation'].includes(item.stage);
+                        return ['Prospecting', 'Proposal', 'Negotiation'].includes(item.opportunities.stage);
                     }
 
                     if (itemValue === undefined || itemValue === null) return false;
@@ -278,20 +277,14 @@ export default function ReportBuilderPage() {
                     }
                 });
             });
-            debugLines.push(`- ${t('Reports.afterFilters', {count: filtered.length, filterCount: filters.length})}`);
-        } else {
-            debugLines.push(`- ${t('Reports.noFilters', {count: filtered.length})}`);
         }
         
         if (sorts && sorts.length > 0) {
           filtered.sort((a, b) => {
             for (const sort of sorts) {
               const [source, fieldName] = sort.field.split('.');
-              let valA, valB;
-
-              if (source === dataSource) { valA = a[fieldName]; valB = b[fieldName]; } 
-              else if (source === 'clients') { valA = a.__client?.[fieldName]; valB = b.__client?.[fieldName]; } 
-              else if (source === 'contacts') { valA = a.__contact?.[fieldName]; valB = b.__contact?.[fieldName]; }
+              let valA = a[source]?.[fieldName];
+              let valB = b[source]?.[fieldName];
               
               if (valA === undefined || valA === null) return sort.direction === 'asc' ? 1 : -1;
               if (valB === undefined || valB === null) return sort.direction === 'asc' ? -1 : 1;
@@ -302,41 +295,16 @@ export default function ReportBuilderPage() {
             return 0;
           });
         }
-
+        
         const newColumns = fields.map(fieldKey => {
           const [source, field] = fieldKey.split('.');
           const sourceName = source as keyof typeof reportableFields;
           const fieldConfig = reportableFields[sourceName]?.fields[field];
-          return { accessorKey: fieldKey, header: t(fieldConfig?.label || fieldKey) };
+          const accessor = `${source}.${field}`;
+          return { accessorKey: accessor, header: t(fieldConfig?.label || fieldKey) };
         });
 
-        const newData = filtered.map(item => {
-            const row: any = {};
-            fields.forEach(fieldKey => {
-                const [source, field] = fieldKey.split('.');
-                
-                if (!row[source]) {
-                    row[source] = {};
-                }
-
-                if (source === dataSource) {
-                    row[source][field] = item[field];
-                } else if (source === 'clients' && item.__client) {
-                    row[source][field] = item.__client[field];
-                } else if (source === 'contacts' && item.__contact) {
-                    row[source][field] = item.__contact[field];
-                }
-            });
-            return row;
-        });
-
-        debugLines.push(`- ${t('Reports.displayingRecords', {count: newData.length})}`);
-        if(newData.length > 0) {
-            debugLines.push(`\n${t('Reports.sampleRecord')}:\n${JSON.stringify(newData[0], null, 2)}`);
-        }
-        setDebugInfo(debugLines.join('\n'));
-
-        setReportResult({ data: newData, columns: newColumns });
+        setReportResult({ data: filtered, columns: newColumns });
         setIsGenerating(false);
      }, 500);
   }, [clientsData, contactsData, opportunitiesData, psData, t]);
@@ -600,19 +568,6 @@ export default function ReportBuilderPage() {
             </form>
         </Form>
         
-        {debugInfo && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('Reports.queryExecutionDetails')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs whitespace-pre-wrap bg-muted p-4 rounded-md font-mono">
-                <code>{debugInfo}</code>
-              </pre>
-            </CardContent>
-          </Card>
-        )}
-
         {isGenerating && <Skeleton className="h-64 w-full mt-8" />}
         {reportResult && <ReportResultTable columns={reportResult.columns} data={reportResult.data} />}
         </div>
