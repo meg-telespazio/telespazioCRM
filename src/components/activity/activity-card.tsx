@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import type { Activity, ActivityFollowUp, ActivityType, UserProfile } from '@/lib/types';
+import type { Activity, ActivityFollowUp, ActivityType, UserProfile, Contact } from '@/lib/types';
 import { addFollowUp } from '@/lib/firestore/activities';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -14,7 +14,6 @@ import { useI18n } from '@/firebase/client-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -32,6 +31,8 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { collection, query, orderBy } from 'firebase/firestore';
+import { MentionTextarea } from './mention-textarea';
+import { RenderWithMentions } from './render-with-mentions';
 
 const activityIcons: Record<ActivityType, React.ElementType> = {
   call: Phone,
@@ -47,9 +48,10 @@ const followUpSchema = z.object({
 type ActivityCardProps = {
   activity: Activity;
   users: Map<string, UserProfile>;
+  contacts: Contact[];
 };
 
-export function ActivityCard({ activity, users }: ActivityCardProps) {
+export function ActivityCard({ activity, users, contacts }: ActivityCardProps) {
   const { t, locale } = useI18n();
   const firestore = useFirestore();
   const { user: currentUser } = useUser();
@@ -66,6 +68,7 @@ export function ActivityCard({ activity, users }: ActivityCardProps) {
   }, [firestore, activity.id]);
 
   const { data: followUps, loading: followUpsLoading } = useCollection<ActivityFollowUp>(followUpsQuery);
+  const allUsers = useMemo(() => Array.from(users.values()), [users]);
 
   const author = users.get(activity.createdBy);
   const Icon = activityIcons[activity.type] || MessageSquare;
@@ -101,7 +104,7 @@ export function ActivityCard({ activity, users }: ActivityCardProps) {
         {activity.isPriority && <Star className="h-5 w-5 text-yellow-500 fill-current" />}
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{activity.description}</p>
+        <RenderWithMentions text={activity.description} />
       </CardContent>
       <CardFooter className="flex-col items-start gap-4">
         {followUpsLoading ? <Skeleton className="h-10 w-full" /> : 
@@ -122,7 +125,7 @@ export function ActivityCard({ activity, users }: ActivityCardProps) {
                       {formatDistanceToNow(followUp.createdAt, { addSuffix: true, locale: locale === 'es' ? es : undefined })}
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{followUp.content}</p>
+                   <RenderWithMentions text={followUp.content} />
                 </div>
               </div>
             );
@@ -143,9 +146,11 @@ export function ActivityCard({ activity, users }: ActivityCardProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Textarea
-                        placeholder={t('Activity.addFollowUp')}
+                      <MentionTextarea
                         {...field}
+                        users={allUsers}
+                        contacts={contacts}
+                        placeholder={t('Activity.addFollowUp')}
                         className="min-h-0 resize-none pr-12"
                         rows={1}
                         onKeyDown={(e) => {

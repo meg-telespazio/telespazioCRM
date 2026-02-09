@@ -13,14 +13,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { collection, query, where, doc } from 'firebase/firestore';
-import type { Client, Activity, ActivityType, UserProfile } from '@/lib/types';
+import type { Client, Activity, ActivityType, UserProfile, Contact } from '@/lib/types';
 import { addActivity } from '@/lib/firestore/activities';
 
 import { AppHeader } from '@/components/layout/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
   Select,
@@ -47,6 +46,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { ActivityCard } from '@/components/activity/activity-card';
+import { MentionTextarea } from '@/components/activity/mention-textarea';
 
 const newActivitySchema = z.object({
   description: z.string().min(1, 'Required'),
@@ -92,6 +92,15 @@ export default function ClientActivityPage() {
   }, [firestore, user]);
   const { data: users, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
 
+  const contactsQuery = useMemo(() => {
+    if (!user || !firestore) return null;
+    return query(
+      collection(firestore, 'contacts'),
+      where('clientId', '==', clientId)
+    );
+  }, [firestore, clientId, user]);
+  const { data: contacts, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
+
   const usersMap = useMemo(() => {
     const map = new Map<string, UserProfile>();
     if (users) {
@@ -105,6 +114,9 @@ export default function ClientActivityPage() {
     if (activityFilter === 'all') return sortedActivities;
     return sortedActivities.filter(a => a.type === activityFilter);
   }, [sortedActivities, activityFilter]);
+  
+  const allUsers = useMemo(() => users ? [...users] : [], [users]);
+  const allContacts = useMemo(() => contacts ? [...contacts] : [], [contacts]);
 
   // Form for new activity
   const form = useForm<z.infer<typeof newActivitySchema>>({
@@ -126,7 +138,7 @@ export default function ClientActivityPage() {
     form.reset();
   };
 
-  const isLoading = userLoading || clientLoading || activitiesLoading || usersLoading;
+  const isLoading = userLoading || clientLoading || activitiesLoading || usersLoading || contactsLoading;
 
   if (isLoading) {
     return (
@@ -165,7 +177,7 @@ export default function ClientActivityPage() {
           <div className="col-span-12 md:col-span-3 space-y-6">
              <Card>
                 <CardHeader className="p-4">
-                    <CardTitle className="text-base font-semibold">{t('Activity.clientDetails')}</CardTitle>
+                    <CardTitle className="text-sm font-semibold">{t('Activity.clientDetails')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 p-4 pt-0 text-xs">
                    <div className="flex items-center gap-2">
@@ -184,7 +196,7 @@ export default function ClientActivityPage() {
              </Card>
              <Card>
                 <CardHeader className="p-4">
-                    <CardTitle className="text-base font-semibold">{t('Activity.filters')}</CardTitle>
+                    <CardTitle className="text-sm font-semibold">{t('Activity.filters')}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <ul className="space-y-1">
@@ -213,7 +225,12 @@ export default function ClientActivityPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
-                            <Textarea placeholder={t('Activity.placeholder')} {...field} />
+                             <MentionTextarea 
+                                {...field}
+                                users={allUsers}
+                                contacts={allContacts}
+                                placeholder={t('Activity.placeholder')}
+                             />
                           </FormControl>
                         </FormItem>
                       )}
@@ -256,7 +273,7 @@ export default function ClientActivityPage() {
 
             <div className="space-y-4">
                 {filteredActivities.map(activity => (
-                    <ActivityCard key={activity.id} activity={activity} users={usersMap} />
+                    <ActivityCard key={activity.id} activity={activity} users={usersMap} contacts={allContacts} />
                 ))}
                 {filteredActivities.length === 0 && (
                     <div className="text-center py-10 text-muted-foreground">

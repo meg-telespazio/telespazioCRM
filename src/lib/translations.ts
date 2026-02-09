@@ -528,7 +528,10 @@ export const translations = {
         meeting: 'Reunión',
         email: 'Correo',
         message: 'Mensaje'
-      }
+      },
+      appUser: 'Usuario App',
+      clientContact: 'Contacto Cliente',
+      noMentionsFound: 'No se encontraron coincidencias',
     }
   },
   en: {
@@ -1060,7 +1063,10 @@ export const translations = {
         meeting: 'Meeting',
         email: 'Email',
         message: 'Message'
-      }
+      },
+      appUser: 'App User',
+      clientContact: 'Client Contact',
+      noMentionsFound: 'No matches found',
     }
   },
 };
