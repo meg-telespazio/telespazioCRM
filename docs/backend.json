@@ -554,6 +554,62 @@
         "createdBy",
         "createdAt"
       ]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "Represents a client-related activity or interaction.",
+      "type": "object",
+      "properties": {
+        "publicId": {
+          "type": "string"
+        },
+        "clientId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["call", "meeting", "email", "message"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "isPriority": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "publicId",
+        "clientId",
+        "type",
+        "description",
+        "createdAt",
+        "createdBy"
+      ]
+    },
+    "ActivityFollowUp": {
+      "title": "Activity Follow-Up",
+      "description": "Represents a comment or update on a parent activity.",
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string"
+        }
+      },
+      "required": ["content", "createdAt", "createdBy"]
     }
   },
   "auth": {
@@ -595,6 +651,18 @@
         "$ref": "#/entities/ProductOrService"
       },
       "description": "Stores catalog products and services."
+    },
+    "/activities/{activityId}": {
+      "schema": {
+        "$ref": "#/entities/Activity"
+      },
+      "description": "Stores all client activities."
+    },
+    "/activities/{activityId}/followUps/{followUpId}": {
+      "schema": {
+        "$ref": "#/entities/ActivityFollowUp"
+      },
+      "description": "Stores follow-up comments for a specific activity."
     }
   }
 }

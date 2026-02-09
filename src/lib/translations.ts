@@ -505,6 +505,29 @@ export const translations = {
       back_to_opportunity: "Volver a la Oportunidad",
       customization: "Personalización",
       customization_desc: "Ajusta los detalles de la propuesta antes de imprimir.",
+    },
+    Activity: {
+      logNew: 'Registrar Nueva Actividad',
+      placeholder: '¿Qué pasó durante esta interacción?',
+      markAsPriority: 'Marcar como prioridad',
+      save: 'Guardar Actividad',
+      type: 'Tipo de Actividad',
+      addFollowUp: 'Añadir seguimiento...',
+      loggedBy: 'Registrado por',
+      view: 'Ver Actividad',
+      pageTitle: 'Actividad del Cliente',
+      clientDetails: 'Detalles del Cliente',
+      filters: 'Filtros',
+      all: 'Todas las Actividades',
+      calls: 'Llamadas',
+      meetings: 'Reuniones',
+      emails: 'Correos',
+      types: {
+        call: 'Llamada',
+        meeting: 'Reunión',
+        email: 'Correo',
+        message: 'Mensaje'
+      }
     }
   },
   en: {
@@ -1013,6 +1036,29 @@ export const translations = {
       back_to_opportunity: "Back to Opportunity",
       customization: "Customization",
       customization_desc: "Adjust the proposal details before printing.",
+    },
+    Activity: {
+      logNew: 'Log New Activity',
+      placeholder: 'What happened during this interaction?',
+      markAsPriority: 'Mark as priority',
+      save: 'Save Activity',
+      type: 'Activity Type',
+      addFollowUp: 'Add a follow-up...',
+      loggedBy: 'Logged by',
+      view: 'View Activity',
+      pageTitle: 'Client Activity',
+      clientDetails: 'Client Details',
+      filters: 'Filters',
+      all: 'All Activities',
+      calls: 'Calls',
+      meetings: 'Meetings',
+      emails: 'Emails',
+      types: {
+        call: 'Call',
+        meeting: 'Meeting',
+        email: 'Email',
+        message: 'Message'
+      }
     }
   },
 };

@@ -140,9 +140,33 @@ export type Report = {
   createdBy: string;
 };
 
+export type ActivityType = 'call' | 'meeting' | 'email' | 'message';
+
+export type Activity = {
+  id: string;
+  publicId: string;
+  clientId: string;
+  type: ActivityType;
+  description: string;
+  isPriority: boolean;
+  createdAt: Date;
+  createdBy: string;
+};
+
+export type ActivityFollowUp = {
+  id: string;
+  activityId: string;
+  content: string;
+  createdAt: Date;
+  createdBy: string;
+};
+
+
 // Types for writing data to Firestore
 export type ClientWrite = Omit<Client, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ContactWrite = Omit<Contact, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type OpportunityWrite = Omit<Opportunity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type ActivityWrite = Omit<Activity, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type ActivityFollowUpWrite = Omit<ActivityFollowUp, 'id' | 'createdAt'> & { createdAt: FieldValue };
