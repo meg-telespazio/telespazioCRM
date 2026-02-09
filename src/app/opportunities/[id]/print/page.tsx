@@ -9,6 +9,7 @@ import {
   type Client,
   type Contact,
   type ProductOrService,
+  type OpportunityLineItem,
 } from '@/lib/types';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { format, addDays } from 'date-fns';
@@ -36,7 +37,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 
-type EnrichedLineItem = Opportunity['lineItems'][0] & {
+type EnrichedLineItem = OpportunityLineItem & {
   type: ProductOrService['type'];
 };
 
@@ -96,51 +97,50 @@ export default function PrintOpportunityPage() {
 
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true);
-    
+
     const page1 = document.getElementById('print-page-1');
     const page2 = document.getElementById('print-page-2');
 
     if (!page1 || !page2) {
-        console.error("Preview pages not found");
-        toast({
-          variant: "destructive",
-          title: t('Auth.registerFailedTitle'),
-          description: t('Proposal.generate_pdf_error'),
-        });
-        setIsGeneratingPdf(false);
-        return;
+      console.error('Preview pages not found');
+      toast({
+        variant: 'destructive',
+        title: t('Auth.registerFailedTitle'),
+        description: t('Proposal.generate_pdf_error'),
+      });
+      setIsGeneratingPdf(false);
+      return;
     }
 
     try {
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4',
-        });
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
 
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        const canvas1 = await html2canvas(page1, { scale: 3, useCORS: true });
-        const imgData1 = canvas1.toDataURL('image/png');
-        pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const canvas1 = await html2canvas(page1, { scale: 3, useCORS: true });
+      const imgData1 = canvas1.toDataURL('image/png');
+      pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-        const canvas2 = await html2canvas(page2, { scale: 3, useCORS: true });
-        pdf.addPage();
-        const imgData2 = canvas2.toDataURL('image/png');
-        pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const canvas2 = await html2canvas(page2, { scale: 3, useCORS: true });
+      pdf.addPage();
+      const imgData2 = canvas2.toDataURL('image/png');
+      pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-        pdf.save(`proposal-${opportunity?.publicId || 'download'}.pdf`);
-
+      pdf.save(`proposal-${opportunity?.publicId || 'download'}.pdf`);
     } catch (error) {
-        console.error("Error generating PDF:", error);
-        toast({
-            variant: "destructive",
-            title: t('Auth.registerFailedTitle'),
-            description: t('Proposal.generate_pdf_error'),
-        });
+      console.error('Error generating PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: t('Auth.registerFailedTitle'),
+        description: t('Proposal.generate_pdf_error'),
+      });
     } finally {
-        setIsGeneratingPdf(false);
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -415,19 +415,7 @@ export default function PrintOpportunityPage() {
             })}
           </tbody>
         </table>
-      </section>
-      <ProposalFooter page={1} totalPages={2} />
-    </>
-  );
-
-  const Page2Content = () => (
-    <>
-      <ProposalHeader />
-      <section className="mt-6 flex-grow">
-        <h2 className="text-lg font-bold uppercase text-red-700">
-          {t('Table.totals')}
-        </h2>
-        <table className="mt-2 w-full border-collapse text-[10px]">
+        <table className="mt-4 w-full border-collapse text-[10px]">
           <tbody>
             <tr className="bg-gray-200 font-bold">
               <td colSpan={7} className="border p-0.5 text-right">
@@ -460,7 +448,16 @@ export default function PrintOpportunityPage() {
             </tr>
           </tbody>
         </table>
-        <div className="mt-8 space-y-4">
+      </section>
+      <ProposalFooter page={1} totalPages={2} />
+    </>
+  );
+
+  const Page2Content = () => (
+    <>
+      <ProposalHeader />
+      <section className="mt-6 flex-grow">
+        <div className="space-y-4">
           <div>
             <span className="font-bold text-red-700">
               {t('Proposal.delivery_time')}:{' '}
@@ -521,14 +518,14 @@ export default function PrintOpportunityPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-            <div className="flex justify-center group md:col-span-8 lg:col-span-9">
+            <div className="group flex justify-center md:col-span-8 lg:col-span-9">
               <Carousel className="w-full max-w-[210mm]">
                 <CarouselContent>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
                       <div
                         id="print-page-1"
-                        className="font-sans flex aspect-[210/297] flex-col bg-white p-4 text-[8pt] shadow-lg group-hover:shadow-xl transition-shadow"
+                        className="font-sans flex aspect-[210/297] flex-col bg-white p-8 text-[8pt] shadow-lg transition-shadow group-hover:shadow-xl"
                       >
                         <Page1Content />
                       </div>
@@ -538,7 +535,7 @@ export default function PrintOpportunityPage() {
                     <div className="p-1 md:p-2">
                       <div
                         id="print-page-2"
-                        className="font-sans flex aspect-[210/297] flex-col bg-white p-4 text-[8pt] shadow-lg group-hover:shadow-xl transition-shadow"
+                        className="font-sans flex aspect-[210/297] flex-col bg-white p-8 text-[8pt] shadow-lg transition-shadow group-hover:shadow-xl"
                       >
                         <Page2Content />
                       </div>
