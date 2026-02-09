@@ -17,7 +17,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, Loader2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -32,6 +32,9 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { useToast } from '@/hooks/use-toast';
 
 type EnrichedLineItem = Opportunity['lineItems'][0] & {
   type: ProductOrService['type'];
@@ -44,6 +47,7 @@ export default function PrintOpportunityPage() {
   const params = useParams();
   const { user } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const opportunityId = params.id as string;
 
@@ -51,6 +55,7 @@ export default function PrintOpportunityPage() {
     t('Proposal.delivery_time_placeholder')
   );
   const [customNote, setCustomNote] = useState('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Data fetching
   const opportunityRef = useMemo(
@@ -88,6 +93,56 @@ export default function PrintOpportunityPage() {
   }, [user, firestore]);
   const { data: psData, loading: psLoading } =
     useCollection<ProductOrService>(psQuery);
+
+  const handleGeneratePdf = async () => {
+    setIsGeneratingPdf(true);
+    
+    const page1 = document.getElementById('print-page-1');
+    const page2 = document.getElementById('print-page-2');
+
+    if (!page1 || !page2) {
+        console.error("Preview pages not found");
+        toast({
+          variant: "destructive",
+          title: t('Auth.registerFailedTitle'),
+          description: t('Proposal.generate_pdf_error'),
+        });
+        setIsGeneratingPdf(false);
+        return;
+    }
+
+    try {
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        const canvas1 = await html2canvas(page1, { scale: 3, useCORS: true });
+        const imgData1 = canvas1.toDataURL('image/png');
+        pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+        const canvas2 = await html2canvas(page2, { scale: 3, useCORS: true });
+        pdf.addPage();
+        const imgData2 = canvas2.toDataURL('image/png');
+        pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+        pdf.save(`proposal-${opportunity?.publicId || 'download'}.pdf`);
+
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+        toast({
+            variant: "destructive",
+            title: t('Auth.registerFailedTitle'),
+            description: t('Proposal.generate_pdf_error'),
+        });
+    } finally {
+        setIsGeneratingPdf(false);
+    }
+  };
 
   const {
     enrichedLineItems,
@@ -240,13 +295,13 @@ export default function PrintOpportunityPage() {
           }),
         })}
       </p>
-      <div className="mt-4">
+      <div className="mt-4 space-y-1">
         <p>
           <span className="font-bold">{t('Proposal.to')} </span>
           {recipientName.toUpperCase()}
         </p>
       </div>
-      <section className="mt-2">
+      <section className="mt-4">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.proposalData')}
         </h2>
@@ -277,7 +332,7 @@ export default function PrintOpportunityPage() {
           </tbody>
         </table>
       </section>
-      <section className="mt-2 flex-grow">
+      <section className="mt-4 flex-grow">
         <h2 className="text-lg font-bold uppercase text-red-700">
           {t('Proposal.products_services')}
         </h2>
@@ -443,37 +498,7 @@ export default function PrintOpportunityPage() {
 
   return (
     <>
-      <style jsx global>{`
-        @media print {
-          body {
-            background-color: #fff !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .print-only {
-            display: block !important;
-          }
-          .print-sheet {
-            box-shadow: none !important;
-            margin: 0 !important;
-            max-width: 100% !important;
-            border: none !important;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-          }
-          .page-break {
-            page-break-before: always;
-          }
-        }
-        @page {
-          size: A4;
-          margin: 0.5in;
-        }
-      `}</style>
-
-      <div className="no-print min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100">
         <div className="container mx-auto max-w-7xl p-4 sm:p-8">
           <div className="mb-6 flex items-center justify-between">
             <Button
@@ -483,9 +508,15 @@ export default function PrintOpportunityPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               {t('Proposal.back_to_opportunity')}
             </Button>
-            <Button onClick={() => window.print()}>
-              <Printer className="mr-2 h-4 w-4" />
-              {t('Proposal.generate_pdf')}
+            <Button onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
+              {isGeneratingPdf ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Printer className="mr-2 h-4 w-4" />
+              )}
+              {isGeneratingPdf
+                ? t('Proposal.generating_pdf')
+                : t('Proposal.generate_pdf')}
             </Button>
           </div>
 
@@ -495,14 +526,20 @@ export default function PrintOpportunityPage() {
                 <CarouselContent>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
-                      <div className="font-sans flex aspect-[210/297] flex-col bg-white p-6 text-[9pt] shadow-lg">
+                      <div
+                        id="print-page-1"
+                        className="font-sans flex aspect-[210/297] flex-col bg-white p-4 text-[8pt] shadow-lg group-hover:shadow-xl transition-shadow"
+                      >
                         <Page1Content />
                       </div>
                     </div>
                   </CarouselItem>
                   <CarouselItem>
                     <div className="p-1 md:p-2">
-                      <div className="font-sans flex aspect-[210/297] flex-col bg-white p-6 text-[9pt] shadow-lg">
+                      <div
+                        id="print-page-2"
+                        className="font-sans flex aspect-[210/297] flex-col bg-white p-4 text-[8pt] shadow-lg group-hover:shadow-xl transition-shadow"
+                      >
                         <Page2Content />
                       </div>
                     </div>
@@ -556,15 +593,6 @@ export default function PrintOpportunityPage() {
               </Card>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="hidden print-only">
-        <div className="print-sheet">
-          <Page1Content />
-        </div>
-        <div className="print-sheet page-break">
-          <Page2Content />
         </div>
       </div>
     </>
