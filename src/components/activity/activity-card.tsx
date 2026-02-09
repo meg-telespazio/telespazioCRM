@@ -94,7 +94,7 @@ export function ActivityCard({ activity, users, contacts }: ActivityCardProps) {
               {t(`Activity.types.${activity.type}`)}
             </p>
             <p className="text-xs text-muted-foreground">
-              {format(activity.createdAt, 'PPp', { locale: locale === 'es' ? es : undefined })}
+              {activity.createdAt ? format(activity.createdAt, 'PPp', { locale: locale === 'es' ? es : undefined }) : '...'}
             </p>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -122,7 +122,7 @@ export function ActivityCard({ activity, users, contacts }: ActivityCardProps) {
                   <div className="flex items-baseline justify-between">
                     <p className="text-sm font-semibold">{followUpAuthor?.displayName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(followUp.createdAt, { addSuffix: true, locale: locale === 'es' ? es : undefined })}
+                      {followUp.createdAt ? formatDistanceToNow(followUp.createdAt, { addSuffix: true, locale: locale === 'es' ? es : undefined }) : '...'}
                     </p>
                   </div>
                    <RenderWithMentions text={followUp.content} />
