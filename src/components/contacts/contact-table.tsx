@@ -53,9 +53,8 @@ export function ContactTable({
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
-      'email': false,
-      'createdAt': false,
-      'phone': false,
+      publicId: false,
+      createdAt: false,
     });
   const [rowSelection, setRowSelection] = React.useState({});
   const { t } = useI18n();

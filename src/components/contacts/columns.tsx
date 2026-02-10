@@ -148,7 +148,15 @@ export const columns = (
         </Button>
       );
     },
-    cell: ({ row }) => row.original.emails?.[0]?.address || '-',
+    cell: ({ row }) => {
+        const email = row.original.emails?.[0]?.address;
+        if (!email) return '-';
+        return (
+          <a href={`mailto:${email}`} className="text-primary hover:underline">
+            {email}
+          </a>
+        );
+    },
     meta: {
       className: 'hidden lg:table-cell',
     },
