@@ -89,6 +89,11 @@ export const translations = {
         openOpportunitiesDesc: 'Acuerdos de venta actualmente activos',
         totalClients: 'Clientes Totales',
         totalClientsDesc: 'Clientes gestionados',
+        closeRate: 'Tasa de Cierre',
+        closeRateDesc: 'Del total de oportunidades',
+        overdue: 'vencidas',
+        newContacts: 'Contactos Nuevos',
+        newContactsDesc: 'En los últimos 30 días',
       },
       opportunitiesChart: {
         title: 'Oportunidades por Etapa',
@@ -624,6 +629,11 @@ export const translations = {
         openOpportunitiesDesc: 'Currently active sales deals',
         totalClients: 'Total Clients',
         totalClientsDesc: 'Managed clients',
+        closeRate: 'Close Rate',
+        closeRateDesc: 'Of all opportunities',
+        overdue: 'overdue',
+        newContacts: 'New Contacts',
+        newContactsDesc: 'In the last 30 days',
       },
       opportunitiesChart: {
         title: 'Opportunities by Stage',
