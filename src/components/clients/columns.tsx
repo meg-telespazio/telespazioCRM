@@ -162,6 +162,14 @@ export const columns = (
           </Button>
         );
       },
+      cell: ({ row }) => {
+        const email = row.original.email;
+        return (
+          <a href={`mailto:${email}`} className="text-primary hover:underline">
+            {email}
+          </a>
+        );
+      },
       meta: {
         className: 'hidden lg:table-cell',
       },

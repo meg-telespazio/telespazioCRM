@@ -47,7 +47,6 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
-        'email': false,
         'createdAt': false,
         'phone': false,
         'industry': false,
