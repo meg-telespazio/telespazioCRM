@@ -96,7 +96,12 @@ export default function ProductServiceFormPage() {
     useDoc<ProductOrService>(itemDocRef);
     
   const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
-  const { data: catalogData, loading: catalogLoading } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery, where('type', '!=', 'bundle')) : null, [firestore, baseQuery]));
+  const { data: allCatalogData, loading: catalogLoading } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery) : null, [firestore, baseQuery]));
+
+  const catalogData = useMemo(() => {
+    if (!allCatalogData) return null;
+    return allCatalogData.filter(item => item.type !== 'bundle');
+  }, [allCatalogData]);
 
   const catalogItems = useMemo(() => {
     if (!catalogData) return [];
@@ -445,5 +450,3 @@ export default function ProductServiceFormPage() {
     </>
   );
 }
-
-    

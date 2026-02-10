@@ -200,11 +200,9 @@ export default function OpportunityFormPage() {
 
   const productsAndServicesQuery = useMemo(() => {
     if (!baseClientQuery) return null;
-    return query(
-      collection(firestore, 'productsAndServices'),
-      baseClientQuery,
-      where('status', '==', 'active')
-    );
+    // Query all items and filter for active status on the client
+    // to avoid composite index requirements in Firestore.
+    return query(collection(firestore, 'productsAndServices'), baseClientQuery);
   }, [firestore, baseClientQuery]);
 
   const { data: clientsData, loading: clientsLoading } =
@@ -214,9 +212,14 @@ export default function OpportunityFormPage() {
     useCollection<Contact>(contactsQuery);
 
   const {
-    data: productsAndServices,
+    data: allProductsAndServices,
     loading: productsAndServicesLoading,
   } = useCollection<ProductOrService>(productsAndServicesQuery);
+
+  const productsAndServices = useMemo(() => {
+    if (!allProductsAndServices) return [];
+    return allProductsAndServices.filter((item) => item.status === 'active');
+  }, [allProductsAndServices]);
 
   const clients = useMemo(() => {
     if (!clientsData) return [];
@@ -1316,5 +1319,3 @@ export default function OpportunityFormPage() {
     </div>
   );
 }
-
-    
