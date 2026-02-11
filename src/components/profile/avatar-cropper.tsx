@@ -40,14 +40,16 @@ export function AvatarCropper({
 
   const onMediaLoaded = useCallback(
     (mediaSize: { width: number; height: number }) => {
-      // The crop container is square, constrained by height (h-80 -> 320px)
       const containerWidth = 320;
       const containerHeight = 320;
       const widthRatio = containerWidth / mediaSize.width;
       const heightRatio = containerHeight / mediaSize.height;
-      const initialZoom = Math.min(widthRatio, heightRatio);
-      setMinZoom(initialZoom);
-      setZoom(initialZoom);
+      
+      const containZoom = Math.min(widthRatio, heightRatio);
+      const coverZoom = Math.max(widthRatio, heightRatio);
+
+      setMinZoom(containZoom);
+      setZoom(coverZoom);
       setCrop({ x: 0, y: 0 });
     },
     [setZoom, setCrop, setMinZoom]
