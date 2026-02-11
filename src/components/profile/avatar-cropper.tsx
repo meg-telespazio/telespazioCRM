@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Point, Area } from 'react-easy-crop';
 import {
@@ -31,31 +31,11 @@ export function AvatarCropper({
   const { t } = useI18n();
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [minZoom, setMinZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
 
-
-  const onCropPixelsChange = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+  const onCropCompleteCallback = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
-
-  const onMediaLoaded = useCallback(
-    (mediaSize: { width: number; height: number }) => {
-      if (!containerRef) return;
-      
-      const { width: containerWidth, height: containerHeight } = containerRef.getBoundingClientRect();
-      const widthRatio = containerWidth / mediaSize.width;
-      const heightRatio = containerHeight / mediaSize.height;
-      
-      const containZoom = Math.min(widthRatio, heightRatio);
-
-      setMinZoom(containZoom);
-      setZoom(containZoom); // Start with the image fully contained
-      setCrop({ x: 0, y: 0 });
-    },
-    [containerRef]
-  );
 
   const handleCrop = async () => {
     if (croppedAreaPixels && imageSrc) {
@@ -65,6 +45,14 @@ export function AvatarCropper({
       }
     }
   };
+
+  // Reset zoom when a new image is loaded
+  useEffect(() => {
+    if (imageSrc) {
+      setZoom(1);
+      setCrop({ x: 0, y: 0 });
+    }
+  }, [imageSrc]);
 
   if (!imageSrc) return null;
 
@@ -77,30 +65,27 @@ export function AvatarCropper({
             {t('Profile.cropImageDescription')}
           </DialogDescription>
         </DialogHeader>
-        <div className="relative h-80 w-full bg-muted" ref={setContainerRef}>
-          {containerRef && ( // Only render cropper once we have the container's ref
+        <div className="relative h-80 w-full bg-muted">
             <Cropper
               image={imageSrc}
               crop={crop}
               zoom={zoom}
-              minZoom={minZoom}
-              maxZoom={Math.max(minZoom * 5, 2)} // Allow zooming up to 5x or at least 2x
               aspect={aspect}
+              minZoom={0.1} // Allow zooming out
+              maxZoom={5}   // Allow zooming in
               cropShape={aspect === 1 ? 'round' : 'rect'}
               showGrid={false}
               onCropChange={setCrop}
               onZoomChange={setZoom}
-              onCropComplete={onCropPixelsChange}
-              onMediaLoaded={onMediaLoaded}
+              onCropComplete={onCropCompleteCallback}
             />
-          )}
         </div>
         <div className="space-y-2">
           <label className="text-sm">Zoom</label>
           <Slider
             value={[zoom]}
-            min={minZoom}
-            max={Math.max(minZoom * 5, 2)}
+            min={0.1}
+            max={5}
             step={0.01}
             onValueChange={(value) => setZoom(value[0])}
           />
