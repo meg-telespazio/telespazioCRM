@@ -162,6 +162,29 @@ export type ActivityFollowUp = {
   createdBy: string;
 };
 
+export type LocationType = 'branch' | 'headquarters' | 'warehouse' | 'office' | 'property' | 'field';
+export type LocationStatus = 'active' | 'suspended';
+
+export type Location = {
+  id: string;
+  publicId: string;
+  name: string;
+  clientId: string;
+  type: LocationType;
+  status: LocationStatus;
+  streetName: string;
+  streetNumber: string;
+  city: string;
+  province: string;
+  country: string;
+  postalCode: string;
+  notes?: string;
+  latitude: number;
+  longitude: number;
+  createdAt: Date;
+  createdBy: string;
+};
+
 
 // Types for writing data to Firestore
 export type ClientWrite = Omit<Client, 'id' | 'createdAt'> & { createdAt: FieldValue };
@@ -171,5 +194,6 @@ export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> &
 export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ActivityWrite = Omit<Activity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ActivityFollowUpWrite = Omit<ActivityFollowUp, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type LocationWrite = Omit<Location, 'id' | 'createdAt'> & { createdAt: FieldValue };
 
     

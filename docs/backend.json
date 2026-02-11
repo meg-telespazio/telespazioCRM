@@ -614,6 +614,30 @@
         }
       },
       "required": ["content", "createdAt", "createdBy"]
+    },
+    "Location": {
+      "title": "Location",
+      "description": "Represents a physical location of a client.",
+      "type": "object",
+      "properties": {
+        "publicId": { "type": "string", "description": "Public-facing sequential location ID (LOC-00000001)." },
+        "name": { "type": "string", "description": "Name of the location." },
+        "clientId": { "type": "string", "description": "ID of the client this location belongs to." },
+        "type": { "type": "string", "enum": ["branch", "headquarters", "warehouse", "office", "property", "field"], "description": "Type of the location." },
+        "status": { "type": "string", "enum": ["active", "suspended"], "description": "Status of the location." },
+        "streetName": { "type": "string", "description": "Street name of the address." },
+        "streetNumber": { "type": "string", "description": "Street number of the address." },
+        "city": { "type": "string", "description": "City of the address." },
+        "province": { "type": "string", "description": "Province or state of the address." },
+        "country": { "type": "string", "description": "Country of the address." },
+        "postalCode": { "type": "string", "description": "Postal code of the address." },
+        "notes": { "type": "string", "description": "Additional notes about the location." },
+        "latitude": { "type": "number", "description": "Latitude for geolocation." },
+        "longitude": { "type": "number", "description": "Longitude for geolocation." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the location was created." },
+        "createdBy": { "type": "string", "description": "UID of the user who created the location." }
+      },
+      "required": ["publicId", "name", "clientId", "type", "status", "streetName", "streetNumber", "city", "province", "country", "postalCode", "latitude", "longitude", "createdAt", "createdBy"]
     }
   },
   "auth": {
@@ -667,6 +691,12 @@
         "$ref": "#/entities/ActivityFollowUp"
       },
       "description": "Stores follow-up comments for a specific activity."
+    },
+    "/locations/{locationId}": {
+      "schema": {
+        "$ref": "#/entities/Location"
+      },
+      "description": "Stores client locations."
     }
   }
 }

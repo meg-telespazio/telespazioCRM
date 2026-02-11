@@ -7,6 +7,7 @@ import {
   ChevronsUpDown,
   MoreHorizontal,
   Activity as ActivityIcon,
+  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -306,12 +307,16 @@ export const columns = (
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => router.push(`/clients/${client.id}/activity`)}>
+              <DropdownMenuItem onClick={() => onEdit(client)}>
+                {t('Actions.editClient')}
+              </DropdownMenuItem>
+               <DropdownMenuItem onClick={() => router.push(`/clients/${client.id}/activity`)}>
                 <ActivityIcon className="mr-2 h-4 w-4" />
                 <span>{t('Activity.view')}</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit(client)}>
-                {t('Actions.editClient')}
+              <DropdownMenuItem onClick={() => router.push(`/clients/${client.id}/locations`)}>
+                <MapPin className="mr-2 h-4 w-4" />
+                <span>{t('Locations.view')}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -332,3 +337,5 @@ export const columns = (
     },
   ];
 };
+
+    
