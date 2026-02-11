@@ -115,6 +115,10 @@
         "notes": {
           "type": "string",
           "description": "Additional notes about the client."
+        },
+        "logoURL": {
+          "type": "string",
+          "description": "Data URL of the client's logo."
         }
       },
       "required": [
@@ -666,3 +670,5 @@
     }
   }
 }
+
+    

@@ -13,6 +13,7 @@ export type Client = {
   status: 'active' | 'suspended' | 'canceled';
   industry: string;
   notes?: string;
+  logoURL?: string;
 };
 
 export type EmailEntry = {
@@ -170,3 +171,5 @@ export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> &
 export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ActivityWrite = Omit<Activity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ActivityFollowUpWrite = Omit<ActivityFollowUp, 'id' | 'createdAt'> & { createdAt: FieldValue };
+
+    

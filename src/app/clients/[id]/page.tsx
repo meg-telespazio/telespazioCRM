@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
@@ -33,6 +33,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { translations } from '@/lib/translations';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AvatarCropper } from '@/components/profile/avatar-cropper';
+import { Building, Camera } from 'lucide-react';
 
 const formatCuit = (cuit: string): string => {
   if (!cuit || cuit.length !== 11) return cuit;
@@ -74,6 +77,9 @@ export default function ClientFormPage() {
   const clientId = params.id as string;
   const isNew = clientId === 'new';
 
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [croppedImage, setCroppedImage] = useState<string | null>(null);
+
   const clientDocRef = useMemo(() => {
     if (!firestore || isNew) return null;
     return doc(firestore, 'clients', clientId);
@@ -106,6 +112,7 @@ export default function ClientFormPage() {
         website: clientData.website || '',
         notes: clientData.notes || '',
       });
+      setCroppedImage(clientData.logoURL || null);
     }
   }, [clientData, form]);
 
@@ -115,18 +122,48 @@ export default function ClientFormPage() {
     }
   }, [user, userLoading]);
 
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          variant: 'destructive',
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB.',
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setImageToCrop(reader.result as string);
+      });
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+  };
+
+  const handleCropComplete = (croppedImageUrl: string) => {
+    setCroppedImage(croppedImageUrl);
+    setImageToCrop(null);
+  };
+
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
     try {
+      const dataToSave = {
+        ...values,
+        logoURL: croppedImage || undefined,
+      };
+
       if (isNew) {
-        await addClient(firestore, user.uid, values);
+        await addClient(firestore, user.uid, dataToSave as any);
         toast({
           variant: 'success',
           title: t('Forms.saveClient'),
           description: `Client ${values.name} has been created.`,
         });
       } else {
-        await updateClient(firestore, clientId, values);
+        await updateClient(firestore, clientId, dataToSave);
         toast({
           variant: 'success',
           title: t('Forms.saveClient'),
@@ -168,196 +205,223 @@ export default function ClientFormPage() {
     t(`Industries.${a}`).localeCompare(t(`Industries.${b}`))
   );
 
-  return (
-    <div className="flex flex-1 flex-col">
-      <AppHeader title={isNew ? t('Forms.addClient') : t('Forms.editClient')} />
-      <main className="flex-1 p-4 sm:p-6">
-        <div className="mx-auto max-w-2xl">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Card>
-                <CardContent className="space-y-4 p-6">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.clientName')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t('Forms.clientNamePlaceholder')}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.website')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t('Forms.websitePlaceholder')}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.clientEmail')}</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder={t('Forms.clientEmailPlaceholder')}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.clientPhone')}</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder={t('Forms.clientPhonePlaceholder')}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="cuit"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.cuit')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="XX-XXXXXXXX-X"
-                            {...field}
-                            disabled={!isNew}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.status')}</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={t('Forms.selectStatus')}
-                                />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {statusOptions.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                  {t(`Status.${status}`)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="industry"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.industry')}</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={t('Forms.selectIndustry')}
-                                />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {industryOptions.map((industry) => (
-                                <SelectItem key={industry} value={industry}>
-                                  {t(`Industries.${industry}`)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.notes')}</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder={t('Forms.notesPlaceholder')}
-                            className="resize-none"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+  const currentLogoSrc = croppedImage || clientData?.logoURL;
 
-              <div className="flex items-center justify-end gap-4 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push('/clients')}
-                >
-                  {t('Auth.cancelLabel')}
-                </Button>
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting
-                    ? t('App.loading')
-                    : t('Forms.saveClient')}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </div>
-      </main>
-    </div>
+  return (
+    <>
+      <div className="flex flex-1 flex-col">
+        <AppHeader title={isNew ? t('Forms.addClient') : t('Forms.editClient')} />
+        <main className="flex-1 p-4 sm:p-6">
+          <div className="mx-auto max-w-2xl">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <Card>
+                  <CardContent className="space-y-4 p-6">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="relative">
+                            <Avatar className="h-32 w-32 rounded-lg">
+                                <AvatarImage src={currentLogoSrc} alt={form.getValues('name')} />
+                                <AvatarFallback className="rounded-lg bg-muted">
+                                    <Building className="h-16 w-16 text-muted-foreground" />
+                                </AvatarFallback>
+                            </Avatar>
+                            <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full">
+                                <label htmlFor="logo-upload" className="cursor-pointer">
+                                    <Camera className="h-4 w-4" />
+                                    <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} disabled={form.formState.isSubmitting} />
+                                </label>
+                            </Button>
+                        </div>
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.clientName')}</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t('Forms.clientNamePlaceholder')}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.website')}</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t('Forms.websitePlaceholder')}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Forms.clientEmail')}</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder={t('Forms.clientEmailPlaceholder')}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Forms.clientPhone')}</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder={t('Forms.clientPhonePlaceholder')}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="cuit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.cuit')}</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="XX-XXXXXXXX-X"
+                              {...field}
+                              disabled={!isNew}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Forms.status')}</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={t('Forms.selectStatus')}
+                                  />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {statusOptions.map((status) => (
+                                  <SelectItem key={status} value={status}>
+                                    {t(`Status.${status}`)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="industry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Forms.industry')}</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={t('Forms.selectIndustry')}
+                                  />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {industryOptions.map((industry) => (
+                                  <SelectItem key={industry} value={industry}>
+                                    {t(`Industries.${industry}`)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.notes')}</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder={t('Forms.notesPlaceholder')}
+                              className="resize-none"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                <div className="flex items-center justify-end gap-4 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                  >
+                    {t('Importer.backButton')}
+                  </Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting
+                      ? t('App.loading')
+                      : t('Forms.saveClient')}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+        </main>
+      </div>
+      <AvatarCropper
+        imageSrc={imageToCrop}
+        onCropComplete={handleCropComplete}
+        onClose={() => setImageToCrop(null)}
+      />
+    </>
   );
 }
+
+    
