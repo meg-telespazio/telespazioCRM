@@ -13,36 +13,31 @@ service cloud.firestore {
 
     match /clients/{clientId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, list: if request.auth != null;
-      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow read, update, delete: if request.auth != null;
     }
 
     match /contacts/{contactId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, list: if request.auth != null;
-      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow read, update, delete: if request.auth != null;
     }
 
     match /opportunities/{opportunityId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, list: if request.auth != null;
-      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow read, update, delete: if request.auth != null;
     }
     
     match /productsAndServices/{itemId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, list: if request.auth != null;
-      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow read, update, delete: if request.auth != null;
     }
 
     match /activities/{activityId} {
-      allow get, list: if request.auth != null;
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow read, update, delete: if request.auth != null;
 
       match /followUps/{followUpId} {
-        allow read, create: if request.auth != null;
-        allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+        allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+        allow read, update, delete: if request.auth != null;
       }
     }
 
