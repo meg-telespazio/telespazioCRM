@@ -13,7 +13,7 @@ export type Client = {
   status: 'active' | 'suspended' | 'canceled';
   industry: string;
   notes?: string;
-  logoURL?: string;
+  logoURL?: string | null;
 };
 
 export type EmailEntry = {

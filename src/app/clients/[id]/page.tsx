@@ -184,7 +184,7 @@ export default function ClientFormPage() {
     try {
       const dataToSave: Partial<Client> = {
         ...values,
-        logoURL: croppedImage || undefined,
+        logoURL: croppedImage,
       };
 
       if (isNew) {
@@ -254,7 +254,7 @@ export default function ClientFormPage() {
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative">
                             <Avatar className="h-32 w-32 rounded-lg">
-                                <AvatarImage src={currentLogoSrc} alt={form.getValues('name')} />
+                                <AvatarImage src={currentLogoSrc || undefined} alt={form.getValues('name')} />
                                 <AvatarFallback className="rounded-lg bg-muted">
                                     <Building className="h-16 w-16 text-muted-foreground" />
                                 </AvatarFallback>
