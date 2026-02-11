@@ -21,6 +21,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { Phone, Calendar, Mail, MessageSquare } from 'lucide-react';
 import { RenderWithMentions } from '../activity/render-with-mentions';
+import { useRouter } from 'next/navigation';
 
 const activityIcons: Record<ActivityType, React.ElementType> = {
   call: Phone,
@@ -39,6 +40,7 @@ export function RecentActivities({
   clients,
 }: RecentActivitiesProps) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const dateLocale = locale === 'es' ? es : enUS;
 
   const recentActivities = [...(activities || [])]
@@ -76,7 +78,13 @@ export function RecentActivities({
             {recentActivities.map((activity) => {
               const Icon = activityIcons[activity.type] || MessageSquare;
               return (
-                <TableRow key={activity.id}>
+                <TableRow
+                  key={activity.id}
+                  onClick={() =>
+                    router.push(`/clients/${activity.clientId}/activity`)
+                  }
+                  className="cursor-pointer"
+                >
                   <TableCell>
                     <div className="flex items-start gap-3">
                       <Icon className="mt-1 h-4 w-4 text-muted-foreground" />
