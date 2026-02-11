@@ -32,7 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ArrowLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 
@@ -390,7 +390,8 @@ export default function ContactFormPage() {
 
                              <div className="flex items-center justify-end gap-4 pt-4">
                                 <Button type="button" variant="outline" onClick={() => router.back()}>
-                                    {t('Auth.cancelLabel')}
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    {t('Importer.backButton')}
                                 </Button>
                                 <Button type="submit" disabled={form.formState.isSubmitting}>
                                     {form.formState.isSubmitting ? t('App.loading') : t('Forms.saveContact')}
