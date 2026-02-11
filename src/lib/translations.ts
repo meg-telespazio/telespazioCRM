@@ -309,6 +309,10 @@ export const translations = {
       Mining: 'Minería',
       TransportAndLogistics: 'Transporte y Logística',
       PublicAdministration: 'Administración Pública',
+      Banking: 'Banca',
+      Insurance: 'Seguros',
+      FinancialServices: 'Servicios Financieros',
+      Services: 'Servicios',
     },
     Profile: {
       title: 'Editar Perfil',
@@ -861,6 +865,10 @@ export const translations = {
       Mining: 'Mining',
       TransportAndLogistics: 'Transport and Logistics',
       PublicAdministration: 'Public Administration',
+      Banking: 'Banking',
+      Insurance: 'Insurance',
+      FinancialServices: 'Financial Services',
+      Services: 'Services',
     },
     Profile: {
       title: 'Edit Profile',
