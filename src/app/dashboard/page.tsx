@@ -8,9 +8,10 @@ import { StatsCards } from '@/components/dashboard/stats-cards';
 import { OpportunitiesChart } from '@/components/dashboard/opportunities-chart';
 import { RecentOpportunities } from '@/components/dashboard/recent-opportunities';
 import { useI18n } from '@/firebase/client-provider';
-import type { Opportunity, Client, Contact } from '@/lib/types';
+import type { Opportunity, Client, Contact, Activity } from '@/lib/types';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RecentActivities } from '@/components/dashboard/recent-activities';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -31,17 +32,31 @@ export default function DashboardPage() {
     if (!baseQuery) return null;
     return query(collection(firestore, 'clients'), baseQuery);
   }, [firestore, baseQuery]);
-  
+
   const contactsQuery = useMemo(() => {
     if (!baseQuery) return null;
     return query(collection(firestore, 'contacts'), baseQuery);
   }, [firestore, baseQuery]);
 
+  const activitiesQuery = useMemo(() => {
+    if (!user) return null;
+    // For the dashboard, we might want to see all activities, not just the user's.
+    // However, to keep consistency with the rest of the dashboard, we'll filter by user.
+    // The query on 'activities' collection needs a 'createdBy' field.
+    return query(
+      collection(firestore, 'activities'),
+      where('createdBy', '==', user.uid)
+    );
+  }, [firestore, user]);
+
   const { data: opportunities, loading: opportunitiesLoading } =
     useCollection<Opportunity>(opportunitiesQuery);
   const { data: clients, loading: clientsLoading } =
     useCollection<Client>(clientsQuery);
-  const { data: contacts, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
+  const { data: contacts, loading: contactsLoading } =
+    useCollection<Contact>(contactsQuery);
+  const { data: activities, loading: activitiesLoading } =
+    useCollection<Activity>(activitiesQuery);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -56,30 +71,59 @@ export default function DashboardPage() {
       </div>
     );
   }
-  
-  const pageIsLoading = opportunitiesLoading || clientsLoading || contactsLoading;
+
+  const pageIsLoading =
+    opportunitiesLoading ||
+    clientsLoading ||
+    contactsLoading ||
+    activitiesLoading;
 
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Dashboard.title')} />
       <div className="flex-1 space-y-4 p-4 sm:p-6">
         {pageIsLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-            </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+            <Skeleton className="h-28" />
+          </div>
         ) : (
-            <StatsCards opportunities={opportunities || []} clients={clients || []} contacts={contacts || []} />
+          <StatsCards
+            opportunities={opportunities || []}
+            clients={clients || []}
+            contacts={contacts || []}
+          />
         )}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <div className="col-span-4">
-             {pageIsLoading ? <Skeleton className="h-[425px]" /> : <OpportunitiesChart opportunities={opportunities || []} />}
+            {pageIsLoading ? (
+              <Skeleton className="h-[425px]" />
+            ) : (
+              <OpportunitiesChart opportunities={opportunities || []} />
+            )}
           </div>
           <div className="col-span-4 lg:col-span-3">
-            {pageIsLoading ? <Skeleton className="h-[360px]" /> : <RecentOpportunities opportunities={opportunities || []} clients={clients || []}/>}
+            {pageIsLoading ? (
+              <Skeleton className="h-[360px]" />
+            ) : (
+              <RecentOpportunities
+                opportunities={opportunities || []}
+                clients={clients || []}
+              />
+            )}
           </div>
+        </div>
+        <div>
+          {pageIsLoading ? (
+            <Skeleton className="h-[360px]" />
+          ) : (
+            <RecentActivities
+              activities={activities || []}
+              clients={clients || []}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -106,6 +106,13 @@ export const translations = {
         valueHeader: 'Valor',
         stageHeader: 'Etapa',
       },
+      recentActivities: {
+        title: 'Actividades Recientes',
+        description: 'Las últimas interacciones con tus clientes.',
+        activityHeader: 'Actividad',
+        clientHeader: 'Cliente',
+        dateHeader: 'Fecha',
+      },
     },
     Pages: {
       clients: 'Clientes',
@@ -646,6 +653,13 @@ export const translations = {
         valueHeader: 'Value',
         stageHeader: 'Stage',
       },
+      recentActivities: {
+        title: 'Recent Activities',
+        description: 'The latest interactions with your clients.',
+        activityHeader: 'Activity',
+        clientHeader: 'Client',
+        dateHeader: 'Date',
+      },
     },
     Pages: {
       clients: 'Clients',
@@ -969,7 +983,7 @@ export const translations = {
           ps: 'Products & Services',
       },
       openOpportunities: 'Open Opportunities',
-      filters: 'Filters',
+      filters: 'Filtros',
       filtersDesc: 'Apply filters to narrow down your results.',
       addFilter: 'Add Filter',
       sorting: 'Sorting',
