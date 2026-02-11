@@ -184,7 +184,7 @@ export default function ClientFormPage() {
     try {
       const dataToSave: Partial<Client> = {
         ...values,
-        logoURL: croppedImage,
+        logoURL: croppedImage || null,
       };
 
       if (isNew) {
@@ -195,7 +195,6 @@ export default function ClientFormPage() {
           description: `Client ${values.name} has been created.`,
         });
       } else {
-        // CUIT should not be updatable.
         const { cuit, ...updateData } = dataToSave;
         await updateClient(firestore, clientId, updateData);
         toast({
@@ -449,7 +448,7 @@ export default function ClientFormPage() {
                     variant="outline"
                     onClick={() => router.back()}
                   >
-                    {t('Importer.backButton')}
+                    {t('Auth.cancelLabel')}
                   </Button>
                   <Button type="submit" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting

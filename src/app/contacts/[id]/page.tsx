@@ -390,7 +390,7 @@ export default function ContactFormPage() {
 
                              <div className="flex items-center justify-end gap-4 pt-4">
                                 <Button type="button" variant="outline" onClick={() => router.back()}>
-                                    {t('Importer.backButton')}
+                                    {t('Auth.cancelLabel')}
                                 </Button>
                                 <Button type="submit" disabled={form.formState.isSubmitting}>
                                     {form.formState.isSubmitting ? t('App.loading') : t('Forms.saveContact')}
