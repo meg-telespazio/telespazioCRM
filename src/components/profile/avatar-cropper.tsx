@@ -31,11 +31,27 @@ export function AvatarCropper({
   const { t } = useI18n();
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   const onCropPixelsChange = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
+
+  const onMediaLoaded = useCallback(
+    (mediaSize: { width: number; height: number }) => {
+      // The crop container is square, constrained by height (h-80 -> 320px)
+      const containerWidth = 320;
+      const containerHeight = 320;
+      const widthRatio = containerWidth / mediaSize.width;
+      const heightRatio = containerHeight / mediaSize.height;
+      const initialZoom = Math.min(widthRatio, heightRatio);
+      setMinZoom(initialZoom);
+      setZoom(initialZoom);
+      setCrop({ x: 0, y: 0 });
+    },
+    [setZoom, setCrop, setMinZoom]
+  );
 
   const handleCrop = async () => {
     if (croppedAreaPixels && imageSrc) {
@@ -62,21 +78,23 @@ export function AvatarCropper({
             image={imageSrc}
             crop={crop}
             zoom={zoom}
+            minZoom={minZoom}
             aspect={aspect}
             cropShape={aspect === 1 ? 'round' : 'rect'}
             showGrid={false}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropPixelsChange}
+            onMediaLoaded={onMediaLoaded}
           />
         </div>
         <div className="space-y-2">
           <label className="text-sm">Zoom</label>
           <Slider
             value={[zoom]}
-            min={1}
-            max={3}
-            step={0.1}
+            min={minZoom}
+            max={minZoom * 3} // Allow zooming up to 3x the initial fitted size
+            step={0.01}
             onValueChange={(value) => setZoom(value[0])}
           />
         </div>
