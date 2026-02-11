@@ -2,20 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Upload } from 'lucide-react';
-import { ContactForm } from '@/components/contacts/contact-form';
 import { ContactTable } from '@/components/contacts/contact-table';
 import type { Contact, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where } from 'firebase/firestore';
-import {
-  addContact,
-  updateContact,
-  deleteContact,
-} from '@/lib/firestore/contacts';
+import { deleteContact } from '@/lib/firestore/contacts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ContactImporter } from '@/components/contacts/contact-importer';
 
@@ -23,10 +18,9 @@ export default function ContactsPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { t } = useI18n();
+  const router = useRouter();
 
-  const [isFormOpen, setFormOpen] = useState(false);
   const [isImporterOpen, setImporterOpen] = useState(false);
-  const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
   const baseQuery = useMemo(() => {
     if (!user) return null;
@@ -67,36 +61,8 @@ export default function ContactsPage() {
     }
   }, [user, userLoading]);
 
-  const handleSaveContact = async (
-    contactData: Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy'>
-  ) => {
-    if (!user) return;
-    
-    // Firestore doesn't allow `undefined` values. We need to clean the object.
-    const cleanedData = Object.fromEntries(
-      Object.entries(contactData).filter(([_, v]) => v !== undefined)
-    );
-
-    if (editingContact) {
-      // `cleanedData` is a partial object, which is what updateDoc expects.
-      updateContact(firestore, editingContact.id, cleanedData);
-    } else {
-      try {
-        // For addContact, we need to ensure all required fields are present via form validation.
-        // The type assertion is needed because Object.fromEntries returns a generic object.
-        await addContact(firestore, user.uid, cleanedData as Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy'>);
-      } catch (error) {
-        console.error('Failed to add contact:', error);
-        // Error is globally emitted
-      }
-    }
-    setEditingContact(null);
-    setFormOpen(false);
-  };
-
   const handleEditContact = (contact: Contact) => {
-    setEditingContact(contact);
-    setFormOpen(true);
+    router.push(`/contacts/${contact.id}`);
   };
 
   const handleDeleteContact = (contactId: string) => {
@@ -105,16 +71,8 @@ export default function ContactsPage() {
     }
   };
 
-  const handleFormOpenChange = (isOpen: boolean) => {
-    setFormOpen(isOpen);
-    if (!isOpen) {
-      setEditingContact(null);
-    }
-  };
-
   const handleAddNew = () => {
-    setEditingContact(null);
-    setFormOpen(true);
+    router.push('/contacts/new');
   };
 
   if (userLoading) {
@@ -161,14 +119,6 @@ export default function ContactsPage() {
           />
         )}
       </main>
-      <ContactForm
-        key={editingContact?.id || 'new'}
-        isOpen={isFormOpen}
-        onOpenChange={handleFormOpenChange}
-        onSave={handleSaveContact}
-        defaultValues={editingContact || undefined}
-        clients={clients}
-      />
       <ContactImporter
         isOpen={isImporterOpen}
         onOpenChange={setImporterOpen}
