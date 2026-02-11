@@ -20,13 +20,15 @@ const findLogoPrompt = ai.definePrompt({
     name: 'findLogoPrompt',
     input: { schema: FindLogoInputSchema },
     output: { schema: FindLogoOutputSchema },
-    prompt: `You are an expert web-scraping assistant. Your task is to find the main logo of a company from their website.
-    
-    Analyze the content of the website at the following URL: {{{url}}}
-    
-    Identify the primary logo image. It might be in the header, navigation bar, or footer. It's often an SVG or PNG file and might have "logo" in its filename or alt text.
-    
-    Return the absolute URL for the logo image file. Make sure the URL is complete and directly points to the image resource. If you cannot find a logo, return an empty string for the logoUrl.`,
+    prompt: `You are an expert web-scraping assistant. Your task is to find the best possible logo for a company from their website.
+
+Analyze the content of the website at the following URL: {{{url}}}
+
+Follow these steps in order:
+1.  Look for the primary logo image in the page content (e.g., in the header, navigation bar). It's often an <img> tag with "logo" in its filename, src, or alt attribute. Prefer SVG or PNG formats.
+2.  If you can't find a clear logo, look in the <head> section for <link> tags with rel="icon", rel="shortcut icon", or rel="apple-touch-icon". These are favicons and can be used as a logo.
+3.  Return the **absolute URL** for the best image file you find. If you find a relative URL, you MUST convert it to an absolute URL based on the input URL.
+4.  If you cannot find any logo or icon URL after checking both the body and the head, return an empty string for the \`logoUrl\`.`,
 });
 
 const findLogoFlow = ai.defineFlow(
@@ -37,32 +39,51 @@ const findLogoFlow = ai.defineFlow(
     },
     async (input) => {
         const { output } = await findLogoPrompt(input);
-        if (!output?.logoUrl) {
-            throw new Error('Could not find a logo on the specified website.');
-        }
-        return output;
+        // If output is null or logoUrl is empty, return an object with an empty logoUrl.
+        return output || { logoUrl: '' };
     }
 );
 
 // Server action to be called from the client
 export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): Promise<{ dataUri: string }> {
-    // 1. Find the logo URL using the Genkit flow
-    const { logoUrl: rawLogoUrl } = await findLogoFlow({ url: websiteUrl });
+    // 1. Try to find and fetch logo using AI
+    try {
+        const { logoUrl: rawLogoUrl } = await findLogoFlow({ url: websiteUrl });
 
-    // 2. Resolve the potentially relative URL to an absolute one
-    const absoluteLogoUrl = new URL(rawLogoUrl, websiteUrl).href;
+        if (rawLogoUrl) {
+            // A URL was found, try to fetch it
+            const absoluteLogoUrl = new URL(rawLogoUrl, websiteUrl).href;
+            const response = await fetch(absoluteLogoUrl);
 
-    // 3. Fetch the image from the URL
-    const response = await fetch(absoluteLogoUrl);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch logo image: ${response.statusText}`);
+            if (response.ok) {
+                // Success! Convert and return.
+                const imageBuffer = await response.arrayBuffer();
+                const contentType = response.headers.get('content-type') || 'image/png';
+                const base64String = Buffer.from(imageBuffer).toString('base64');
+                const dataUri = `data:${contentType};base64,${base64String}`;
+                return { dataUri };
+            }
+        }
+        // If no URL was found or fetch failed, fall through to favicon attempt
+    } catch (error) {
+        console.warn('AI logo find/fetch failed, falling back to favicon:', error);
     }
 
-    // 4. Convert to buffer and then to data URI
-    const imageBuffer = await response.arrayBuffer();
-    const contentType = response.headers.get('content-type') || 'image/png';
-    const base64String = Buffer.from(imageBuffer).toString('base64');
-    const dataUri = `data:${contentType};base64,${base64String}`;
+    // 2. Fallback: try to fetch the favicon
+    try {
+        const faviconUrl = new URL('/favicon.ico', websiteUrl).href;
+        const faviconResponse = await fetch(faviconUrl);
+        if (!faviconResponse.ok) {
+            throw new Error(`Favicon not found or fetch failed: ${faviconResponse.statusText}`);
+        }
 
-    return { dataUri };
+        const faviconBuffer = await faviconResponse.arrayBuffer();
+        const contentType = faviconResponse.headers.get('content-type') || 'image/x-icon';
+        const base64String = Buffer.from(faviconBuffer).toString('base64');
+        const dataUri = `data:${contentType};base64,${base64String}`;
+        return { dataUri };
+    } catch (faviconError) {
+        console.error('All logo fetching attempts failed:', faviconError);
+        throw new Error('Could not find a logo or favicon on the specified website.');
+    }
 }
