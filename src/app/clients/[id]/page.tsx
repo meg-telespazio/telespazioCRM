@@ -35,7 +35,8 @@ import { useToast } from '@/hooks/use-toast';
 import { translations } from '@/lib/translations';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera } from 'lucide-react';
+import { Building, Camera, Loader2, Wand2 } from 'lucide-react';
+import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
 
 const formatCuit = (cuit: string): string => {
   if (!cuit || cuit.length !== 11) return cuit;
@@ -79,6 +80,7 @@ export default function ClientFormPage() {
 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [isFindingLogo, setIsFindingLogo] = useState(false);
 
   const clientDocRef = useMemo(() => {
     if (!firestore || isNew) return null;
@@ -125,11 +127,11 @@ export default function ClientFormPage() {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 1 * 1024 * 1024) { // 1MB limit
         toast({
           variant: 'destructive',
           title: 'File too large',
-          description: 'Please upload an image smaller than 5MB.',
+          description: 'Please upload an image smaller than 1MB.',
         });
         return;
       }
@@ -146,11 +148,41 @@ export default function ClientFormPage() {
     setCroppedImage(croppedImageUrl);
     setImageToCrop(null);
   };
+  
+  const handleFindLogo = async () => {
+    const websiteUrl = form.getValues('website');
+    
+    if (!websiteUrl || !websiteUrl.startsWith('http')) {
+        toast({
+          variant: 'destructive',
+          title: t('Importer.invalidUrlTitle'),
+          description: t('Importer.invalidUrlDesc'),
+        });
+        return;
+    }
+
+    setIsFindingLogo(true);
+    try {
+        const result = await findAndFetchLogo({ websiteUrl });
+        if (result.dataUri) {
+            setImageToCrop(result.dataUri);
+        }
+    } catch (error: any) {
+        console.error('Failed to find logo:', error);
+        toast({
+          variant: 'destructive',
+          title: t('Importer.findLogoError'),
+          description: error.message || t('Importer.findLogoErrorDesc'),
+        });
+    } finally {
+        setIsFindingLogo(false);
+    }
+};
 
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
     try {
-      const dataToSave = {
+      const dataToSave: Partial<Client> = {
         ...values,
         logoURL: croppedImage || undefined,
       };
@@ -258,10 +290,23 @@ export default function ClientFormPage() {
                         <FormItem>
                           <FormLabel>{t('Forms.website')}</FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder={t('Forms.websitePlaceholder')}
-                              {...field}
-                            />
+                            <div className="relative flex items-center">
+                              <Input
+                                placeholder={t('Forms.websitePlaceholder')}
+                                {...field}
+                              />
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="absolute right-1 h-8 w-8"
+                                onClick={handleFindLogo}
+                                disabled={isFindingLogo || !form.watch('website')}
+                                title={t('Importer.findLogo')}
+                              >
+                                {isFindingLogo ? <Loader2 className="animate-spin" /> : <Wand2 />}
+                              </Button>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -421,6 +466,7 @@ export default function ClientFormPage() {
         imageSrc={imageToCrop}
         onCropComplete={handleCropComplete}
         onClose={() => setImageToCrop(null)}
+        aspect={1}
       />
     </>
   );

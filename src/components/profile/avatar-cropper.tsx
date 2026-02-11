@@ -19,12 +19,14 @@ interface AvatarCropperProps {
   imageSrc: string | null;
   onCropComplete: (croppedImageUrl: string) => void;
   onClose: () => void;
+  aspect?: number;
 }
 
 export function AvatarCropper({
   imageSrc,
   onCropComplete,
   onClose,
+  aspect = 1,
 }: AvatarCropperProps) {
   const { t } = useI18n();
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
@@ -60,8 +62,8 @@ export function AvatarCropper({
             image={imageSrc}
             crop={crop}
             zoom={zoom}
-            aspect={1}
-            cropShape="round"
+            aspect={aspect}
+            cropShape={aspect === 1 ? 'round' : 'rect'}
             showGrid={false}
             onCropChange={setCrop}
             onZoomChange={setZoom}

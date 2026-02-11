@@ -417,6 +417,11 @@ export const translations = {
       importingTitle: 'Validando Datos...',
       importingDescription: 'Por favor espera mientras validamos tus datos. Esto puede tardar un momento.',
       clientCuit: 'CUIT del Cliente (para vincular)',
+      findLogo: 'Buscar logo desde el sitio web',
+      invalidUrlTitle: 'URL de sitio web no válida',
+      invalidUrlDesc: 'Por favor ingrese una URL completa y válida (ej. https://ejemplo.com).',
+      findLogoError: 'Error Buscando Logo',
+      findLogoErrorDesc: 'Ocurrió un error inesperado.',
     },
     Reports: {
       title: 'Generador de Reportes',
@@ -964,6 +969,11 @@ export const translations = {
       importingTitle: 'Validating Data...',
       importingDescription: 'Please wait while we validate your data. This may take a moment.',
       clientCuit: 'Client CUIT (for linking)',
+      findLogo: 'Find logo from website',
+      invalidUrlTitle: 'Invalid Website URL',
+      invalidUrlDesc: 'Please enter a valid and complete URL (e.g., https://example.com).',
+      findLogoError: 'Error Finding Logo',
+      findLogoErrorDesc: 'An unexpected error occurred.',
     },
     Reports: {
       title: 'Report Builder',
