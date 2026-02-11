@@ -163,7 +163,9 @@ export default function ClientFormPage() {
           description: `Client ${values.name} has been created.`,
         });
       } else {
-        await updateClient(firestore, clientId, dataToSave);
+        // CUIT should not be updatable.
+        const { cuit, ...updateData } = dataToSave;
+        await updateClient(firestore, clientId, updateData);
         toast({
           variant: 'success',
           title: t('Forms.saveClient'),
@@ -423,5 +425,3 @@ export default function ClientFormPage() {
     </>
   );
 }
-
-    
