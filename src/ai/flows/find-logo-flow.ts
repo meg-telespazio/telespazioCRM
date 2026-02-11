@@ -6,7 +6,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { nextAction } from '@genkit-ai/next';
 
 const FindLogoInputSchema = z.object({
   url: z.string().url().describe('The URL of the company website.'),
@@ -45,13 +44,7 @@ const findLogoFlow = ai.defineFlow(
 );
 
 // Server action to be called from the client
-export const findAndFetchLogo = nextAction(
-  {
-    name: 'findAndFetchLogo',
-    inputSchema: z.object({ websiteUrl: z.string().url() }),
-    outputSchema: z.object({ dataUri: z.string() }),
-  },
-  async ({ websiteUrl }) => {
+export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): Promise<{ dataUri: string }> {
     // 1. Find the logo URL using the Genkit flow
     const { logoUrl } = await findLogoFlow({ url: websiteUrl });
 
@@ -68,5 +61,4 @@ export const findAndFetchLogo = nextAction(
     const dataUri = `data:${contentType};base64,${base64String}`;
 
     return { dataUri };
-  }
-);
+}
