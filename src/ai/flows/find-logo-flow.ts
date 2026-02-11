@@ -6,7 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { nextAction } from '@genkit-ai/next/server';
+import { nextAction } from '@genkit-ai/next';
 
 const FindLogoInputSchema = z.object({
   url: z.string().url().describe('The URL of the company website.'),
