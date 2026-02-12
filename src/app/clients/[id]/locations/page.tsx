@@ -55,6 +55,11 @@ export default function ClientLocationsPage() {
   
   const { data: locations, loading: locationsLoading } = useCollection<Location>(locationsQuery);
 
+  const locationsWithCoords = useMemo(() => {
+    if (!locations) return [];
+    return locations.filter(l => l.latitude && l.longitude);
+  }, [locations]);
+
   const handleEditLocation = (location: Location) => {
     router.push(`/locations/${location.id}`);
   };
@@ -115,8 +120,8 @@ export default function ClientLocationsPage() {
                     <CardTitle>Mapa</CardTitle>
                 </CardHeader>
                 <CardContent className='h-full pb-6'>
-                   {locations && locations.length > 0 ? (
-                      <LocationsMap locations={locations.filter(l => l.latitude && l.longitude)} />
+                   {locationsWithCoords && locationsWithCoords.length > 0 ? (
+                      <LocationsMap locations={locationsWithCoords} />
                    ) : (
                       <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
                           <Map className="h-16 w-16 text-muted-foreground" />
