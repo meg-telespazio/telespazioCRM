@@ -6,6 +6,7 @@ import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 import 'leaflet-defaulticon-compatibility';
 import type { Location, Client } from '@/lib/types';
 import { useEffect, useState } from 'react';
+import type { Map } from 'leaflet';
 
 type LocationsMapProps = {
   client: Client | null;
@@ -52,17 +53,21 @@ function DynamicMapContent({ client, locations }: { client: Client | null, locat
 }
 
 export function LocationsMap({ client, locations }: LocationsMapProps) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
+  const [map, setMap] = useState<Map | null>(null);
   const defaultCenter: [number, number] = [-38.4161, -63.6167];
 
-  if (!isMounted) {
-    return null;
-  }
+  useEffect(() => {
+    // This cleanup function runs when the component unmounts.
+    // In React's Strict Mode, components are mounted, unmounted, and then mounted again
+    // to detect issues. This cleanup ensures the map instance is properly destroyed
+    // before the next mount, preventing the "Map container is already initialized" error.
+    return () => {
+      if (map) {
+        map.off(); // Detach all event listeners
+        map.remove(); // Destroy the map instance
+      }
+    };
+  }, [map]);
   
   return (
     <MapContainer
@@ -70,12 +75,13 @@ export function LocationsMap({ client, locations }: LocationsMapProps) {
       zoom={4}
       style={{ height: '100%', width: '100%' }}
       className="rounded-lg"
+      whenCreated={setMap}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      <DynamicMapContent client={client} locations={locations} />
+      {map ? <DynamicMapContent client={client} locations={locations} /> : null}
     </MapContainer>
   );
 }
