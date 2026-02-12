@@ -1,88 +1,85 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
+
+import L from 'leaflet';
 import type { Location, Client } from '@/lib/types';
-import { useEffect, useState } from 'react';
-import type { Map } from 'leaflet';
+import { useEffect, useRef } from 'react';
 
 type LocationsMapProps = {
   client: Client | null;
   locations: Location[];
 };
 
-function DynamicMapContent({ client, locations }: { client: Client | null, locations: Location[] }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (locations && locations.length > 0) {
-      const bounds = locations.map(
-        (loc) => [loc.latitude, loc.longitude] as [number, number]
-      );
-      if (bounds.length === 1) {
-        map.setView(bounds[0], 13);
-      } else {
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }
-    }
-  }, [locations, map]);
-
-  return (
-    <>
-      {locations.map((location) => (
-        <Marker
-          key={location.id}
-          position={[location.latitude, location.longitude]}
-        >
-          <Popup>
-            <div className="space-y-1">
-              <h3 className="font-bold text-base">{client?.name}</h3>
-              <p className="font-semibold text-sm">{location.name}</p>
-              <hr className="my-1"/>
-              <p className="text-xs">{location.streetName} {location.streetNumber}</p>
-              <p className="text-xs">{location.postalCode} {location.city}</p>
-              <p className="text-xs">{location.province}, {location.country}</p>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </>
-  );
-}
-
 export function LocationsMap({ client, locations }: LocationsMapProps) {
-  const [map, setMap] = useState<Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
   const defaultCenter: [number, number] = [-38.4161, -63.6167];
 
   useEffect(() => {
-    // This cleanup function runs when the component unmounts.
-    // In React's Strict Mode, components are mounted, unmounted, and then mounted again
-    // to detect issues. This cleanup ensures the map instance is properly destroyed
-    // before the next mount, preventing the "Map container is already initialized" error.
+    // Initialize map only if the container is ready and a map isn't already initialized
+    if (mapContainerRef.current && !mapInstanceRef.current) {
+      const map = L.map(mapContainerRef.current).setView(defaultCenter, 4);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      mapInstanceRef.current = map;
+    }
+    
+    // Cleanup function to run when component unmounts (handles React Strict Mode)
     return () => {
-      if (map) {
-        map.off(); // Detach all event listeners
-        map.remove(); // Destroy the map instance
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
       }
     };
-  }, [map]);
-  
-  return (
-    <MapContainer
-      center={defaultCenter}
-      zoom={4}
-      style={{ height: '100%', width: '100%' }}
-      className="rounded-lg"
-      whenCreated={setMap}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      {map ? <DynamicMapContent client={client} locations={locations} /> : null}
-    </MapContainer>
-  );
+  }, []); // Empty dependency array ensures this effect runs only once on mount and cleanup on unmount
+
+  // Effect to update markers when locations change
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !locations) return;
+
+    // Clear existing markers
+    map.eachLayer((layer) => {
+      if (layer instanceof L.Marker) {
+        map.removeLayer(layer);
+      }
+    });
+
+    // Add new markers
+    locations.forEach(location => {
+      const popupContent = `
+        <div class="space-y-1 leaflet-popup-content-wrapper">
+          <h3 class="font-bold text-base">${client?.name || ''}</h3>
+          <p class="font-semibold text-sm">${location.name}</p>
+          <hr class="my-1"/>
+          <p class="text-xs">${location.streetName} ${location.streetNumber}</p>
+          <p class="text-xs">${location.postalCode} ${location.city}</p>
+          <p class="text-xs">${location.province}, ${location.country}</p>
+        </div>
+      `;
+      L.marker([location.latitude, location.longitude]).addTo(map).bindPopup(popupContent);
+    });
+
+    // Adjust map bounds
+    if (locations.length > 0) {
+      const bounds = L.latLngBounds(locations.map(loc => [loc.latitude, loc.longitude]));
+      if (locations.length === 1) {
+          map.setView(bounds.getCenter(), 13);
+      } else {
+          map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
+
+  }, [locations, client]);
+
+  // Render a div that Leaflet will attach to.
+  return <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} className="rounded-lg z-0" />;
 }
+
 export default LocationsMap;
