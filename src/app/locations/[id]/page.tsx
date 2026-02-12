@@ -33,6 +33,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Importación dinámica del mapa sin SSR
+const LocationsMap = dynamic(
+  () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center bg-muted rounded-lg">
+        <p className="text-sm text-muted-foreground">Cargando mapa...</p>
+      </div>
+    )
+  }
+);
 
 const locationTypes: LocationType[] = ['branch', 'headquarters', 'warehouse', 'office', 'property', 'field'];
 const statusOptions: LocationStatus[] = ['active', 'suspended'];
@@ -245,5 +259,3 @@ export default function LocationFormPage() {
         </div>
     );
 }
-
-    

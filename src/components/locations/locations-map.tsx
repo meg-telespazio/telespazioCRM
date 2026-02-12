@@ -2,9 +2,10 @@
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
 import type { Location, Client } from '@/lib/types';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
 type LocationsMapProps = {
   client: Client | null;
@@ -51,20 +52,11 @@ function DynamicMapContent({ client, locations }: { client: Client | null, locat
 }
 
 export function LocationsMap({ client, locations }: LocationsMapProps) {
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const defaultCenter: [number, number] = [-38.4161, -63.6167];
   
-  if (!isMounted) {
-    return null;
-  }
-
   return (
     <MapContainer
+      key="my-leaflet-map"
       center={defaultCenter}
       zoom={4}
       style={{ height: '100%', width: '100%' }}
@@ -78,3 +70,4 @@ export function LocationsMap({ client, locations }: LocationsMapProps) {
     </MapContainer>
   );
 }
+export default LocationsMap;
