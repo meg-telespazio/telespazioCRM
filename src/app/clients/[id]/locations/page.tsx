@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, Suspense } from 'react';
+import { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useUser,
@@ -27,7 +27,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LocationsMap = dynamic(() => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
   ssr: false,
-  loading: () => <Skeleton className="h-full w-full" />,
 });
 
 export default function ClientLocationsPage() {
@@ -74,12 +73,12 @@ export default function ClientLocationsPage() {
   
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={!client ? t('App.loading') : t('Locations.title', { clientName: client.name })}>
+      <AppHeader title={isLoading || !client ? t('App.loading') : t('Locations.title', { clientName: client.name })}>
           <Button variant="outline" onClick={() => router.push('/clients')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               {t('Actions.backToClientList')}
           </Button>
-          <Button onClick={() => router.push(`/locations/new?clientId=${clientId}`)} disabled={!client}>
+          <Button onClick={() => router.push(`/locations/new?clientId=${clientId}`)} disabled={isLoading || !client}>
              <PlusCircle className="mr-2 h-4 w-4" />
              {t('Locations.add')}
           </Button>
@@ -110,7 +109,12 @@ export default function ClientLocationsPage() {
                 </CardHeader>
                 <CardContent className='relative h-full pb-6'>
                   <LocationsMap client={client} locations={locationsWithCoords} />
-                   {(locationsWithCoords.length === 0 && client) && (
+                  {isLoading && (
+                    <div className="absolute inset-0 z-20 m-6 mb-0">
+                       <Skeleton className="h-full w-full" />
+                    </div>
+                  )}
+                   {(!isLoading && client && locationsWithCoords.length === 0) && (
                     <div className="absolute inset-0 z-10 m-6 mb-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
                         <MapPin className="h-16 w-16 text-muted-foreground" />
                         <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
