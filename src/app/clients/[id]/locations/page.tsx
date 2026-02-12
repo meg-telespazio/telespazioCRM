@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useUser,
@@ -27,7 +27,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LocationsMap = dynamic(() => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
   ssr: false,
-  loading: () => <Skeleton className="h-full w-full" />
 });
 
 export default function ClientLocationsPage() {
@@ -109,7 +108,9 @@ export default function ClientLocationsPage() {
                     <CardTitle>Mapa</CardTitle>
                 </CardHeader>
                 <CardContent className='relative h-full pb-6'>
-                  <LocationsMap locations={locationsWithCoords} />
+                  <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                    <LocationsMap locations={locationsWithCoords} />
+                  </Suspense>
                    {(!isLoading && locationsWithCoords.length === 0 && client) && (
                     <div className="absolute inset-0 z-10 m-6 mb-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
                         <MapPin className="h-16 w-16 text-muted-foreground" />
