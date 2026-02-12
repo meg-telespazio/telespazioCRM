@@ -388,6 +388,7 @@ export const translations = {
     Importer: {
       clientTitle: 'Importar Clientes',
       contactTitle: 'Importar Contactos',
+      locationTitle: 'Importar Locaciones',
       button: 'Importar',
       wip: 'Esta función está en construcción. Pronto podrás importar datos desde un archivo CSV.',
       step1Title: 'Paso 1: Subir Archivo CSV',
@@ -983,6 +984,7 @@ export const translations = {
     Importer: {
       clientTitle: 'Import Clients',
       contactTitle: 'Import Contacts',
+      locationTitle: 'Import Locations',
       button: 'Import',
       wip: 'This feature is under construction. You will soon be able to import data from a CSV file.',
       step1Title: 'Step 1: Upload CSV File',

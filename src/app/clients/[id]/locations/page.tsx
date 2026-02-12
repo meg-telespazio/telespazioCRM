@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useUser,
@@ -22,9 +22,11 @@ import {
   MapPin,
   PlusCircle,
   Loader2,
+  Upload,
 } from 'lucide-react';
 import { LocationsTable } from '@/components/locations/locations-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LocationImporter } from '@/components/locations/location-importer';
 
 const LocationsMap = dynamic(
   () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
@@ -39,6 +41,7 @@ export default function ClientLocationsPage() {
   const router = useRouter();
   const clientId = params.id as string;
   
+  const [isImporterOpen, setImporterOpen] = useState(false);
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
@@ -76,58 +79,70 @@ export default function ClientLocationsPage() {
   const isLoading = userLoading || clientLoading || locationsLoading;
   
   return (
-    <div className="flex flex-1 flex-col">
-      <AppHeader title={isLoading || !client ? t('App.loading') : t('Locations.title', { clientName: client.name })}>
-          <Button variant="outline" onClick={() => router.push('/clients')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {t('Actions.backToClientList')}
-          </Button>
-          <Button onClick={() => router.push(`/locations/new?clientId=${clientId}`)} disabled={isLoading || !client}>
-             <PlusCircle className="mr-2 h-4 w-4" />
-             {t('Locations.add')}
-          </Button>
-      </AppHeader>
-      <main className="flex-1 p-4 sm:p-6">
-        <div className="flex flex-col gap-6">
-            <Card className="h-[400px] flex flex-col">
-                <CardHeader>
-                    <CardTitle>Mapa</CardTitle>
-                </CardHeader>
-                <CardContent className='relative flex-grow rounded-b-lg p-4 pt-0'>
-                  <LocationsMap client={client} locations={locationsWithCoords} />
-                   {isLoading && (
-                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <p className="mt-4 text-sm text-muted-foreground">{t('App.loading')}</p>
+    <>
+      <div className="flex flex-1 flex-col">
+        <AppHeader title={isLoading || !client ? t('App.loading') : t('Locations.title', { clientName: client.name })}>
+            <Button variant="outline" onClick={() => router.push('/clients')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                {t('Actions.backToClientList')}
+            </Button>
+            <Button variant="outline" onClick={() => setImporterOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              {t('Importer.button')}
+            </Button>
+            <Button onClick={() => router.push(`/locations/new?clientId=${clientId}`)} disabled={isLoading || !client}>
+               <PlusCircle className="mr-2 h-4 w-4" />
+               {t('Locations.add')}
+            </Button>
+        </AppHeader>
+        <main className="flex-1 p-4 sm:p-6">
+          <div className="flex flex-col gap-6">
+              <Card className="h-[400px] flex flex-col">
+                  <CardHeader>
+                      <CardTitle>Mapa</CardTitle>
+                  </CardHeader>
+                  <CardContent className='relative flex-grow p-4 pt-0'>
+                    <LocationsMap client={client} locations={locationsWithCoords} />
+                     {isLoading && (
+                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
+                          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                          <p className="mt-4 text-sm text-muted-foreground">{t('App.loading')}</p>
+                      </div>
+                     )}
+                     {(!isLoading && locationsWithCoords.length === 0) && (
+                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
+                          <MapPin className="h-16 w-16 text-muted-foreground" />
+                          <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
+                      </div>
+                    )}
+                  </CardContent>
+               </Card>
+              <div>
+                {isLoading ? (
+                    <Skeleton className="h-[300px]" />
+                ) : !client ? (
+                    <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed p-8">
+                        <p>Client not found.</p>
                     </div>
-                   )}
-                   {(!isLoading && locationsWithCoords.length === 0) && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
+                ) : locations && locations.length > 0 ? (
+                    <LocationsTable data={locations} onEdit={handleEditLocation} onDelete={handleDeleteLocation} />
+                ) : (
+                    <div className="flex h-[20vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
                         <MapPin className="h-16 w-16 text-muted-foreground" />
-                        <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
+                        <h3 className="mt-4 text-lg font-semibold">{t('Locations.noLocations')}</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">{t('Locations.noLocationsDescription')}</p>
                     </div>
-                  )}
-                </CardContent>
-             </Card>
-            <div>
-              {isLoading ? (
-                  <Skeleton className="h-[300px]" />
-              ) : !client ? (
-                  <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed p-8">
-                      <p>Client not found.</p>
-                  </div>
-              ) : locations && locations.length > 0 ? (
-                  <LocationsTable data={locations} onEdit={handleEditLocation} onDelete={handleDeleteLocation} />
-              ) : (
-                  <div className="flex h-[20vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-                      <MapPin className="h-16 w-16 text-muted-foreground" />
-                      <h3 className="mt-4 text-lg font-semibold">{t('Locations.noLocations')}</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">{t('Locations.noLocationsDescription')}</p>
-                  </div>
-              )}
-            </div>
-        </div>
-      </main>
-    </div>
+                )}
+              </div>
+          </div>
+        </main>
+      </div>
+      <LocationImporter
+        isOpen={isImporterOpen}
+        onOpenChange={setImporterOpen}
+        clientId={clientId}
+        locations={locations || []}
+      />
+    </>
   );
 }
