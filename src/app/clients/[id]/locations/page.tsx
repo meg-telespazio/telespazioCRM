@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, Suspense } from 'react';
+import { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useUser,
@@ -25,14 +25,6 @@ import {
 import { LocationsTable } from '@/components/locations/locations-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const LocationsMap = dynamic(
-  () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
-    ssr: false,
-    loading: () => <Skeleton className="h-full w-full rounded-b-lg" />,
-  }
-);
-
-
 export default function ClientLocationsPage() {
   const { t } = useI18n();
   const params = useParams();
@@ -41,6 +33,13 @@ export default function ClientLocationsPage() {
   
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+
+  const LocationsMap = useMemo(() => dynamic(
+    () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
+      ssr: false,
+      loading: () => <Skeleton className="h-full w-full rounded-b-lg" />,
+    }
+  ), []);
 
   const clientDocRef = useMemo(() => {
     if (!user || !firestore) return null;
