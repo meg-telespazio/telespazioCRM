@@ -8,6 +8,8 @@ export type Client = {
   phone: string;
   website?: string;
   cuit: string;
+  holding?: string;
+  linkedinPage?: string;
   createdAt: Date;
   createdBy: string;
   status: 'active' | 'suspended' | 'canceled';
@@ -195,5 +197,3 @@ export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldV
 export type ActivityWrite = Omit<Activity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ActivityFollowUpWrite = Omit<ActivityFollowUp, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type LocationWrite = Omit<Location, 'id' | 'createdAt'> & { createdAt: FieldValue };
-
-    

@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useUser, useFirestore, useDoc } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { doc } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { addClient, updateClient } from '@/lib/firestore/clients';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -35,7 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { translations } from '@/lib/translations';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera, Loader2, Wand2 } from 'lucide-react';
+import { Building, Camera, Linkedin, Loader2, Wand2 } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
 
 const formatCuit = (cuit: string): string => {
@@ -46,7 +46,13 @@ const formatCuit = (cuit: string): string => {
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
     name: z.string().min(2, t('Validation.nameMin')),
+    holding: z.string().optional(),
     website: z
+      .string()
+      .url({ message: t('Validation.invalidUrl') })
+      .optional()
+      .or(z.literal('')),
+    linkedinPage: z
       .string()
       .url({ message: t('Validation.invalidUrl') })
       .optional()
@@ -90,13 +96,31 @@ export default function ClientFormPage() {
   const { data: clientData, loading: clientLoading } =
     useDoc<Client>(clientDocRef);
 
+  const { data: allClients, loading: allClientsLoading } =
+    useCollection<Client>(
+      useMemo(
+        () => (firestore ? collection(firestore, 'clients') : null),
+        [firestore]
+      )
+    );
+
+  const holdings = useMemo(() => {
+    if (!allClients) return [];
+    const uniqueHoldings = new Set(
+      allClients.map((c) => c.holding).filter(Boolean)
+    );
+    return Array.from(uniqueHoldings).sort();
+  }, [allClients]);
+
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
   const form = useForm<ClientFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      holding: '',
       website: '',
+      linkedinPage: '',
       email: '',
       phone: '',
       cuit: '',
@@ -112,6 +136,8 @@ export default function ClientFormPage() {
         ...clientData,
         cuit: clientData.cuit ? formatCuit(clientData.cuit) : '',
         website: clientData.website || '',
+        linkedinPage: clientData.linkedinPage || '',
+        holding: clientData.holding || '',
         notes: clientData.notes || '',
       });
       setCroppedImage(clientData.logoURL || null);
@@ -127,7 +153,8 @@ export default function ClientFormPage() {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.size > 1 * 1024 * 1024) { // 1MB limit
+      if (file.size > 1 * 1024 * 1024) {
+        // 1MB limit
         toast({
           variant: 'destructive',
           title: 'File too large',
@@ -148,41 +175,41 @@ export default function ClientFormPage() {
     setCroppedImage(croppedImageUrl);
     setImageToCrop(null);
   };
-  
+
   const handleFindLogo = async () => {
     const websiteUrl = form.getValues('website');
-    
+
     if (!websiteUrl || !websiteUrl.startsWith('http')) {
-        toast({
-          variant: 'destructive',
-          title: t('Importer.invalidUrlTitle'),
-          description: t('Importer.invalidUrlDesc'),
-        });
-        return;
+      toast({
+        variant: 'destructive',
+        title: t('Importer.invalidUrlTitle'),
+        description: t('Importer.invalidUrlDesc'),
+      });
+      return;
     }
 
     setIsFindingLogo(true);
     try {
-        const result = await findAndFetchLogo({ websiteUrl });
-        if (result.dataUri) {
-            setCroppedImage(result.dataUri);
-            toast({
-                variant: 'success',
-                title: t('Importer.logoFound'),
-                description: t('Importer.logoFoundDesc'),
-            });
-        }
-    } catch (error: any) {
-        console.error('Failed to find logo:', error);
+      const result = await findAndFetchLogo({ websiteUrl });
+      if (result.dataUri) {
+        setCroppedImage(result.dataUri);
         toast({
-          variant: 'destructive',
-          title: t('Importer.findLogoError'),
-          description: error.message || t('Importer.findLogoErrorDesc'),
+          variant: 'success',
+          title: t('Importer.logoFound'),
+          description: t('Importer.logoFoundDesc'),
         });
+      }
+    } catch (error: any) {
+      console.error('Failed to find logo:', error);
+      toast({
+        variant: 'destructive',
+        title: t('Importer.findLogoError'),
+        description: error.message || t('Importer.findLogoErrorDesc'),
+      });
     } finally {
-        setIsFindingLogo(false);
+      setIsFindingLogo(false);
     }
-};
+  };
 
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
@@ -228,7 +255,9 @@ export default function ClientFormPage() {
   if (pageIsLoading) {
     return (
       <div className="flex flex-1 flex-col">
-        <AppHeader title={isNew ? t('Forms.addClient') : t('Forms.editClient')} />
+        <AppHeader
+          title={isNew ? t('Forms.addClient') : t('Forms.editClient')}
+        />
         <main className="flex-1 p-4 sm:p-6">
           <div className="mx-auto max-w-2xl">
             <Skeleton className="h-[70vh] w-full" />
@@ -248,7 +277,9 @@ export default function ClientFormPage() {
   return (
     <>
       <div className="flex flex-1 flex-col">
-        <AppHeader title={isNew ? t('Forms.addClient') : t('Forms.editClient')} />
+        <AppHeader
+          title={isNew ? t('Forms.addClient') : t('Forms.editClient')}
+        />
         <main className="flex-1 p-4 sm:p-6">
           <div className="mx-auto max-w-2xl">
             <Form {...form}>
@@ -256,20 +287,38 @@ export default function ClientFormPage() {
                 <Card>
                   <CardContent className="space-y-4 p-6">
                     <div className="flex flex-col items-center gap-4">
-                        <div className="relative">
-                            <Avatar className="h-32 w-32 rounded-lg">
-                                <AvatarImage src={currentLogoSrc || undefined} alt={form.getValues('name')} />
-                                <AvatarFallback className="rounded-lg bg-muted">
-                                    <Building className="h-16 w-16 text-muted-foreground" />
-                                </AvatarFallback>
-                            </Avatar>
-                            <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full">
-                                <label htmlFor="logo-upload" className="cursor-pointer">
-                                    <Camera className="h-4 w-4" />
-                                    <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} disabled={form.formState.isSubmitting} />
-                                </label>
-                            </Button>
-                        </div>
+                      <div className="relative">
+                        <Avatar className="h-32 w-32 rounded-lg">
+                          <AvatarImage
+                            src={currentLogoSrc || undefined}
+                            alt={form.getValues('name')}
+                          />
+                          <AvatarFallback className="rounded-lg bg-muted">
+                            <Building className="h-16 w-16 text-muted-foreground" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="icon"
+                          className="absolute bottom-1 right-1 h-8 w-8 rounded-full"
+                        >
+                          <label
+                            htmlFor="logo-upload"
+                            className="cursor-pointer"
+                          >
+                            <Camera className="h-4 w-4" />
+                            <input
+                              id="logo-upload"
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={onFileChange}
+                              disabled={form.formState.isSubmitting}
+                            />
+                          </label>
+                        </Button>
+                      </div>
                     </div>
                     <FormField
                       control={form.control}
@@ -289,33 +338,79 @@ export default function ClientFormPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="website"
+                      name="holding"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('Forms.website')}</FormLabel>
+                          <FormLabel>{t('Forms.holding')}</FormLabel>
                           <FormControl>
-                            <div className="relative flex items-center">
-                              <Input
-                                placeholder={t('Forms.websitePlaceholder')}
-                                {...field}
-                              />
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="absolute right-1 h-8 w-8"
-                                onClick={handleFindLogo}
-                                disabled={isFindingLogo || !form.watch('website')}
-                                title={t('Importer.findLogo')}
-                              >
-                                {isFindingLogo ? <Loader2 className="animate-spin" /> : <Wand2 />}
-                              </Button>
-                            </div>
+                            <Input
+                              placeholder={t('Forms.holdingPlaceholder')}
+                              {...field}
+                              list="holdings-datalist"
+                            />
                           </FormControl>
+                           <datalist id="holdings-datalist">
+                            {holdings.map((h) => (
+                                <option key={h} value={h} />
+                            ))}
+                           </datalist>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <FormField
+                        control={form.control}
+                        name="website"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>{t('Forms.website')}</FormLabel>
+                            <FormControl>
+                                <div className="relative flex items-center">
+                                <Input
+                                    placeholder={t('Forms.websitePlaceholder')}
+                                    {...field}
+                                />
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="absolute right-1 h-8 w-8"
+                                    onClick={handleFindLogo}
+                                    disabled={
+                                    isFindingLogo || !form.watch('website')
+                                    }
+                                    title={t('Importer.findLogo')}
+                                >
+                                    {isFindingLogo ? (
+                                    <Loader2 className="animate-spin" />
+                                    ) : (
+                                    <Wand2 />
+                                    )}
+                                </Button>
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="linkedinPage"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>{t('Forms.linkedinPage')}</FormLabel>
+                                <FormControl>
+                                    <Input
+                                    placeholder={t('Forms.linkedinPagePlaceholder')}
+                                    {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField
                         control={form.control}

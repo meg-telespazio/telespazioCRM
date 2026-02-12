@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 
 
@@ -157,6 +157,14 @@ export default function ClientSummaryPage() {
              {client.website && <div className="flex items-center gap-2">
                 <Globe className="h-4 w-4 text-muted-foreground" />
                 <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{client.website}</a>
+            </div>}
+            {client.holding && <div className="flex items-center gap-2">
+                <Building className="h-4 w-4 text-muted-foreground" />
+                <span>{client.holding}</span>
+            </div>}
+            {client.linkedinPage && <div className="flex items-center gap-2">
+                <Linkedin className="h-4 w-4 text-muted-foreground" />
+                <a href={client.linkedinPage} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{client.linkedinPage}</a>
             </div>}
           </CardContent>
         </Card>

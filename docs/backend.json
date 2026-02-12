@@ -95,6 +95,15 @@
           "type": "string",
           "description": "Client's CUIT number (11 digits)."
         },
+        "holding": {
+          "type": "string",
+          "description": "The economic group or holding company the client belongs to."
+        },
+        "linkedinPage": {
+          "type": "string",
+          "format": "uri",
+          "description": "Client's LinkedIn page URL."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -700,5 +709,3 @@
     }
   }
 }
-
-    
