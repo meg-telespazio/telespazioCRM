@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
 import type { Location, Client } from '@/lib/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 type LocationsMapProps = {
   client: Client | null;
@@ -52,7 +52,17 @@ function DynamicMapContent({ client, locations }: { client: Client | null, locat
 }
 
 export function LocationsMap({ client, locations }: LocationsMapProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const defaultCenter: [number, number] = [-38.4161, -63.6167];
+
+  if (!isMounted) {
+    return null;
+  }
   
   return (
     <MapContainer
