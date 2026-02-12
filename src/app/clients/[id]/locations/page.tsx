@@ -27,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const LocationsMap = dynamic(() => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
   ssr: false,
-  loading: () => <div className="flex h-full w-full items-center justify-center"><Skeleton className="h-full w-full" /></div>
+  loading: () => <Skeleton className="h-full w-full" />
 });
 
 export default function ClientLocationsPage() {
@@ -71,32 +71,15 @@ export default function ClientLocationsPage() {
   };
 
   const isLoading = userLoading || clientLoading || locationsLoading;
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 flex-col">
-        <AppHeader title={t('App.loading')} />
-        <main className="flex-1 p-4 sm:p-6"><Skeleton className="h-96" /></main>
-      </div>
-    );
-  }
-
-  if (!client) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center">
-        <p>Client not found.</p>
-      </div>
-    );
-  }
   
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={t('Locations.title', { clientName: client.name })}>
+      <AppHeader title={!client ? t('App.loading') : t('Locations.title', { clientName: client.name })}>
           <Button variant="outline" onClick={() => router.push('/clients')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               {t('Actions.backToClientList')}
           </Button>
-          <Button onClick={() => router.push(`/locations/new?clientId=${clientId}`)}>
+          <Button onClick={() => router.push(`/locations/new?clientId=${clientId}`)} disabled={!client}>
              <PlusCircle className="mr-2 h-4 w-4" />
              {t('Locations.add')}
           </Button>
@@ -104,7 +87,13 @@ export default function ClientLocationsPage() {
       <main className="flex-1 p-4 sm:p-6">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            {locations && locations.length > 0 ? (
+            {isLoading ? (
+                <Skeleton className="h-[500px]" />
+            ) : !client ? (
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed">
+                    <p>Client not found.</p>
+                </div>
+            ) : locations && locations.length > 0 ? (
                 <LocationsTable data={locations} onEdit={handleEditLocation} onDelete={handleDeleteLocation} />
             ) : (
                 <div className="flex h-[40vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
@@ -121,7 +110,7 @@ export default function ClientLocationsPage() {
                 </CardHeader>
                 <CardContent className='relative h-full pb-6'>
                   <LocationsMap locations={locationsWithCoords} />
-                  {locationsWithCoords.length === 0 && (
+                   {(!isLoading && locationsWithCoords.length === 0 && client) && (
                     <div className="absolute inset-0 z-10 m-6 mb-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
                         <MapPin className="h-16 w-16 text-muted-foreground" />
                         <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
