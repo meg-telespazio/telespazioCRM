@@ -3,14 +3,16 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility';
-import type { Location } from '@/lib/types';
+import type { Location, Client } from '@/lib/types';
 import { useEffect } from 'react';
+import { Skeleton } from '../ui/skeleton';
 
 type LocationsMapProps = {
+  client: Client | null;
   locations: Location[];
 };
 
-function DynamicMapContent({ locations }: { locations: Location[] }) {
+function DynamicMapContent({ client, locations }: { client: Client | null, locations: Location[] }) {
   const map = useMap();
 
   useEffect(() => {
@@ -34,11 +36,14 @@ function DynamicMapContent({ locations }: { locations: Location[] }) {
           position={[location.latitude, location.longitude]}
         >
           <Popup>
-            <div className="font-semibold">{location.name}</div>
-            <div>
-              {location.streetName} {location.streetNumber}
+            <div className="space-y-1">
+              <h3 className="font-bold text-base">{client?.name}</h3>
+              <p className="font-semibold text-sm">{location.name}</p>
+              <hr className="my-1"/>
+              <p className="text-xs">{location.streetName} {location.streetNumber}</p>
+              <p className="text-xs">{location.postalCode} {location.city}</p>
+              <p className="text-xs">{location.province}, {location.country}</p>
             </div>
-            <div>{location.city}</div>
           </Popup>
         </Marker>
       ))}
@@ -46,7 +51,7 @@ function DynamicMapContent({ locations }: { locations: Location[] }) {
   );
 }
 
-export function LocationsMap({ locations }: LocationsMapProps) {
+export function LocationsMap({ client, locations }: LocationsMapProps) {
   // A safe default center (approx. center of Argentina)
   const defaultCenter: [number, number] = [-38.4161, -63.6167];
 
@@ -56,12 +61,13 @@ export function LocationsMap({ locations }: LocationsMapProps) {
       zoom={4}
       style={{ height: '100%', width: '100%' }}
       className="rounded-lg"
+      placeholder={<Skeleton className="h-full w-full" />}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      <DynamicMapContent locations={locations} />
+      <DynamicMapContent client={client} locations={locations} />
     </MapContainer>
   );
 }
