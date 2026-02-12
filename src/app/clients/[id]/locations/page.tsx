@@ -25,10 +25,6 @@ import {
 import { LocationsTable } from '@/components/locations/locations-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const LocationsMap = dynamic(() => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
-  ssr: false,
-});
-
 export default function ClientLocationsPage() {
   const { t } = useI18n();
   const params = useParams();
@@ -37,6 +33,13 @@ export default function ClientLocationsPage() {
   
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+
+  const LocationsMap = useMemo(() => dynamic(
+    () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
+      ssr: false,
+      loading: () => <Skeleton className="h-full w-full rounded-b-lg" />,
+    }
+  ), []);
 
   const clientDocRef = useMemo(() => {
     if (!user || !firestore) return null;
@@ -107,15 +110,10 @@ export default function ClientLocationsPage() {
                 <CardHeader>
                     <CardTitle>Mapa</CardTitle>
                 </CardHeader>
-                <CardContent className='relative h-full pb-6'>
+                <CardContent className='relative h-full rounded-b-lg p-0'>
                   <LocationsMap client={client} locations={locationsWithCoords} />
-                  {isLoading && (
-                    <div className="absolute inset-0 z-20 m-6 mb-0">
-                       <Skeleton className="h-full w-full" />
-                    </div>
-                  )}
                    {(!isLoading && client && locationsWithCoords.length === 0) && (
-                    <div className="absolute inset-0 z-10 m-6 mb-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
                         <MapPin className="h-16 w-16 text-muted-foreground" />
                         <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
                     </div>
