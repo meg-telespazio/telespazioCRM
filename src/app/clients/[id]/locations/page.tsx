@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useUser,
@@ -12,6 +12,7 @@ import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
 import type { Client, Location } from '@/lib/types';
 import { deleteLocation } from '@/lib/firestore/locations';
+import dynamic from 'next/dynamic';
 
 import { AppHeader } from '@/components/layout/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +24,11 @@ import {
 } from 'lucide-react';
 import { LocationsTable } from '@/components/locations/locations-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+const LocationsMap = dynamic(() => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
+  ssr: false,
+  loading: () => <div className="flex h-full w-full items-center justify-center"><Skeleton className="h-full w-full" /></div>
+});
 
 export default function ClientLocationsPage() {
   const { t } = useI18n();
@@ -104,12 +110,19 @@ export default function ClientLocationsPage() {
             )}
           </div>
           <div className="lg:col-span-1">
-             <Card>
+             <Card className="h-[500px]">
                 <CardHeader>
                     <CardTitle>Mapa</CardTitle>
                 </CardHeader>
-                <CardContent className='flex items-center justify-center h-96 text-muted-foreground'>
-                   {t('Locations.mapPlaceholder')}
+                <CardContent className='h-full pb-6'>
+                   {locations && locations.length > 0 ? (
+                      <LocationsMap locations={locations.filter(l => l.latitude && l.longitude)} />
+                   ) : (
+                      <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
+                          <Map className="h-16 w-16 text-muted-foreground" />
+                          <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
+                      </div>
+                   )}
                 </CardContent>
              </Card>
           </div>
@@ -118,5 +131,3 @@ export default function ClientLocationsPage() {
     </div>
   );
 }
-
-    

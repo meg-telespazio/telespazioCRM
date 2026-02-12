@@ -570,6 +570,7 @@ export const translations = {
       noLocations: 'Este cliente aún no tiene locaciones cargadas.',
       noLocationsDescription: 'Comienza añadiendo una nueva locación.',
       mapPlaceholder: 'La vista de mapa estará disponible pronto.',
+      noLocationsMap: 'Añada locaciones con latitud y longitud para verlas en el mapa.',
       save: 'Guardar Locación',
       name: 'Nombre de la Ubicación',
       type: 'Tipo',
@@ -1020,7 +1021,7 @@ export const translations = {
         invalidField: '{field}: {message}',
         clientNotFound: 'A client with the provided CUIT was not found.',
       },
-      importingTitle: 'Validating Data...',
+      importingTitle: 'Validando Datos...',
       importingDescription: 'Please wait while we validate your data. This may take a moment.',
       clientCuit: 'Client CUIT (for linking)',
       findLogo: 'Find logo from website',
@@ -1164,6 +1165,7 @@ export const translations = {
       noLocations: 'This client doesn\'t have any locations yet.',
       noLocationsDescription: 'Start by adding a new location.',
       mapPlaceholder: 'Map view will be available soon.',
+      noLocationsMap: 'Add locations with latitude and longitude to see them on the map.',
       save: 'Save Location',
       name: 'Location Name',
       type: 'Type',
@@ -1188,5 +1190,3 @@ export const translations = {
     },
   },
 };
-
-    
