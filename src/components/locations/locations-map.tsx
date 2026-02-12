@@ -4,9 +4,9 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
 
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import type { Location, Client } from '@/lib/types';
-import { useEffect, useRef } from 'react';
 
 type LocationsMapProps = {
   client: Client | null;
@@ -16,11 +16,12 @@ type LocationsMapProps = {
 export function LocationsMap({ client, locations }: LocationsMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const defaultCenter: [number, number] = [-38.4161, -63.6167];
+  const defaultCenter: L.LatLngTuple = [-38.4161, -63.6167];
 
+  // Effect to initialize and clean up the map
   useEffect(() => {
-    // Initialize map only if the container is ready and a map isn't already initialized
-    if (mapContainerRef.current && !mapInstanceRef.current) {
+    // Ensure this runs only in the browser and the container is available
+    if (typeof window !== 'undefined' && mapContainerRef.current && !mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current).setView(defaultCenter, 4);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -30,7 +31,8 @@ export function LocationsMap({ client, locations }: LocationsMapProps) {
       mapInstanceRef.current = map;
     }
     
-    // Cleanup function to run when component unmounts (handles React Strict Mode)
+    // Cleanup function to run when component unmounts
+    // This is crucial for React Strict Mode in development
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
