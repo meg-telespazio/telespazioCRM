@@ -93,7 +93,7 @@ export default function ClientLocationsPage() {
                 <CardHeader>
                     <CardTitle>Mapa</CardTitle>
                 </CardHeader>
-                <CardContent className='relative flex-grow rounded-b-lg p-0'>
+                <CardContent className='relative flex-grow rounded-b-lg p-4 pt-0'>
                   <LocationsMap client={client} locations={locationsWithCoords} />
                    {isLoading && (
                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
