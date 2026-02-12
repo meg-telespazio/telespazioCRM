@@ -5,14 +5,11 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility';
 import type { Location } from '@/lib/types';
 import { useEffect } from 'react';
-import { Skeleton } from '../ui/skeleton';
 
 type LocationsMapProps = {
   locations: Location[];
 };
 
-// This component receives the map instance from its parent <MapContainer>
-// and is responsible for all dynamic updates (markers, view changes).
 function DynamicMapContent({ locations }: { locations: Location[] }) {
   const map = useMap();
 
@@ -22,14 +19,12 @@ function DynamicMapContent({ locations }: { locations: Location[] }) {
         (loc) => [loc.latitude, loc.longitude] as [number, number]
       );
       if (bounds.length === 1) {
-        // If there's only one location, just center on it.
         map.setView(bounds[0], 13);
       } else {
-        // If there are multiple, fit them all in the view.
         map.fitBounds(bounds, { padding: [50, 50] });
       }
     }
-  }, [locations, map]); // Re-run effect when locations change
+  }, [locations, map]);
 
   return (
     <>
@@ -52,34 +47,20 @@ function DynamicMapContent({ locations }: { locations: Location[] }) {
 }
 
 export function LocationsMap({ locations }: LocationsMapProps) {
-  // Don't render anything if there are no locations with coordinates
-  if (!locations || locations.length === 0) {
-    return null;
-  }
-
-  // Use the first location ONLY for the INITIAL center of the map.
-  // This value will not be updated on re-renders, so MapContainer is stable.
-  const initialCenter: [number, number] = [
-    locations[0].latitude,
-    locations[0].longitude,
-  ];
+  // A safe default center (approx. center of Argentina)
+  const defaultCenter: [number, number] = [-38.4161, -63.6167];
 
   return (
-    // MapContainer is rendered once with initial, stable props.
-    // It does not re-render when the `locations` prop changes.
     <MapContainer
-      center={initialCenter}
-      zoom={13}
+      center={defaultCenter}
+      zoom={4}
       style={{ height: '100%', width: '100%' }}
       className="rounded-lg"
-      placeholder={<Skeleton className="h-full w-full" />}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {/* DynamicMapContent is the child that will re-render with new locations */}
-      {/* and use the stable map instance to update markers and view. */}
       <DynamicMapContent locations={locations} />
     </MapContainer>
   );

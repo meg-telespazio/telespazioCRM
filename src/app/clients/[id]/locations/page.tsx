@@ -19,7 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
-  Map,
+  MapPin,
   PlusCircle,
 } from 'lucide-react';
 import { LocationsTable } from '@/components/locations/locations-table';
@@ -57,7 +57,7 @@ export default function ClientLocationsPage() {
 
   const locationsWithCoords = useMemo(() => {
     if (!locations) return [];
-    return locations.filter(l => l.latitude && l.longitude);
+    return locations.filter(l => typeof l.latitude === 'number' && typeof l.longitude === 'number');
   }, [locations]);
 
   const handleEditLocation = (location: Location) => {
@@ -108,7 +108,7 @@ export default function ClientLocationsPage() {
                 <LocationsTable data={locations} onEdit={handleEditLocation} onDelete={handleDeleteLocation} />
             ) : (
                 <div className="flex h-[40vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-                    <Map className="h-16 w-16 text-muted-foreground" />
+                    <MapPin className="h-16 w-16 text-muted-foreground" />
                     <h3 className="mt-4 text-lg font-semibold">{t('Locations.noLocations')}</h3>
                     <p className="mt-2 text-sm text-muted-foreground">{t('Locations.noLocationsDescription')}</p>
                 </div>
@@ -119,15 +119,14 @@ export default function ClientLocationsPage() {
                 <CardHeader>
                     <CardTitle>Mapa</CardTitle>
                 </CardHeader>
-                <CardContent className='h-full pb-6'>
-                   {locationsWithCoords && locationsWithCoords.length > 0 ? (
-                      <LocationsMap locations={locationsWithCoords} />
-                   ) : (
-                      <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
-                          <Map className="h-16 w-16 text-muted-foreground" />
-                          <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
-                      </div>
-                   )}
+                <CardContent className='relative h-full pb-6'>
+                  <LocationsMap locations={locationsWithCoords} />
+                  {locationsWithCoords.length === 0 && (
+                    <div className="absolute inset-0 z-10 m-6 mb-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
+                        <MapPin className="h-16 w-16 text-muted-foreground" />
+                        <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
+                    </div>
+                  )}
                 </CardContent>
              </Card>
           </div>
