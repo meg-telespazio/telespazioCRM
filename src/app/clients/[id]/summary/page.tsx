@@ -55,15 +55,16 @@ export default function ClientSummaryPage() {
   }, [firestore, clientId]);
   const { data: client, loading: clientLoading } = useDoc<Client>(clientDocRef);
 
-  const baseQuery = useMemo(() => {
-    if (!clientId) return null;
-    return where('clientId', '==', clientId);
-  }, [clientId]);
-
-  const contactsQuery = useMemo(() => (baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null), [firestore, baseQuery]);
+  const contactsQuery = useMemo(() => {
+    if (!firestore || !clientId || !user) return null;
+    return query(collection(firestore, 'contacts'), where('clientId', '==', clientId), where('createdBy', '==', user.uid));
+  }, [firestore, clientId, user]);
   const { data: contacts, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
 
-  const locationsQuery = useMemo(() => (baseQuery ? query(collection(firestore, 'locations'), baseQuery) : null), [firestore, baseQuery]);
+  const locationsQuery = useMemo(() => {
+    if (!firestore || !clientId || !user) return null;
+    return query(collection(firestore, 'locations'), where('clientId', '==', clientId), where('createdBy', '==', user.uid));
+  }, [firestore, clientId, user]);
   const { data: locations, loading: locationsLoading } = useCollection<Location>(locationsQuery);
   
   const locationsWithCoords = useMemo(() => {
@@ -71,10 +72,16 @@ export default function ClientSummaryPage() {
     return locations.filter(l => typeof l.latitude === 'number' && typeof l.longitude === 'number');
   }, [locations]);
 
-  const opportunitiesQuery = useMemo(() => (baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null), [firestore, baseQuery]);
+  const opportunitiesQuery = useMemo(() => {
+    if (!firestore || !clientId || !user) return null;
+    return query(collection(firestore, 'opportunities'), where('clientId', '==', clientId), where('createdBy', '==', user.uid));
+  }, [firestore, clientId, user]);
   const { data: opportunities, loading: opportunitiesLoading } = useCollection<Opportunity>(opportunitiesQuery);
   
-  const activitiesQuery = useMemo(() => (baseQuery ? query(collection(firestore, 'activities'), baseQuery) : null), [firestore, baseQuery]);
+  const activitiesQuery = useMemo(() => {
+    if (!firestore || !clientId || !user) return null;
+    return query(collection(firestore, 'activities'), where('clientId', '==', clientId), where('createdBy', '==', user.uid));
+  }, [firestore, clientId, user]);
   const { data: activities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
   
   const sortedActivities = useMemo(() => {
