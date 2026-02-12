@@ -128,6 +128,7 @@ export const translations = {
       addItem: 'Añadir Ítem',
       profile: 'Mi Perfil',
       reports: 'Reportes',
+      clientSummary: 'Resumen del Cliente',
     },
     Table: {
       filterByName: 'Filtrar por nombre...',
@@ -160,6 +161,7 @@ export const translations = {
         pageInfo: 'Página {page} de {totalPages}',
       },
       all: 'Todos',
+      address: 'Dirección',
     },
     Forms: {
       editClient: 'Editar Cliente',
@@ -289,6 +291,7 @@ export const translations = {
       copyLocationId: 'Copiar ID de Locación',
       editLocation: 'Editar Locación',
       deleteLocation: 'Eliminar Locación',
+      viewSummary: 'Ver Resumen',
     },
     Stages: {
       Prospecting: 'Prospección',
@@ -594,6 +597,11 @@ export const translations = {
       property: 'Predio',
       field: 'Campo',
     },
+    Summary: {
+      noContacts: 'Este cliente no tiene contactos.',
+      noLocations: 'Este cliente no tiene locaciones.',
+      noOpportunities: 'Este cliente no tiene oportunidades.',
+    },
   },
   en: {
     App: {
@@ -724,6 +732,7 @@ export const translations = {
       addItem: 'Add Item',
       profile: 'My Profile',
       reports: 'Reports',
+      clientSummary: 'Client Summary',
     },
     Table: {
       filterByName: 'Filter by name...',
@@ -756,6 +765,7 @@ export const translations = {
         pageInfo: 'Page {page} of {totalPages}',
       },
       all: 'All',
+      address: 'Address',
     },
     Forms: {
       editClient: 'Edit Client',
@@ -885,6 +895,7 @@ export const translations = {
       copyLocationId: 'Copy Location ID',
       editLocation: 'Edit Location',
       deleteLocation: 'Delete Location',
+      viewSummary: 'View Summary',
     },
     Stages: {
       Prospecting: 'Prospecting',
@@ -1189,6 +1200,11 @@ export const translations = {
       office: 'Office',
       property: 'Property',
       field: 'Field',
+    },
+    Summary: {
+      noContacts: 'This client has no contacts.',
+      noLocations: 'This client has no locations.',
+      noOpportunities: 'This client has no opportunities.',
     },
   },
 };

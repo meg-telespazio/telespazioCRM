@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
-import { redirect, useParams, useRouter } from 'next/navigation';
+import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Contact, Client, EmailEntry, PhoneEntry, ContactPosition, ContactArea } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -71,11 +71,13 @@ export default function ContactFormPage() {
     const firestore = useFirestore();
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const { t } = useI18n();
     const { toast } = useToast();
 
     const contactId = params.id as string;
     const isNew = contactId === 'new';
+    const clientIdFromQuery = searchParams.get('clientId');
 
     // Fetch contact data if editing
     const contactDocRef = useMemo(() => {
@@ -98,7 +100,7 @@ export default function ContactFormPage() {
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: '',
-            clientId: '',
+            clientId: clientIdFromQuery || '',
             position: undefined,
             area: undefined,
             emails: [{ type: 'work', address: '' }],
@@ -208,6 +210,7 @@ export default function ContactFormPage() {
                                             <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
+                                            disabled={!!clientIdFromQuery}
                                             >
                                             <FormControl>
                                                 <SelectTrigger>

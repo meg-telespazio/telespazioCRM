@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Activity as ActivityIcon,
   MapPin,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +25,7 @@ import type { Client } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const statusClasses: { [key in Client['status']]: string } = {
   active: 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200',
@@ -114,6 +116,14 @@ export const columns = (
           </Button>
         );
       },
+      cell: ({ row }) => {
+        const client = row.original;
+        return (
+          <Link href={`/clients/${client.id}/summary`} className="font-medium hover:underline">
+            {client.name}
+          </Link>
+        )
+      }
     },
     {
       accessorKey: 'cuit',
@@ -307,6 +317,10 @@ export const columns = (
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => router.push(`/clients/${client.id}/summary`)}>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>{t('Actions.viewSummary')}</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEdit(client)}>
                 {t('Actions.editClient')}
               </DropdownMenuItem>
@@ -337,5 +351,3 @@ export const columns = (
     },
   ];
 };
-
-    

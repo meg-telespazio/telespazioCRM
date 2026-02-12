@@ -7,7 +7,7 @@ import {
   useDoc,
   useCollection,
 } from '@/firebase';
-import { redirect, useParams, useRouter } from 'next/navigation';
+import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type {
   Opportunity,
@@ -153,6 +153,7 @@ export default function OpportunityFormPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { t, locale } = useI18n();
   const datePickerLocale = locale === 'es' ? es : enUS;
 
@@ -174,6 +175,7 @@ export default function OpportunityFormPage() {
 
   const opportunityId = params.id as string;
   const isNew = opportunityId === 'new';
+  const clientIdFromQuery = searchParams.get('clientId');
 
   const opportunityDocRef = useMemo(() => {
     if (!firestore || isNew) return null;
@@ -237,7 +239,7 @@ export default function OpportunityFormPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      clientId: '',
+      clientId: clientIdFromQuery || '',
       value: 0,
       stage: 'Prospecting',
       probability: 10,
@@ -556,7 +558,7 @@ export default function OpportunityFormPage() {
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
-                          disabled={!isNew || isLocked}
+                          disabled={!isNew || isLocked || !!clientIdFromQuery}
                         >
                           <FormControl>
                             <SelectTrigger>
