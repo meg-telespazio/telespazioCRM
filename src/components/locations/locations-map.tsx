@@ -10,8 +10,9 @@ type LocationsMapProps = {
   locations: Location[];
 };
 
-// This component will handle updates to markers and map view when locations change
-function MapContent({ locations }: { locations: Location[] }) {
+// This component receives the map instance from its parent <MapContainer>
+// and is responsible for all dynamic updates (markers, view changes).
+function DynamicMapContent({ locations }: { locations: Location[] }) {
   const map = useMap();
 
   useEffect(() => {
@@ -27,7 +28,7 @@ function MapContent({ locations }: { locations: Location[] }) {
         map.fitBounds(bounds, { padding: [50, 50] });
       }
     }
-  }, [locations, map]); // Re-run effect only when locations or map instance change
+  }, [locations, map]); // Re-run effect when locations change
 
   return (
     <>
@@ -52,18 +53,19 @@ function MapContent({ locations }: { locations: Location[] }) {
 export function LocationsMap({ locations }: LocationsMapProps) {
   // Don't render anything if there are no locations with coordinates
   if (!locations || locations.length === 0) {
-    // This will be handled by the parent component, but good to have a guard
     return null;
   }
 
-  // Use the first location for the initial center of the map.
-  // The MapContent component will then adjust the view.
+  // Use the first location ONLY for the INITIAL center of the map.
+  // This value will not be updated on re-renders, so MapContainer is stable.
   const initialCenter: [number, number] = [
     locations[0].latitude,
     locations[0].longitude,
   ];
 
   return (
+    // MapContainer is rendered once with initial, stable props.
+    // It does not re-render when the `locations` prop changes.
     <MapContainer
       center={initialCenter}
       zoom={13}
@@ -74,7 +76,9 @@ export function LocationsMap({ locations }: LocationsMapProps) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      <MapContent locations={locations} />
+      {/* DynamicMapContent is the child that will re-render with new locations */}
+      {/* and use the stable map instance to update markers and view. */}
+      <DynamicMapContent locations={locations} />
     </MapContainer>
   );
 }
