@@ -60,9 +60,10 @@ export function LocationsMap({ client, locations }: LocationsMapProps) {
   const defaultCenter: [number, number] = [-38.4161, -63.6167];
 
   // Do not render the map on the server or on the first client-side render pass.
-  // This avoids the "Map container is already initialized" error in React's StrictMode.
+  // This avoids the "Map container is already initialized" error in React's StrictMode
+  // by rendering a placeholder div first, which ensures a stable container.
   if (!isMounted) {
-    return null;
+    return <div style={{ height: '100%', width: '100%' }} className="rounded-lg bg-muted animate-pulse" />;
   }
 
   return (
