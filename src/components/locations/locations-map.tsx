@@ -56,7 +56,6 @@ export function LocationsMap({ client, locations }: LocationsMapProps) {
   
   return (
     <MapContainer
-      key="my-leaflet-map"
       center={defaultCenter}
       zoom={4}
       style={{ height: '100%', width: '100%' }}
