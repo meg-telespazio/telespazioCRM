@@ -21,9 +21,17 @@ import {
   ArrowLeft,
   MapPin,
   PlusCircle,
+  Loader2,
 } from 'lucide-react';
 import { LocationsTable } from '@/components/locations/locations-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+const LocationsMap = dynamic(
+  () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
+    ssr: false,
+    loading: () => <Skeleton className="h-full w-full rounded-b-lg" />,
+  }
+);
 
 export default function ClientLocationsPage() {
   const { t } = useI18n();
@@ -33,13 +41,6 @@ export default function ClientLocationsPage() {
   
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
-
-  const LocationsMap = useMemo(() => dynamic(
-    () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
-      ssr: false,
-      loading: () => <Skeleton className="h-full w-full rounded-b-lg" />,
-    }
-  ), []);
 
   const clientDocRef = useMemo(() => {
     if (!user || !firestore) return null;
@@ -112,7 +113,13 @@ export default function ClientLocationsPage() {
                 </CardHeader>
                 <CardContent className='relative h-full rounded-b-lg p-0'>
                   <LocationsMap client={client} locations={locationsWithCoords} />
-                   {(!isLoading && client && locationsWithCoords.length === 0) && (
+                   {isLoading && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <p className="mt-4 text-sm text-muted-foreground">{t('App.loading')}</p>
+                    </div>
+                   )}
+                   {(!isLoading && locationsWithCoords.length === 0) && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
                         <MapPin className="h-16 w-16 text-muted-foreground" />
                         <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
