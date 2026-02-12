@@ -110,7 +110,7 @@ export default function ClientLocationsPage() {
                 </CardHeader>
                 <CardContent className='relative h-full pb-6'>
                   <LocationsMap client={client} locations={locationsWithCoords} />
-                   {(!isLoading && locationsWithCoords.length === 0 && client) && (
+                   {(locationsWithCoords.length === 0 && client) && (
                     <div className="absolute inset-0 z-10 m-6 mb-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
                         <MapPin className="h-16 w-16 text-muted-foreground" />
                         <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
