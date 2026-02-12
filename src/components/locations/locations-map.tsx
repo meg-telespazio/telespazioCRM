@@ -61,7 +61,6 @@ export function LocationsMap({ client, locations }: LocationsMapProps) {
       zoom={4}
       style={{ height: '100%', width: '100%' }}
       className="rounded-lg"
-      placeholder={<Skeleton className="h-full w-full" />}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
