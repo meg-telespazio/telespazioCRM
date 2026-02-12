@@ -446,6 +446,7 @@ export default function ProductServiceFormPage() {
         imageSrc={imageToCrop}
         onCropComplete={handleCropComplete}
         onClose={() => setImageToCrop(null)}
+        cropShape="rect"
       />
     </>
   );

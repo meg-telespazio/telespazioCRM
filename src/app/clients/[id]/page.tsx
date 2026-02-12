@@ -471,6 +471,7 @@ export default function ClientFormPage() {
         onCropComplete={handleCropComplete}
         onClose={() => setImageToCrop(null)}
         aspect={1}
+        cropShape="rect"
       />
     </>
   );
