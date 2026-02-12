@@ -88,26 +88,8 @@ export default function ClientLocationsPage() {
           </Button>
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            {isLoading ? (
-                <Skeleton className="h-[500px]" />
-            ) : !client ? (
-                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed">
-                    <p>Client not found.</p>
-                </div>
-            ) : locations && locations.length > 0 ? (
-                <LocationsTable data={locations} onEdit={handleEditLocation} onDelete={handleDeleteLocation} />
-            ) : (
-                <div className="flex h-[40vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-                    <MapPin className="h-16 w-16 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">{t('Locations.noLocations')}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">{t('Locations.noLocationsDescription')}</p>
-                </div>
-            )}
-          </div>
-          <div className="lg:col-span-1">
-             <Card className="h-[500px]">
+        <div className="flex flex-col gap-6">
+            <Card className="h-[400px]">
                 <CardHeader>
                     <CardTitle>Mapa</CardTitle>
                 </CardHeader>
@@ -127,7 +109,23 @@ export default function ClientLocationsPage() {
                   )}
                 </CardContent>
              </Card>
-          </div>
+            <div>
+              {isLoading ? (
+                  <Skeleton className="h-[300px]" />
+              ) : !client ? (
+                  <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed p-8">
+                      <p>Client not found.</p>
+                  </div>
+              ) : locations && locations.length > 0 ? (
+                  <LocationsTable data={locations} onEdit={handleEditLocation} onDelete={handleDeleteLocation} />
+              ) : (
+                  <div className="flex h-[20vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
+                      <MapPin className="h-16 w-16 text-muted-foreground" />
+                      <h3 className="mt-4 text-lg font-semibold">{t('Locations.noLocations')}</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">{t('Locations.noLocationsDescription')}</p>
+                  </div>
+              )}
+            </div>
         </div>
       </main>
     </div>
