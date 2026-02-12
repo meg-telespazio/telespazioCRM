@@ -46,7 +46,31 @@ const findLogoFlow = ai.defineFlow(
 
 // Server action to be called from the client
 export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): Promise<{ dataUri: string }> {
-    // 1. Try to find and fetch logo using AI
+    // 0. Extract domain
+    let domain = '';
+    try {
+        domain = new URL(websiteUrl).hostname;
+    } catch (e) {
+        throw new Error('Invalid website URL provided.');
+    }
+
+    // 1. Try Clearbit first
+    try {
+        const clearbitUrl = `https://logo.clearbit.com/${domain}`;
+        const response = await fetch(clearbitUrl, { cache: 'no-store' });
+        
+        const contentType = response.headers.get('content-type');
+        if (response.ok && contentType && contentType.startsWith('image/')) {
+            const imageBuffer = await response.arrayBuffer();
+            const base64String = Buffer.from(imageBuffer).toString('base64');
+            const dataUri = `data:${contentType};base64,${base64String}`;
+            return { dataUri };
+        }
+    } catch (error) {
+        console.warn('Clearbit fetch failed, falling back to AI:', error);
+    }
+    
+    // 2. If Clearbit fails, try to find and fetch logo using AI
     try {
         const { logoUrl: rawLogoUrl } = await findLogoFlow({ url: websiteUrl });
 
@@ -64,12 +88,11 @@ export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): 
                 return { dataUri };
             }
         }
-        // If no URL was found or fetch failed, fall through to favicon attempt
     } catch (error) {
         console.warn('AI logo find/fetch failed, falling back to favicon:', error);
     }
 
-    // 2. Fallback: try to fetch the favicon
+    // 3. Fallback: try to fetch the favicon
     try {
         const faviconUrl = new URL('/favicon.ico', websiteUrl).href;
         const faviconResponse = await fetch(faviconUrl);

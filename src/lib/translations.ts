@@ -438,6 +438,8 @@ export const translations = {
       invalidUrlDesc: 'Por favor ingrese una URL completa y válida (ej. https://ejemplo.com).',
       findLogoError: 'Error Buscando Logo',
       findLogoErrorDesc: 'Ocurrió un error inesperado.',
+      logoFound: 'Logo encontrado',
+      logoFoundDesc: 'El logo se ha cargado. No te olvides de guardar los cambios.',
     },
     Reports: {
       title: 'Generador de Reportes',
@@ -1042,6 +1044,8 @@ export const translations = {
       invalidUrlDesc: 'Please enter a valid and complete URL (e.g., https://example.com).',
       findLogoError: 'Error Finding Logo',
       findLogoErrorDesc: 'An unexpected error occurred.',
+      logoFound: 'Logo Found',
+      logoFoundDesc: 'The logo has been loaded. Don\'t forget to save your changes.',
     },
     Reports: {
       title: 'Report Builder',

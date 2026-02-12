@@ -165,7 +165,12 @@ export default function ClientFormPage() {
     try {
         const result = await findAndFetchLogo({ websiteUrl });
         if (result.dataUri) {
-            setImageToCrop(result.dataUri);
+            setCroppedImage(result.dataUri);
+            toast({
+                variant: 'success',
+                title: t('Importer.logoFound'),
+                description: t('Importer.logoFoundDesc'),
+            });
         }
     } catch (error: any) {
         console.error('Failed to find logo:', error);
