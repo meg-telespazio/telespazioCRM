@@ -97,14 +97,14 @@ export default function DashboardPage() {
           />
         )}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <div className="col-span-4">
+          <div className="col-span-4 min-w-0">
             {pageIsLoading ? (
               <Skeleton className="h-[425px]" />
             ) : (
               <OpportunitiesChart opportunities={opportunities || []} />
             )}
           </div>
-          <div className="col-span-4 lg:col-span-3">
+          <div className="col-span-4 lg:col-span-3 min-w-0">
             {pageIsLoading ? (
               <Skeleton className="h-[360px]" />
             ) : (
@@ -115,7 +115,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        <div>
+        <div className="min-w-0">
           {pageIsLoading ? (
             <Skeleton className="h-[360px]" />
           ) : (
