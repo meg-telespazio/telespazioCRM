@@ -56,11 +56,11 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
           {isMobile ? (
-             <BarChart accessibilityLayer data={data} layout="vertical" margin={{ left: 0, right: 40 }}>
+             <BarChart accessibilityLayer data={data} layout="vertical" margin={{ left: 10, right: 40 }}>
                 <CartesianGrid horizontal={false} />
                 <XAxis type="number" hide domain={[0, 'dataMax + 1']}/>
                 <YAxis
-                    width={45}
+                    width={60}
                     dataKey="mobileName"
                     type="category"
                     tickLine={false}

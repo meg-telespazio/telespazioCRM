@@ -58,7 +58,7 @@ export function RecentOpportunities({ opportunities, clients }: RecentOpportunit
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table className={isMobile ? "table-fixed" : ""}>
+        <Table className={isMobile ? "table-fixed w-full" : ""}>
           <TableHeader>
             <TableRow>
               <TableHead className={isMobile ? 'w-2/3' : ''}>{t('Dashboard.recentOpportunities.opportunityHeader')}</TableHead>
@@ -79,7 +79,7 @@ export function RecentOpportunities({ opportunities, clients }: RecentOpportunit
                 {!isMobile && <TableCell>{getClientName(opp.clientId)}</TableCell>}
                 {!isMobile && <TableCell>${opp.value.toLocaleString()}</TableCell>}
                 <TableCell className="text-right">
-                  <Badge variant={stageVariant[opp.stage]} className="whitespace-nowrap">{t(`Stages.${opp.stage}`)}</Badge>
+                  <Badge variant={stageVariant[opp.stage]} className="whitespace-nowrap">{t(isMobile ? `StagesAbbr.${opp.stage}` : `Stages.${opp.stage}`)}</Badge>
                 </TableCell>
               </TableRow>
             ))}
