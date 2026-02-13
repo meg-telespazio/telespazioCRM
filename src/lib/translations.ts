@@ -307,6 +307,15 @@ export const translations = {
       Canceled: 'Canceled',
       Suspended: 'Suspended',
     },
+    StagesAbbr: {
+      Prospecting: 'Prosp.',
+      Proposal: 'Prop.',
+      Negotiation: 'Negot.',
+      Won: 'Won',
+      Lost: 'Lost',
+      Canceled: 'Canc.',
+      Suspended: 'Susp.',
+    },
     Status: {
       active: 'Active',
       suspended: 'Suspended',
@@ -920,6 +929,15 @@ export const translations = {
       Lost: 'Perdida',
       Canceled: 'Cancelada',
       Suspended: 'Suspendida',
+    },
+    StagesAbbr: {
+      Prospecting: 'Prosp.',
+      Proposal: 'Prop.',
+      Negotiation: 'Negoc.',
+      Won: 'Ganada',
+      Lost: 'Perd.',
+      Canceled: 'Canc.',
+      Suspended: 'Susp.',
     },
     Status: {
       active: 'Activo',

@@ -33,6 +33,7 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
     ];
     const data = stages.map((stage) => ({
       name: t(`Stages.${stage}`),
+      mobileName: t(`StagesAbbr.${stage}`),
       total: opportunities.filter((opp) => opp.stage === stage).length,
     }));
     return data;
@@ -59,13 +60,12 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
                 <CartesianGrid horizontal={false} />
                 <XAxis type="number" hide domain={[0, 'dataMax + 1']}/>
                 <YAxis
-                    dataKey="name"
+                    dataKey="mobileName"
                     type="category"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={5}
-                    tick={{ fontSize: 11 }}
-                    width={90}
+                    tick={{ fontSize: 12 }}
                 />
                 <ChartTooltip
                     cursor={false}
@@ -82,7 +82,7 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
                 </Bar>
              </BarChart>
           ) : (
-            <BarChart accessibilityLayer data={data} margin={{ right: 16 }}>
+            <BarChart accessibilityLayer data={data} margin={{ top: 20, right: 16 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="name"
@@ -103,7 +103,15 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
                 cursor={false}
                 content={<ChartTooltipContent />}
                 />
-                <Bar dataKey="total" fill="var(--color-total)" radius={4} />
+                <Bar dataKey="total" fill="var(--color-total)" radius={4}>
+                   <LabelList
+                        dataKey="total"
+                        position="top"
+                        offset={8}
+                        className="fill-foreground"
+                        fontSize={12}
+                    />
+                </Bar>
             </BarChart>
           )}
         </ChartContainer>

@@ -61,19 +61,19 @@ export function RecentOpportunities({ opportunities, clients }: RecentOpportunit
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('Dashboard.recentOpportunities.opportunityHeader')}</TableHead>
+              <TableHead className={isMobile ? 'w-[65%]' : ''}>{t('Dashboard.recentOpportunities.opportunityHeader')}</TableHead>
               {!isMobile && <TableHead>{t('Dashboard.recentOpportunities.clientHeader')}</TableHead>}
               {!isMobile && <TableHead>{t('Dashboard.recentOpportunities.valueHeader')}</TableHead>}
-              <TableHead className="text-right">{t('Dashboard.recentOpportunities.stageHeader')}</TableHead>
+              <TableHead className={`text-right ${isMobile ? 'w-[35%]' : ''}`}>{t('Dashboard.recentOpportunities.stageHeader')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {recentOpportunities.map((opp) => (
               <TableRow key={opp.id} onClick={() => router.push(`/opportunities/${opp.id}`)} className="cursor-pointer">
                 <TableCell className="font-medium">
-                  <p className="truncate max-w-28 sm:max-w-xs">{opp.title}</p>
+                  <p className="truncate">{opp.title}</p>
                   {isMobile && (
-                    <p className="text-xs text-muted-foreground truncate max-w-28 sm:max-w-xs">{getClientName(opp.clientId)}</p>
+                    <p className="text-xs text-muted-foreground truncate">{getClientName(opp.clientId)}</p>
                   )}
                 </TableCell>
                 {!isMobile && <TableCell>{getClientName(opp.clientId)}</TableCell>}
