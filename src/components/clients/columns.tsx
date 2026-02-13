@@ -40,7 +40,7 @@ const formatCuit = (cuit: string): string => {
 };
 
 export const columns = (
-  t: (key: string) => string,
+  t: (key: string) => void,
   onEdit: (client: Client) => void,
   onDelete: (clientId: string) => void
 ): ColumnDef<Client>[] => {
@@ -77,7 +77,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Table.clientId')}
             <div className="ml-auto">
@@ -101,7 +101,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Forms.clientName')}
             <div className="ml-auto">
@@ -133,7 +133,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Forms.cuit')}
             <div className="ml-auto">
@@ -158,7 +158,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Forms.clientEmail')}
             <div className="ml-auto">
@@ -181,9 +181,6 @@ export const columns = (
           </a>
         );
       },
-      meta: {
-        className: 'hidden lg:table-cell',
-      },
     },
     {
       accessorKey: 'phone',
@@ -193,7 +190,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Forms.clientPhone')}
             <div className="ml-auto">
@@ -208,9 +205,6 @@ export const columns = (
           </Button>
         );
       },
-      meta: {
-        className: 'hidden sm:table-cell',
-      },
     },
     {
       accessorKey: 'status',
@@ -220,7 +214,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Table.status')}
             <div className="ml-auto">
@@ -252,7 +246,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Table.industry')}
             <div className="ml-auto">
@@ -268,9 +262,6 @@ export const columns = (
         );
       },
       cell: ({ row }) => t(`Industries.${row.original.industry}`),
-      meta: {
-        className: 'hidden md:table-cell',
-      },
     },
     {
       accessorKey: 'createdAt',
@@ -280,7 +271,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Table.createdDate')}
             <div className="ml-auto">
@@ -298,9 +289,6 @@ export const columns = (
       cell: ({ row }) => {
         const { createdAt } = row.original;
         return createdAt instanceof Date ? format(createdAt, 'PPP') : '...';
-      },
-      meta: {
-        className: 'hidden lg:table-cell',
       },
     },
     {

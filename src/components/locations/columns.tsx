@@ -28,7 +28,7 @@ const statusClasses: { [key in Location['status']]: string } = {
 };
 
 export const columns = (
-  t: (key: string) => string,
+  t: (key: string) => void,
   onEdit: (location: Location) => void,
   onDelete: (locationId: string) => void
 ): ColumnDef<Location>[] => [
@@ -62,7 +62,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Locations.name')}
           <div className="ml-auto">
@@ -86,7 +86,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Locations.type')}
           <div className="ml-auto">
@@ -105,7 +105,7 @@ export const columns = (
   },
   {
     id: 'address',
-    header: 'Dirección',
+    header: t('Table.address'),
     cell: ({ row }) => `${row.original.streetName} ${row.original.streetNumber}, ${row.original.city}`,
   },
   {
@@ -116,7 +116,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Locations.status')}
           <div className="ml-auto">
@@ -175,5 +175,3 @@ export const columns = (
     },
   },
 ];
-
-    

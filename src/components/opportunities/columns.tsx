@@ -39,7 +39,7 @@ const stageVariant: {
 };
 
 export const columns = (
-  t: (key: string) => string,
+  t: (key: string) => void,
   clients: Client[],
   onEdit: (opportunity: Opportunity) => void,
   onDelete: (opportunityId: string) => void
@@ -74,7 +74,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Table.opportunityId')}
           <div className="ml-auto">
@@ -98,7 +98,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Dashboard.recentOpportunities.opportunityHeader')}
           <div className="ml-auto">
@@ -122,7 +122,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Dashboard.recentOpportunities.clientHeader')}
           <div className="ml-auto">
@@ -147,7 +147,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Dashboard.recentOpportunities.valueHeader')} (USD)
           <div className="ml-auto">
@@ -179,7 +179,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Dashboard.recentOpportunities.stageHeader')}
           <div className="ml-auto">
@@ -208,7 +208,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Forms.probability')}
           <div className="ml-auto">
@@ -229,9 +229,6 @@ export const columns = (
         <span>{row.original.probability}%</span>
       </div>
     ),
-    meta: {
-      className: 'hidden md:table-cell',
-    },
   },
   {
     accessorKey: 'closeDate',
@@ -241,7 +238,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Forms.estCloseDate')}
           <div className="ml-auto">
@@ -257,9 +254,6 @@ export const columns = (
       );
     },
     cell: ({ row }) => <div>{format(row.original.closeDate, 'PPP')}</div>,
-    meta: {
-      className: 'hidden lg:table-cell',
-    },
   },
   {
     id: 'actions',

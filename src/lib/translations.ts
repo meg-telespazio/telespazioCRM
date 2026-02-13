@@ -610,6 +610,8 @@ export const translations = {
       noOpportunities: 'This client has no opportunities.',
       noActivities: 'This client has no activities yet.',
     },
+    Yes: "Yes",
+    No: "No",
   },
   es: {
     App: {
@@ -1222,5 +1224,7 @@ export const translations = {
       noOpportunities: 'Este cliente no tiene oportunidades.',
       noActivities: 'Este cliente aún no tiene actividades.',
     },
+    Yes: "Sí",
+    No: "No",
   },
 };

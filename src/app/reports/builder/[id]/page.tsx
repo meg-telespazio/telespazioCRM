@@ -403,8 +403,8 @@ export default function ReportBuilderPage() {
         return <Select onValueChange={value => form.setValue(`filters.${index}.value`, value === 'true')} value={String(form.getValues(`filters.${index}.value`))}>
             <SelectTrigger><SelectValue placeholder={t('Reports.selectValue')} /></SelectTrigger>
             <SelectContent>
-                <SelectItem value="true">Yes</SelectItem>
-                <SelectItem value="false">No</SelectItem>
+                <SelectItem value="true">{t('Yes')}</SelectItem>
+                <SelectItem value="false">{t('No')}</SelectItem>
             </SelectContent>
         </Select>
     }

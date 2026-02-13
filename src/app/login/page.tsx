@@ -18,7 +18,7 @@ export default function LoginPage() {
           height={150}
           className="mx-auto mb-4"
         />
-        <h1 className="text-5xl font-bold text-white tracking-tight">
+        <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">
           {t('App.appName')}
         </h1>
       </div>

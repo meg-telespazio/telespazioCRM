@@ -32,61 +32,41 @@ type ReportResultTableProps = {
   data: any[];
 };
 
-const formatCellForDisplay = (value: any): string => {
-    if (value instanceof Date) {
-        return format(value, 'P');
-    }
-    if (Array.isArray(value)) {
-        if (value.length === 0) return '-';
-        if(typeof value[0] === 'object' && value[0] !== null) {
-             return value.map(item => item.address || item.number || JSON.stringify(item)).join(', ');
-        }
-        return value.join(', ');
-    }
-    if (typeof value === 'object' && value !== null) {
-        return JSON.stringify(value);
-    }
-    if(typeof value === 'boolean') {
-        return value ? 'Yes' : 'No';
-    }
-    if (typeof value === 'number') {
-        return value.toLocaleString();
-    }
-    return String(value ?? '-');
-}
-
-const getNestedValue = (obj: any, path: string) => {
-    if (!path) return undefined;
-    return path.split('.').reduce((p, c) => (p && p[c]), obj);
-}
-
-const formatCellForExport = (value: any): string => {
-  if (value instanceof Date) return format(value, 'yyyy-MM-dd');
-  if (Array.isArray(value)) {
-    if (value.length === 0) return '';
-    if (typeof value[0] === 'object' && value[0] !== null) {
-      return value
-        .map((item) => item.address || item.number || JSON.stringify(item))
-        .join('; ');
-    }
-    return value.join('; ');
-  }
-  if (typeof value === 'object' && value !== null) return JSON.stringify(value);
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  if (typeof value === 'number') return value.toString();
-  return String(value ?? '');
-};
-
-export function ReportResultTable({ columns, data }: ReportResultTableProps) {
+const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
   const { t } = useI18n();
+
+  const formatCellForDisplay = (value: any): string => {
+      if (value instanceof Date) {
+          return format(value, 'P');
+      }
+      if (Array.isArray(value)) {
+          if (value.length === 0) return '-';
+          if(typeof value[0] === 'object' && value[0] !== null) {
+               return value.map(item => item.address || item.number || JSON.stringify(item)).join(', ');
+          }
+          return value.join(', ');
+      }
+      if (typeof value === 'object' && value !== null) {
+          return JSON.stringify(value);
+      }
+      if(typeof value === 'boolean') {
+          return value ? t('Yes') : t('No');
+      }
+      if (typeof value === 'number') {
+          return value.toLocaleString();
+      }
+      return String(value ?? '-');
+  }
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const tableColumns = React.useMemo<ColumnDef<any>[]>(() => 
     columns.map(col => ({
-        ...col,
-        cell: (props) => formatCellForDisplay(props.getValue()),
+        accessorKey: col.accessorKey,
+        header: col.header,
+        cell: (props) => formatCellForDisplay(getNestedValue(props.row.original, col.accessorKey)),
         enableSorting: true,
-    })), [columns]);
+    })), [columns, t]);
 
   const table = useReactTable({
     data,
@@ -98,6 +78,29 @@ export function ReportResultTable({ columns, data }: ReportResultTableProps) {
     getPaginationRowModel: getPaginationRowModel(),
   });
   
+  const getNestedValue = (obj: any, path: string) => {
+    if (!path) return undefined;
+    return path.split('.').reduce((p, c) => (p && p[c]), obj);
+  }
+
+  const formatCellForExport = (value: any): string => {
+    if (value instanceof Date) return format(value, 'yyyy-MM-dd');
+    if (Array.isArray(value)) {
+      if (value.length === 0) return '';
+      if (typeof value[0] === 'object' && value[0] !== null) {
+        return value
+          .map((item) => item.address || item.number || JSON.stringify(item))
+          .join('; ');
+      }
+      return value.join('; ');
+    }
+    if (typeof value === 'object' && value !== null) return JSON.stringify(value);
+    if (typeof value === 'boolean') return value ? t('Yes') : t('No');
+    if (typeof value === 'number') return value.toString();
+    return String(value ?? '');
+  };
+
+
   const handleDownload = () => {
     const headers = columns.map(col => col.header);
     const dataForCsv = data.map(row => 
@@ -126,61 +129,65 @@ export function ReportResultTable({ columns, data }: ReportResultTableProps) {
           </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} onClick={header.column.getToggleSortingHandler()}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        {{
-                            asc: ' 🔼',
-                            desc: ' 🔽',
-                        }[header.column.getIsSorted() as string] ?? null}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
+        <div className="relative w-full overflow-auto">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id} onClick={header.column.getToggleSortingHandler()}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          {{
+                              asc: ' 🔼',
+                              desc: ' 🔽',
+                          }[header.column.getIsSorted() as string] ?? null}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={tableColumns.length}
-                  className="h-24 text-center"
-                >
-                  {t('Reports.noResults')}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && 'selected'}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={tableColumns.length}
+                    className="h-24 text-center"
+                  >
+                    {t('Reports.noResults')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
       <DataTablePagination table={table} />
       </CardContent>
     </Card>
   );
 }
+
+export { ReportResultTable };

@@ -37,7 +37,7 @@ const formatCurrency = (amount: number, currency: string) => {
 };
 
 export const columns = (
-  t: (key: string) => string,
+  t: (key: string) => void,
   onEdit: (item: ProductOrService) => void,
   onDelete: (itemId: string) => void
 ): ColumnDef<ProductOrService>[] => [
@@ -88,7 +88,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Table.itemId')}
           <div className="ml-auto">
@@ -112,7 +112,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('PS.itemName')}
           <div className="ml-auto">
@@ -136,7 +136,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Table.type')}
           <div className="ml-auto">
@@ -161,7 +161,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Table.status')}
           <div className="ml-auto">
@@ -193,7 +193,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Table.oneTimeCharge')}
           <div className="ml-auto">
@@ -221,7 +221,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Table.recurringCharge')}
           <div className="ml-auto">
@@ -249,7 +249,7 @@ export const columns = (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-4 hover:bg-red-700 hover:text-white"
+          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
         >
           {t('Table.createdDate')}
           <div className="ml-auto">
@@ -267,9 +267,6 @@ export const columns = (
     cell: ({ row }) => {
       const { createdAt } = row.original;
       return createdAt instanceof Date ? format(createdAt, 'PPP') : '...';
-    },
-    meta: {
-      className: 'hidden lg:table-cell',
     },
   },
   {
