@@ -25,7 +25,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useState, useEffect, useMemo } from 'react';
 import { useI18n } from '@/firebase/client-provider';
-import { Check, X } from 'lucide-react';
+import { Check, X, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Password validation: min 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
@@ -61,6 +61,8 @@ export function RegisterForm() {
   const [num2, setNum2] = useState(0);
   const [operation, setOperation] = useState('+');
   const [answer, setAnswer] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const generateHumanCheck = () => {
     const n1 = Math.floor(Math.random() * 90) + 10;
@@ -90,6 +92,26 @@ export function RegisterForm() {
   useEffect(() => {
     generateHumanCheck();
   }, []);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showPassword) {
+      timer = setTimeout(() => {
+        setShowPassword(false);
+      }, 4000);
+    }
+    return () => clearTimeout(timer);
+  }, [showPassword]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showConfirmPassword) {
+      timer = setTimeout(() => {
+        setShowConfirmPassword(false);
+      }, 4000);
+    }
+    return () => clearTimeout(timer);
+  }, [showConfirmPassword]);
 
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
@@ -202,6 +224,10 @@ export function RegisterForm() {
     }
   }
 
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const toggleConfirmPasswordVisibility = () =>
+    setShowConfirmPassword(!showConfirmPassword);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -252,9 +278,31 @@ export function RegisterForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('Auth.passwordLabel')}</FormLabel>
-              <FormControl>
-                <Input type="password" {...field} />
-              </FormControl>
+              <div className="relative">
+                <FormControl>
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    {...field}
+                    className="pr-10"
+                  />
+                </FormControl>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0 h-full px-3"
+                  onClick={togglePasswordVisibility}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword ? 'Hide password' : 'Show password'}
+                  </span>
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -285,9 +333,31 @@ export function RegisterForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('Auth.confirmPasswordLabel')}</FormLabel>
-              <FormControl>
-                <Input type="password" {...field} />
-              </FormControl>
+              <div className="relative">
+                <FormControl>
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    {...field}
+                    className="pr-10"
+                  />
+                </FormControl>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0 h-full px-3"
+                  onClick={toggleConfirmPasswordVisibility}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">
+                    {showConfirmPassword ? 'Hide password' : 'Show password'}
+                  </span>
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}

@@ -18,13 +18,15 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/firebase/client-provider';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 export function LoginForm() {
   const auth = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const { t } = useI18n();
+  const [showPassword, setShowPassword] = useState(false);
 
   const formSchema = useMemo(
     () =>
@@ -34,6 +36,16 @@ export function LoginForm() {
       }),
     [t]
   );
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showPassword) {
+      timer = setTimeout(() => {
+        setShowPassword(false);
+      }, 4000);
+    }
+    return () => clearTimeout(timer);
+  }, [showPassword]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,6 +73,8 @@ export function LoginForm() {
     }
   }
 
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -83,9 +97,31 @@ export function LoginForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('Auth.passwordLabel')}</FormLabel>
-              <FormControl>
-                <Input type="password" {...field} />
-              </FormControl>
+              <div className="relative">
+                <FormControl>
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    {...field}
+                    className="pr-10"
+                  />
+                </FormControl>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0 h-full px-3"
+                  onClick={togglePasswordVisibility}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword ? 'Hide password' : 'Show password'}
+                  </span>
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}
