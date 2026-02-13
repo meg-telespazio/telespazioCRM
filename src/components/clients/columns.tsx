@@ -4,6 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import {
   ArrowDown,
   ArrowUp,
+  Building,
   ChevronsUpDown,
   MoreHorizontal,
   Activity as ActivityIcon,
@@ -26,6 +27,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const statusClasses: { [key in Client['status']]: string } = {
   active: 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200',
@@ -77,7 +79,7 @@ export const columns = (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
+            className="w-full h-full text-center justify-center p-2 sm:p-4 hover:bg-red-700 hover:text-white"
           >
             {t('Table.clientId')}
             <div className="ml-auto">
@@ -92,6 +94,20 @@ export const columns = (
           </Button>
         );
       },
+      cell: ({ row }) => {
+        const client = row.original;
+        return (
+          <div className="flex flex-col items-center justify-center text-center gap-1">
+            <Avatar className="h-10 w-10 rounded-md">
+              <AvatarImage src={client.logoURL || undefined} alt={client.name} />
+              <AvatarFallback className="rounded-md bg-muted">
+                <Building className="h-5 w-5 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-muted-foreground">{client.publicId}</span>
+          </div>
+        )
+      }
     },
     {
       accessorKey: 'name',
