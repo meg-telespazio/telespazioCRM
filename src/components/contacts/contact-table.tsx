@@ -85,7 +85,7 @@ export function ContactTable({
 
   return (
     <div className="w-full bg-card rounded-lg border shadow-sm">
-      <div className="flex items-center p-4">
+      <div className="flex items-center justify-between p-4">
         <Input
           placeholder={t('Table.filterByName')}
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
@@ -94,37 +94,39 @@ export function ContactTable({
           }
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              {t('Table.columns')}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                 const translationKey = 
-                    column.id === 'createdAt' ? 'Table.createdDate' 
-                  : column.id === 'publicId' ? 'Table.contactId'
-                  : column.id === 'clientId' ? 'Pages.clients'
-                  : `Forms.${column.id}`;
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {t(translationKey) || column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                {t('Table.columns')}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  const translationKey = 
+                      column.id === 'createdAt' ? 'Table.createdDate' 
+                    : column.id === 'publicId' ? 'Table.contactId'
+                    : column.id === 'clientId' ? 'Pages.clients'
+                    : `Forms.${column.id}`;
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {t(translationKey) || column.id}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div className="border-y">
         <Table>
