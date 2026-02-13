@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
@@ -7,6 +7,24 @@ import { PageWrapper } from '@/components/layout/page-wrapper';
 export const metadata: Metadata = {
   title: 'T-Track Sales',
   description: 'A simple CRM for tracking sales opportunities.',
+  manifest: '/manifest.json',
+  applicationName: 'T-Track Sales',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'T-Track Sales',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#EC1C24',
 };
 
 export default function RootLayout({
