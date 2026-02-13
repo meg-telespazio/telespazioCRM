@@ -11,45 +11,53 @@ export default async function getCroppedImg(
   imageSrc: string,
   pixelCrop: { x: number; y: number; width: number; height: number }
 ): Promise<string | null> {
-  const image = await createImage(imageSrc);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  try {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-  if (!ctx) {
+    if (!ctx) {
+      return null;
+    }
+
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            console.error('Canvas is empty');
+            reject(new Error('Failed to create blob from canvas.'));
+            return;
+          }
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve(reader.result as string);
+          };
+          reader.onerror = () => {
+            reject(new Error('FileReader error during blob reading.'));
+          };
+          reader.readAsDataURL(blob);
+        },
+        'image/jpeg',
+        0.9
+      ); // Compress to JPEG with 90% quality
+    });
+  } catch (e) {
+    console.error('Error in getCroppedImg:', e);
     return null;
   }
-
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
-
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    pixelCrop.width,
-    pixelCrop.height
-  );
-
-  return new Promise((resolve) => {
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          console.error('Canvas is empty');
-          resolve(null);
-          return;
-        }
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.readAsDataURL(blob);
-      },
-      'image/jpeg',
-      0.9
-    ); // Compress to JPEG with 90% quality
-  });
 }
