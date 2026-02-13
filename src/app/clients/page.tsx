@@ -81,7 +81,7 @@ export default function ClientsPage() {
           {t('Pages.addClient')}
         </Button>
       </AppHeader>
-      <main className="flex-1 p-4 sm:p-6">
+      <main className="flex-1 p-4 sm:p-6 overflow-hidden">
         {clientsLoading ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-t-lg border-b bg-card p-4">
