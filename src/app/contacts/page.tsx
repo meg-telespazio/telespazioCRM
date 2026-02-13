@@ -86,7 +86,7 @@ export default function ContactsPage() {
   const pageIsLoading = contactsLoading || clientsLoading;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.contacts')}>
         <Button
           variant="outline"
@@ -101,7 +101,7 @@ export default function ContactsPage() {
           {t('Pages.addContact')}
         </Button>
       </AppHeader>
-      <main className="flex-1 p-4 sm:p-6 overflow-hidden">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {pageIsLoading ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-t-lg border-b bg-card p-4">

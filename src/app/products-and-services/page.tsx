@@ -76,14 +76,14 @@ export default function ProductsAndServicesPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.ps')}>
         <Button onClick={handleAddNew}>
           <PlusCircle className="mr-2 h-4 w-4" />
           {t('Pages.addItem')}
         </Button>
       </AppHeader>
-      <main className="flex-1 p-4 sm:p-6 overflow-hidden">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="mb-4">
           <Tabs value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
             <TabsList>

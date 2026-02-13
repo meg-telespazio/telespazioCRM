@@ -83,14 +83,14 @@ export default function OpportunitiesPage() {
   const pageIsLoading = opportunitiesLoading || clientsLoading;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.opportunities')}>
         <Button onClick={handleAddNew} disabled={clientsLoading}>
           <PlusCircle className="mr-2 h-4 w-4" />
           {t('Pages.addOpportunity')}
         </Button>
       </AppHeader>
-      <main className="flex-1 p-4 sm:p-6 overflow-hidden">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {pageIsLoading ? (
            <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-card rounded-t-lg border-b">

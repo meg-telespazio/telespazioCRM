@@ -70,7 +70,7 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.clients')}>
         <Button variant="outline" onClick={() => setImporterOpen(true)}>
           <Upload className="mr-2 h-4 w-4" />
@@ -81,7 +81,7 @@ export default function ClientsPage() {
           {t('Pages.addClient')}
         </Button>
       </AppHeader>
-      <main className="flex-1 p-4 sm:p-6 overflow-hidden">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {clientsLoading ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-t-lg border-b bg-card p-4">
