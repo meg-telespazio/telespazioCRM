@@ -71,7 +71,7 @@ export function RecentOpportunities({ opportunities, clients }: RecentOpportunit
             {recentOpportunities.map((opp) => (
               <TableRow key={opp.id} onClick={() => router.push(`/opportunities/${opp.id}`)} className="cursor-pointer">
                 <TableCell className="font-medium">
-                  <p className="truncate w-40 sm:w-auto">{opp.title}</p>
+                  <p className="truncate max-w-36 sm:max-w-none">{opp.title}</p>
                   {isMobile && (
                     <p className="text-xs text-muted-foreground">{getClientName(opp.clientId)}</p>
                   )}

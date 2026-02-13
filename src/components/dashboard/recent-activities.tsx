@@ -98,7 +98,9 @@ export function RecentActivities({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{getClientName(activity.clientId)}</TableCell>
+                  <TableCell className="truncate max-w-24 sm:max-w-xs">
+                    {getClientName(activity.clientId)}
+                  </TableCell>
                   <TableCell className="text-right">
                     {formatDistanceToNow(activity.createdAt, {
                       addSuffix: true,
