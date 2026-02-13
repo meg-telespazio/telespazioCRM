@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Point, Area } from 'react-easy-crop';
 import {
@@ -48,14 +48,6 @@ export function AvatarCropper({
     }
   };
 
-  // Reset zoom when a new image is loaded
-  useEffect(() => {
-    if (imageSrc) {
-      setZoom(1);
-      setCrop({ x: 0, y: 0 });
-    }
-  }, [imageSrc]);
-
   if (!imageSrc) return null;
 
   return (
@@ -69,6 +61,7 @@ export function AvatarCropper({
         </DialogHeader>
         <div className="relative h-80 w-full bg-muted">
             <Cropper
+              key={imageSrc} // Force re-mount on new image to reset state
               image={imageSrc}
               crop={crop}
               zoom={zoom}

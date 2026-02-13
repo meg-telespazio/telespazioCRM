@@ -20,7 +20,7 @@ const findLogoPrompt = ai.definePrompt({
     name: 'findLogoPrompt',
     input: { schema: FindLogoInputSchema },
     output: { schema: FindLogoOutputSchema },
-    prompt: `You are an expert web-scraping assistant. Your primary goal is to find the main logo of a company from their website's homepage.
+    prompt: `You are an expert web-scraping assistant. Your primary goal is to find the main, high-quality company logo from their website's homepage. Avoid low-quality favicons unless no other logo can be found.
 
 Analyze the HTML content of the website at the following URL: {{{url}}}
 
@@ -28,16 +28,16 @@ Follow these steps with precision:
 1.  **Prioritize the Header/Navigation:** The main logo is almost always in the site's primary header or navigation bar. It's often an \`<img>\` tag inside a link \`<a>\` that points to the homepage.
 2.  **Identify the Logo Image:**
     *   Look for \`<img>\` tags where \`src\`, \`alt\`, \`class\`, or \`id\` attributes contain words like "logo", "brand".
-    *   Prefer vector formats like SVG (\`.svg\`) over raster formats like PNG or JPG if available.
+    *   Prefer vector formats like SVG (\`.svg\`) over raster formats like PNG or JPG if available. They offer the best quality.
     *   The \`src\` attribute could be a relative URL, an absolute URL, or a \`data:\` URI.
     *   Sometimes the logo is an \`<svg>\` element directly in the HTML. If you find an inline SVG, you cannot return it as you can only return URLs or data URIs. Instead, look for an \`<img>\` tag as a fallback.
-3.  **Favicon as Fallback:** If you cannot find a clear logo in the page body, look in the \`<head>\` section for \`<link>\` tags with \`rel\` attributes like "icon", "shortcut icon", or "apple-touch-icon".
-4.  **URL Handling:**
+3.  **URL Handling:**
     *   If you find a \`data:\` URI in an \`src\` attribute, return it directly.
     *   If you find a relative URL (e.g., \`/images/logo.svg\`), you **MUST** convert it to an absolute URL using the original website URL as the base. For example, if the website is \`https://example.com\` and you find \`/logo.png\`, the absolute URL is \`https://example.com/logo.png\`.
     *   If you find an absolute URL, return it as is.
+4.  **Favicon as Absolute Last Resort:** Only if you have exhausted all other options and can find absolutely no other logo in the \`<body>\`, then as a last resort, look in the \`<head>\` for \`<link rel="icon" ...>\`.
 5.  **Return Value:**
-    *   Return the best result you find (preferring a full logo over a favicon) in the \`logoUrl\` field.
+    *   Return the best, highest-resolution logo URL you can find.
     *   If after all checks you find no suitable logo, return an empty string for \`logoUrl\`. Do not guess.`,
 });
 
@@ -103,42 +103,11 @@ export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): 
             }
         }
     } catch (error) {
-        console.warn('AI logo find/fetch failed, falling back to Google Favicon service:', error);
+        console.error('AI logo find/fetch failed:', error);
+        throw new Error('The AI assistant could not find a valid logo.');
     }
 
-    // 3. Fallback: try Google's S2 favicon service
-    try {
-        const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-        const response = await fetch(googleFaviconUrl);
-        const contentType = response.headers.get('content-type');
-
-        if (response.ok && contentType && contentType.startsWith('image/')) {
-            const imageBuffer = await response.arrayBuffer();
-            const base64String = Buffer.from(imageBuffer).toString('base64');
-            const dataUri = `data:${contentType};base64,${base64String}`;
-            return { dataUri };
-        }
-    } catch(error) {
-        console.warn('Google Favicon service fetch failed, falling back to direct favicon:', error);
-    }
-
-    // 4. Final Fallback: try to fetch the favicon directly
-    try {
-        const faviconUrl = new URL('/favicon.ico', websiteUrl).href;
-        const faviconResponse = await fetch(faviconUrl);
-        
-        const contentType = faviconResponse.headers.get('content-type');
-        if (faviconResponse.ok && contentType && contentType.startsWith('image/')) {
-             const faviconBuffer = await faviconResponse.arrayBuffer();
-             const base64String = Buffer.from(faviconBuffer).toString('base64');
-             const dataUri = `data:${contentType};base64,${base64String}`;
-             return { dataUri };
-        }
-    } catch (faviconError) {
-        // This is the final fallback, if it fails, we throw the main error.
-    }
-
-    // If all attempts fail, throw an error.
-    console.error('All logo fetching attempts failed.');
-    throw new Error('Could not find a logo or favicon for the specified website.');
+    // If all high-quality attempts fail, throw an error.
+    console.error('All high-quality logo fetching attempts failed.');
+    throw new Error('Could not find a logo for the specified website. Please upload one manually.');
 }
