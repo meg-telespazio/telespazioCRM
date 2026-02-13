@@ -1,12 +1,18 @@
 'use client';
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 import type { Opportunity } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 
@@ -32,32 +38,42 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
 
   const data = getOpportunitiesByStage();
 
+  const chartConfig = {
+    total: {
+      label: t('Table.totals'),
+      color: "hsl(var(--primary))",
+    },
+  } satisfies ChartConfig;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('Dashboard.opportunitiesChart.title')}</CardTitle>
       </CardHeader>
-      <CardContent className="pl-2">
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={data}>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
+          <BarChart accessibilityLayer data={data}>
+            <CartesianGrid vertical={false} />
             <XAxis
               dataKey="name"
-              stroke="#888888"
-              fontSize={12}
               tickLine={false}
+              tickMargin={10}
               axisLine={false}
+              tickFormatter={(value) => value}
             />
-            <YAxis
-              stroke="#888888"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `${value}`}
-              allowDecimals={false}
+            <YAxis 
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+                allowDecimals={false}
             />
-            <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent />}
+            />
+            <Bar dataKey="total" fill="var(--color-total)" radius={4} />
           </BarChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </CardContent>
     </Card>
   );
