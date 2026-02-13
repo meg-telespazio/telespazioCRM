@@ -58,13 +58,13 @@ export function RecentOpportunities({ opportunities, clients }: RecentOpportunit
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
+        <Table className={isMobile ? "table-fixed" : ""}>
           <TableHeader>
             <TableRow>
-              <TableHead className={isMobile ? 'w-[65%]' : ''}>{t('Dashboard.recentOpportunities.opportunityHeader')}</TableHead>
+              <TableHead className={isMobile ? 'w-2/3' : ''}>{t('Dashboard.recentOpportunities.opportunityHeader')}</TableHead>
               {!isMobile && <TableHead>{t('Dashboard.recentOpportunities.clientHeader')}</TableHead>}
               {!isMobile && <TableHead>{t('Dashboard.recentOpportunities.valueHeader')}</TableHead>}
-              <TableHead className={`text-right ${isMobile ? 'w-[35%]' : ''}`}>{t('Dashboard.recentOpportunities.stageHeader')}</TableHead>
+              <TableHead className={`text-right ${isMobile ? 'w-1/3' : ''}`}>{t('Dashboard.recentOpportunities.stageHeader')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
