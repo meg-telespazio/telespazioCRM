@@ -1,7 +1,7 @@
 'use server';
 /**
  * @fileOverview An AI flow to find and fetch a company logo from a website.
- * - findAndFetchLogo - A server action that finds a logo URL and returns it as a data URI.
+ * - findAndFetchLogo - a server action that finds a logo URL and returns it as a data URI.
  */
 
 import { ai } from '@/ai/genkit';
@@ -13,22 +13,32 @@ const FindLogoInputSchema = z.object({
 
 // Allow relative URLs from the model, we will resolve them later.
 const FindLogoOutputSchema = z.object({
-  logoUrl: z.string().describe("The URL (can be relative or absolute) of the company's main logo image."),
+  logoUrl: z.string().describe("The URL (can be relative, absolute, or a data URI) of the company's main logo image."),
 });
 
 const findLogoPrompt = ai.definePrompt({
     name: 'findLogoPrompt',
     input: { schema: FindLogoInputSchema },
     output: { schema: FindLogoOutputSchema },
-    prompt: `You are an expert web-scraping assistant. Your task is to find the best possible logo for a company from their website.
+    prompt: `You are an expert web-scraping assistant. Your primary goal is to find the main logo of a company from their website's homepage.
 
-Analyze the content of the website at the following URL: {{{url}}}
+Analyze the HTML content of the website at the following URL: {{{url}}}
 
-Follow these steps in order:
-1.  Look for the primary logo image in the page content (e.g., in the header, navigation bar). It's often an <img> tag with "logo" in its filename, src, or alt attribute. Prefer SVG or PNG formats.
-2.  If you can't find a clear logo, look in the <head> section for <link> tags with rel="icon", rel="shortcut icon", or rel="apple-touch-icon". These are favicons and can be used as a logo.
-3.  Return the **absolute URL** for the best image file you find. If you find a relative URL, you MUST convert it to an absolute URL based on the input URL.
-4.  If you cannot find any logo or icon URL after checking both the body and the head, return an empty string for the \`logoUrl\`.`,
+Follow these steps with precision:
+1.  **Prioritize the Header/Navigation:** The main logo is almost always in the site's primary header or navigation bar. It's often an \`<img>\` tag inside a link \`<a>\` that points to the homepage.
+2.  **Identify the Logo Image:**
+    *   Look for \`<img>\` tags where \`src\`, \`alt\`, \`class\`, or \`id\` attributes contain words like "logo", "brand".
+    *   Prefer vector formats like SVG (\`.svg\`) over raster formats like PNG or JPG if available.
+    *   The \`src\` attribute could be a relative URL, an absolute URL, or a \`data:\` URI.
+    *   Sometimes the logo is an \`<svg>\` element directly in the HTML. If you find an inline SVG, you cannot return it as you can only return URLs or data URIs. Instead, look for an \`<img>\` tag as a fallback.
+3.  **Favicon as Fallback:** If you cannot find a clear logo in the page body, look in the \`<head>\` section for \`<link>\` tags with \`rel\` attributes like "icon", "shortcut icon", or "apple-touch-icon".
+4.  **URL Handling:**
+    *   If you find a \`data:\` URI in an \`src\` attribute, return it directly.
+    *   If you find a relative URL (e.g., \`/images/logo.svg\`), you **MUST** convert it to an absolute URL using the original website URL as the base. For example, if the website is \`https://example.com\` and you find \`/logo.png\`, the absolute URL is \`https://example.com/logo.png\`.
+    *   If you find an absolute URL, return it as is.
+5.  **Return Value:**
+    *   Return the best result you find (preferring a full logo over a favicon) in the \`logoUrl\` field.
+    *   If after all checks you find no suitable logo, return an empty string for \`logoUrl\`. Do not guess.`,
 });
 
 const findLogoFlow = ai.defineFlow(
@@ -75,6 +85,11 @@ export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): 
         const { logoUrl: rawLogoUrl } = await findLogoFlow({ url: websiteUrl });
 
         if (rawLogoUrl) {
+            // Handle if the model returns a data URI directly
+            if (rawLogoUrl.startsWith('data:image')) {
+                return { dataUri: rawLogoUrl };
+            }
+            
             // A URL was found, try to fetch it
             const absoluteLogoUrl = new URL(rawLogoUrl, websiteUrl).href;
             const response = await fetch(absoluteLogoUrl);
