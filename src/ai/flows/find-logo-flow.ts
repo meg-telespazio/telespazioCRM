@@ -38,7 +38,7 @@ Follow these steps with precision:
 4.  **Favicon as Absolute Last Resort:** Only if you have exhausted all other options and can find absolutely no other logo in the \`<body>\`, then as a last resort, look in the \`<head>\` for \`<link rel="icon" ...>\`.
 5.  **Return Value:**
     *   Return the best, highest-resolution logo URL you can find.
-    *   If after all checks you find no suitable logo, return an empty string for \`logoUrl\`. Do not guess.`,
+    *   If after all checks you find no suitable logo, return an empty string for \`logoUrl\`.`,
 });
 
 const findLogoFlow = ai.defineFlow(
@@ -55,13 +55,13 @@ const findLogoFlow = ai.defineFlow(
 );
 
 // Server action to be called from the client
-export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): Promise<{ dataUri: string }> {
+export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): Promise<{ dataUri: string | null; error?: string; }> {
     // 0. Extract domain
     let domain = '';
     try {
         domain = new URL(websiteUrl).hostname;
     } catch (e) {
-        throw new Error('Invalid website URL provided.');
+        return { dataUri: null, error: 'Invalid website URL provided.' };
     }
 
     // 1. Try Clearbit first
@@ -102,12 +102,12 @@ export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): 
                 return { dataUri };
             }
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('AI logo find/fetch failed:', error);
-        throw new Error('The AI assistant could not find a valid logo.');
+        return { dataUri: null, error: 'The AI assistant could not find a valid logo.' };
     }
 
-    // If all high-quality attempts fail, throw an error.
+    // If all high-quality attempts fail, return an error object.
     console.error('All high-quality logo fetching attempts failed.');
-    throw new Error('Could not find a logo for the specified website. Please upload one manually.');
+    return { dataUri: null, error: 'Could not find a logo for the specified website. Please upload one manually.' };
 }

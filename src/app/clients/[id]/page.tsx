@@ -198,9 +198,16 @@ export default function ClientFormPage() {
           title: t('Importer.logoFound'),
           description: t('Importer.logoFoundDesc'),
         });
+      } else {
+        console.error('Failed to find logo:', result.error);
+        toast({
+          variant: 'destructive',
+          title: t('Importer.findLogoError'),
+          description: result.error || t('Importer.findLogoErrorDesc'),
+        });
       }
     } catch (error: any) {
-      console.error('Failed to find logo:', error);
+      console.error('An unexpected error occurred while finding logo:', error);
       toast({
         variant: 'destructive',
         title: t('Importer.findLogoError'),
