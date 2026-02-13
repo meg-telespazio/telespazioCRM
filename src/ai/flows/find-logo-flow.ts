@@ -94,34 +94,51 @@ export async function findAndFetchLogo({ websiteUrl }: { websiteUrl: string }): 
             const absoluteLogoUrl = new URL(rawLogoUrl, websiteUrl).href;
             const response = await fetch(absoluteLogoUrl);
 
-            if (response.ok) {
-                // Success! Convert and return.
+            const contentType = response.headers.get('content-type');
+            if (response.ok && contentType && contentType.startsWith('image/')) {
                 const imageBuffer = await response.arrayBuffer();
-                const contentType = response.headers.get('content-type') || 'image/png';
                 const base64String = Buffer.from(imageBuffer).toString('base64');
                 const dataUri = `data:${contentType};base64,${base64String}`;
                 return { dataUri };
             }
         }
     } catch (error) {
-        console.warn('AI logo find/fetch failed, falling back to favicon:', error);
+        console.warn('AI logo find/fetch failed, falling back to Google Favicon service:', error);
     }
 
-    // 3. Fallback: try to fetch the favicon
+    // 3. Fallback: try Google's S2 favicon service
+    try {
+        const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        const response = await fetch(googleFaviconUrl);
+        const contentType = response.headers.get('content-type');
+
+        if (response.ok && contentType && contentType.startsWith('image/')) {
+            const imageBuffer = await response.arrayBuffer();
+            const base64String = Buffer.from(imageBuffer).toString('base64');
+            const dataUri = `data:${contentType};base64,${base64String}`;
+            return { dataUri };
+        }
+    } catch(error) {
+        console.warn('Google Favicon service fetch failed, falling back to direct favicon:', error);
+    }
+
+    // 4. Final Fallback: try to fetch the favicon directly
     try {
         const faviconUrl = new URL('/favicon.ico', websiteUrl).href;
         const faviconResponse = await fetch(faviconUrl);
-        if (!faviconResponse.ok) {
-            throw new Error(`Favicon not found or fetch failed: ${faviconResponse.statusText}`);
+        
+        const contentType = faviconResponse.headers.get('content-type');
+        if (faviconResponse.ok && contentType && contentType.startsWith('image/')) {
+             const faviconBuffer = await faviconResponse.arrayBuffer();
+             const base64String = Buffer.from(faviconBuffer).toString('base64');
+             const dataUri = `data:${contentType};base64,${base64String}`;
+             return { dataUri };
         }
-
-        const faviconBuffer = await faviconResponse.arrayBuffer();
-        const contentType = faviconResponse.headers.get('content-type') || 'image/x-icon';
-        const base64String = Buffer.from(faviconBuffer).toString('base64');
-        const dataUri = `data:${contentType};base64,${base64String}`;
-        return { dataUri };
     } catch (faviconError) {
-        console.error('All logo fetching attempts failed:', faviconError);
-        throw new Error('Could not find a logo or favicon on the specified website.');
+        // This is the final fallback, if it fails, we throw the main error.
     }
+
+    // If all attempts fail, throw an error.
+    console.error('All logo fetching attempts failed.');
+    throw new Error('Could not find a logo or favicon for the specified website.');
 }
