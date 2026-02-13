@@ -116,6 +116,7 @@ export type UserProfile = {
   notes?: string;
   status: 'active' | 'suspended';
   position: 'Director' | 'Manager' | 'Executive' | 'Project Manager';
+  tablePreferences?: Record<string, Record<string, boolean>>;
 };
 
 export type ReportFilter = {

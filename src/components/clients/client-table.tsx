@@ -12,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { doc, updateDoc } from 'firebase/firestore';
 
 import {
   Table,
@@ -32,6 +33,7 @@ import {
 import { columns } from './columns';
 import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
+import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
 
 type ClientTableProps = {
@@ -41,18 +43,45 @@ type ClientTableProps = {
 };
 
 export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
+  const { t } = useI18n();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const tableId = 'clients';
+  const defaultVisibility = {
+    createdAt: false,
+    phone: false,
+    industry: false,
+  };
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({
-        'createdAt': false,
-        'phone': false,
-        'industry': false,
-    });
+    React.useState<VisibilityState>(defaultVisibility);
   const [rowSelection, setRowSelection] = React.useState({});
-  const { t } = useI18n();
+
+  React.useEffect(() => {
+    const savedVisibility = user?.tablePreferences?.[tableId];
+    if (savedVisibility) {
+      setColumnVisibility(savedVisibility);
+    }
+  }, [user, tableId]);
+
+  const handleVisibilityChange = (
+    updater: React.SetStateAction<VisibilityState>
+  ) => {
+    const newVisibility =
+      typeof updater === 'function' ? updater(columnVisibility) : updater;
+    setColumnVisibility(newVisibility);
+
+    if (user && firestore) {
+      const userRef = doc(firestore, 'users', user.uid);
+      updateDoc(userRef, {
+        [`tablePreferences.${tableId}`]: newVisibility,
+      });
+    }
+  };
 
   const table = useReactTable({
     data,
@@ -63,7 +92,7 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: handleVisibilityChange,
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,

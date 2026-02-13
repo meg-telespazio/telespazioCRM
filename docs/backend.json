@@ -51,6 +51,10 @@
           "type": "string",
           "enum": ["Director", "Manager", "Executive", "Project Manager"],
           "description": "The user's job position."
+        },
+        "tablePreferences": {
+          "type": "object",
+          "description": "Stores user's column visibility preferences for various tables."
         }
       },
       "required": [

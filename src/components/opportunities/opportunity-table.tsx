@@ -12,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { doc, updateDoc } from 'firebase/firestore';
 
 import {
   Table,
@@ -32,6 +33,7 @@ import {
 import { columns } from './columns';
 import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
+import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
 
 type OpportunityTableProps = {
@@ -47,17 +49,44 @@ export function OpportunityTable({
   onEdit,
   onDelete,
 }: OpportunityTableProps) {
+  const { t } = useI18n();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const tableId = 'opportunities';
+  const defaultVisibility = {
+    closeDate: false,
+    probability: false,
+  };
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({
-      'closeDate': false,
-      'probability': false,
-    });
+    React.useState<VisibilityState>(defaultVisibility);
   const [rowSelection, setRowSelection] = React.useState({});
-  const { t } = useI18n();
+  
+  React.useEffect(() => {
+    const savedVisibility = user?.tablePreferences?.[tableId];
+    if (savedVisibility) {
+      setColumnVisibility(savedVisibility);
+    }
+  }, [user, tableId]);
+
+  const handleVisibilityChange = (
+    updater: React.SetStateAction<VisibilityState>
+  ) => {
+    const newVisibility =
+      typeof updater === 'function' ? updater(columnVisibility) : updater;
+    setColumnVisibility(newVisibility);
+
+    if (user && firestore) {
+      const userRef = doc(firestore, 'users', user.uid);
+      updateDoc(userRef, {
+        [`tablePreferences.${tableId}`]: newVisibility,
+      });
+    }
+  };
 
   const tableColumns = React.useMemo(
     () => columns(t, clients, onEdit, onDelete),
@@ -73,7 +102,7 @@ export function OpportunityTable({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: handleVisibilityChange,
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
