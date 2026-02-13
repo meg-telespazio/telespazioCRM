@@ -127,6 +127,17 @@ export const columns = (
         </Button>
       );
     },
+    cell: ({ row }) => {
+      const item = row.original;
+      return (
+        <span
+          onClick={() => onEdit(item)}
+          className="font-medium hover:underline cursor-pointer"
+        >
+          {item.name}
+        </span>
+      );
+    },
   },
   {
     accessorKey: 'type',
