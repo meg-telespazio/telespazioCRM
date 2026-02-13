@@ -1,6 +1,6 @@
 'use client';
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, LabelList } from 'recharts';
 import {
   Card,
   CardContent,
@@ -54,36 +54,58 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
-          <BarChart accessibilityLayer data={data} margin={{ right: isMobile ? 16 : 0 }}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="name"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={5}
-              interval={0}
-              {...(isMobile ? {
-                angle: -45,
-                textAnchor: 'end',
-                height: 70,
-                tick: { fontSize: 10 },
-              } : {
-                tick: { fontSize: 12 },
-              })}
-            />
-            <YAxis 
+          {isMobile ? (
+             <BarChart accessibilityLayer data={data} layout="vertical" margin={{ left: 10, right: 30 }}>
+                <CartesianGrid horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis
+                    dataKey="name"
+                    type="category"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={5}
+                    tick={{ fontSize: 12 }}
+                    width={80}
+                />
+                <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent />}
+                />
+                <Bar dataKey="total" fill="var(--color-total)" radius={4}>
+                    <LabelList
+                        dataKey="total"
+                        position="right"
+                        offset={8}
+                        className="fill-foreground"
+                        fontSize={12}
+                    />
+                </Bar>
+             </BarChart>
+          ) : (
+            <BarChart accessibilityLayer data={data} margin={{ right: 16 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                dataKey="name"
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `${value}`}
-                allowDecimals={false}
+                tickMargin={8}
+                interval={0}
                 tick={{ fontSize: 12 }}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent />}
-            />
-            <Bar dataKey="total" fill="var(--color-total)" radius={4} />
-          </BarChart>
+                />
+                <YAxis 
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `${value}`}
+                    allowDecimals={false}
+                    tick={{ fontSize: 12 }}
+                />
+                <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent />}
+                />
+                <Bar dataKey="total" fill="var(--color-total)" radius={4} />
+            </BarChart>
+          )}
         </ChartContainer>
       </CardContent>
     </Card>

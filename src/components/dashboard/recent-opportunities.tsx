@@ -18,6 +18,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useRouter } from 'next/navigation';
 
 const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "destructive" } = {
   Prospecting: "secondary",
@@ -36,6 +38,9 @@ type RecentOpportunitiesProps = {
 
 export function RecentOpportunities({ opportunities, clients }: RecentOpportunitiesProps) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
+  const router = useRouter();
+
   const recentOpportunities = [...opportunities]
     .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
     .slice(0, 5);
@@ -57,18 +62,23 @@ export function RecentOpportunities({ opportunities, clients }: RecentOpportunit
           <TableHeader>
             <TableRow>
               <TableHead>{t('Dashboard.recentOpportunities.opportunityHeader')}</TableHead>
-              <TableHead>{t('Dashboard.recentOpportunities.clientHeader')}</TableHead>
-              <TableHead>{t('Dashboard.recentOpportunities.valueHeader')}</TableHead>
-              <TableHead>{t('Dashboard.recentOpportunities.stageHeader')}</TableHead>
+              {!isMobile && <TableHead>{t('Dashboard.recentOpportunities.clientHeader')}</TableHead>}
+              {!isMobile && <TableHead>{t('Dashboard.recentOpportunities.valueHeader')}</TableHead>}
+              <TableHead className="text-right">{t('Dashboard.recentOpportunities.stageHeader')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {recentOpportunities.map((opp) => (
-              <TableRow key={opp.id}>
-                <TableCell className="font-medium">{opp.title}</TableCell>
-                <TableCell>{getClientName(opp.clientId)}</TableCell>
-                <TableCell>${opp.value.toLocaleString()}</TableCell>
-                <TableCell>
+              <TableRow key={opp.id} onClick={() => router.push(`/opportunities/${opp.id}`)} className="cursor-pointer">
+                <TableCell className="font-medium">
+                  <p className="truncate w-40 sm:w-auto">{opp.title}</p>
+                  {isMobile && (
+                    <p className="text-xs text-muted-foreground">{getClientName(opp.clientId)}</p>
+                  )}
+                </TableCell>
+                {!isMobile && <TableCell>{getClientName(opp.clientId)}</TableCell>}
+                {!isMobile && <TableCell>${opp.value.toLocaleString()}</TableCell>}
+                <TableCell className="text-right">
                   <Badge variant={stageVariant[opp.stage]}>{t(`Stages.${opp.stage}`)}</Badge>
                 </TableCell>
               </TableRow>
