@@ -15,9 +15,11 @@ import {
 } from '@/components/ui/chart';
 import type { Opportunity } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function OpportunitiesChart({ opportunities }: { opportunities: Opportunity[] }) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const getOpportunitiesByStage = () => {
     const stages: Opportunity['stage'][] = [
@@ -52,20 +54,29 @@ export function OpportunitiesChart({ opportunities }: { opportunities: Opportuni
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
-          <BarChart accessibilityLayer data={data}>
+          <BarChart accessibilityLayer data={data} margin={{ right: isMobile ? 16 : 0 }}>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="name"
               tickLine={false}
-              tickMargin={10}
               axisLine={false}
-              tickFormatter={(value) => value}
+              tickMargin={5}
+              interval={0}
+              {...(isMobile ? {
+                angle: -45,
+                textAnchor: 'end',
+                height: 70,
+                tick: { fontSize: 10 },
+              } : {
+                tick: { fontSize: 12 },
+              })}
             />
             <YAxis 
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value) => `${value}`}
                 allowDecimals={false}
+                tick={{ fontSize: 12 }}
             />
             <ChartTooltip
               cursor={false}
