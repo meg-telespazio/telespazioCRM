@@ -101,7 +101,7 @@ export default function DashboardPage() {
             {pageIsLoading ? (
               <Skeleton className="h-[425px]" />
             ) : (
-              <OpportunitiesChart opportunities={opportunities || []} />
+              <OpportunitiesChart opportunities={opportunities || []} clients={clients || []} />
             )}
           </div>
           <div className="col-span-4 lg:col-span-3 min-w-0">
@@ -129,3 +129,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

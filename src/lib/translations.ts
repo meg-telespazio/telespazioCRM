@@ -100,6 +100,7 @@ export const translations = {
       },
       opportunitiesChart: {
         title: 'Opportunities by Stage',
+        byMonth: 'FCV for opportunities in the current year',
       },
       recentOpportunities: {
         title: 'Recent Opportunities',
@@ -723,6 +724,7 @@ export const translations = {
       },
       opportunitiesChart: {
         title: 'Oportunidades por Etapa',
+        byMonth: 'FCV de oportunidades en el año actual',
       },
       recentOpportunities: {
         title: 'Oportunidades Recientes',
@@ -1246,3 +1248,5 @@ export const translations = {
     No: "No",
   },
 };
+
+    
