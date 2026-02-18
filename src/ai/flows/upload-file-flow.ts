@@ -4,13 +4,6 @@
  */
 import { getFirebaseConfig } from '@/firebase/config';
 
-type UploadInput = {
-  fileDataUri: string;
-  filePath: string; // e.g., 'opportunities/OP-ID/filename.pdf'
-  contentType: string;
-  authToken: string;
-};
-
 type UploadOutput = {
   downloadURL: string;
   fullPath: string;
@@ -20,10 +13,18 @@ type UploadOutput = {
 };
 
 export async function uploadFile(
-  input: UploadInput
+  formData: FormData
 ): Promise<{ data?: UploadOutput; error?: string }> {
   try {
-    const { fileDataUri, filePath, contentType, authToken } = input;
+    const file = formData.get('file') as File | null;
+    const filePath = formData.get('filePath') as string | null;
+    const contentType = formData.get('contentType') as string | null;
+    const authToken = formData.get('authToken') as string | null;
+
+    if (!file || !filePath || !contentType || !authToken) {
+        throw new Error('Invalid upload arguments. Missing file, path, content type, or auth token.');
+    }
+
     const config = getFirebaseConfig();
     const bucket = config.storageBucket;
 
@@ -31,11 +32,7 @@ export async function uploadFile(
       throw new Error('Firebase Storage bucket is not configured.');
     }
 
-    const base64String = fileDataUri.split(',')[1];
-    if (!base64String) {
-        throw new Error('Invalid Data URI format.');
-    }
-    const fileBuffer = Buffer.from(base64String, 'base64');
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
     
     const storageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?name=${encodeURIComponent(filePath)}`;
 

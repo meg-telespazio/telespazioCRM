@@ -71,51 +71,41 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
 
       setUploads((prev) => ({ ...prev, [uniqueFileName]: { fileName: file.name, status: 'uploading' } }));
       
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
-        const fileDataUri = reader.result as string;
-        const filePath = `opportunities/${opportunityId}/${uniqueFileName}`;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('filePath', `opportunities/${opportunityId}/${uniqueFileName}`);
+      formData.append('contentType', file.type);
+      formData.append('authToken', authToken);
         
-        const result = await uploadFile({
-            fileDataUri,
-            filePath,
-            contentType: file.type,
-            authToken,
-        });
+      const result = await uploadFile(formData);
 
-        if (result.error || !result.data) {
-            const errorMessage = result.error || 'Upload failed with an unknown error.';
-            console.error("================ UPLOAD FAILED ================");
-            console.error(errorMessage);
-            console.error("===============================================");
-            setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], status: 'error', error: errorMessage } }));
-            toast({
-                variant: 'destructive',
-                title: t('Auth.registerFailedTitle'),
-                description: errorMessage,
-            });
-        } else {
-             append({
-                name: file.name,
-                url: result.data.downloadURL,
-                type: result.data.contentType,
-                size: result.data.size,
-                path: result.data.fullPath,
-            });
-            setTimeout(() => {
-                setUploads(prev => {
-                    const newUploads = {...prev};
-                    delete newUploads[uniqueFileName];
-                    return newUploads;
-                });
-            }, 2000);
-        }
-      };
-      reader.onerror = (error) => {
-          console.error("FileReader error:", error);
-          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], status: 'error', error: 'Could not read file.' } }));
-      };
+      if (result.error || !result.data) {
+          const errorMessage = result.error || 'Upload failed with an unknown error.';
+          console.error("================ UPLOAD FAILED ================");
+          console.error(errorMessage);
+          console.error("===============================================");
+          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], status: 'error', error: errorMessage } }));
+          toast({
+              variant: 'destructive',
+              title: t('Auth.registerFailedTitle'),
+              description: errorMessage,
+          });
+      } else {
+           append({
+              name: file.name,
+              url: result.data.downloadURL,
+              type: result.data.contentType,
+              size: result.data.size,
+              path: result.data.fullPath,
+          });
+          setTimeout(() => {
+              setUploads(prev => {
+                  const newUploads = {...prev};
+                  delete newUploads[uniqueFileName];
+                  return newUploads;
+              });
+          }, 2000);
+      }
     });
   }, [storage, opportunityId, append, disabled, t, toast, user, auth]);
 
