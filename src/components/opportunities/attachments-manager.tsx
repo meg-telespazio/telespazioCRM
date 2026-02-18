@@ -53,14 +53,14 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
     if (!files || disabled) return;
 
     Array.from(files).forEach((file) => {
-      const uniqueFileName = `${Date.now()}_${file.name}`;
+      const uniqueFileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
       
       if (file.size > MAX_FILE_SIZE_BYTES) {
         setUploads((prev) => ({ ...prev, [uniqueFileName]: { file, progress: 0, error: `File is too large (max ${MAX_FILE_SIZE_MB}MB).` } }));
         return;
       }
       if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        setUploads((prev) => ({ ...prev, [uniqueFileName]: { file, progress: 0, error: `Invalid file type.` } }));
+        setUploads((prev) => ({ ...prev, [uniqueFileName]: { file, progress: 0, error: 'Invalid file type.' } }));
         return;
       }
 
@@ -90,7 +90,13 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               size: file.size,
               path: filePath,
             });
-            // Keep in uploads list to show completion, will be cleared on next interaction
+            setTimeout(() => {
+                setUploads(prev => {
+                    const newUploads = {...prev};
+                    delete newUploads[uniqueFileName];
+                    return newUploads;
+                });
+            }, 2000);
           } catch(e) {
              setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], error: 'Could not get download URL.' } }));
           }
@@ -109,7 +115,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
       toast({ variant: 'success', title: 'File deleted successfully' });
     } catch (error: any) {
       if (error.code === 'storage/object-not-found') {
-        remove(index); // If file not in storage, still remove from DB
+        remove(index);
         toast({ variant: 'default', title: 'File reference removed' });
       } else {
         toast({ variant: 'destructive', title: 'Error deleting file', description: error.message });
@@ -135,13 +141,12 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         <CardTitle>Proposal Attachments</CardTitle>
         <CardDescription>Attach relevant files like PDFs, Word documents, or spreadsheets.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {!disabled && (
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {!disabled ? (
           <div
             className={cn(
-              "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors",
-              isDragging && "border-primary bg-primary/10",
-              disabled && "cursor-not-allowed opacity-50"
+              "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors h-full min-h-[200px]",
+              isDragging && "border-primary bg-primary/10"
             )}
             onDragEnter={onDragEnter}
             onDragLeave={onDragLeave}
@@ -163,54 +168,66 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               disabled={disabled}
             />
           </div>
+        ) : (
+            <div className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg bg-muted/50 h-full min-h-[200px]">
+                <Paperclip className="h-8 w-8 mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground text-center">Attachment uploads are disabled for this opportunity stage.</p>
+            </div>
         )}
         
-        <div className="space-y-2">
-            {Object.entries(uploads).map(([uniqueName, upload]) => (
-                <div key={uniqueName} className="p-2 border rounded-md">
-                    <div className="flex items-center gap-3">
-                        <FileText className="h-6 w-6 shrink-0 text-muted-foreground"/>
-                        <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium truncate">{upload.file.name}</p>
-                            <Progress value={upload.progress} className="h-2" />
-                            {upload.error && <p className="text-xs text-destructive">{upload.error}</p>}
+        <div className="space-y-4">
+            {Object.keys(uploads).length > 0 && (
+                 <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Uploading...</h4>
+                    {Object.entries(uploads).map(([uniqueName, upload]) => (
+                        <div key={uniqueName} className="p-2 border rounded-md">
+                            <div className="flex items-center gap-3">
+                                <FileText className="h-6 w-6 shrink-0 text-muted-foreground"/>
+                                <div className="flex-1 space-y-1">
+                                    <p className="text-sm font-medium truncate">{upload.file.name}</p>
+                                    <Progress value={upload.progress} className="h-2" />
+                                    {upload.error && <p className="text-xs text-destructive">{upload.error}</p>}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            ))}
-
-            {(fields as OpportunityAttachment[]).map((attachment, index) => (
-            <div key={attachment.path} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50">
-                <FileText className="h-6 w-6 shrink-0 text-muted-foreground" />
-                <div className="flex-1 truncate">
-                <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">
-                    {attachment.name}
-                </Link>
-                <p className="text-xs text-muted-foreground">
-                    {(attachment.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-                </div>
-                <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDelete(index, attachment)}
-                disabled={disabled}
-                >
-                <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-            </div>
-            ))}
-            {fields.length === 0 && Object.keys(uploads).length === 0 && (
-                 <div className="flex flex-col items-center justify-center p-6 text-center text-sm text-muted-foreground">
-                    <Paperclip className="h-8 w-8 mb-2" />
-                    <p>No files attached yet.</p>
+                    ))}
                 </div>
             )}
+            
+            <div className="space-y-2">
+                <h4 className="text-sm font-medium">Attached Files</h4>
+                {(fields as OpportunityAttachment[]).length > 0 ? (
+                  (fields as OpportunityAttachment[]).map((attachment, index) => (
+                    <div key={attachment.path} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50">
+                        <FileText className="h-6 w-6 shrink-0 text-muted-foreground" />
+                        <div className="flex-1 truncate">
+                        <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">
+                            {attachment.name}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                            {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                        </div>
+                        <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(index, attachment)}
+                        disabled={disabled}
+                        >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center pt-8 text-center text-sm text-muted-foreground">
+                      <Paperclip className="h-8 w-8 mb-2" />
+                      <p>No files attached yet.</p>
+                  </div>
+                )}
+            </div>
         </div>
       </CardContent>
     </Card>
   );
 }
-
-    
