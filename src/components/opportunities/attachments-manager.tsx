@@ -83,7 +83,13 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
           console.error("Error Message:", error.message);
           console.error("Full Error Object:", error);
           console.error("===============================================");
-          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], error: 'Upload failed. Check console for details.' } }));
+          const errorMessage = `Upload failed: ${error.code || 'CORS or Network Error'}.`;
+          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], error: errorMessage } }));
+          toast({
+            variant: 'destructive',
+            title: t('Auth.registerFailedTitle'),
+            description: errorMessage,
+          });
         },
         async () => {
           try {
@@ -108,7 +114,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         }
       );
     });
-  }, [storage, opportunityId, append, disabled]);
+  }, [storage, opportunityId, append, disabled, t, toast]);
 
   const handleDelete = async (index: number, attachment: OpportunityAttachment) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
