@@ -1,12 +1,12 @@
 {
   "name": "T-Track Sales",
   "short_name": "T-Track",
+  "description": "A simple CRM for tracking sales opportunities.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#EC1C24",
   "icons": [
-    {
-      "src": "/img/logoLarge.png",
-      "sizes": "150x150",
-      "type": "image/png"
-    },
     {
       "src": "/img/logoLarge.png",
       "sizes": "192x192",
@@ -16,12 +16,8 @@
     {
       "src": "/img/logoLarge.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ],
-  "theme_color": "#EC1C24",
-  "background_color": "#EC1C24",
-  "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait"
+  ]
 }
