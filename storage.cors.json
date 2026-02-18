@@ -13,8 +13,15 @@
     ],
     "responseHeader": [
       "Content-Type",
+      "Content-Length",
       "Authorization",
-      "x-goog-resumable"
+      "X-Goog-Resumable",
+      "X-Goog-Upload-Command",
+      "X-Goog-Upload-Offset",
+      "X-Goog-Upload-Status",
+      "X-Goog-Upload-Protocol",
+      "X-Goog-Upload-Content-Length",
+      "X-Goog-Upload-Content-Type"
     ],
     "maxAgeSeconds": 3600
   }
