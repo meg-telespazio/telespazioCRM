@@ -4,13 +4,12 @@ import { useState, useCallback } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useStorage } from '@/firebase';
+import { useUser, useStorage, useAuth } from '@/firebase';
 import { ref, deleteObject } from 'firebase/storage';
 import { uploadFile } from '@/ai/flows/upload-file-flow';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Paperclip, Trash2, FileText, UploadCloud, Loader2 } from 'lucide-react';
 import type { OpportunityAttachment } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -41,6 +40,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const { t } = useI18n();
   const { toast } = useToast();
   const { user } = useUser();
+  const auth = useAuth();
   const storage = useStorage();
   const { control } = useFormContext();
 
@@ -53,9 +53,9 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
-    if (!files || disabled || !user) return;
+    if (!files || disabled || !user || !auth.currentUser) return;
     
-    const authToken = await user.getIdToken();
+    const authToken = await auth.currentUser.getIdToken();
 
     Array.from(files).forEach(async (file) => {
       const uniqueFileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
@@ -117,7 +117,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
           setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], status: 'error', error: 'Could not read file.' } }));
       };
     });
-  }, [storage, opportunityId, append, disabled, t, toast, user]);
+  }, [storage, opportunityId, append, disabled, t, toast, user, auth]);
 
   const handleDelete = async (index: number, attachment: OpportunityAttachment) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
@@ -171,7 +171,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
             <p className="mt-2 text-sm text-center text-muted-foreground">
               <span className="font-semibold text-primary">Click to upload</span> or drag and drop
             </p>
-            <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX (max {MAX_FILE_SIZE_MB}MB)</p>
+            <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX (max ${MAX_FILE_SIZE_MB}MB)</p>
             <input
               id="file-upload"
               type="file"
