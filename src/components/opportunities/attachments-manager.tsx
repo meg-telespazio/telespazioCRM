@@ -77,8 +77,13 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
           setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], progress } }));
         },
         (error) => {
-          console.error('Upload failed:', error);
-          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], error: 'Upload failed.' } }));
+          console.error("================ UPLOAD FAILED ================");
+          console.error("Error Code:", error.code);
+          console.error("Error Name:", error.name);
+          console.error("Error Message:", error.message);
+          console.error("Full Error Object:", error);
+          console.error("===============================================");
+          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], error: 'Upload failed. Check console for details.' } }));
         },
         async () => {
           try {

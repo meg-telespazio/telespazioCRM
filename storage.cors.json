@@ -1,10 +1,6 @@
 [
   {
-    "origin": [
-      "https://6000-firebase-studio-1770226023260.cluster-zhw3w37rxzgkutusbbhib6qhra.cloudworkstations.dev",
-      "https://*.cloudworkstations.dev",
-      "http://localhost:9002"
-    ],
+    "origin": ["*"],
     "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "responseHeader": [
       "Content-Type",
@@ -16,7 +12,8 @@
       "X-Upload-Content-Length",
       "X-Goog-Upload-Protocol",
       "X-Goog-Upload-Command",
-      "X-Goog-Upload-Offset"
+      "X-Goog-Upload-Offset",
+      "X-Goog-Upload-Status"
     ],
     "maxAgeSeconds": 3600
   }
