@@ -3,6 +3,7 @@
  * @fileOverview A server action to act as a proxy for uploading files to Firebase Storage, bypassing client-side CORS issues.
  */
 import { getFirebaseConfig } from '@/firebase/config';
+import { randomUUID } from 'crypto';
 
 type UploadOutput = {
   downloadURL: string;
@@ -34,34 +35,59 @@ export async function uploadFile(
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     
-    const storageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?name=${encodeURIComponent(filePath)}`;
+    // Step 1: Use the GCS simple upload endpoint, which is correct for a single POST request with file data.
+    const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(filePath)}`;
 
-    const response = await fetch(storageUrl, {
+    const uploadResponse = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
         'Content-Type': contentType,
         'Authorization': `Bearer ${authToken}`,
-        'Content-Length': fileBuffer.length.toString(),
       },
       body: fileBuffer,
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('Firebase Storage upload failed:', response.status, errorBody);
-      throw new Error(`Storage upload failed with status ${response.status}. Please check server logs for details.`);
+    if (!uploadResponse.ok) {
+      const errorBody = await uploadResponse.text();
+      console.error('Firebase Storage upload failed:', uploadResponse.status, errorBody);
+      throw new Error(`Storage upload failed with status ${uploadResponse.status}. Please check server logs for details.`);
     }
-
-    const metadata = await response.json();
     
-    const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(metadata.name)}?alt=media&token=${metadata.downloadTokens}`;
+    // Step 2: Generate a download token and update the file's metadata to create a public Firebase URL.
+    // The simple GCS upload endpoint does not create this token by default.
+    const downloadToken = randomUUID();
+    const metadataUrl = `https://storage.googleapis.com/storage/v1/b/${bucket}/o/${encodeURIComponent(filePath)}`;
+    
+    const metadataPatchResponse = await fetch(metadataUrl, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+            metadata: {
+                firebaseStorageDownloadTokens: downloadToken
+            }
+        })
+    });
+
+    if (!metadataPatchResponse.ok) {
+        const errorBody = await metadataPatchResponse.text();
+        console.error('Failed to update metadata with download token:', metadataPatchResponse.status, errorBody);
+        throw new Error('File uploaded, but failed to create a public access token.');
+    }
+    
+    const finalMetadata = await metadataPatchResponse.json();
+
+    // Step 3: Construct the public Firebase Storage download URL.
+    const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(finalMetadata.name)}?alt=media&token=${downloadToken}`;
 
     const output: UploadOutput = {
       downloadURL,
-      fullPath: metadata.name,
-      name: metadata.name.split('/').pop() || 'unknown',
-      size: Number(metadata.size),
-      contentType: metadata.contentType,
+      fullPath: finalMetadata.name,
+      name: finalMetadata.name.split('/').pop() || 'unknown',
+      size: Number(finalMetadata.size),
+      contentType: finalMetadata.contentType,
     };
     
     return { data: output };
