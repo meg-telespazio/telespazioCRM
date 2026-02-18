@@ -15,6 +15,7 @@ import type {
   Contact,
   ProductOrService,
   OpportunityLineItem,
+  OpportunityAttachment,
 } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -69,6 +70,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
+import { AttachmentsManager } from '@/components/opportunities/attachments-manager';
 
 const getFormSchema = (t: (key: string) => string) => {
   const lineItemSchema = z.object({
@@ -108,6 +110,13 @@ const getFormSchema = (t: (key: string) => string) => {
       isTender: z.boolean().default(false),
       contactId: z.string().optional().or(z.literal('')),
       lineItems: z.array(lineItemSchema).optional(),
+      attachments: z.array(z.object({
+        name: z.string(),
+        url: z.string(),
+        type: z.string(),
+        size: z.number(),
+        path: z.string(),
+      })).optional(),
       generalDiscountPercentage: z.coerce.number().min(0).max(100).optional(),
       applyDiscountToNrc: z.boolean().optional().default(false),
       applyDiscountToMrc: z.boolean().optional().default(false),
@@ -251,6 +260,7 @@ export default function OpportunityFormPage() {
       isTender: false,
       contactId: '',
       lineItems: [],
+      attachments: [],
       generalDiscountPercentage: 0,
       applyDiscountToNrc: false,
       applyDiscountToMrc: false,
@@ -409,6 +419,7 @@ export default function OpportunityFormPage() {
           : undefined,
         contactId: opportunityData.contactId || '',
         lineItems: opportunityData.lineItems || [],
+        attachments: opportunityData.attachments || [],
         generalDiscountPercentage:
           opportunityData.generalDiscountPercentage || 0,
         applyDiscountToNrc: opportunityData.applyDiscountToNrc || false,
@@ -1276,6 +1287,8 @@ export default function OpportunityFormPage() {
                   </div>
                 </CardContent>
               </Card>
+              
+              <AttachmentsManager opportunityId={opportunityId} disabled={isLocked} />
 
               <Card>
                 <CardContent className="p-6">

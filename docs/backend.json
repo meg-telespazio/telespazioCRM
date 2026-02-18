@@ -376,6 +376,32 @@
             "required": ["itemId", "name", "quantity"]
           }
         },
+        "attachments": {
+          "type": "array",
+          "description": "List of files attached to the opportunity.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "type": {
+                "type": "string"
+              },
+              "size": {
+                "type": "number"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": ["name", "url", "type", "size", "path"]
+          }
+        },
         "generalDiscountPercentage": {
           "type": "number",
           "description": "The general discount percentage to apply to the whole opportunity."
