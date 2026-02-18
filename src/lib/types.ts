@@ -164,6 +164,7 @@ export type Activity = {
   isPriority: boolean;
   createdAt: Date;
   createdBy: string;
+  updatedAt?: Date;
 };
 
 export type ActivityFollowUp = {
@@ -204,8 +205,6 @@ export type ContactWrite = Omit<Contact, 'id' | 'createdAt'> & { createdAt: Fiel
 export type OpportunityWrite = Omit<Opportunity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldValue };
-export type ActivityWrite = Omit<Activity, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type ActivityWrite = Omit<Activity, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: FieldValue; updatedAt: FieldValue };
 export type ActivityFollowUpWrite = Omit<ActivityFollowUp, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type LocationWrite = Omit<Location, 'id' | 'createdAt'> & { createdAt: FieldValue };
-
-    

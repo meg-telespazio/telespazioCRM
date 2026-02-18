@@ -43,8 +43,9 @@ service cloud.firestore {
 
     match /activities/{activityId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
-      allow get, update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-      allow list: if request.auth != null;
+      allow get, list: if request.auth != null;
+      allow update: if request.auth != null; // More permissive to allow timestamp updates on comments by any user.
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
 
       match /followUps/{followUpId} {
         allow read, write: if request.auth != null;

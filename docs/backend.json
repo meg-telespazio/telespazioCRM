@@ -614,6 +614,11 @@
         },
         "createdBy": {
           "type": "string"
+        },
+        "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of when the activity was last updated, including new follow-ups."
         }
       },
       "required": [
@@ -728,5 +733,3 @@
     }
   }
 }
-
-    

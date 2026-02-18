@@ -6,6 +6,7 @@ import {
   serverTimestamp,
   runTransaction,
   type Firestore,
+  updateDoc,
 } from 'firebase/firestore';
 import type { Activity, ActivityFollowUp } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -14,7 +15,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 const ACTIVITIES_COLLECTION = 'activities';
 const FOLLOW_UPS_SUBCOLLECTION = 'followUps';
 
-type ActivityData = Omit<Activity, 'id' | 'publicId' | 'createdAt'>;
+type ActivityData = Omit<Activity, 'id' | 'publicId' | 'createdAt' | 'updatedAt'>;
 type FollowUpData = Omit<ActivityFollowUp, 'id' | 'activityId' | 'createdAt'>;
 
 export async function addActivity(
@@ -39,6 +40,7 @@ export async function addActivity(
         ...activityData,
         publicId,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
       transaction.set(newActivityRef, data);
@@ -62,10 +64,9 @@ export function addFollowUp(
   activityId: string,
   followUpData: FollowUpData
 ) {
+  const activityRef = doc(firestore, ACTIVITIES_COLLECTION, activityId);
   const followUpCollectionRef = collection(
-    firestore,
-    ACTIVITIES_COLLECTION,
-    activityId,
+    activityRef,
     FOLLOW_UPS_SUBCOLLECTION
   );
 
@@ -74,10 +75,17 @@ export function addFollowUp(
     createdAt: serverTimestamp(),
   };
 
-  addDoc(followUpCollectionRef, data).catch((serverError) => {
+  const newFollowUpRef = doc(followUpCollectionRef);
+
+  runTransaction(firestore, async (transaction) => {
+    transaction.set(newFollowUpRef, data);
+    transaction.update(activityRef, { updatedAt: serverTimestamp() });
+  }).catch((serverError) => {
+    // This could be a permission error on either the followup creation or the activity update.
+    // For simplicity, we'll just log one. A more robust implementation might check the error code.
     const permissionError = new FirestorePermissionError({
-      path: followUpCollectionRef.path,
-      operation: 'create',
+      path: activityRef.path,
+      operation: 'update',
       requestResourceData: followUpData,
     });
     errorEmitter.emit('permission-error', permissionError);

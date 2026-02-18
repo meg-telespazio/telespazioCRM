@@ -22,6 +22,7 @@ import { es, enUS } from 'date-fns/locale';
 import { Phone, Calendar, Mail, MessageSquare } from 'lucide-react';
 import { RenderWithMentions } from '../activity/render-with-mentions';
 import { useRouter } from 'next/navigation';
+import { useMemo } from 'react';
 
 const activityIcons: Record<ActivityType, React.ElementType> = {
   call: Phone,
@@ -43,9 +44,15 @@ export function RecentActivities({
   const router = useRouter();
   const dateLocale = locale === 'es' ? es : enUS;
 
-  const recentActivities = [...(activities || [])]
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 5);
+  const recentActivities = useMemo(() => {
+    return [...(activities || [])]
+      .sort((a, b) => {
+        const dateA = a.updatedAt || a.createdAt;
+        const dateB = b.updatedAt || b.createdAt;
+        return dateB.getTime() - dateA.getTime();
+      })
+      .slice(0, 5);
+  }, [activities]);
 
   const getClientName = (clientId: string) => {
     return clients.find((c) => c.id === clientId)?.name || 'Unknown Client';
@@ -77,6 +84,7 @@ export function RecentActivities({
           <TableBody>
             {recentActivities.map((activity) => {
               const Icon = activityIcons[activity.type] || MessageSquare;
+              const displayDate = activity.updatedAt || activity.createdAt;
               return (
                 <TableRow
                   key={activity.id}
@@ -102,7 +110,7 @@ export function RecentActivities({
                     {getClientName(activity.clientId)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatDistanceToNow(activity.createdAt, {
+                    {formatDistanceToNow(displayDate, {
                       addSuffix: true,
                       locale: dateLocale,
                     })}
