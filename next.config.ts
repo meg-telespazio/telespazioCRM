@@ -8,6 +8,9 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   /* config options here */
+  serverActions: {
+    bodySizeLimit: '15mb',
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
