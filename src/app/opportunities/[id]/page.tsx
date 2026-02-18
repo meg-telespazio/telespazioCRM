@@ -69,7 +69,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
-import { AttachmentsManager } from '@/components/opportunities/attachments-manager';
 
 const getFormSchema = (t: (key: string) => string) => {
   const lineItemSchema = z.object({
@@ -80,14 +79,6 @@ const getFormSchema = (t: (key: string) => string) => {
     oneTimeCharge: z.coerce.number().min(0),
     recurringCharge: z.coerce.number().min(0),
     discount: z.coerce.number().min(0).max(100),
-  });
-
-  const attachmentSchema = z.object({
-    name: z.string(),
-    url: z.string(),
-    type: z.string(),
-    size: z.number(),
-    path: z.string(),
   });
 
   return z
@@ -117,7 +108,6 @@ const getFormSchema = (t: (key: string) => string) => {
       isTender: z.boolean().default(false),
       contactId: z.string().optional().or(z.literal('')),
       lineItems: z.array(lineItemSchema).optional(),
-      attachments: z.array(attachmentSchema).optional(),
       generalDiscountPercentage: z.coerce.number().min(0).max(100).optional(),
       applyDiscountToNrc: z.boolean().optional().default(false),
       applyDiscountToMrc: z.boolean().optional().default(false),
@@ -261,7 +251,6 @@ export default function OpportunityFormPage() {
       isTender: false,
       contactId: '',
       lineItems: [],
-      attachments: [],
       generalDiscountPercentage: 0,
       applyDiscountToNrc: false,
       applyDiscountToMrc: false,
@@ -420,7 +409,6 @@ export default function OpportunityFormPage() {
           : undefined,
         contactId: opportunityData.contactId || '',
         lineItems: opportunityData.lineItems || [],
-        attachments: opportunityData.attachments || [],
         generalDiscountPercentage:
           opportunityData.generalDiscountPercentage || 0,
         applyDiscountToNrc: opportunityData.applyDiscountToNrc || false,
@@ -944,10 +932,6 @@ export default function OpportunityFormPage() {
                 </Card>
               )}
               
-              {watchedStage === 'Proposal' && !isNew && (
-                <AttachmentsManager opportunityId={opportunityId} disabled={isLocked} />
-              )}
-
               <Card>
                 <CardHeader>
                   <CardTitle>{t('Forms.lineItems')}</CardTitle>
@@ -1337,5 +1321,3 @@ export default function OpportunityFormPage() {
     </div>
   );
 }
-
-    

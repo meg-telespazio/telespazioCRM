@@ -387,21 +387,6 @@
         "applyDiscountToMrc": {
           "type": "boolean",
           "description": "Indicates if the general discount applies to recurring charges."
-        },
-        "attachments": {
-          "type": "array",
-          "description": "List of files attached to the opportunity proposal.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": { "type": "string", "description": "Name of the file." },
-              "url": { "type": "string", "format": "uri", "description": "Download URL of the file from Firebase Storage." },
-              "type": { "type": "string", "description": "MIME type of the file." },
-              "size": { "type": "number", "description": "Size of the file in bytes." },
-              "path": { "type": "string", "description": "Path of the file in Firebase Storage." }
-            },
-            "required": ["name", "url", "type", "size", "path"]
-          }
         }
       },
       "required": [

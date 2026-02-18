@@ -45,14 +45,6 @@ export type Contact = {
   createdBy: string;
 };
 
-export type OpportunityAttachment = {
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-  path: string;
-};
-
 export type OpportunityLineItem = {
   itemId: string;
   name: string;
@@ -86,7 +78,6 @@ export type Opportunity = {
   generalDiscountPercentage?: number;
   applyDiscountToNrc?: boolean;
   applyDiscountToMrc?: boolean;
-  attachments?: OpportunityAttachment[];
 };
 
 export type BundleItem = {
