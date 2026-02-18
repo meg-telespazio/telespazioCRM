@@ -3,7 +3,6 @@
  * @fileOverview A server action to act as a proxy for uploading files to Firebase Storage, bypassing client-side CORS issues.
  */
 import { getFirebaseConfig } from '@/firebase/config';
-import { randomUUID } from 'crypto';
 
 type UploadOutput = {
   downloadURL: string;
@@ -35,14 +34,16 @@ export async function uploadFile(
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     
-    // Step 1: Use the GCS simple upload endpoint, which is correct for a single POST request with file data.
-    const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(filePath)}`;
+    // Use the Firebase Storage REST API endpoint directly. This is what the client SDK uses under the hood.
+    // This avoids CORS issues because the request is made from the server.
+    const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?name=${encodeURIComponent(filePath)}`;
 
     const uploadResponse = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
         'Content-Type': contentType,
-        'Authorization': `Bearer ${authToken}`,
+        // Use the 'Firebase' auth scheme, which is expected by the Firebase Storage API for ID tokens.
+        'Authorization': `Firebase ${authToken}`,
       },
       body: fileBuffer,
     });
@@ -53,33 +54,14 @@ export async function uploadFile(
       throw new Error(`Storage upload failed with status ${uploadResponse.status}. Please check server logs for details.`);
     }
     
-    // Step 2: Generate a download token and update the file's metadata to create a public Firebase URL.
-    // The simple GCS upload endpoint does not create this token by default.
-    const downloadToken = randomUUID();
-    const metadataUrl = `https://storage.googleapis.com/storage/v1/b/${bucket}/o/${encodeURIComponent(filePath)}`;
+    const finalMetadata = await uploadResponse.json();
+    const downloadToken = finalMetadata.downloadTokens;
     
-    const metadataPatchResponse = await fetch(metadataUrl, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-            metadata: {
-                firebaseStorageDownloadTokens: downloadToken
-            }
-        })
-    });
-
-    if (!metadataPatchResponse.ok) {
-        const errorBody = await metadataPatchResponse.text();
-        console.error('Failed to update metadata with download token:', metadataPatchResponse.status, errorBody);
-        throw new Error('File uploaded, but failed to create a public access token.');
+    if (!downloadToken) {
+        throw new Error('File uploaded successfully, but failed to retrieve a download token.');
     }
-    
-    const finalMetadata = await metadataPatchResponse.json();
 
-    // Step 3: Construct the public Firebase Storage download URL.
+    // Construct the public Firebase Storage download URL.
     const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(finalMetadata.name)}?alt=media&token=${downloadToken}`;
 
     const output: UploadOutput = {
