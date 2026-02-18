@@ -45,6 +45,14 @@ export type Contact = {
   createdBy: string;
 };
 
+export type OpportunityAttachment = {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  path: string;
+};
+
 export type OpportunityLineItem = {
   itemId: string;
   name: string;
@@ -78,6 +86,7 @@ export type Opportunity = {
   generalDiscountPercentage?: number;
   applyDiscountToNrc?: boolean;
   applyDiscountToMrc?: boolean;
+  attachments?: OpportunityAttachment[];
 };
 
 export type BundleItem = {
@@ -198,3 +207,5 @@ export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldV
 export type ActivityWrite = Omit<Activity, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type ActivityFollowUpWrite = Omit<ActivityFollowUp, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type LocationWrite = Omit<Location, 'id' | 'createdAt'> & { createdAt: FieldValue };
+
+    
