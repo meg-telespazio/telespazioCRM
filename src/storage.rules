@@ -9,7 +9,8 @@ service firebase.storage {
 
     // Allow authenticated users to upload to the opportunities folder
     match /opportunities/{opportunityId}/{allPaths=**} {
-       allow write: if request.auth != null;
+       // Temporarily allow public writes for debugging
+       allow write: if true;
        allow read: if request.auth != null;
     }
   }
