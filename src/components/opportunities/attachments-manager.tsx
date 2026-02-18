@@ -2,14 +2,16 @@
 
 import { useState, useCallback } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
-import { useStorage } from '@/firebase';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
+import { useUser, useStorage } from '@/firebase';
+import { ref, deleteObject } from 'firebase/storage';
+import { uploadFile } from '@/ai/flows/upload-file-flow';
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Paperclip, Trash2, FileText, UploadCloud } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2 } from 'lucide-react';
 import type { OpportunityAttachment } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -20,8 +22,8 @@ interface AttachmentsManagerProps {
 }
 
 type Upload = {
-  file: File;
-  progress: number;
+  fileName: string;
+  status: 'uploading' | 'error';
   error?: string;
 };
 
@@ -38,6 +40,7 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManagerProps) {
   const { t } = useI18n();
   const { toast } = useToast();
+  const { user } = useUser();
   const storage = useStorage();
   const { control } = useFormContext();
 
@@ -49,57 +52,56 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const [uploads, setUploads] = useState<Record<string, Upload>>({});
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileUpload = useCallback((files: FileList | null) => {
-    if (!files || disabled) return;
+  const handleFileUpload = useCallback(async (files: FileList | null) => {
+    if (!files || disabled || !user) return;
+    
+    const authToken = await user.getIdToken();
 
-    Array.from(files).forEach((file) => {
+    Array.from(files).forEach(async (file) => {
       const uniqueFileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
       
       if (file.size > MAX_FILE_SIZE_BYTES) {
-        setUploads((prev) => ({ ...prev, [uniqueFileName]: { file, progress: 0, error: `File is too large (max ${MAX_FILE_SIZE_MB}MB).` } }));
+        setUploads((prev) => ({ ...prev, [uniqueFileName]: { fileName: file.name, status: 'error', error: `File is too large (max ${MAX_FILE_SIZE_MB}MB).` } }));
         return;
       }
       if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        setUploads((prev) => ({ ...prev, [uniqueFileName]: { file, progress: 0, error: 'Invalid file type.' } }));
+        setUploads((prev) => ({ ...prev, [uniqueFileName]: { fileName: file.name, status: 'error', error: 'Invalid file type.' } }));
         return;
       }
 
-      setUploads((prev) => ({ ...prev, [uniqueFileName]: { file, progress: 0 } }));
+      setUploads((prev) => ({ ...prev, [uniqueFileName]: { fileName: file.name, status: 'uploading' } }));
       
-      const filePath = `opportunities/${opportunityId}/${uniqueFileName}`;
-      const storageRef = ref(storage, filePath);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const fileDataUri = reader.result as string;
+        const filePath = `opportunities/${opportunityId}/${uniqueFileName}`;
+        
+        const result = await uploadFile({
+            fileDataUri,
+            filePath,
+            contentType: file.type,
+            authToken,
+        });
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], progress } }));
-        },
-        (error) => {
-          console.error("================ UPLOAD FAILED ================");
-          console.error("Error Code:", error.code);
-          console.error("Error Name:", error.name);
-          console.error("Error Message:", error.message);
-          console.error("Full Error Object:", error);
-          console.error("===============================================");
-          const errorMessage = `Upload failed: ${error.code || 'CORS or Network Error'}.`;
-          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], error: errorMessage } }));
-          toast({
-            variant: 'destructive',
-            title: t('Auth.registerFailedTitle'),
-            description: errorMessage,
-          });
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            append({
-              name: file.name,
-              url: downloadURL,
-              type: file.type,
-              size: file.size,
-              path: filePath,
+        if (result.error || !result.data) {
+            const errorMessage = result.error || 'Upload failed with an unknown error.';
+            console.error("================ UPLOAD FAILED ================");
+            console.error(errorMessage);
+            console.error("===============================================");
+            setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], status: 'error', error: errorMessage } }));
+            toast({
+                variant: 'destructive',
+                title: t('Auth.registerFailedTitle'),
+                description: errorMessage,
+            });
+        } else {
+             append({
+                name: file.name,
+                url: result.data.downloadURL,
+                type: result.data.contentType,
+                size: result.data.size,
+                path: result.data.fullPath,
             });
             setTimeout(() => {
                 setUploads(prev => {
@@ -108,13 +110,14 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
                     return newUploads;
                 });
             }, 2000);
-          } catch(e) {
-             setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], error: 'Could not get download URL.' } }));
-          }
         }
-      );
+      };
+      reader.onerror = (error) => {
+          console.error("FileReader error:", error);
+          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], status: 'error', error: 'Could not read file.' } }));
+      };
     });
-  }, [storage, opportunityId, append, disabled, t, toast]);
+  }, [storage, opportunityId, append, disabled, t, toast, user]);
 
   const handleDelete = async (index: number, attachment: OpportunityAttachment) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
@@ -193,11 +196,14 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
                     {Object.entries(uploads).map(([uniqueName, upload]) => (
                         <div key={uniqueName} className="p-2 border rounded-md">
                             <div className="flex items-center gap-3">
-                                <FileText className="h-6 w-6 shrink-0 text-muted-foreground"/>
+                                {upload.status === 'uploading' ? (
+                                    <Loader2 className="h-6 w-6 shrink-0 text-muted-foreground animate-spin"/>
+                                ) : (
+                                    <FileText className="h-6 w-6 shrink-0 text-muted-foreground"/>
+                                )}
                                 <div className="flex-1 space-y-1">
-                                    <p className="text-sm font-medium truncate">{upload.file.name}</p>
-                                    <Progress value={upload.progress} className="h-2" />
-                                    {upload.error && <p className="text-xs text-destructive">{upload.error}</p>}
+                                    <p className="text-sm font-medium truncate">{upload.fileName}</p>
+                                    {upload.status === 'error' && <p className="text-xs text-destructive">{upload.error}</p>}
                                 </div>
                             </div>
                         </div>

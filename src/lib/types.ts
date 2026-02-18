@@ -55,6 +55,14 @@ export type OpportunityLineItem = {
   discount: number;
 };
 
+export type OpportunityAttachment = {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  path: string;
+};
+
 export type Opportunity = {
   id: string;
   publicId: string;
@@ -75,6 +83,7 @@ export type Opportunity = {
   isTender: boolean;
   contactId?: string;
   lineItems?: OpportunityLineItem[];
+  attachments?: OpportunityAttachment[];
   generalDiscountPercentage?: number;
   applyDiscountToNrc?: boolean;
   applyDiscountToMrc?: boolean;

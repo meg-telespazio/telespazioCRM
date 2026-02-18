@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow users to read and write their own avatar
+    match /avatars/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow authenticated users to upload to the opportunities folder
+    match /opportunities/{opportunityId}/{allPaths=**} {
+       allow write: if request.auth != null;
+       allow read: if request.auth != null;
+    }
+  }
+}
