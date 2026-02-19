@@ -16,6 +16,7 @@ export default function LoginPage() {
           alt="T-Track Logo"
           width={150}
           height={150}
+          priority
           className="mx-auto mb-4"
         />
         <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">

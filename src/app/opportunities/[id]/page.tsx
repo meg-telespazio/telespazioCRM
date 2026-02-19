@@ -947,10 +947,10 @@ export default function OpportunityFormPage() {
                 <CardHeader>
                   <CardTitle>{t('Forms.lineItems')}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6" id="line-item-adder">
                   <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-7">
                     <div className="md:col-span-2">
-                      <Label className="text-xs">{t('PS.itemName')}</Label>
+                      <Label htmlFor="line-item-catalog-item" className="text-xs">{t('PS.itemName')}</Label>
                       <Select
                         value={adderState.selectedCatalogItemId}
                         onValueChange={(id) =>
@@ -961,7 +961,7 @@ export default function OpportunityFormPage() {
                         }
                         disabled={isLocked}
                       >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger id="line-item-catalog-item" className="h-9">
                           <SelectValue placeholder={t('Forms.selectItem')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -974,8 +974,9 @@ export default function OpportunityFormPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs">{t('Forms.quantity')}</Label>
+                      <Label htmlFor="line-item-quantity" className="text-xs">{t('Forms.quantity')}</Label>
                       <Input
+                        id="line-item-quantity"
                         className="h-9"
                         type="number"
                         value={adderState.quantity}
@@ -990,8 +991,9 @@ export default function OpportunityFormPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">{t('Table.nrc')}</Label>
+                      <Label htmlFor="line-item-nrc" className="text-xs">{t('Table.nrc')}</Label>
                       <Input
+                        id="line-item-nrc"
                         className="h-9"
                         type="number"
                         value={adderState.oneTimeCharge}
@@ -1005,8 +1007,9 @@ export default function OpportunityFormPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">{t('Table.mrc')}</Label>
+                      <Label htmlFor="line-item-mrc" className="text-xs">{t('Table.mrc')}</Label>
                       <Input
+                        id="line-item-mrc"
                         className="h-9"
                         type="number"
                         value={adderState.recurringCharge}
@@ -1020,7 +1023,7 @@ export default function OpportunityFormPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">{t('Forms.discount')}</Label>
+                      <Label htmlFor="line-item-discount" className="text-xs">{t('Forms.discount')}</Label>
                       <Select
                         value={String(adderState.discount)}
                         onValueChange={(val) =>
@@ -1035,7 +1038,7 @@ export default function OpportunityFormPage() {
                           isLocked
                         }
                       >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger id="line-item-discount" className="h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

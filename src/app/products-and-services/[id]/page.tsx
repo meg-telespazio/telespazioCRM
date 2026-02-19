@@ -356,11 +356,11 @@ export default function ProductServiceFormPage() {
                     <Card>
                         <CardHeader><CardTitle>{t('PS.bundleItems')}</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
-                             <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[2fr,1fr,auto]">
+                             <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[2fr,1fr,auto]" id="bundle-item-adder">
                                 <div className="md:col-span-1">
-                                    <Label>{t('PS.itemName')}</Label>
+                                    <Label htmlFor="bundle-item-select">{t('PS.itemName')}</Label>
                                     <Select value={bundleItemToAdd.itemId} onValueChange={(id) => setBundleItemToAdd(prev => ({...prev, itemId: id}))}>
-                                        <SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger>
+                                        <SelectTrigger id="bundle-item-select"><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger>
                                         <SelectContent>
                                             {catalogItems.map(item => (
                                                 <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
@@ -369,8 +369,14 @@ export default function ProductServiceFormPage() {
                                     </Select>
                                 </div>
                                  <div>
-                                    <Label>{t('Forms.quantity')}</Label>
-                                    <Input type="number" value={bundleItemToAdd.quantity} onChange={(e) => setBundleItemToAdd(prev => ({...prev, quantity: Number(e.target.value)}))} min={1} />
+                                    <Label htmlFor="bundle-item-quantity">{t('Forms.quantity')}</Label>
+                                    <Input
+                                        id="bundle-item-quantity"
+                                        type="number"
+                                        value={bundleItemToAdd.quantity}
+                                        onChange={(e) => setBundleItemToAdd(prev => ({...prev, quantity: Number(e.target.value)}))}
+                                        min={1}
+                                    />
                                 </div>
                                 <Button type="button" size="icon" onClick={handleAddBundleItem} disabled={!bundleItemToAdd.itemId}>
                                     <Plus /><span className="sr-only">{t('PS.addBundleItem')}</span>
