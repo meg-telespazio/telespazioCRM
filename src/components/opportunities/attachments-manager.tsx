@@ -6,7 +6,7 @@ import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useStorage, useAuth } from '@/firebase';
 import { ref, deleteObject } from 'firebase/storage';
-import { uploadFile } from '@/ai/flows/upload-file-flow';
+import { uploadFile } from '@/lib/server-actions/upload-file';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
