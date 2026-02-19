@@ -18,6 +18,7 @@ export default function LoginPage() {
           height={150}
           priority
           className="mx-auto mb-4"
+          style={{ height: 'auto' }}
         />
         <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">
           {t('App.appName')}
