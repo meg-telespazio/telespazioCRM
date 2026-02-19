@@ -6,11 +6,10 @@ import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useStorage, useAuth } from '@/firebase';
 import { ref, deleteObject } from 'firebase/storage';
-import { uploadFile } from '@/lib/server-actions/upload-file';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2 } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertTriangle } from 'lucide-react';
 import type { OpportunityAttachment } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -40,7 +39,6 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const { t } = useI18n();
   const { toast } = useToast();
   const { user } = useUser();
-  const auth = useAuth();
   const storage = useStorage();
   const { control } = useFormContext();
 
@@ -49,70 +47,65 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
     name: 'attachments',
   });
 
-  const [uploads, setUploads] = useState<Record<string, Upload>>({});
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileUpload = useCallback(async (files: FileList | null) => {
-    if (!files || disabled || !user || !auth.currentUser) return;
-    
-    const authToken = await auth.currentUser.getIdToken();
+  // FIXME: This is a temporary workaround for development environments on a free plan
+  // where server-side functions for uploads are not available.
+  // This simulates the upload by adding metadata to the list, but does not
+  // actually upload the file. The URL and path are placeholders.
+  // A real upload mechanism (e.g., via a server action proxy) needs to be
+  // implemented for production.
+  const handleFileUpload = useCallback((files: FileList | null) => {
+    if (!files || disabled) return;
 
-    Array.from(files).forEach(async (file) => {
-      const uniqueFileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-      
+    Array.from(files).forEach(file => {
       if (file.size > MAX_FILE_SIZE_BYTES) {
-        setUploads((prev) => ({ ...prev, [uniqueFileName]: { fileName: file.name, status: 'error', error: `File is too large (max ${MAX_FILE_SIZE_MB}MB).` } }));
+        toast({
+          variant: 'destructive',
+          title: 'File too large',
+          description: `File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`
+        });
         return;
       }
       if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        setUploads((prev) => ({ ...prev, [uniqueFileName]: { fileName: file.name, status: 'error', error: 'Invalid file type.' } }));
+        toast({
+          variant: 'destructive',
+          title: 'Invalid file type',
+          description: `File "${file.name}" is not a supported file type.`
+        });
         return;
       }
 
-      setUploads((prev) => ({ ...prev, [uniqueFileName]: { fileName: file.name, status: 'uploading' } }));
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('filePath', `opportunities/${opportunityId}/${uniqueFileName}`);
-      formData.append('contentType', file.type);
-      formData.append('authToken', authToken);
-        
-      const result = await uploadFile(formData);
+      const placeholderAttachment: OpportunityAttachment = {
+        name: file.name,
+        url: '#simulated', // Special URL to identify simulated files
+        type: file.type,
+        size: file.size,
+        path: `simulated/${Date.now()}_${file.name}`,
+      };
 
-      if (result.error || !result.data) {
-          const errorMessage = result.error || 'Upload failed with an unknown error.';
-          console.error("================ UPLOAD FAILED ================");
-          console.error(errorMessage);
-          console.error("===============================================");
-          setUploads((prev) => ({ ...prev, [uniqueFileName]: { ...prev[uniqueFileName], status: 'error', error: errorMessage } }));
-          toast({
-              variant: 'destructive',
-              title: t('Auth.registerFailedTitle'),
-              description: errorMessage,
-          });
-      } else {
-           append({
-              name: file.name,
-              url: result.data.downloadURL,
-              type: result.data.contentType,
-              size: result.data.size,
-              path: result.data.fullPath,
-          });
-          setTimeout(() => {
-              setUploads(prev => {
-                  const newUploads = {...prev};
-                  delete newUploads[uniqueFileName];
-                  return newUploads;
-              });
-          }, 2000);
-      }
+      append(placeholderAttachment);
+      
+      toast({
+        variant: 'default',
+        title: 'Archivo añadido (simulado)',
+        description: `${file.name} se ha añadido a la lista, pero no se subirá.`,
+      });
     });
-  }, [storage, opportunityId, append, disabled, t, toast, user, auth]);
+  }, [append, disabled, t, toast]);
 
   const handleDelete = async (index: number, attachment: OpportunityAttachment) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
-    const fileRef = ref(storage, attachment.path);
 
+    // If it's a simulated attachment, just remove it from the form state.
+    if (attachment.url === '#simulated') {
+        remove(index);
+        toast({ variant: 'default', title: 'Adjunto simulado eliminado de la lista' });
+        return;
+    }
+    
+    // Logic for real uploaded files
+    const fileRef = ref(storage, attachment.path);
     try {
       await deleteObject(fileRef);
       remove(index);
@@ -142,8 +135,8 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Proposal Attachments</CardTitle>
-        <CardDescription>Attach relevant files like PDFs, Word documents, or spreadsheets.</CardDescription>
+        <CardTitle>Archivos Adjuntos de la Propuesta</CardTitle>
+        <CardDescription>Adjunte archivos relevantes como PDFs, documentos de Word o planillas de cálculo.</CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {!disabled ? (
@@ -159,7 +152,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
           >
             <UploadCloud className="w-10 h-10 text-muted-foreground" />
             <p className="mt-2 text-sm text-center text-muted-foreground">
-              <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+              <span className="font-semibold text-primary">Clic para subir</span> o arrastrar y soltar
             </p>
             <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX (max ${MAX_FILE_SIZE_MB}MB)</p>
             <input
@@ -175,61 +168,50 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         ) : (
             <div className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg bg-muted/50 h-full min-h-[200px]">
                 <Paperclip className="h-8 w-8 mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground text-center">Attachment uploads are disabled for this opportunity stage.</p>
+                <p className="text-sm text-muted-foreground text-center">La subida de adjuntos está deshabilitada para esta etapa de la oportunidad.</p>
             </div>
         )}
         
         <div className="space-y-4">
-            {Object.keys(uploads).length > 0 && (
-                 <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Uploading...</h4>
-                    {Object.entries(uploads).map(([uniqueName, upload]) => (
-                        <div key={uniqueName} className="p-2 border rounded-md">
-                            <div className="flex items-center gap-3">
-                                {upload.status === 'uploading' ? (
-                                    <Loader2 className="h-6 w-6 shrink-0 text-muted-foreground animate-spin"/>
-                                ) : (
-                                    <FileText className="h-6 w-6 shrink-0 text-muted-foreground"/>
-                                )}
-                                <div className="flex-1 space-y-1">
-                                    <p className="text-sm font-medium truncate">{upload.fileName}</p>
-                                    {upload.status === 'error' && <p className="text-xs text-destructive">{upload.error}</p>}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-            
             <div className="space-y-2">
-                <h4 className="text-sm font-medium">Attached Files</h4>
+                <h4 className="text-sm font-medium">Archivos Adjuntos</h4>
                 {(fields as OpportunityAttachment[]).length > 0 ? (
-                  (fields as OpportunityAttachment[]).map((attachment, index) => (
-                    <div key={attachment.path} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50">
-                        <FileText className="h-6 w-6 shrink-0 text-muted-foreground" />
-                        <div className="flex-1 truncate">
-                        <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">
-                            {attachment.name}
-                        </Link>
-                        <p className="text-xs text-muted-foreground">
-                            {(attachment.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                        </div>
-                        <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(index, attachment)}
-                        disabled={disabled}
-                        >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                    </div>
-                  ))
+                  (fields as OpportunityAttachment[]).map((attachment, index) => {
+                    const isSimulated = attachment.url === '#simulated';
+                    return (
+                      <div key={attachment.path} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50">
+                          <FileText className="h-6 w-6 shrink-0 text-muted-foreground" />
+                          <div className="flex-1 truncate">
+                          {isSimulated ? (
+                            <span className="text-sm font-medium italic text-muted-foreground" title="Subida simulada">
+                                {attachment.name}
+                            </span>
+                          ) : (
+                            <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">
+                                {attachment.name}
+                            </Link>
+                          )}
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                              {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                              {isSimulated && <span className="text-amber-600">(No subido)</span>}
+                          </p>
+                          </div>
+                          <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(index, attachment)}
+                          disabled={disabled}
+                          >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                      </div>
+                    )
+                  })
                 ) : (
                   <div className="flex flex-col items-center justify-center pt-8 text-center text-sm text-muted-foreground">
                       <Paperclip className="h-8 w-8 mb-2" />
-                      <p>No files attached yet.</p>
+                      <p>Aún no hay archivos adjuntos.</p>
                   </div>
                 )}
             </div>
