@@ -4,12 +4,10 @@ import { useState, useCallback } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useStorage, useAuth } from '@/firebase';
-import { ref, deleteObject } from 'firebase/storage';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertTriangle } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud } from 'lucide-react';
 import type { OpportunityAttachment } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -18,12 +16,6 @@ interface AttachmentsManagerProps {
   opportunityId: string;
   disabled: boolean;
 }
-
-type Upload = {
-  fileName: string;
-  status: 'uploading' | 'error';
-  error?: string;
-};
 
 const ALLOWED_FILE_TYPES = [
   'application/pdf',
@@ -38,8 +30,6 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManagerProps) {
   const { t } = useI18n();
   const { toast } = useToast();
-  const { user } = useUser();
-  const storage = useStorage();
   const { control } = useFormContext();
 
   const { fields, append, remove } = useFieldArray({
@@ -49,12 +39,6 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
 
   const [isDragging, setIsDragging] = useState(false);
 
-  // FIXME: This is a temporary workaround for development environments on a free plan
-  // where server-side functions for uploads are not available.
-  // This simulates the upload by adding metadata to the list, but does not
-  // actually upload the file. The URL and path are placeholders.
-  // A real upload mechanism (e.g., via a server action proxy) needs to be
-  // implemented for production.
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files || disabled) return;
 
@@ -76,6 +60,10 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         return;
       }
 
+      // FIXME: This is a temporary workaround because the development environment
+      // does not support the necessary server-side functions for file uploads on the free plan.
+      // This simulates the upload by adding metadata to the list, but does not
+      // actually upload the file. The URL and path are placeholders.
       const placeholderAttachment: OpportunityAttachment = {
         name: file.name,
         url: '#simulated', // Special URL to identify simulated files
@@ -97,27 +85,11 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const handleDelete = async (index: number, attachment: OpportunityAttachment) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
 
-    // If it's a simulated attachment, just remove it from the form state.
-    if (attachment.url === '#simulated') {
-        remove(index);
-        toast({ variant: 'default', title: 'Adjunto simulado eliminado de la lista' });
-        return;
-    }
-    
-    // Logic for real uploaded files
-    const fileRef = ref(storage, attachment.path);
-    try {
-      await deleteObject(fileRef);
-      remove(index);
-      toast({ variant: 'success', title: 'File deleted successfully' });
-    } catch (error: any) {
-      if (error.code === 'storage/object-not-found') {
-        remove(index);
-        toast({ variant: 'default', title: 'File reference removed' });
-      } else {
-        toast({ variant: 'destructive', title: 'Error deleting file', description: error.message });
-      }
-    }
+    // For this simulation, we just remove the item from the list.
+    // In a real implementation, you would also delete the file from Firebase Storage
+    // if it wasn't a simulated attachment.
+    remove(index);
+    toast({ variant: 'default', title: 'Adjunto eliminado de la lista' });
   };
 
   const onDragEnter = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); if (!disabled) setIsDragging(true); };
