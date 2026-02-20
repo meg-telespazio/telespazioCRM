@@ -271,6 +271,11 @@
           "type": "number",
           "description": "Estimated value of the opportunity."
         },
+        "currency": {
+          "type": "string",
+          "enum": ["USD", "EUR", "ARS"],
+          "description": "The currency for the opportunity's value."
+        },
         "stage": {
           "type": "string",
           "enum": [
@@ -420,6 +425,7 @@
         "title",
         "clientId",
         "value",
+        "currency",
         "stage",
         "probability",
         "closeDate",

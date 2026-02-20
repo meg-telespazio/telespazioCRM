@@ -69,6 +69,7 @@ export type Opportunity = {
   title: string;
   clientId: string;
   value: number;
+  currency: 'USD' | 'EUR' | 'ARS';
   stage: 'Prospecting' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost' | 'Canceled' | 'Suspended';
   probability: number;
   closeDate: Date;

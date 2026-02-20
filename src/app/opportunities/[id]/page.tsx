@@ -88,6 +88,7 @@ const getFormSchema = (t: (key: string) => string) => {
       title: z.string().min(2, t('Validation.titleMin')),
       clientId: z.string().min(1, t('Validation.selectClient')),
       value: z.coerce.number().min(0, t('Validation.valuePositive')),
+      currency: z.enum(['USD', 'EUR', 'ARS']),
       stage: z.enum([
         'Prospecting',
         'Proposal',
@@ -250,6 +251,7 @@ export default function OpportunityFormPage() {
       title: '',
       clientId: clientIdFromQuery || '',
       value: 0,
+      currency: 'USD',
       stage: 'Prospecting',
       probability: 10,
       closeDate: new Date(),
@@ -412,6 +414,7 @@ export default function OpportunityFormPage() {
     if (opportunityData) {
       form.reset({
         ...opportunityData,
+        currency: opportunityData.currency || 'USD',
         closeDate: new Date(opportunityData.closeDate),
         requestDate: new Date(opportunityData.requestDate),
         offerSentDate: opportunityData.offerSentDate
@@ -466,6 +469,7 @@ export default function OpportunityFormPage() {
     'Suspended',
   ];
   const contractMonthsOptions = [12, 24, 36];
+  const currencyOptions: Opportunity['currency'][] = ['USD', 'EUR', 'ARS'];
   const discountOptions = [0, 5, 10, 15, 20, 25, 30];
 
   const pageIsLoading =
@@ -628,13 +632,13 @@ export default function OpportunityFormPage() {
               </Card>
 
               <Card>
-                <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
+                <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-3">
                   <FormField
                     control={form.control}
                     name="value"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Forms.fcv')} (USD)</FormLabel>
+                        <FormLabel>{t('Forms.fcv')} ({form.watch('currency')})</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -644,6 +648,34 @@ export default function OpportunityFormPage() {
                             className="font-bold"
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Table.currency')}</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={isLocked}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {currencyOptions.map((currency) => (
+                              <SelectItem key={currency} value={currency}>
+                                {t(`Currencies.${currency}`)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -675,24 +707,6 @@ export default function OpportunityFormPage() {
                           </SelectContent>
                         </Select>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="isTender"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center gap-x-3 space-y-0 pt-8">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isLocked}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {t('Forms.isTender')}
-                        </FormLabel>
                       </FormItem>
                     )}
                   />
@@ -864,7 +878,7 @@ export default function OpportunityFormPage() {
               </Card>
 
               <Card>
-                <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
+                <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-3">
                   <FormField
                     control={form.control}
                     name="stage"
@@ -916,6 +930,24 @@ export default function OpportunityFormPage() {
                           />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="isTender"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-x-3 space-y-0 pt-8">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={isLocked}
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          {t('Forms.isTender')}
+                        </FormLabel>
                       </FormItem>
                     )}
                   />
