@@ -248,7 +248,7 @@ export default function PrintOpportunityPage() {
 
   const ProposalHeader = () => (
     <header className="flex items-start justify-between border-b-2 border-red-700 pb-2">
-      <div className="relative h-10 w-44">
+      <div className="relative h-8 w-40">
         <Image
           src="/img/logoRojoLargo.png"
           alt="Telespazio Logo"
@@ -258,14 +258,14 @@ export default function PrintOpportunityPage() {
         />
       </div>
       <div className="text-right">
-        <h1 className="text-xl font-bold">{t('Proposal.title')}</h1>
-        <p className="text-sm font-bold text-red-700">{opportunity.publicId}</p>
+        <h1 className="text-lg font-bold">{t('Proposal.title')}</h1>
+        <p className="text-xs font-bold text-red-700">{opportunity.publicId}</p>
       </div>
     </header>
   );
 
   const Signature = () => (
-    <div className="pt-8 text-right text-[10px]">
+    <div className="pt-4 mb-2 text-right text-[9px]">
       <p className="font-bold">{user?.displayName?.toUpperCase()}</p>
       <p>{t('Proposal.signature_company')}</p>
       <p>{t('Proposal.signature_title')}</p>
@@ -474,13 +474,13 @@ export default function PrintOpportunityPage() {
             <span>{t('Proposal.total_contract_value')}: </span>
             <span>{`${opportunity.currency} ${finalFcv.toFixed(2)}`}</span>
           </div>
-          <div className="border-2 border-red-700 p-2 space-y-2">
-             <p className="text-[7pt]">
+          <div className="border-2 border-red-700 p-2 space-y-2 text-[7pt]">
+             <p>
               <span className="font-bold">{t('Proposal.notes_title')}: </span>
               {t('Proposal.notes_text')}
             </p>
             {customNote && (
-               <p className="text-[7pt]">
+               <p>
                   <span className="font-bold">{t('Forms.notes').toUpperCase()}: </span>
                   {customNote}
                 </p>
