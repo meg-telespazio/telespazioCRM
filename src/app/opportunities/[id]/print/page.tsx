@@ -250,7 +250,7 @@ export default function PrintOpportunityPage() {
     <header className="flex items-start justify-between border-b-2 border-red-700 pb-4">
       <div className="relative h-12 w-48">
         <Image
-          src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Telespazio_logo.svg/2560px-Telespazio_logo.svg.png"
+          src="/img/logoRojoLargo.png"
           alt="Telespazio Logo"
           fill
           style={{ objectFit: 'contain' }}
