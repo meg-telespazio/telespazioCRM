@@ -12,6 +12,10 @@ import {
   User as UserIcon,
   BarChartHorizontal,
   Package,
+  ChevronDown,
+  FileText,
+  MapPin,
+  Building,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,7 +45,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -94,8 +104,16 @@ export function AppNavbar() {
       label: t('Sidebar.opportunities'),
       icon: Briefcase,
     },
-    { href: '/clients', label: t('Sidebar.clients'), icon: Users },
-    { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
+    {
+      label: t('Sidebar.management'),
+      icon: Building,
+      subItems: [
+        { href: '/clients', label: t('Pages.clients'), icon: Users },
+        { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
+        { href: '/contracts', label: t('Sidebar.contracts'), icon: FileText },
+        { href: '/locations', label: t('Locations.view'), icon: MapPin },
+      ]
+    },
     { href: '/products-and-services', label: t('Sidebar.ps'), icon: Package },
     { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal },
   ];
@@ -120,18 +138,41 @@ export function AppNavbar() {
           {/* Desktop Menu */}
           <nav className="hidden items-center gap-6 md:flex">
             {menuItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'text-sm font-medium transition-colors hover:text-white/90',
-                  pathname.startsWith(item.href)
-                    ? 'text-white'
-                    : 'text-white/70'
-                )}
-              >
-                {item.label}
-              </Link>
+              item.subItems ? (
+                <DropdownMenu key={item.label}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="gap-1 px-2 text-sm font-medium text-white/70 transition-colors hover:bg-transparent hover:text-white/90 focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:text-white/90">
+                      {item.label}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56">
+                    <DropdownMenuGroup>
+                      {item.subItems.map(subItem => (
+                        <DropdownMenuItem key={subItem.href} asChild>
+                          <Link href={subItem.href} className={cn('flex items-center gap-2', pathname.startsWith(subItem.href) ? 'font-bold' : '')}>
+                            <subItem.icon className="h-4 w-4 text-muted-foreground"/>
+                            {subItem.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href!}
+                  className={cn(
+                    'text-sm font-medium transition-colors hover:text-white/90',
+                    pathname.startsWith(item.href!)
+                      ? 'text-white'
+                      : 'text-white/70'
+                  )}
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
           </nav>
         </div>
@@ -217,20 +258,48 @@ export function AppNavbar() {
                       />
                       <h1 className="text-xl font-bold">{t('App.appName')}</h1>
                     </Link>
-                    <nav className="flex flex-col gap-4">
+                    <nav className="flex flex-col gap-1">
                       {menuItems.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={cn(
-                            '-mx-3 flex items-center gap-4 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-red-700',
-                            pathname.startsWith(item.href) ? 'bg-red-800' : ''
-                          )}
-                        >
-                          <item.icon className="h-5 w-5" />
-                          {item.label}
-                        </Link>
+                        item.subItems ? (
+                          <Collapsible key={item.label} className="w-full">
+                            <CollapsibleTrigger className="-mx-3 flex w-full items-center justify-between rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-red-700">
+                              <div className='flex items-center gap-4'>
+                                <item.icon className="h-5 w-5" />
+                                {item.label}
+                              </div>
+                              <ChevronDown className="h-5 w-5 transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="pl-8 pt-2">
+                               {item.subItems.map(subItem => (
+                                <Link
+                                  key={subItem.href}
+                                  href={subItem.href}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className={cn(
+                                    '-mx-3 flex items-center gap-4 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-red-700',
+                                    pathname.startsWith(subItem.href) ? 'bg-red-800' : ''
+                                  )}
+                                >
+                                  <subItem.icon className="h-5 w-5" />
+                                  {subItem.label}
+                                </Link>
+                               ))}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        ) : (
+                          <Link
+                            key={item.href}
+                            href={item.href!}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={cn(
+                              '-mx-3 flex items-center gap-4 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-red-700',
+                              pathname.startsWith(item.href!) ? 'bg-red-800' : ''
+                            )}
+                          >
+                            <item.icon className="h-5 w-5" />
+                            {item.label}
+                          </Link>
+                        )
                       ))}
                     </nav>
                   </div>

@@ -199,6 +199,36 @@ export type Location = {
   createdBy: string;
 };
 
+export type ContractAttachment = OpportunityAttachment;
+export type ContractType = 'Acuerdo Marco' | 'Locación de Servicios' | 'Compraventa' | 'Locación de Equipos' | 'Comodato de Equipos';
+export type ContractStatus = 'activo' | 'vencido' | 'renovado' | 'renovado automatico';
+export type ContractRenewalTerm = '1 month' | '2 months';
+
+export type Contract = {
+  id: string;
+  publicId: string;
+  clientId: string;
+  amount: number;
+  currency: 'USD' | 'EUR' | 'ARS';
+  type: ContractType;
+  status: ContractStatus;
+  startDate: Date;
+  durationMonths: number;
+  endDate: Date;
+  signatureDate?: Date;
+  autoRenews: boolean;
+  renewalTerm?: ContractRenewalTerm;
+  country: string;
+  clientContactId?: string;
+  authorizedBy?: string;
+  hasSpecialClauses: boolean;
+  specialClauses?: string;
+  notes?: string;
+  attachments?: ContractAttachment[];
+  createdBy: string;
+  createdAt: Date;
+};
+
 
 // Types for writing data to Firestore
 export type ClientWrite = Omit<Client, 'id' | 'createdAt'> & { createdAt: FieldValue };
@@ -209,3 +239,4 @@ export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldV
 export type ActivityWrite = Omit<Activity, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: FieldValue; updatedAt: FieldValue };
 export type ActivityFollowUpWrite = Omit<ActivityFollowUp, 'id' | 'createdAt'> & { createdAt: FieldValue };
 export type LocationWrite = Omit<Location, 'id' | 'createdAt'> & { createdAt: FieldValue };
+export type ContractWrite = Omit<Contract, 'id' | 'createdAt'> & { createdAt: FieldValue };

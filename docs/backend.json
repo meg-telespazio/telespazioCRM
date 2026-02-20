@@ -688,6 +688,35 @@
         "createdBy": { "type": "string", "description": "UID of the user who created the location." }
       },
       "required": ["publicId", "name", "clientId", "type", "status", "streetName", "streetNumber", "city", "province", "country", "postalCode", "latitude", "longitude", "createdAt", "createdBy"]
+    },
+    "Contract": {
+      "title": "Contract",
+      "description": "Represents a legal contract with a client.",
+      "type": "object",
+      "properties": {
+        "publicId": { "type": "string" },
+        "type": { "type": "string", "enum": ["Acuerdo Marco", "Locación de Servicios", "Compraventa", "Locación de Equipos", "Comodato de Equipos"] },
+        "startDate": { "type": "string", "format": "date-time" },
+        "durationMonths": { "type": "number" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "autoRenews": { "type": "boolean" },
+        "renewalTerm": { "type": "string", "enum": ["1 month", "2 months"] },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "ARS"] },
+        "country": { "type": "string" },
+        "clientContactId": { "type": "string" },
+        "authorizedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "signatureDate": { "type": "string", "format": "date-time" },
+        "amount": { "type": "number" },
+        "hasSpecialClauses": { "type": "boolean" },
+        "specialClauses": { "type": "string" },
+        "clientId": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string", "enum": ["activo", "vencido", "renovado", "renovado automatico"] },
+        "attachments": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "url": { "type": "string" }, "type": { "type": "string" }, "size": { "type": "number" }, "path": { "type": "string" } } } }
+      },
+      "required": ["publicId", "type", "startDate", "durationMonths", "endDate", "currency", "country", "clientId", "createdBy", "createdAt", "status", "amount"]
     }
   },
   "auth": {
@@ -747,6 +776,12 @@
         "$ref": "#/entities/Location"
       },
       "description": "Stores client locations."
+    },
+    "/contracts/{contractId}": {
+      "schema": {
+        "$ref": "#/entities/Contract"
+      },
+      "description": "Stores legal contracts with clients."
     }
   }
 }
