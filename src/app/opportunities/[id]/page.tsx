@@ -28,7 +28,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Trash2, Plus, Printer } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -500,6 +500,10 @@ export default function OpportunityFormPage() {
       <AppHeader
         title={isNew ? t('Forms.addOpportunity') : t('Forms.editOpportunity')}
       >
+        <Button variant="outline" onClick={() => router.push('/opportunities')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('Actions.backToOpportunityList')}
+        </Button>
         <Button
           type="button"
           variant="outline"
