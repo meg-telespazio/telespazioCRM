@@ -248,8 +248,14 @@ export default function PrintOpportunityPage() {
 
   const ProposalHeader = () => (
     <header className="flex items-start justify-between border-b-2 border-red-700 pb-4">
-      <div className="h-12 w-48">
-        <Image src="/img/logoLarge.png" alt="Logo" width={140} height={40} />
+      <div className="relative h-12 w-48">
+        <Image
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Telespazio_logo.svg/2560px-Telespazio_logo.svg.png"
+          alt="Telespazio Logo"
+          fill
+          style={{ objectFit: 'contain' }}
+          priority
+        />
       </div>
       <div className="text-right">
         <h1 className="text-2xl font-bold">{t('Proposal.title')}</h1>
