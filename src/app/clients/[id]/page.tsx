@@ -199,10 +199,9 @@ export default function ClientFormPage() {
           description: t('Importer.logoFoundDesc'),
         });
       } else {
-        console.error('Failed to find logo:', result.error);
         toast({
-          variant: 'destructive',
-          title: t('Importer.findLogoError'),
+          variant: 'default',
+          title: t('Importer.logoNotFound'),
           description: result.error || t('Importer.findLogoErrorDesc'),
         });
       }

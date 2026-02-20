@@ -464,6 +464,7 @@ export const translations = {
       findLogoErrorDesc: 'An unexpected error occurred.',
       logoFound: 'Logo Found',
       logoFoundDesc: 'The logo has been loaded. Don\'t forget to save your changes.',
+      logoNotFound: "Logo Not Found",
     },
     Reports: {
       title: 'Report Builder',
@@ -1144,6 +1145,7 @@ export const translations = {
       findLogoErrorDesc: 'Ocurrió un error inesperado.',
       logoFound: 'Logo encontrado',
       logoFoundDesc: 'El logo se ha cargado. No te olvides de guardar los cambios.',
+      logoNotFound: "Logo no Encontrado",
     },
     Reports: {
       title: 'Generador de Reportes',
