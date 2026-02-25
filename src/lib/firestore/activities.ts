@@ -15,7 +15,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 const ACTIVITIES_COLLECTION = 'activities';
 const FOLLOW_UPS_SUBCOLLECTION = 'followUps';
 
-type ActivityData = Omit<Activity, 'id' | 'publicId' | 'createdAt' | 'updatedAt'>;
+type ActivityData = Omit<Activity, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'latestFollowUpContent' | 'latestFollowUpBy'>;
 type FollowUpData = Omit<ActivityFollowUp, 'id' | 'activityId' | 'createdAt'>;
 
 export async function addActivity(
@@ -41,6 +41,8 @@ export async function addActivity(
         publicId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        latestFollowUpContent: null,
+        latestFollowUpBy: null,
       };
 
       transaction.set(newActivityRef, data);
@@ -79,7 +81,11 @@ export function addFollowUp(
 
   runTransaction(firestore, async (transaction) => {
     transaction.set(newFollowUpRef, data);
-    transaction.update(activityRef, { updatedAt: serverTimestamp() });
+    transaction.update(activityRef, { 
+      updatedAt: serverTimestamp(),
+      latestFollowUpContent: followUpData.content,
+      latestFollowUpBy: followUpData.createdBy,
+    });
   }).catch((serverError) => {
     // This could be a permission error on either the followup creation or the activity update.
     // For simplicity, we'll just log one. A more robust implementation might check the error code.

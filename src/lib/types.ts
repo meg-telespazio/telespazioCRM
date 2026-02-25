@@ -166,6 +166,8 @@ export type Activity = {
   createdAt: Date;
   createdBy: string;
   updatedAt?: Date;
+  latestFollowUpContent?: string;
+  latestFollowUpBy?: string;
 };
 
 export type ActivityFollowUp = {
