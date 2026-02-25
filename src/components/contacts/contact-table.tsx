@@ -23,7 +23,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -114,15 +113,7 @@ export function ContactTable({
 
   return (
     <div className="w-full bg-card rounded-lg border shadow-sm">
-      <div className="flex items-center justify-between p-4">
-        <Input
-          placeholder={t('Table.filterByName')}
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+      <div className="flex items-center justify-end p-4">
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -440,6 +440,7 @@ export const translations = {
       readyForImport: '{count} records ready for import.',
       recordsWithErrors: '{count} records with errors will be skipped.',
       noDataToImport: 'No valid data to import.',
+      noContactsDescription: 'No contacts found for the selected filter.',
       previewTable: {
         status: 'Status',
         errors: 'Errors',
@@ -1127,6 +1128,7 @@ export const translations = {
       readyForImport: '{count} registros listos para importar.',
       recordsWithErrors: '{count} registros con errores que serán omitidos.',
       noDataToImport: 'No hay datos válidos para importar.',
+      noContactsDescription: 'No se encontraron contactos para el filtro seleccionado.',
       previewTable: {
         status: 'Estado',
         errors: 'Errores',
