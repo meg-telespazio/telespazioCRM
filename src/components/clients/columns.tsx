@@ -10,6 +10,7 @@ import {
   Activity as ActivityIcon,
   MapPin,
   FileText,
+  Contact,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -327,6 +328,10 @@ export const columns = (
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEdit(client)}>
                 {t('Actions.editClient')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(`/contacts/new?clientId=${client.id}`)}>
+                <Contact className="mr-2 h-4 w-4" />
+                <span>{t('Pages.addContact')}</span>
               </DropdownMenuItem>
                <DropdownMenuItem onClick={() => router.push(`/clients/${client.id}/activity`)}>
                 <ActivityIcon className="mr-2 h-4 w-4" />
