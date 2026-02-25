@@ -12,9 +12,9 @@ export const columns = (
   t: (key: string, params?: any) => string,
   locale: string,
   clientMap: Map<string, string>,
-  userMap: Map<string, UserProfile>
+  userMap: Map<string, UserProfile>,
+  router: ReturnType<typeof useRouter>
 ): ColumnDef<Activity>[] => {
-  const router = useRouter();
   const dateLocale = locale === 'es' ? es : enUS;
 
   return [
