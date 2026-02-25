@@ -134,6 +134,7 @@ export const translations = {
       clientSummary: 'Client Summary',
       contracts: 'Contracts',
       addContract: 'Add Contract',
+      activities: 'All Activities',
     },
     Table: {
       filterByName: 'Filter by name...',
@@ -592,6 +593,11 @@ export const translations = {
       appUser: 'App User',
       clientContact: 'Client Contact',
       noMentionsFound: 'No matches found',
+      updatedToday: 'Updated today',
+      updated1DayAgo: 'Updated 1 day ago',
+      updatedDaysAgo: 'Updated {days} days ago',
+      noActivitiesTitle: 'No Activities Found',
+      noActivitiesDescription: 'No activities have been logged yet.',
     },
     Locations: {
       title: '{clientName} Locations',
@@ -815,6 +821,7 @@ export const translations = {
       clientSummary: 'Resumen del Cliente',
       contracts: 'Contratos',
       addContract: 'Añadir Contrato',
+      activities: 'Todas las Actividades',
     },
     Table: {
       filterByName: 'Filtrar por nombre...',
@@ -1273,6 +1280,11 @@ export const translations = {
       appUser: 'Usuario de la App',
       clientContact: 'Contacto del Cliente',
       noMentionsFound: 'No se encontraron coincidencias',
+      updatedToday: 'Actualizado hoy',
+      updated1DayAgo: 'Actualizado hace 1 día',
+      updatedDaysAgo: 'Actualizado hace {days} días',
+      noActivitiesTitle: 'No se Encontraron Actividades',
+      noActivitiesDescription: 'Aún no se han registrado actividades.',
     },
     Locations: {
       title: 'Locaciones de {clientName}',

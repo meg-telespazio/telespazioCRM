@@ -16,6 +16,7 @@ import {
   FileText,
   MapPin,
   Building,
+  Activity as ActivityIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -112,6 +113,7 @@ export function AppNavbar() {
         { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
         { href: '/contracts', label: t('Sidebar.contracts'), icon: FileText },
         { href: '/locations', label: t('Locations.view'), icon: MapPin },
+        { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon },
       ]
     },
     { href: '/products-and-services', label: t('Sidebar.ps'), icon: Package },
