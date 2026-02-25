@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Activity, Client, ActivityType } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { differenceInDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,17 +32,14 @@ export default function AllActivitiesPage() {
     if (!user) return null;
     return query(
       collection(firestore, 'activities'),
-      where('createdBy', '==', user.uid),
       orderBy('updatedAt', 'desc')
     );
   }, [user, firestore]);
 
   const clientsQuery = useMemo(() => {
     if (!user) return null;
-    return query(
-      collection(firestore, 'clients'),
-      where('createdBy', '==', user.uid)
-    );
+    // We need all clients to map names, not just the user's
+    return collection(firestore, 'clients');
   }, [user, firestore]);
 
   const { data: activities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
