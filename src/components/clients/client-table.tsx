@@ -35,6 +35,7 @@ import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
+import { useRouter } from 'next/navigation';
 
 type ClientTableProps = {
   data: Client[];
@@ -46,6 +47,7 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
   const { t } = useI18n();
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
   const tableId = 'clients';
   const defaultVisibility = {
     createdAt: false,
@@ -85,7 +87,7 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
 
   const table = useReactTable({
     data,
-    columns: columns(t, onEdit, onDelete),
+    columns: columns(t, onEdit, onDelete, router),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -186,7 +188,7 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns(t, onEdit, onDelete).length}
+                  colSpan={columns(t, onEdit, onDelete, router).length}
                   className="h-24 text-center"
                 >
                   {t('Table.noResults')}

@@ -45,9 +45,9 @@ const formatCuit = (cuit: string): string => {
 export const columns = (
   t: (key: string) => void,
   onEdit: (client: Client) => void,
-  onDelete: (clientId: string) => void
+  onDelete: (clientId: string) => void,
+  router: ReturnType<typeof useRouter>
 ): ColumnDef<Client>[] => {
-  const router = useRouter();
   
   return [
     {
