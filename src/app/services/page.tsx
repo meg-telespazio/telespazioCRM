@@ -20,6 +20,9 @@ import {
   ArrowUp,
   ArrowDown,
   Filter,
+  MoreHorizontal,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -55,10 +58,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { ServiceImporter } from '@/components/services/service-importer';
 import { useRouter } from 'next/navigation';
-import { bulkUpdateServicePrices } from '@/lib/firestore/services';
+import { bulkUpdateServicePrices, deleteService } from '@/lib/firestore/services';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -120,8 +124,10 @@ export default function ServicesPage() {
     
     // 1. Filter
     let filtered = services.filter(s => {
-      const matchesSearch = s.serviceNickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            s.serviceLineNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      const nickname = s.serviceNickname || '';
+      const line = s.serviceLineNumber || '';
+      const matchesSearch = nickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            line.toLowerCase().includes(searchQuery.toLowerCase());
       
       const po = poMap.get(s.poId);
       const contract = po ? contractMap.get(po.contractId) : null;
@@ -218,6 +224,16 @@ export default function ServicesPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm(t('Actions.confirmDelete'))) return;
+    try {
+      await deleteService(firestore, id);
+      toast({ variant: 'success', title: 'Servicio eliminado correctamente.' });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error al eliminar', description: e.message });
+    }
+  }
+
   const isLoading = userLoading || servicesLoading;
 
   if (isLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
@@ -237,7 +253,7 @@ export default function ServicesPage() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex flex-1 flex-col md:flex-row items-center gap-4 w-full">
             <div className="relative w-full md:max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
               <Input 
                 placeholder="Buscar por Nickname o Línea..." 
                 className="pl-10 bg-white shadow-sm border-muted-foreground/20 focus-visible:ring-destructive"
@@ -275,7 +291,7 @@ export default function ServicesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setBulkPriceDialogOpen(true)}>
+                <DropdownMenuItem onClick={() => setBulkPriceDialogOpen(true)} className="cursor-pointer">
                   <DollarSign className="mr-2 h-4 w-4" />
                   <span>{t('Actions.bulkUpdatePrices')}</span>
                 </DropdownMenuItem>
@@ -296,30 +312,31 @@ export default function ServicesPage() {
                   />
                 </TableHead>
                 <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('serviceNickname')} className="flex items-center hover:opacity-80">
+                  <button onClick={() => handleSort('serviceNickname')} className="flex items-center w-full h-full text-left font-bold">
                     {t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}
                   </button>
                 </TableHead>
                 <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('monthlyFee')} className="flex items-center hover:opacity-80">
+                  <button onClick={() => handleSort('monthlyFee')} className="flex items-center w-full h-full text-left font-bold">
                     {t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}
                   </button>
                 </TableHead>
                 <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('servicePlan')} className="flex items-center hover:opacity-80">
+                  <button onClick={() => handleSort('servicePlan')} className="flex items-center w-full h-full text-left font-bold">
                     {t('Forms.servicePlan')} {getSortIcon('servicePlan')}
                   </button>
                 </TableHead>
                 <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('client')} className="flex items-center hover:opacity-80">
+                  <button onClick={() => handleSort('client')} className="flex items-center w-full h-full text-left font-bold">
                     {t('Pages.clients')} {getSortIcon('client')}
                   </button>
                 </TableHead>
                 <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('poId')} className="flex items-center hover:opacity-80">
+                  <button onClick={() => handleSort('poId')} className="flex items-center w-full h-full text-left font-bold">
                     {t('Forms.poNumber')} {getSortIcon('poId')}
                   </button>
                 </TableHead>
+                <TableHead className="text-destructive-foreground text-right">{t('Table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -367,11 +384,32 @@ export default function ServicesPage() {
                         <span className="font-bold text-destructive">{s.poId}</span>
                       </div>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => router.push(`/services/${s.id}`)} className="cursor-pointer">
+                            <Edit className="mr-2 h-4 w-4" />
+                            {t('Services.edit')}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive cursor-pointer">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {t('Table.actions.delete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 );
               }) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
                     {t('Services.noServices')}
                   </TableCell>
                 </TableRow>

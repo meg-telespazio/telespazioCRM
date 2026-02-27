@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -130,7 +129,7 @@ export function AppNavbar() {
   if (!user) return null;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-destructive text-destructive-foreground">
+    <header className="sticky top-0 z-[100] w-full border-b bg-destructive text-destructive-foreground">
       <div className="container flex h-16 items-center px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -155,11 +154,11 @@ export function AppNavbar() {
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56">
+                  <DropdownMenuContent className="w-56" align="start">
                     <DropdownMenuGroup>
                       {item.subItems.map(subItem => (
                         <DropdownMenuItem key={subItem.href} asChild>
-                          <Link href={subItem.href} className={cn('flex items-center gap-2', pathname.startsWith(subItem.href) ? 'font-bold' : '')}>
+                          <Link href={subItem.href} className={cn('flex items-center gap-2 cursor-pointer', pathname.startsWith(subItem.href) ? 'font-bold' : '')}>
                             <subItem.icon className="h-4 w-4 text-muted-foreground"/>
                             {subItem.label}
                           </Link>
@@ -220,13 +219,13 @@ export function AppNavbar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile">
+                  <Link href="/profile" className="cursor-pointer">
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>{t('Pages.profile')}</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>{t('Sidebar.logout')}</span>
                 </DropdownMenuItem>
