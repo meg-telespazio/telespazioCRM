@@ -1,3 +1,4 @@
+
 import type { FieldValue } from "firebase/firestore";
 
 export type Client = {
@@ -90,11 +91,6 @@ export type Opportunity = {
   applyDiscountToMrc?: boolean;
 };
 
-export type BundleItem = {
-  itemId: string;
-  quantity: number;
-};
-
 export type ProductOrService = {
   id: string;
   publicId: string;
@@ -109,7 +105,7 @@ export type ProductOrService = {
   currency?: 'USD' | 'EUR' | 'ARS';
   isEditable: boolean;
   availableDiscounts?: number[];
-  bundleItems?: BundleItem[];
+  bundleItems?: Array<{ itemId: string; quantity: number }>;
   createdAt: Date;
   createdBy: string;
 };
@@ -129,29 +125,79 @@ export type UserProfile = {
   tablePreferences?: Record<string, Record<string, boolean>>;
 };
 
-export type ReportFilter = {
-  id: string;
-  field: string;
-  operator: string;
-  value: any;
-};
+export type ContractType = 'Acuerdo Marco' | 'Locación de Servicios' | 'Compraventa' | 'Locación de Equipos' | 'Comodato de Equipos';
+export type ContractStatus = 'activo' | 'vencido' | 'renovado' | 'renovado automatico';
+export type ContractRenewalTerm = '1 month' | '2 months';
 
-export type ReportSort = {
+export type Contract = {
   id: string;
-  field: string;
-  direction: 'asc' | 'desc';
-};
-
-export type Report = {
-  id: string;
-  name: string;
-  description?: string;
-  primaryDataSource: 'clients' | 'contacts' | 'opportunities' | 'productsAndServices';
-  selectedFields: string[];
-  filters: ReportFilter[];
-  sorting: ReportSort[];
-  createdAt: Date;
+  publicId: string;
+  clientId: string;
+  amount: number;
+  currency: 'USD' | 'EUR' | 'ARS';
+  type: ContractType;
+  status: ContractStatus;
+  startDate: Date;
+  durationMonths: number;
+  endDate: Date;
+  signatureDate?: Date;
+  autoRenews: boolean;
+  renewalTerm?: ContractRenewalTerm;
+  country: string;
+  clientContactId?: string;
+  authorizedBy?: string;
+  hasSpecialClauses: boolean;
+  specialClauses?: string;
+  notes?: string;
+  attachments?: OpportunityAttachment[];
   createdBy: string;
+  createdAt: Date;
+};
+
+export type PurchaseOrderStatus = 'pending' | 'approved' | 'canceled' | 'received';
+
+export type PurchaseOrder = {
+  id: string; // Manual PO Number
+  emissionDate: Date;
+  buyerId: string;
+  amount: number;
+  currency: 'USD' | 'EUR' | 'ARS';
+  status: PurchaseOrderStatus;
+  contractId: string;
+  idContractStarfleet?: string;
+  idClientStarfleet?: string;
+  createdBy: string;
+  createdAt: Date;
+};
+
+export type Service = {
+  id: string;
+  serviceNickname: string;
+  serviceLineNumber: string;
+  partnerName: string;
+  customerName: string;
+  customerAccountNumber: string;
+  servicePlan: string;
+  serviceAllocationGb: number;
+  topUp: string;
+  poId: string;
+  equipmentId: string;
+  createdBy: string;
+  createdAt: Date;
+};
+
+export type PhysicalStatus = 'Activa' | 'En reparación' | 'Retirada';
+
+export type Equipment = {
+  id: string; // user_terminal_id
+  userTerminal: string; // Serial/Nickname
+  type: string;
+  physicalStatus: PhysicalStatus;
+  installationDate?: Date;
+  installationPlace?: string;
+  currentServiceId?: string;
+  createdBy: string;
+  createdAt: Date;
 };
 
 export type ActivityType = 'call' | 'meeting' | 'email' | 'message';
@@ -168,14 +214,6 @@ export type Activity = {
   updatedAt?: Date;
   latestFollowUpContent?: string;
   latestFollowUpBy?: string;
-};
-
-export type ActivityFollowUp = {
-  id: string;
-  activityId: string;
-  content: string;
-  createdAt: Date;
-  createdBy: string;
 };
 
 export type LocationType = 'branch' | 'headquarters' | 'warehouse' | 'office' | 'property' | 'field';
@@ -201,44 +239,14 @@ export type Location = {
   createdBy: string;
 };
 
-export type ContractAttachment = OpportunityAttachment;
-export type ContractType = 'Acuerdo Marco' | 'Locación de Servicios' | 'Compraventa' | 'Locación de Equipos' | 'Comodato de Equipos';
-export type ContractStatus = 'activo' | 'vencido' | 'renovado' | 'renovado automatico';
-export type ContractRenewalTerm = '1 month' | '2 months';
-
-export type Contract = {
+export type Report = {
   id: string;
-  publicId: string;
-  clientId: string;
-  amount: number;
-  currency: 'USD' | 'EUR' | 'ARS';
-  type: ContractType;
-  status: ContractStatus;
-  startDate: Date;
-  durationMonths: number;
-  endDate: Date;
-  signatureDate?: Date;
-  autoRenews: boolean;
-  renewalTerm?: ContractRenewalTerm;
-  country: string;
-  clientContactId?: string;
-  authorizedBy?: string;
-  hasSpecialClauses: boolean;
-  specialClauses?: string;
-  notes?: string;
-  attachments?: ContractAttachment[];
-  createdBy: string;
+  name: string;
+  description?: string;
+  primaryDataSource: 'clients' | 'contacts' | 'opportunities' | 'productsAndServices';
+  selectedFields: string[];
+  filters: any[];
+  sorting: any[];
   createdAt: Date;
+  createdBy: string;
 };
-
-
-// Types for writing data to Firestore
-export type ClientWrite = Omit<Client, 'id' | 'createdAt'> & { createdAt: FieldValue };
-export type ContactWrite = Omit<Contact, 'id' | 'createdAt'> & { createdAt: FieldValue };
-export type OpportunityWrite = Omit<Opportunity, 'id' | 'createdAt'> & { createdAt: FieldValue };
-export type ProductOrServiceWrite = Omit<ProductOrService, 'id' | 'createdAt'> & { createdAt: FieldValue };
-export type ReportWrite = Omit<Report, 'id' | 'createdAt'> & { createdAt: FieldValue };
-export type ActivityWrite = Omit<Activity, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: FieldValue; updatedAt: FieldValue };
-export type ActivityFollowUpWrite = Omit<ActivityFollowUp, 'id' | 'createdAt'> & { createdAt: FieldValue };
-export type LocationWrite = Omit<Location, 'id' | 'createdAt'> & { createdAt: FieldValue };
-export type ContractWrite = Omit<Contract, 'id' | 'createdAt'> & { createdAt: FieldValue };

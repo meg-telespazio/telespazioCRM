@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -250,445 +251,6 @@
         "createdBy"
       ]
     },
-    "Opportunity": {
-      "title": "Opportunity",
-      "description": "Represents a sales opportunity.",
-      "type": "object",
-      "properties": {
-        "publicId": {
-          "type": "string",
-          "description": "Public-facing yearly sequential opportunity ID (OP-YYYY-000001)."
-        },
-        "title": {
-          "type": "string",
-          "description": "Title of the opportunity."
-        },
-        "clientId": {
-          "type": "string",
-          "description": "ID of the associated client."
-        },
-        "value": {
-          "type": "number",
-          "description": "Estimated value of the opportunity."
-        },
-        "currency": {
-          "type": "string",
-          "enum": ["USD", "EUR", "ARS"],
-          "description": "The currency for the opportunity's value."
-        },
-        "stage": {
-          "type": "string",
-          "enum": [
-            "Prospecting",
-            "Proposal",
-            "Negotiation",
-            "Won",
-            "Lost",
-            "Canceled",
-            "Suspended"
-          ]
-        },
-        "probability": {
-          "type": "number",
-          "description": "Probability of winning the opportunity (0-100)."
-        },
-        "closeDate": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Estimated close date for the opportunity."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the opportunity was created."
-        },
-        "createdBy": {
-          "type": "string",
-          "description": "UID of the user who created the opportunity."
-        },
-        "contractMonths": {
-          "type": "number",
-          "enum": [12, 24, 36],
-          "description": "Duration of the contract in months."
-        },
-        "requestDate": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Date when the opportunity was requested."
-        },
-        "offerSentDate": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Date when the offer was sent to the client."
-        },
-        "description": {
-          "type": "string",
-          "description": "Detailed description of the opportunity."
-        },
-        "reason": {
-          "type": "string",
-          "description": "Reason for Lost, Canceled, or Suspended status."
-        },
-        "competition": {
-          "type": "array",
-          "description": "List of competitors for this opportunity.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "isTender": {
-          "type": "boolean",
-          "description": "Indicates if the opportunity is a tender/bid."
-        },
-        "contactId": {
-          "type": "string",
-          "description": "ID of the reference contact person from the client."
-        },
-        "lineItems": {
-          "type": "array",
-          "description": "List of products or services included in the opportunity.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "itemId": {
-                "type": "string",
-                "description": "ID of the catalog item from the productsAndServices collection."
-              },
-              "name": {
-                "type": "string",
-                "description": "Denormalized name of the item at the time of adding."
-              },
-              "description": {
-                "type": "string",
-                "description": "Denormalized or edited description of the item."
-              },
-              "quantity": {
-                "type": "number"
-              },
-              "oneTimeCharge": {
-                "type": "number",
-                "description": "The one-time charge per unit for this specific opportunity."
-              },
-              "recurringCharge": {
-                "type": "number",
-                "description": "The recurring charge per unit for this specific opportunity."
-              },
-              "discount": {
-                "type": "number",
-                "description": "The discount percentage applied."
-              }
-            },
-            "required": ["itemId", "name", "quantity"]
-          }
-        },
-        "attachments": {
-          "type": "array",
-          "description": "List of files attached to the opportunity.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "url": {
-                "type": "string",
-                "format": "uri"
-              },
-              "type": {
-                "type": "string"
-              },
-              "size": {
-                "type": "number"
-              },
-              "path": {
-                "type": "string"
-              }
-            },
-            "required": ["name", "url", "type", "size", "path"]
-          }
-        },
-        "generalDiscountPercentage": {
-          "type": "number",
-          "description": "The general discount percentage to apply to the whole opportunity."
-        },
-        "applyDiscountToNrc": {
-          "type": "boolean",
-          "description": "Indicates if the general discount applies to one-time charges."
-        },
-        "applyDiscountToMrc": {
-          "type": "boolean",
-          "description": "Indicates if the general discount applies to recurring charges."
-        }
-      },
-      "required": [
-        "publicId",
-        "title",
-        "clientId",
-        "value",
-        "currency",
-        "stage",
-        "probability",
-        "closeDate",
-        "createdAt",
-        "createdBy",
-        "contractMonths",
-        "requestDate",
-        "isTender"
-      ]
-    },
-    "ProductOrService": {
-      "title": "Product or Service",
-      "description": "Represents a product or a service in the catalog.",
-      "type": "object",
-      "properties": {
-        "publicId": {
-          "type": "string",
-          "description": "Public-facing sequential ID (C-PO-00000001 for product, C-SRV-00000001 for service)."
-        },
-        "type": {
-          "type": "string",
-          "enum": ["product", "service", "bundle"],
-          "description": "Indicates if the item is a product or a service."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the product or service."
-        },
-        "description": {
-          "type": "string",
-          "description": "Detailed description of the item."
-        },
-        "photoURL": {
-          "type": "string",
-          "description": "Data URL of the product or service's photo."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["active", "inactive"],
-          "description": "The status of the item in the catalog."
-        },
-        "unitOfMeasure": {
-          "type": "string",
-          "enum": ["units", "meters", "kg", "liters", "GB"],
-          "description": "The unit of measure for the item."
-        },
-        "oneTimeCharge": {
-          "type": "number",
-          "description": "One-time charge per unit."
-        },
-        "recurringCharge": {
-          "type": "number",
-          "description": "Recurring charge (subscription) per unit."
-        },
-        "currency": {
-          "type": "string",
-          "enum": ["USD", "EUR", "ARS"],
-          "description": "The currency for the charges."
-        },
-        "isEditable": {
-          "type": "boolean",
-          "description": "Indicates if the item's properties can be edited when added to an opportunity."
-        },
-        "availableDiscounts": {
-          "type": "array",
-          "description": "Array of available discount percentages.",
-          "items": {
-            "type": "number"
-          }
-        },
-        "createdBy": {
-            "type": "string",
-            "description": "UID of the user who created the item."
-        },
-        "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Timestamp of when the item was created."
-        },
-        "bundleItems": {
-          "type": "array",
-          "description": "List of items included in the bundle.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "itemId": {
-                "type": "string",
-                "description": "ID of the catalog item."
-              },
-              "quantity": {
-                "type": "number"
-              }
-            },
-            "required": ["itemId", "quantity"]
-          }
-        }
-      },
-      "required": [
-        "publicId",
-        "type",
-        "name",
-        "status",
-        "createdBy",
-        "createdAt"
-      ]
-    },
-    "Report": {
-      "title": "Report",
-      "description": "Represents a saved report configuration.",
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "The name of the report."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the report."
-        },
-        "primaryDataSource": {
-          "type": "string",
-          "enum": [
-            "clients",
-            "contacts",
-            "opportunities",
-            "productsAndServices"
-          ]
-        },
-        "selectedFields": {
-          "type": "array",
-          "description": "List of field keys to include in the report.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "filters": {
-          "type": "array",
-          "description": "Saved filter configuration for the report.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string" },
-              "field": { "type": "string" },
-              "operator": { "type": "string" },
-              "value": { "type": "any" }
-            },
-             "required": ["id", "field", "operator"]
-          }
-        },
-        "sorting": {
-           "type": "array",
-           "description": "Saved sorting configuration for the report.",
-           "items": {
-             "type": "object",
-             "properties": {
-                "id": { "type": "string" },
-                "field": { "type": "string" },
-                "direction": { "type": "string", "enum": ["asc", "desc"] }
-             },
-             "required": ["id", "field", "direction"]
-           }
-        },
-        "createdBy": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "name",
-        "primaryDataSource",
-        "selectedFields",
-        "createdBy",
-        "createdAt"
-      ]
-    },
-    "Activity": {
-      "title": "Activity",
-      "description": "Represents a client-related activity or interaction.",
-      "type": "object",
-      "properties": {
-        "publicId": {
-          "type": "string"
-        },
-        "clientId": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string",
-          "enum": ["call", "meeting", "email", "message"]
-        },
-        "description": {
-          "type": "string"
-        },
-        "isPriority": {
-          "type": "boolean"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "createdBy": {
-          "type": "string"
-        },
-        "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Timestamp of when the activity was last updated, including new follow-ups."
-        }
-      },
-      "required": [
-        "publicId",
-        "clientId",
-        "type",
-        "description",
-        "createdAt",
-        "createdBy"
-      ]
-    },
-    "ActivityFollowUp": {
-      "title": "Activity Follow-Up",
-      "description": "Represents a comment or update on a parent activity.",
-      "type": "object",
-      "properties": {
-        "content": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "createdBy": {
-          "type": "string"
-        }
-      },
-      "required": ["content", "createdAt", "createdBy"]
-    },
-    "Location": {
-      "title": "Location",
-      "description": "Represents a physical location of a client.",
-      "type": "object",
-      "properties": {
-        "publicId": { "type": "string", "description": "Public-facing sequential location ID (LOC-00000001)." },
-        "name": { "type": "string", "description": "Name of the location." },
-        "clientId": { "type": "string", "description": "ID of the client this location belongs to." },
-        "type": { "type": "string", "enum": ["branch", "headquarters", "warehouse", "office", "property", "field"], "description": "Type of the location." },
-        "status": { "type": "string", "enum": ["active", "suspended"], "description": "Status of the location." },
-        "streetName": { "type": "string", "description": "Street name of the address." },
-        "streetNumber": { "type": "string", "description": "Street number of the address." },
-        "city": { "type": "string", "description": "City of the address." },
-        "province": { "type": "string", "description": "Province or state of the address." },
-        "country": { "type": "string", "description": "Country of the address." },
-        "postalCode": { "type": "string", "description": "Postal code of the address." },
-        "notes": { "type": "string", "description": "Additional notes about the location." },
-        "latitude": { "type": "number", "description": "Latitude for geolocation." },
-        "longitude": { "type": "number", "description": "Longitude for geolocation." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the location was created." },
-        "createdBy": { "type": "string", "description": "UID of the user who created the location." }
-      },
-      "required": ["publicId", "name", "clientId", "type", "status", "streetName", "streetNumber", "city", "province", "country", "postalCode", "latitude", "longitude", "createdAt", "createdBy"]
-    },
     "Contract": {
       "title": "Contract",
       "description": "Represents a legal contract with a client.",
@@ -713,75 +275,76 @@
         "clientId": { "type": "string" },
         "createdBy": { "type": "string" },
         "notes": { "type": "string" },
-        "status": { "type": "string", "enum": ["activo", "vencido", "renovado", "renovado automatico"] },
-        "attachments": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "url": { "type": "string" }, "type": { "type": "string" }, "size": { "type": "number" }, "path": { "type": "string" } } } }
+        "status": { "type": "string", "enum": ["activo", "vencido", "renovado", "renovado automatico"] }
+      }
+    },
+    "PurchaseOrder": {
+      "title": "Purchase Order",
+      "description": "Represents a purchase order linked to a contract.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Manual PO Number." },
+        "emissionDate": { "type": "string", "format": "date-time" },
+        "buyerId": { "type": "string", "description": "Contact ID of the buyer." },
+        "amount": { "type": "number" },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "ARS"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "canceled", "received"] },
+        "contractId": { "type": "string", "description": "Linked contract ID." },
+        "idContractStarfleet": { "type": "string" },
+        "idClientStarfleet": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["publicId", "type", "startDate", "durationMonths", "endDate", "currency", "country", "clientId", "createdBy", "createdAt", "status", "amount"]
+      "required": ["id", "emissionDate", "buyerId", "amount", "currency", "status", "contractId", "createdBy", "createdAt"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Represents a service line linked to a PO.",
+      "type": "object",
+      "properties": {
+        "serviceNickname": { "type": "string" },
+        "serviceLineNumber": { "type": "string" },
+        "partnerName": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerAccountNumber": { "type": "string" },
+        "servicePlan": { "type": "string" },
+        "serviceAllocationGb": { "type": "number" },
+        "topUp": { "type": "string" },
+        "poId": { "type": "string" },
+        "equipmentId": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["serviceNickname", "serviceLineNumber", "poId", "equipmentId", "createdBy", "createdAt"]
+    },
+    "Equipment": {
+      "title": "Equipment",
+      "description": "Physical hardware inventory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "user_terminal_id (UUID)." },
+        "userTerminal": { "type": "string", "description": "Serial/Nickname." },
+        "type": { "type": "string" },
+        "physicalStatus": { "type": "string", "enum": ["Activa", "En reparación", "Retirada"] },
+        "installationDate": { "type": "string", "format": "date-time" },
+        "installationPlace": { "type": "string" },
+        "currentServiceId": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userTerminal", "physicalStatus", "createdBy", "createdAt"]
     }
   },
   "auth": {
     "providers": ["email"]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/UserProfile"
-      },
-      "description": "Stores public information about a user."
-    },
-    "/users/{userId}/reports/{reportId}": {
-      "schema": {
-        "$ref": "#/entities/Report"
-      },
-      "description": "Stores user-created report configurations."
-    },
-    "/clients/{clientId}": {
-      "schema": {
-        "$ref": "#/entities/Client"
-      },
-      "description": "Stores information about clients."
-    },
-    "/contacts/{contactId}": {
-      "schema": {
-        "$ref": "#/entities/Contact"
-      },
-      "description": "Stores contact information for clients."
-    },
-    "/opportunities/{opportunityId}": {
-      "schema": {
-        "$ref": "#/entities/Opportunity"
-      },
-      "description": "Stores sales opportunities."
-    },
-    "/productsAndServices/{itemId}": {
-      "schema": {
-        "$ref": "#/entities/ProductOrService"
-      },
-      "description": "Stores catalog products and services."
-    },
-    "/activities/{activityId}": {
-      "schema": {
-        "$ref": "#/entities/Activity"
-      },
-      "description": "Stores all client activities."
-    },
-    "/activities/{activityId}/followUps/{followUpId}": {
-      "schema": {
-        "$ref": "#/entities/ActivityFollowUp"
-      },
-      "description": "Stores follow-up comments for a specific activity."
-    },
-    "/locations/{locationId}": {
-      "schema": {
-        "$ref": "#/entities/Location"
-      },
-      "description": "Stores client locations."
-    },
-    "/contracts/{contractId}": {
-      "schema": {
-        "$ref": "#/entities/Contract"
-      },
-      "description": "Stores legal contracts with clients."
-    }
+    "/users/{userId}": { "schema": { "$ref": "#/entities/UserProfile" }, "description": "..." },
+    "/clients/{clientId}": { "schema": { "$ref": "#/entities/Client" }, "description": "..." },
+    "/contacts/{contactId}": { "schema": { "$ref": "#/entities/Contact" }, "description": "..." },
+    "/contracts/{contractId}": { "schema": { "$ref": "#/entities/Contract" }, "description": "..." },
+    "/purchaseOrders/{poId}": { "schema": { "$ref": "#/entities/PurchaseOrder" }, "description": "..." },
+    "/services/{serviceId}": { "schema": { "$ref": "#/entities/Service" }, "description": "..." },
+    "/equipment/{equipmentId}": { "schema": { "$ref": "#/entities/Equipment" }, "description": "..." }
   }
 }

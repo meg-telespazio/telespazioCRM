@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -7,7 +8,7 @@ import dynamic from 'next/dynamic';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
-import type { Client, Contact, Location, Opportunity, Activity } from '@/lib/types';
+import type { Client, Contact, Location, Opportunity, Activity, Contract, PurchaseOrder, Service, Equipment } from '@/lib/types';
 
 import { AppHeader } from '@/components/layout/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,27 +17,16 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
-
-
-const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "destructive" } = {
-  Prospecting: "secondary",
-  Proposal: "secondary",
-  Negotiation: "secondary",
-  Won: "default",
-  Lost: "destructive",
-  Canceled: "destructive",
-  Suspended: "secondary",
-};
 
 const LocationsMap = dynamic(() => import('@/components/locations/locations-map'), {
   ssr: false,
   loading: () => <Skeleton className="h-[250px] w-full rounded-lg" />,
 });
-
 
 export default function ClientSummaryPage() {
   const { t, locale } = useI18n();
@@ -49,285 +39,185 @@ export default function ClientSummaryPage() {
   const firestore = useFirestore();
 
   // Data fetching
-  const clientDocRef = useMemo(() => {
-    if (!firestore || !clientId) return null;
-    return doc(firestore, 'clients', clientId);
-  }, [firestore, clientId]);
+  const clientDocRef = useMemo(() => firestore ? doc(firestore, 'clients', clientId) : null, [firestore, clientId]);
   const { data: client, loading: clientLoading } = useDoc<Client>(clientDocRef);
 
-  const contactsQuery = useMemo(() => {
-    if (!firestore || !clientId || !user) return null;
-    return query(collection(firestore, 'contacts'), where('clientId', '==', clientId), where('createdBy', '==', user.uid));
-  }, [firestore, clientId, user]);
-  const { data: contacts, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
+  const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
+  const { data: contracts } = useCollection<Contract>(contractsQuery);
 
-  const locationsQuery = useMemo(() => {
-    if (!firestore || !clientId || !user) return null;
-    return query(collection(firestore, 'locations'), where('clientId', '==', clientId), where('createdBy', '==', user.uid));
-  }, [firestore, clientId, user]);
-  const { data: locations, loading: locationsLoading } = useCollection<Location>(locationsQuery);
-  
-  const locationsWithCoords = useMemo(() => {
-    if (!locations) return [];
-    return locations.filter(l => typeof l.latitude === 'number' && typeof l.longitude === 'number');
-  }, [locations]);
+  const posQuery = useMemo(() => user ? query(collection(firestore, 'purchaseOrders')) : null, [user, firestore]);
+  const { data: allPos } = useCollection<PurchaseOrder>(posQuery);
 
-  const opportunitiesQuery = useMemo(() => {
-    if (!firestore || !clientId || !user) return null;
-    return query(collection(firestore, 'opportunities'), where('clientId', '==', clientId), where('createdBy', '==', user.uid));
-  }, [firestore, clientId, user]);
-  const { data: opportunities, loading: opportunitiesLoading } = useCollection<Opportunity>(opportunitiesQuery);
-  
-  const activitiesQuery = useMemo(() => {
-    if (!firestore || !clientId || !user) return null;
-    return query(collection(firestore, 'activities'), where('clientId', '==', clientId), where('createdBy', '==', user.uid));
-  }, [firestore, clientId, user]);
-  const { data: activities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
-  
-  const sortedActivities = useMemo(() => {
-    if (!activities) return [];
-    return [...activities].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [activities]);
+  const servicesQuery = useMemo(() => user ? query(collection(firestore, 'services')) : null, [user, firestore]);
+  const { data: allServices } = useCollection<Service>(servicesQuery);
 
-  const isLoading = userLoading || clientLoading || contactsLoading || locationsLoading || opportunitiesLoading || activitiesLoading;
+  const equipQuery = useMemo(() => user ? query(collection(firestore, 'equipment')) : null, [user, firestore]);
+  const { data: allEquip } = useCollection<Equipment>(equipQuery);
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 flex-col">
-        <AppHeader title={t('App.loading')} />
-        <main className="flex-1 p-4 sm:p-6 grid gap-6">
-          <Skeleton className="h-48" />
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-        </main>
-      </div>
-    );
-  }
+  const contactsQuery = useMemo(() => user ? query(collection(firestore, 'contacts'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
+  const { data: contacts } = useCollection<Contact>(contactsQuery);
 
-  if (!client) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center">
-        <p>Client not found.</p>
-        <Button variant="outline" onClick={() => router.push('/clients')} className="mt-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('Actions.backToClientList')}
-        </Button>
-      </div>
-    );
-  }
+  const activitiesQuery = useMemo(() => user ? query(collection(firestore, 'activities'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
+  const { data: activities } = useCollection<Activity>(activitiesQuery);
+
+  const isLoading = userLoading || clientLoading;
+
+  if (isLoading) return <div className="p-6 space-y-6"><Skeleton className="h-48" /><Skeleton className="h-96" /></div>;
+  if (!client) return <div className="p-12 text-center"><p>Client not found.</p></div>;
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={t('Pages.clientSummary')}>
-        <Button variant="outline" onClick={() => router.push('/clients')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('Actions.backToClientList')}
-        </Button>
-        <Button onClick={() => router.push(`/clients/${clientId}`)}>
-            <Edit className="mr-2 h-4 w-4" />
-            {t('Actions.editClient')}
-        </Button>
+      <AppHeader title={client.name}>
+        <Button variant="outline" onClick={() => router.push('/clients')}><ArrowLeft className="mr-2 h-4 w-4" />{t('Actions.back')}</Button>
+        <Button onClick={() => router.push(`/clients/${clientId}`)}><Edit className="mr-2 h-4 w-4" />{t('Actions.editClient')}</Button>
       </AppHeader>
-      <main className="flex-1 p-4 sm:p-6 grid gap-6">
+      
+      <main className="flex-1 p-4 sm:p-6 space-y-6">
+        {/* Info Card */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 rounded-lg">
-                <AvatarImage src={client.logoURL || undefined} alt={client.name} />
-                <AvatarFallback className="rounded-lg bg-muted">
-                    <Building className="h-8 w-8 text-muted-foreground" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-3xl">{client.name}</CardTitle>
-                <CardDescription>{t(`Industries.${client.industry}`)}</CardDescription>
-              </div>
+          <CardHeader className="flex-row items-center gap-4">
+            <Avatar className="h-16 w-16 rounded-lg">
+              <AvatarImage src={client.logoURL || undefined} />
+              <AvatarFallback className="rounded-lg bg-muted"><Building className="h-8 w-8 text-muted-foreground" /></AvatarFallback>
+            </Avatar>
+            <div>
+              <CardTitle className="text-3xl">{client.name}</CardTitle>
+              <CardDescription>{t(`Industries.${client.industry}`)} • {client.publicId}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-             <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <a href={`mailto:${client.email}`} className="text-primary hover:underline">{client.email}</a>
-            </div>
-            <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{client.phone}</span>
-            </div>
-             {client.website && <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{client.website}</a>
-            </div>}
-            {client.holding && <div className="flex items-center gap-2">
-                <Building className="h-4 w-4 text-muted-foreground" />
-                <span>{client.holding}</span>
-            </div>}
-            {client.linkedinPage && <div className="flex items-center gap-2">
-                <Linkedin className="h-4 w-4 text-muted-foreground" />
-                <a href={client.linkedinPage} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{client.linkedinPage}</a>
-            </div>}
+            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /><a href={`mailto:${client.email}`} className="hover:underline">{client.email}</a></div>
+            <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><span>{client.phone}</span></div>
+            <div className="flex items-center gap-2"><Building className="h-4 w-4 text-muted-foreground" /><span>CUIT: {client.cuit}</span></div>
           </CardContent>
         </Card>
-        
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{t('Dashboard.recentActivities.title')}</CardTitle>
-                <Button asChild size="sm">
-                    <Link href={`/clients/${clientId}/activity`}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {t('Activity.logNew')}
-                    </Link>
-                </Button>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('Dashboard.recentActivities.activityHeader')}</TableHead>
-                            <TableHead className="text-right">{t('Dashboard.recentActivities.dateHeader')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {sortedActivities && sortedActivities.length > 0 ? sortedActivities.slice(0, 5).map(activity => (
-                             <TableRow key={activity.id} onClick={() => router.push(`/clients/${activity.clientId}/activity`)} className="cursor-pointer">
-                                <TableCell>
-                                    <div className="flex items-start gap-3">
-                                    <ActivityIcon className="mt-1 h-4 w-4 text-muted-foreground" />
-                                    <div className="flex-1">
-                                        <p className="font-medium">{t(`Activity.types.${activity.type}`)}</p>
-                                        <div className="text-sm text-muted-foreground line-clamp-2">
-                                            <RenderWithMentions text={activity.description} />
-                                        </div>
-                                    </div>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right">{formatDistanceToNow(activity.createdAt, { locale: dateLocale, addSuffix: true })}</TableCell>
-                            </TableRow>
-                        )) : (
-                            <TableRow><TableCell colSpan={2} className="text-center">{t('Summary.noActivities')}</TableCell></TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
 
+        {/* Contract -> PO -> Service -> Equipment Cascading View */}
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{t('Pages.contacts')}</CardTitle>
-                <Button asChild size="sm">
-                    <Link href={`/contacts/new?clientId=${clientId}`}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {t('Pages.addContact')}
-                    </Link>
-                </Button>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {contacts && contacts.length > 0 ? contacts.map(contact => (
-                        <Card key={contact.id}>
-                            <CardHeader>
-                                <CardTitle className="text-lg">{contact.name}</CardTitle>
-                                {contact.position && <CardDescription>{t(`ContactPositions.${contact.position}`)}</CardDescription>}
-                            </CardHeader>
-                            <CardContent className="text-sm space-y-2">
-                                {contact.emails?.[0]?.address && (
-                                    <div className="flex items-center gap-2">
-                                        <Mail className="h-4 w-4 text-muted-foreground" />
-                                        <a href={`mailto:${contact.emails[0].address}`} className="truncate hover:underline">{contact.emails[0].address}</a>
-                                    </div>
-                                )}
-                                {contact.phones?.[0]?.number && (
-                                    <div className="flex items-center gap-2">
-                                        <Phone className="h-4 w-4 text-muted-foreground" />
-                                        <span>{contact.phones[0].number}</span>
-                                    </div>
-                                )}
-                            </CardContent>
-                            <CardFooter>
-                                <Button variant="outline" size="sm" asChild className="w-full">
-                                    <Link href={`/contacts/${contact.id}`}>
-                                        <Edit className="mr-2 h-3 w-3" />
-                                        {t('Actions.editContact')}
-                                    </Link>
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    )) : (
-                        <div className="col-span-full text-center py-10 text-muted-foreground">
-                            {t('Summary.noContacts')}
+          <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />{t('Sidebar.contracts')} & Operaciones</CardTitle></CardHeader>
+          <CardContent>
+            {contracts && contracts.length > 0 ? (
+              <Accordion type="single" collapsible className="w-full">
+                {contracts.map(contract => {
+                  const contractPos = allPos?.filter(p => p.contractId === contract.id) || [];
+                  return (
+                    <AccordionItem key={contract.id} value={contract.id}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center gap-4 text-left">
+                          <Badge variant="outline">{contract.publicId}</Badge>
+                          <span className="font-semibold">{contract.type}</span>
+                          <span className="text-xs text-muted-foreground">{format(contract.startDate, 'P')} - {format(contract.endDate, 'P')}</span>
                         </div>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
-        
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{t('Locations.view')}</CardTitle>
-                <div className="flex items-center gap-2">
-                    <Button asChild size="sm" variant="outline">
-                        <Link href={`/clients/${clientId}/locations`}>
-                            {t('Actions.viewAll')}
-                        </Link>
-                    </Button>
-                    <Button asChild size="sm">
-                        <Link href={`/locations/new?clientId=${clientId}`}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            {t('Locations.add')}
-                        </Link>
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                {locationsWithCoords.length > 0 ? (
-                    <div className="h-[250px] rounded-lg overflow-hidden">
-                        <LocationsMap client={client} locations={locationsWithCoords} />
-                    </div>
-                ) : (
-                    <div className="text-center py-10 text-muted-foreground">
-                        <MapPin className="mx-auto h-8 w-8" />
-                        <p className="mt-2">{t('Summary.noLocations')}</p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{t('Pages.opportunities')}</CardTitle>
-                <Button asChild size="sm">
-                    <Link href={`/opportunities/new?clientId=${clientId}`}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {t('Pages.addOpportunity')}
-                    </Link>
-                </Button>
-            </CardHeader>
-            <CardContent>
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t('Dashboard.recentOpportunities.opportunityHeader')}</TableHead>
-                            <TableHead>{t('Dashboard.recentOpportunities.stageHeader')}</TableHead>
-                            <TableHead>{t('Dashboard.recentOpportunities.valueHeader')}</TableHead>
-                            <TableHead>{t('Forms.estCloseDate')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {opportunities && opportunities.length > 0 ? opportunities.map(opp => (
-                            <TableRow key={opp.id}>
-                                <TableCell><Link href={`/opportunities/${opp.id}`} className="font-medium hover:underline">{opp.title}</Link></TableCell>
-                                <TableCell><Badge variant={stageVariant[opp.stage]}>{t(`Stages.${opp.stage}`)}</Badge></TableCell>
-                                <TableCell>${opp.value.toLocaleString()}</TableCell>
-                                <TableCell>{format(opp.closeDate, 'P', { locale: dateLocale })}</TableCell>
-                            </TableRow>
-                        )) : (
-                            <TableRow><TableCell colSpan={4} className="text-center">{t('Summary.noOpportunities')}</TableCell></TableRow>
+                      </AccordionTrigger>
+                      <AccordionContent className="pl-4 border-l-2 ml-2 space-y-4">
+                        <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md">
+                          <span className="text-xs font-bold text-muted-foreground uppercase">{t('Sidebar.pos')}</span>
+                          <Button size="sm" variant="ghost" onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}><PlusCircle className="h-3 w-3 mr-1"/>Nueva PO</Button>
+                        </div>
+                        {contractPos.length > 0 ? (
+                          <Accordion type="multiple" className="w-full">
+                            {contractPos.map(po => {
+                              const poServices = allServices?.filter(s => s.poId === po.id) || [];
+                              return (
+                                <AccordionItem key={po.id} value={po.id} className="border-none">
+                                  <AccordionTrigger className="py-2 hover:no-underline">
+                                    <div className="flex items-center gap-3">
+                                      <ShoppingCart className="h-4 w-4 text-primary" />
+                                      <span className="font-bold">PO: {po.id}</span>
+                                      <Badge variant="secondary">{po.amount.toLocaleString()} {po.currency}</Badge>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="pl-6 space-y-2">
+                                    {poServices.length > 0 ? (
+                                      <div className="grid gap-2">
+                                        {poServices.map(service => {
+                                          const equipment = allEquip?.find(e => e.id === service.equipmentId);
+                                          return (
+                                            <div key={service.id} className="flex flex-col gap-1 p-3 border rounded-lg bg-background">
+                                              <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-2">
+                                                  <Zap className="h-4 w-4 text-yellow-500" />
+                                                  <span className="font-bold">{service.serviceNickname}</span>
+                                                </div>
+                                                <span className="text-[10px] font-mono text-muted-foreground">{service.serviceLineNumber}</span>
+                                              </div>
+                                              <div className="text-xs text-muted-foreground">{service.servicePlan}</div>
+                                              {equipment && (
+                                                <div className="mt-2 flex items-center gap-2 text-xs bg-muted/50 p-2 rounded">
+                                                  <HardDrive className="h-3 w-3" />
+                                                  <span className="font-semibold">{equipment.userTerminal}</span>
+                                                  <Badge variant="outline" className="text-[9px] h-4">{equipment.physicalStatus}</Badge>
+                                                  {equipment.installationPlace && <span className="truncate">• {equipment.installationPlace}</span>}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <div className="text-xs text-muted-foreground italic py-2">Sin servicios vinculados. Use el importador de servicios para cargar desde Excel.</div>
+                                    )}
+                                  </AccordionContent>
+                                </AccordionItem>
+                              );
+                            })}
+                          </Accordion>
+                        ) : (
+                          <div className="text-xs text-muted-foreground italic">No hay órdenes de compra registradas para este contrato.</div>
                         )}
-                    </TableBody>
-                </Table>
-            </CardContent>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="mx-auto h-12 w-12 opacity-20 mb-2" />
+                <p>No hay contratos registrados.</p>
+                <Button variant="link" onClick={() => router.push(`/contracts/new?clientId=${clientId}`)}>Crear primer contrato</Button>
+              </div>
+            )}
+          </CardContent>
         </Card>
 
+        {/* Contacts & Activities */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-lg">{t('Pages.contacts')}</CardTitle>
+              <Button size="sm" variant="ghost" onClick={() => router.push(`/contacts/new?clientId=${clientId}`)}><PlusCircle className="h-4 w-4" /></Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {contacts?.map(contact => (
+                <div key={contact.id} className="flex items-center justify-between p-2 border rounded-md">
+                  <div>
+                    <div className="font-bold">{contact.name}</div>
+                    <div className="text-xs text-muted-foreground">{contact.position}</div>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => router.push(`/contacts/${contact.id}`)}>{t('Actions.back')}</Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-lg">{t('Dashboard.recentActivities.title')}</CardTitle>
+              <Button size="sm" variant="ghost" onClick={() => router.push(`/clients/${clientId}/activity`)}><PlusCircle className="h-4 w-4" /></Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {activities?.slice(0, 3).map(activity => (
+                <div key={activity.id} className="text-sm border-b pb-2 last:border-0">
+                  <div className="flex justify-between font-bold text-xs mb-1">
+                    <span>{t(`Activity.types.${activity.type}`)}</span>
+                    <span className="text-muted-foreground">{formatDistanceToNow(activity.createdAt, { addSuffix: true, locale: dateLocale })}</span>
+                  </div>
+                  <div className="line-clamp-2 text-muted-foreground italic"><RenderWithMentions text={activity.description} /></div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   );

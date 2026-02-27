@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -17,6 +18,9 @@ import {
   MapPin,
   Building,
   Activity as ActivityIcon,
+  ShoppingCart,
+  Zap,
+  HardDrive,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -112,6 +116,9 @@ export function AppNavbar() {
         { href: '/clients', label: t('Pages.clients'), icon: Users },
         { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
         { href: '/contracts', label: t('Sidebar.contracts'), icon: FileText },
+        { href: '/purchase-orders', label: t('Sidebar.pos'), icon: ShoppingCart },
+        { href: '/services', label: t('Sidebar.services'), icon: Zap },
+        { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive },
         { href: '/locations', label: t('Locations.view'), icon: MapPin },
         { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon },
       ]
