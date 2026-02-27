@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -10,7 +11,7 @@ import {
   Activity as ActivityIcon,
   MapPin,
   FileText,
-  Contact,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,7 +44,7 @@ const formatCuit = (cuit: string): string => {
 };
 
 export const columns = (
-  t: (key: string) => void,
+  t: (key: string, params?: any) => string,
   onEdit: (client: Client) => void,
   onDelete: (clientId: string) => void,
   router: ReturnType<typeof useRouter>
@@ -327,10 +328,11 @@ export const columns = (
                 <span>{t('Actions.viewSummary')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onEdit(client)}>
-                {t('Actions.editClient')}
+                <FileText className="mr-2 h-4 w-4" />
+                <span>{t('Actions.editClient')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push(`/contacts/new?clientId=${client.id}`)}>
-                <Contact className="mr-2 h-4 w-4" />
+                <UserPlus className="mr-2 h-4 w-4" />
                 <span>{t('Pages.addContact')}</span>
               </DropdownMenuItem>
                <DropdownMenuItem onClick={() => router.push(`/clients/${client.id}/activity`)}>

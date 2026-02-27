@@ -591,7 +591,7 @@ export const translations = {
       opportunities: 'Oportunidades',
       addOpportunity: 'Nueva Oportunidad',
       ps: 'P&S',
-      addItem: 'Nuevo Ítem',
+      addItem: 'Añadir Ítem',
       profile: 'Perfil',
       reports: 'Reportes',
       clientSummary: 'Resumen de Cliente',
