@@ -97,12 +97,12 @@ export default function ServicesPage() {
       </AppHeader>
 
       <main className="flex-1 p-4 sm:p-6 space-y-4">
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {/* Search Bar - White background to stand out */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
           <Input 
             placeholder="Buscar por Nickname o Service Line Number..." 
-            className="pl-10"
+            className="pl-10 bg-white shadow-sm border-muted-foreground/20 focus-visible:ring-destructive"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -112,7 +112,7 @@ export default function ServicesPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-md border bg-card overflow-hidden">
+        <div className="rounded-md border bg-card overflow-hidden shadow-sm">
           <Table>
             <TableHeader>
               <TableRow className="bg-destructive hover:bg-destructive">
@@ -130,7 +130,7 @@ export default function ServicesPage() {
                 const client = contract ? clientMap.get(contract.clientId) : null;
 
                 return (
-                  <TableRow key={s.id}>
+                  <TableRow key={s.id} className="hover:bg-muted/50 transition-colors">
                     <TableCell>
                       <button 
                         onClick={() => router.push(`/services/${s.id}`)}
