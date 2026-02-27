@@ -23,6 +23,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { CalendarIcon, Save, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
   id: z.string().min(1, t('Validation.fieldRequired')),
@@ -57,14 +58,6 @@ export default function POFormPage() {
   const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
 
-  const watchedContractId = contractIdFromQuery || poData?.contractId;
-  const contactsQuery = useMemo(() => {
-    const contract = contracts?.find(c => c.id === watchedContractId);
-    if (!contract) return null;
-    return query(collection(firestore, 'contacts'), where('clientId', '==', contract.clientId));
-  }, [contracts, watchedContractId, firestore]);
-  const { data: contacts } = useCollection<Contact>(contactsQuery);
-
   const form = useForm<z.infer<ReturnType<typeof getFormSchema>>>({
     resolver: zodResolver(getFormSchema(t)),
     defaultValues: {
@@ -79,6 +72,17 @@ export default function POFormPage() {
       idClientStarfleet: '',
     },
   });
+
+  const watchedContractId = form.watch('contractId');
+
+  const contactsQuery = useMemo(() => {
+    if (!firestore || !watchedContractId || !contracts) return null;
+    const contract = contracts.find(c => c.id === watchedContractId);
+    if (!contract) return null;
+    return query(collection(firestore, 'contacts'), where('clientId', '==', contract.clientId));
+  }, [contracts, watchedContractId, firestore]);
+  
+  const { data: contacts } = useCollection<Contact>(contactsQuery);
 
   useEffect(() => {
     if (poData) {
@@ -132,9 +136,15 @@ export default function POFormPage() {
                     )} />
                     <FormField control={form.control} name="buyerId" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.buyer')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={!form.watch('contractId')}>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!watchedContractId}>
                         <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                        <SelectContent>{contacts?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                        <SelectContent>
+                          {contacts && contacts.length > 0 ? (
+                            contacts.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
+                          ) : (
+                            <SelectItem value="none" disabled>{t('Table.noResults')}</SelectItem>
+                          )}
+                        </SelectContent>
                       </Select><FormMessage /></FormItem>
                     )} />
                   </div>
@@ -144,8 +154,9 @@ export default function POFormPage() {
                     )} />
                     <FormField control={form.control} name="currency" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.currency')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                      <SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="ARS">ARS</SelectItem></SelectContent></Select></FormItem>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                        <SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="ARS">ARS</SelectItem></SelectContent></Select></FormItem>
                     )} />
                   </div>
                   <FormField control={form.control} name="status" render={({ field }) => (
