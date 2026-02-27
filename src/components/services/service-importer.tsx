@@ -61,7 +61,7 @@ export function ServiceImporter({ isOpen, onOpenChange, pos }: { isOpen: boolean
       const obj: any = {};
       SERVICE_FIELDS.forEach(f => {
         const header = mapping[f.key];
-        if (header) obj[f.key] = row[header];
+        if (header && header !== 'unmapped') obj[f.key] = row[header];
       });
       return obj;
     });
@@ -86,9 +86,15 @@ export function ServiceImporter({ isOpen, onOpenChange, pos }: { isOpen: boolean
         </DialogHeader>
 
         {step === 'upload' && (
-          <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-lg">
+          <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-lg bg-muted/30">
             <FileUp className="h-12 w-12 text-muted-foreground mb-4" />
-            <Button asChild><label className="cursor-pointer">{t('Importer.uploadPrompt')}<input type="file" className="sr-only" onChange={handleFileChange} accept=".csv" /></label></Button>
+            <p className="text-sm text-muted-foreground mb-6">{t('Importer.uploadPrompt')}</p>
+            <Button asChild>
+              <label className="cursor-pointer">
+                {t('Importer.uploadButton')}
+                <input type="file" className="sr-only" onChange={handleFileChange} accept=".csv" />
+              </label>
+            </Button>
           </div>
         )}
 
@@ -101,52 +107,59 @@ export function ServiceImporter({ isOpen, onOpenChange, pos }: { isOpen: boolean
                 <SelectContent>{pos.map(po => <SelectItem key={po.id} value={po.id}>{po.id} ({po.contractId})</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <Table>
-              <TableHeader><TableRow><TableHead>{t('Importer.appField')}</TableHead><TableHead>{t('Importer.csvColumn')}</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {SERVICE_FIELDS.map(f => (
-                  <TableRow key={f.key}>
-                    <TableCell className="font-medium">{f.label || t(`Forms.${f.key}`)} {f.required && <Badge variant="outline" className="ml-2 text-primary">Req</Badge>}</TableCell>
-                    <TableCell>
-                      <Select value={mapping[f.key]} onValueChange={(v) => setMapping(p => ({...p, [f.key]: v}))}>
-                        <SelectTrigger><SelectValue placeholder={t('Importer.unmapped')} /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="unmapped">{t('Importer.unmapped')}</SelectItem>
-                          {csvHeaders.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="max-h-[40vh] overflow-y-auto rounded-md border">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10"><TableRow><TableHead>{t('Importer.appField')}</TableHead><TableHead>{t('Importer.csvColumn')}</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {SERVICE_FIELDS.map(f => (
+                    <TableRow key={f.key}>
+                      <TableCell className="font-medium">{f.label || t(`Forms.${f.key}`)} {f.required && <Badge variant="outline" className="ml-2 border-primary text-primary">Req</Badge>}</TableCell>
+                      <TableCell>
+                        <Select value={mapping[f.key]} onValueChange={(v) => setMapping(p => ({...p, [f.key]: v}))}>
+                          <SelectTrigger><SelectValue placeholder={t('Importer.unmapped')} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unmapped">{t('Importer.unmapped')}</SelectItem>
+                            {csvHeaders.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
 
         {step === 'preview' && (
-          <div className="py-4">
-            <p className="mb-4">{t('Importer.readyForImport', { count: csvData.length })}</p>
-            <Table>
-              <TableHeader><TableRow><TableHead>Nickname</TableHead><TableHead>Terminal</TableHead><TableHead>Plan</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {csvData.slice(0, 5).map((row, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{row[mapping['serviceNickname']]}</TableCell>
-                    <TableCell>{row[mapping['equipmentId']]}</TableCell>
-                    <TableCell>{row[mapping['servicePlan']]}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="space-y-4 py-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{t('Importer.readyForImport', { count: csvData.length })}</AlertDescription>
+            </Alert>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader><TableRow><TableHead>Nickname</TableHead><TableHead>Terminal</TableHead><TableHead>Plan</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {csvData.slice(0, 5).map((row, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{row[mapping['serviceNickname']] || '-'}</TableCell>
+                      <TableCell className="text-xs font-mono">{row[mapping['equipmentId']] || '-'}</TableCell>
+                      <TableCell>{row[mapping['servicePlan']] || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           {step === 'map' && <Button onClick={() => setStep('preview')} disabled={!selectedPo}>{t('Importer.nextButton')}</Button>}
           {step === 'preview' && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full justify-between">
               <Button variant="outline" onClick={() => setStep('map')}>{t('Importer.backButton')}</Button>
-              <Button onClick={startImport} disabled={isImporting}>{isImporting ? <Loader2 className="animate-spin mr-2"/> : null}{t('Importer.importButton')}</Button>
+              <Button onClick={startImport} disabled={isImporting}>{isImporting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : null}{t('Importer.importButton')}</Button>
             </div>
           )}
         </DialogFooter>
