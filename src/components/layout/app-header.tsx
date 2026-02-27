@@ -8,7 +8,7 @@ type AppHeaderProps = {
 export function AppHeader({ title, children }: AppHeaderProps) {
   return (
     <div className="flex items-center justify-between border-b p-4 sm:p-6">
-      <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+      <h1 suppressHydrationWarning className="text-2xl font-bold tracking-tight">{title}</h1>
       <div className="flex items-center gap-2">{children}</div>
     </div>
   );

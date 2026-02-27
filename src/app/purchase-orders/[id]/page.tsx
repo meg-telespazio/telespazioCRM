@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
@@ -42,14 +41,17 @@ export default function POFormPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const poId = params.id as string;
+  const poId = params?.id as string;
   const isNew = poId === 'new';
   const contractIdFromQuery = searchParams.get('contractId');
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const docRef = useMemo(() => isNew ? null : doc(firestore, 'purchaseOrders', poId), [firestore, poId, isNew]);
+  const docRef = useMemo(() => (!firestore || !poId || isNew) ? null : doc(firestore, 'purchaseOrders', poId), [firestore, poId, isNew]);
   const { data: poData, loading: poLoading } = useDoc<PurchaseOrder>(docRef);
 
   const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
@@ -97,7 +99,8 @@ export default function POFormPage() {
     router.back();
   };
 
-  if (poLoading) return <div className="p-6"><Skeleton className="h-96" /></div>;
+  const pageIsLoading = !mounted || poLoading || !contracts;
+  if (pageIsLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   return (
     <div className="flex flex-1 flex-col">

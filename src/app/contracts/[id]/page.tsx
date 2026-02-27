@@ -100,12 +100,15 @@ export default function ContractFormPage() {
   const { t, locale } = useI18n();
   const datePickerLocale = locale === 'es' ? es : enUS;
 
-  const contractId = params.id as string;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const contractId = params?.id as string;
   const isNew = contractId === 'new';
   const clientIdFromQuery = searchParams.get('clientId');
 
   const contractDocRef = useMemo(() => {
-    if (!firestore || isNew) return null;
+    if (!firestore || !contractId || isNew) return null;
     return doc(firestore, 'contracts', contractId);
   }, [firestore, contractId, isNew]);
 
@@ -190,7 +193,7 @@ export default function ContractFormPage() {
     }
   }
 
-  const pageIsLoading = userLoading || clientsLoading || contactsLoading || (contractLoading && !isNew);
+  const pageIsLoading = !mounted || userLoading || clientsLoading || contactsLoading || (contractLoading && !isNew);
   if (pageIsLoading) {
     return (
       <div className="flex flex-1 flex-col">
