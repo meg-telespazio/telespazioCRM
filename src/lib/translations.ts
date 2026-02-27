@@ -413,6 +413,8 @@ export const translations = {
       title: 'Services',
       import: 'Import Services',
       noServices: 'No services found.',
+      edit: 'Edit Service',
+      save: 'Save Service',
     },
     Equipment: {
       title: 'Equipment Inventory',
@@ -936,6 +938,8 @@ export const translations = {
       title: 'Servicios',
       import: 'Importar Servicios',
       noServices: 'No se encontraron servicios.',
+      edit: 'Editar Servicio',
+      save: 'Guardar Servicio',
     },
     Equipment: {
       title: 'Inventario de Equipos',

@@ -39,8 +39,123 @@ import {
   FileText,
   HardDrive,
   PlusCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { ServiceImporter } from '@/components/services/service-importer';
+
+const SERVICES_PER_PAGE = 10;
+
+function PaginatedServiceTable({ 
+  services, 
+  equipment, 
+  onViewEquipment 
+}: { 
+  services: Service[], 
+  equipment: Equipment[], 
+  onViewEquipment: (id: string) => void 
+}) {
+  const { t } = useI18n();
+  const router = useRouter();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(services.length / SERVICES_PER_PAGE);
+  const paginatedServices = useMemo(() => {
+    const start = (currentPage - 1) * SERVICES_PER_PAGE;
+    return services.slice(start, start + SERVICES_PER_PAGE);
+  }, [services, currentPage]);
+
+  if (services.length === 0) {
+    return (
+      <div className="h-16 flex items-center justify-center text-xs text-muted-foreground italic border rounded-md bg-background">
+        {t('Services.noServices')}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border bg-background overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-[200px]">{t('Forms.serviceNickname')}</TableHead>
+              <TableHead>{t('Forms.servicePlan')}</TableHead>
+              <TableHead>{t('Forms.userTerminal')}</TableHead>
+              <TableHead className="text-right">{t('Table.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedServices.map(service => {
+              const equip = equipment.find(e => e.id === service.equipmentId);
+              return (
+                <TableRow key={service.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-3 w-3 text-yellow-500" />
+                      <button 
+                        onClick={() => router.push(`/services/${service.id}`)}
+                        className="font-bold text-primary hover:underline text-left"
+                      >
+                        {service.serviceNickname}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-mono">{service.serviceLineNumber}</p>
+                  </TableCell>
+                  <TableCell className="text-xs">{service.servicePlan}</TableCell>
+                  <TableCell>
+                    {equip ? (
+                      <div className="flex items-center gap-2">
+                        <HardDrive className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs">{equip.userTerminal}</span>
+                        <Badge variant="outline" className="text-[9px] h-4">{equip.physicalStatus}</Badge>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">No linked equipment</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => onViewEquipment(service.equipmentId)}>
+                      {t('Equipment.view')}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2">
+          <p className="text-xs text-muted-foreground">
+            {t('Table.pagination.pageInfo', { page: currentPage, totalPages })}
+          </p>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-8 w-8" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-8 w-8" 
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => p + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ClientServicesPage() {
   const { t } = useI18n();
@@ -164,57 +279,11 @@ export default function ClientServicesPage() {
                                 </Button>
                               </div>
 
-                              <div className="rounded-md border bg-background overflow-hidden">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow className="bg-muted/50">
-                                      <TableHead className="w-[200px]">{t('Forms.serviceNickname')}</TableHead>
-                                      <TableHead>{t('Forms.servicePlan')}</TableHead>
-                                      <TableHead>{t('Forms.userTerminal')}</TableHead>
-                                      <TableHead className="text-right">{t('Table.actions')}</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {poServices.length > 0 ? poServices.map(service => {
-                                      const equipment = allEquip?.find(e => e.id === service.equipmentId);
-                                      return (
-                                        <TableRow key={service.id}>
-                                          <TableCell>
-                                            <div className="flex items-center gap-2">
-                                              <Zap className="h-3 w-3 text-yellow-500" />
-                                              <span className="font-medium">{service.serviceNickname}</span>
-                                            </div>
-                                            <p className="text-[10px] text-muted-foreground font-mono">{service.serviceLineNumber}</p>
-                                          </TableCell>
-                                          <TableCell className="text-xs">{service.servicePlan}</TableCell>
-                                          <TableCell>
-                                            {equipment ? (
-                                              <div className="flex items-center gap-2">
-                                                <HardDrive className="h-3 w-3 text-muted-foreground" />
-                                                <span className="text-xs">{equipment.userTerminal}</span>
-                                                <Badge variant="outline" className="text-[9px] h-4">{equipment.physicalStatus}</Badge>
-                                              </div>
-                                            ) : (
-                                              <span className="text-xs text-muted-foreground italic">No linked equipment</span>
-                                            )}
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm" onClick={() => router.push(`/equipment/${service.equipmentId}`)}>
-                                              {t('Equipment.view')}
-                                            </Button>
-                                          </TableCell>
-                                        </TableRow>
-                                      );
-                                    }) : (
-                                      <TableRow>
-                                        <TableCell colSpan={4} className="h-16 text-center text-xs text-muted-foreground italic">
-                                          {t('Services.noServices')}
-                                        </TableCell>
-                                      </TableRow>
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </div>
+                              <PaginatedServiceTable 
+                                services={poServices} 
+                                equipment={allEquip || []}
+                                onViewEquipment={(id) => router.push(`/equipment/${id}`)}
+                              />
                             </div>
                           );
                         })}
