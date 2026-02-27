@@ -1,10 +1,15 @@
+
 'use client';
 
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
-import type { Client, Contact, Opportunity, ProductOrService, Report, ReportConfig, ReportFilter, ReportSort, Contract, PurchaseOrder, Service, Equipment, Activity, Location } from '@/lib/types';
+import type { 
+  Client, Contact, Opportunity, ProductOrService, 
+  Report, ReportConfig, Contract, PurchaseOrder, 
+  Service, Equipment, Activity, Location 
+} from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,11 +31,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { addReport, updateReport } from '@/lib/firestore/reports';
 import { useToast } from '@/hooks/use-toast';
 import { ReportResultTable } from '@/components/reports/report-result-table';
-import { Loader2, Send, Bot, User, Trash2, CheckCircle2 } from 'lucide-react';
+import { 
+  Loader2, 
+  CheckCircle2, 
+  Database, 
+  Columns, 
+  Sigma, 
+  Filter as FilterIcon, 
+  ArrowUpDown,
+  Plus,
+  Trash2,
+  ChevronRight
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { processReportQuery } from '@/ai/flows/report-ai-flow';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
@@ -39,11 +57,6 @@ const getFormSchema = (t: (key: string) => string) =>
   });
 
 type ReportFormData = z.infer<ReturnType<typeof getFormSchema>>;
-
-type Message = {
-  role: 'user' | 'model';
-  content: string;
-};
 
 // Helper to set nested property in an object
 const setNestedValue = (obj: any, path: string, value: any) => {
@@ -57,7 +70,20 @@ const setNestedValue = (obj: any, path: string, value: any) => {
   current[keys[keys.length - 1]] = value;
 };
 
-export default function ReportAIBuilderPage() {
+// Available Fields Schema for the Builder
+const SCHEMA = {
+  clients: ['name', 'cuit', 'industry', 'status', 'email', 'phone', 'holding'],
+  contacts: ['name', 'position', 'area'],
+  opportunities: ['title', 'stage', 'value', 'currency', 'probability', 'closeDate'],
+  contracts: ['publicId', 'type', 'status', 'amount', 'currency', 'startDate', 'endDate'],
+  purchaseOrders: ['id', 'amount', 'currency', 'status', 'emissionDate'],
+  services: ['serviceNickname', 'serviceLineNumber', 'servicePlan', 'monthlyFee', 'currency', 'serviceAllocationGb'],
+  equipment: ['userTerminal', 'id', 'type', 'physicalStatus'],
+  activities: ['type', 'description', 'isPriority'],
+  locations: ['name', 'type', 'city', 'province']
+};
+
+export default function ReportManualBuilderPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
@@ -68,17 +94,20 @@ export default function ReportAIBuilderPage() {
 
   const reportId = params.id as string;
   const isNew = reportId === 'new';
-  const shouldRunOnLoad = searchParams.get('run') === 'true';
 
   const [mounted, setMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [userInput, setUserInput] = useState('');
-  const [reportConfig, setReportConfig] = useState<ReportConfig | null>(null);
-  const [reportResult, setReportResult] = useState<{ data: any[]; columns: any[] } | null>(null);
+  const [activeTab, setActiveTab] = useState('source');
   
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [config, setConfig] = useState<ReportConfig>({
+    primaryDataSource: 'services',
+    fields: ['services.serviceNickname', 'clients.name', 'services.monthlyFee'],
+    filters: [],
+    sorting: [],
+    aggregations: []
+  });
+
+  const [reportResult, setReportResult] = useState<{ data: any[]; columns: any[] } | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -117,44 +146,49 @@ export default function ReportAIBuilderPage() {
         name: existingReport.name,
         description: existingReport.description || '',
       });
-      setReportConfig(existingReport.config);
+      setConfig(existingReport.config);
     }
   }, [existingReport, form]);
 
-  const runReport = useCallback((config: ReportConfig) => {
-    if (!config || !collectionsMap) return;
+  const runReport = useCallback((reportConfig: ReportConfig) => {
+    if (!reportConfig || !collectionsMap) return;
     
-    const sourceData = (collectionsMap as any)[config.primaryDataSource];
+    const sourceData = (collectionsMap as any)[reportConfig.primaryDataSource];
     if (!sourceData) return;
 
     // 1. Join Logic - Handle multi-level relationships
     const processed = sourceData.map((item: any) => {
-      const row: any = { [config.primaryDataSource]: item };
+      const row: any = { [reportConfig.primaryDataSource]: item };
       
-      // Attempt to resolve Client path: Item -> PO -> Contract -> Client
+      // Auto-join Client if exists directly
       if (item.clientId && collectionsMap.clients) {
         row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
       }
 
-      // Chain for installed base services
-      if (config.primaryDataSource === 'services' && collectionsMap.purchaseOrders) {
-        const po = collectionsMap.purchaseOrders.find(p => p.id === item.poId);
-        if (po) {
-          row.purchaseOrders = po;
-          if (collectionsMap.contracts) {
-            const contract = collectionsMap.contracts.find(c => c.id === po.contractId);
-            if (contract) {
-              row.contracts = contract;
-              if (collectionsMap.clients) {
-                row.clients = collectionsMap.clients.find(c => c.id === contract.clientId);
+      // Chain for services: Services -> PO -> Contract -> Client
+      if (reportConfig.primaryDataSource === 'services') {
+        if (collectionsMap.purchaseOrders) {
+          const po = collectionsMap.purchaseOrders.find(p => p.id === item.poId);
+          if (po) {
+            row.purchaseOrders = po;
+            if (collectionsMap.contracts) {
+              const contract = collectionsMap.contracts.find(c => c.id === po.contractId);
+              if (contract) {
+                row.contracts = contract;
+                if (collectionsMap.clients) {
+                  row.clients = collectionsMap.clients.find(c => c.id === contract.clientId);
+                }
               }
             }
           }
         }
+        if (collectionsMap.equipment) {
+            row.equipment = collectionsMap.equipment.find(e => e.id === item.equipmentId);
+        }
       }
 
-      // Chain for POs
-      if (config.primaryDataSource === 'purchaseOrders' && collectionsMap.contracts) {
+      // Chain for POs: PO -> Contract -> Client
+      if (reportConfig.primaryDataSource === 'purchaseOrders' && collectionsMap.contracts) {
         const contract = collectionsMap.contracts.find(c => c.id === item.contractId);
         if (contract) {
           row.contracts = contract;
@@ -169,9 +203,9 @@ export default function ReportAIBuilderPage() {
 
     // 2. Filter Logic
     let filtered = processed;
-    if (config.filters?.length) {
+    if (reportConfig.filters?.length) {
       filtered = processed.filter((item: any) => {
-        return config.filters.every(f => {
+        return reportConfig.filters.every(f => {
           const [source, field] = f.field.split('.');
           const val = item[source]?.[field];
           if (val === undefined || val === null) return false;
@@ -195,14 +229,14 @@ export default function ReportAIBuilderPage() {
 
     // 3. Aggregation & Grouping Logic
     let finalData = filtered;
-    let finalColumns = config.fields.map(fKey => {
+    let finalColumns = reportConfig.fields.map(fKey => {
       const [source, field] = fKey.split('.');
       return { accessorKey: fKey, header: `${source}.${field}` };
     });
 
-    if (config.aggregations?.length && config.groupBy) {
+    if (reportConfig.aggregations?.length && reportConfig.groupBy) {
       const groups = new Map<string, any>();
-      const [groupSource, groupField] = config.groupBy.split('.');
+      const [groupSource, groupField] = reportConfig.groupBy.split('.');
 
       filtered.forEach((row: any) => {
         const groupKey = String(row[groupSource]?.[groupField] || 'N/A');
@@ -214,10 +248,9 @@ export default function ReportAIBuilderPage() {
 
       finalData = Array.from(groups.values()).map(group => {
         const aggregatedRow: any = {};
-        // Set the grouped property correctly for the nested path logic in the table
-        setNestedValue(aggregatedRow, config.groupBy, group._key);
+        setNestedValue(aggregatedRow, reportConfig.groupBy!, group._key);
 
-        config.aggregations!.forEach(agg => {
+        reportConfig.aggregations!.forEach(agg => {
           const [aggSource, aggField] = agg.field.split('.');
           const values = group._records.map((r: any) => Number(r[aggSource]?.[aggField] || 0));
           
@@ -226,24 +259,21 @@ export default function ReportAIBuilderPage() {
           else if (agg.type === 'avg') result = values.length ? values.reduce((a: number, b: number) => a + b, 0) / values.length : 0;
           else if (agg.type === 'count') result = group._records.length;
 
-          // Store aggregation result in a unique key but flat so accessor can find it
           aggregatedRow[`${agg.field}_${agg.type}`] = result;
         });
         return aggregatedRow;
       });
 
-      // Override columns for aggregated view
       finalColumns = [
-        { accessorKey: config.groupBy, header: `Agrupado por: ${config.groupBy}` },
-        ...config.aggregations.map(agg => ({
+        { accessorKey: reportConfig.groupBy, header: `Agrupado por: ${reportConfig.groupBy}` },
+        ...reportConfig.aggregations.map(agg => ({
           accessorKey: `${agg.field}_${agg.type}`,
           header: `${agg.type.toUpperCase()}(${agg.field})`
         }))
       ];
-    } else if (config.sorting?.length) {
-      // Sort if no aggregation
+    } else if (reportConfig.sorting?.length) {
       finalData.sort((a: any, b: any) => {
-        for (const sort of config.sorting) {
+        for (const sort of reportConfig.sorting) {
           const [source, field] = sort.field.split('.');
           const valA = a[source]?.[field];
           const valB = b[source]?.[field];
@@ -257,60 +287,23 @@ export default function ReportAIBuilderPage() {
     setReportResult({ data: finalData, columns: finalColumns });
   }, [collectionsMap]);
 
-  // Run report when config is set or changed (and relevant collections are loaded)
+  // Run report when config is set or changed
   useEffect(() => {
-    if (reportConfig && mounted) {
-      // Wait for at least the primary collection to be loaded
-      const sourceData = (collectionsMap as any)[reportConfig.primaryDataSource];
-      if (sourceData !== undefined) {
-        runReport(reportConfig);
-      }
+    if (config && mounted) {
+      runReport(config);
     }
-  }, [reportConfig, collectionsMap, mounted, runReport]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isProcessing]);
-
-  const handleSendMessage = async () => {
-    if (!userInput.trim() || isProcessing) return;
-
-    const newMessages: Message[] = [...messages, { role: 'user', content: userInput }];
-    setMessages(newMessages);
-    setUserInput('');
-    setIsProcessing(true);
-
-    try {
-      // Mock schema context if file import is restricted in client side
-      const response = await processReportQuery({
-        messages: newMessages,
-        schemaContext: "T-Track Database Schema: clients, contacts, opportunities, productsAndServices, contracts, purchaseOrders, services, equipment, activities, locations.",
-      });
-
-      setMessages([...newMessages, { role: 'model', content: response.text }]);
-      if (response.type === 'config' && response.config) {
-        setReportConfig(response.config);
-      }
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error procesando la consulta.' });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  }, [config, collectionsMap, mounted, runReport]);
 
   async function handleSave(values: ReportFormData) {
-    if (!user || !reportConfig) return;
+    if (!user || !config) return;
     setIsSaving(true);
     try {
       if (isNew) {
-        const newReportRef = await addReport(firestore, user.uid, { ...values, config: reportConfig });
+        const newReportRef = await addReport(firestore, user.uid, { ...values, config });
         toast({ variant: 'success', title: t('Reports.saveSuccess') });
         router.replace(`/reports/builder/${newReportRef.id}`);
       } else {
-        await updateReport(firestore, user.uid, reportId, { ...values, config: reportConfig });
+        await updateReport(firestore, user.uid, reportId, { ...values, config });
         toast({ variant: 'success', title: t('Reports.updateSuccess') });
       }
     } catch (error) {
@@ -319,6 +312,43 @@ export default function ReportAIBuilderPage() {
       setIsSaving(false);
     }
   }
+
+  const toggleField = (field: string) => {
+    setConfig(prev => {
+      const fields = prev.fields.includes(field)
+        ? prev.fields.filter(f => f !== field)
+        : [...prev.fields, field];
+      return { ...prev, fields };
+    });
+  };
+
+  const addFilter = () => {
+    setConfig(prev => ({
+      ...prev,
+      filters: [...(prev.filters || []), { field: `${prev.primaryDataSource}.${SCHEMA[prev.primaryDataSource as keyof typeof SCHEMA][0]}`, operator: 'contains', value: '' }]
+    }));
+  };
+
+  const removeFilter = (index: number) => {
+    setConfig(prev => ({
+      ...prev,
+      filters: prev.filters.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addAggregation = () => {
+    setConfig(prev => ({
+      ...prev,
+      aggregations: [...(prev.aggregations || []), { field: `${prev.primaryDataSource}.${SCHEMA[prev.primaryDataSource as keyof typeof SCHEMA][0]}`, type: 'sum' }]
+    }));
+  };
+
+  const removeAggregation = (index: number) => {
+    setConfig(prev => ({
+      ...prev,
+      aggregations: (prev.aggregations || []).filter((_, i) => i !== index)
+    }));
+  };
 
   if (userLoading || reportLoading || !mounted) {
     return (
@@ -329,91 +359,366 @@ export default function ReportAIBuilderPage() {
     );
   }
 
+  const primaryOptions = Object.keys(SCHEMA);
+  const relatedOptions = ['clients', 'contracts', 'purchaseOrders', 'equipment'].filter(o => o !== config.primaryDataSource);
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <AppHeader title={isNew ? t('Reports.createNew') : t('Actions.editReport')} />
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        <div className="mx-auto max-w-5xl space-y-6">
+      <AppHeader title={isNew ? t('Reports.createNew') : t('Actions.editReport')}>
+        <Button variant="outline" onClick={() => router.push('/reports')}>
+          {t('Auth.cancelLabel')}
+        </Button>
+        <Button onClick={form.handleSubmit(handleSave)} disabled={isSaving}>
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {t('Reports.saveReport')}
+        </Button>
+      </AppHeader>
+      
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50">
+        <div className="mx-auto max-w-6xl space-y-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>{t('Reports.reportName')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="description" render={({ field }) => (
-                  <FormItem><FormLabel>{t('Reports.reportDescription')}</FormLabel><FormControl><Textarea {...field} rows={1} className="min-h-0" /></FormControl><FormMessage /></FormItem>
-                )} />
-              </div>
+            <form className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Database className="h-5 w-5 text-primary" />
+                      {t('Reports.step1')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 gap-4">
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Reports.reportName')}</FormLabel>
+                        <FormControl><Input {...field} placeholder="Ej: Resumen de Abonos Mensuales" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="description" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Reports.reportDescription')}</FormLabel>
+                        <FormControl><Textarea {...field} rows={2} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </CardContent>
+                </Card>
 
-              <Card className="flex flex-col h-[500px] shadow-sm border-muted-foreground/20">
-                <CardHeader className="border-b bg-muted/30">
-                  <CardTitle className="text-sm flex items-center gap-2"><Bot className="h-4 w-4 text-primary" /> Asistente de Reportes IA</CardTitle>
-                  <CardDescription>Conversa con la IA para diseñar tu reporte.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
-                  <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-                    <div className="space-y-4">
-                      {messages.length === 0 && (
-                        <div className="text-center py-12 text-muted-foreground">
-                          <Bot className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                          <p>¿Qué tipo de reporte necesitas hoy?</p>
-                          <p className="text-xs">Ej: "Quiero el total de abonos mensuales agrupado por cliente"</p>
-                        </div>
-                      )}
-                      {messages.map((m, i) => (
-                        <div key={i} className={cn("flex gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2", m.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto")}>
-                          <Avatar className="h-8 w-8 border">
-                            <AvatarFallback className={m.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"}>
-                              {m.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className={cn("rounded-lg px-3 py-2 text-sm shadow-sm", m.role === 'user' ? "bg-primary text-primary-foreground" : "bg-secondary/20")}>
-                            {m.content}
+                <Card className="shadow-md">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <CardHeader className="border-b bg-slate-50/50 p-0">
+                      <TabsList className="w-full justify-start rounded-none bg-transparent h-12">
+                        <TabsTrigger value="source" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2">
+                          <Database className="h-4 w-4" /> {t('Reports.dataSource')}
+                        </TabsTrigger>
+                        <TabsTrigger value="fields" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2">
+                          <Columns className="h-4 w-4" /> {t('Reports.step3')}
+                        </TabsTrigger>
+                        <TabsTrigger value="aggregation" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2">
+                          <Sigma className="h-4 w-4" /> Agregaciones
+                        </TabsTrigger>
+                        <TabsTrigger value="filters" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2">
+                          <FilterIcon className="h-4 w-4" /> Filtros
+                        </TabsTrigger>
+                      </TabsList>
+                    </CardHeader>
+                    
+                    <CardContent className="p-6">
+                      {/* STEP 2: SOURCE */}
+                      <TabsContent value="source" className="mt-0 space-y-4">
+                        <div className="space-y-4">
+                          <FormLabel>{t('Reports.selectDataSource')}</FormLabel>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {primaryOptions.map(source => (
+                              <div 
+                                key={source} 
+                                onClick={() => setConfig(prev => ({ ...prev, primaryDataSource: source, fields: [`${source}.${SCHEMA[source as keyof typeof SCHEMA][0]}`] }))}
+                                className={cn(
+                                  "cursor-pointer p-4 border rounded-lg flex flex-col items-center justify-center gap-2 transition-all hover:border-primary/50",
+                                  config.primaryDataSource === source ? "bg-primary/5 border-primary ring-1 ring-primary" : "bg-white"
+                                )}
+                              >
+                                <Database className={cn("h-6 w-6", config.primaryDataSource === source ? "text-primary" : "text-muted-foreground")} />
+                                <span className="text-xs font-bold uppercase">{t(`Reports.dataSources.${source}`)}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      ))}
-                      {isProcessing && (
-                        <div className="flex gap-3 items-center text-muted-foreground animate-pulse">
-                          <Bot className="h-4 w-4" />
-                          <span className="text-xs">La IA está procesando tu consulta...</span>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-                  <div className="p-4 border-t bg-background">
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder="Escribe tu mensaje aquí..." 
-                        value={userInput} 
-                        onChange={e => setUserInput(e.target.value)} 
-                        onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                        className="bg-white focus-visible:ring-primary"
-                        disabled={isProcessing}
-                      />
-                      <Button onClick={handleSendMessage} disabled={isProcessing || !userInput.trim()}>
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                      </TabsContent>
 
-              <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => router.push('/reports')}>{t('Auth.cancelLabel')}</Button>
-                <Button type="submit" disabled={isSaving || !reportConfig}>
-                  {isSaving ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                  {t('Reports.saveReport')}
-                </Button>
+                      {/* STEP 3: FIELDS */}
+                      <TabsContent value="fields" className="mt-0 space-y-6">
+                        <div className="space-y-6">
+                          {/* Campos de la Tabla Principal */}
+                          <div>
+                            <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                              <Badge variant="outline">{t(`Reports.dataSources.${config.primaryDataSource}`)}</Badge>
+                              Tabla Principal
+                            </h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {SCHEMA[config.primaryDataSource as keyof typeof SCHEMA].map(field => {
+                                const fullPath = `${config.primaryDataSource}.${field}`;
+                                return (
+                                  <div key={fullPath} className="flex items-center space-x-2 border p-2 rounded-md bg-slate-50">
+                                    <Checkbox 
+                                      id={fullPath} 
+                                      checked={config.fields.includes(fullPath)}
+                                      onCheckedChange={() => toggleField(fullPath)}
+                                    />
+                                    <label htmlFor={fullPath} className="text-xs cursor-pointer select-none">{field}</label>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Campos de Tablas Relacionadas (Joins) */}
+                          <div>
+                            <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                              <Badge variant="secondary">Relaciones</Badge>
+                              Tablas Vinculadas
+                            </h4>
+                            <div className="space-y-4">
+                              {relatedOptions.map(source => (
+                                <div key={source} className="space-y-2">
+                                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{t(`Reports.dataSources.${source}`)}</span>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {SCHEMA[source as keyof typeof SCHEMA].map(field => {
+                                      const fullPath = `${source}.${field}`;
+                                      return (
+                                        <div key={fullPath} className="flex items-center space-x-2 border p-2 rounded-md">
+                                          <Checkbox 
+                                            id={fullPath} 
+                                            checked={config.fields.includes(fullPath)}
+                                            onCheckedChange={() => toggleField(fullPath)}
+                                          />
+                                          <label htmlFor={fullPath} className="text-xs cursor-pointer select-none">{field}</label>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      {/* STEP 4: AGGREGATION */}
+                      <TabsContent value="aggregation" className="mt-0 space-y-6">
+                        <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex gap-3">
+                          <Sigma className="h-5 w-5 text-amber-600" />
+                          <div className="text-sm">
+                            <p className="font-bold text-amber-900">¿Cómo funcionan los totales?</p>
+                            <p className="text-amber-800">Selecciona un campo para agrupar (ej: Cliente) y luego añade cálculos para otros campos (ej: Suma de Abono).</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <FormLabel>Agrupar por:</FormLabel>
+                            <Select 
+                              value={config.groupBy || ''} 
+                              onValueChange={(v) => setConfig(p => ({...p, groupBy: v}))}
+                            >
+                              <SelectTrigger className="bg-white">
+                                <SelectValue placeholder="Sin agrupamiento (Detalle completo)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Sin agrupamiento</SelectItem>
+                                {config.fields.map(f => (
+                                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <FormLabel>Cálculos (Totales):</FormLabel>
+                              <Button type="button" variant="outline" size="sm" onClick={addAggregation}>
+                                <Plus className="h-4 w-4 mr-2" /> Añadir Cálculo
+                              </Button>
+                            </div>
+                            
+                            {(config.aggregations || []).map((agg, idx) => (
+                              <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border">
+                                <Select 
+                                  value={agg.type} 
+                                  onValueChange={(v: any) => {
+                                    const newAggs = [...(config.aggregations || [])];
+                                    newAggs[idx].type = v;
+                                    setConfig(p => ({...p, aggregations: newAggs}));
+                                  }}
+                                >
+                                  <SelectTrigger className="w-32 bg-white">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="sum">SUMA</SelectItem>
+                                    <SelectItem value="avg">PROMEDIO</SelectItem>
+                                    <SelectItem value="count">CONTAR</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                
+                                <Select 
+                                  value={agg.field} 
+                                  onValueChange={(v) => {
+                                    const newAggs = [...(config.aggregations || [])];
+                                    newAggs[idx].field = v;
+                                    setConfig(p => ({...p, aggregations: newAggs}));
+                                  }}
+                                >
+                                  <SelectTrigger className="flex-1 bg-white">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {config.fields.map(f => (
+                                      <SelectItem key={f} value={f}>{f}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
+                                <Button type="button" variant="ghost" size="icon" onClick={() => removeAggregation(idx)}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      {/* STEP 5: FILTERS */}
+                      <TabsContent value="filters" className="mt-0 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Filtros aplicados:</FormLabel>
+                          <Button type="button" variant="outline" size="sm" onClick={addFilter}>
+                            <Plus className="h-4 w-4 mr-2" /> Añadir Filtro
+                          </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {config.filters.map((f, idx) => (
+                            <div key={idx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-center bg-slate-50 p-3 rounded-lg border">
+                              <Select 
+                                value={f.field} 
+                                onValueChange={(v) => {
+                                  const newFilters = [...config.filters];
+                                  newFilters[idx].field = v;
+                                  setConfig(p => ({...p, filters: newFilters}));
+                                }}
+                              >
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {config.fields.map(field => (
+                                    <SelectItem key={field} value={field}>{field}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+
+                              <Select 
+                                value={f.operator} 
+                                onValueChange={(v: any) => {
+                                  const newFilters = [...config.filters];
+                                  newFilters[idx].operator = v;
+                                  setConfig(p => ({...p, filters: newFilters}));
+                                }}
+                              >
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="contains">Contiene</SelectItem>
+                                  <SelectItem value="equals">Es igual a</SelectItem>
+                                  <SelectItem value="gt">Mayor que</SelectItem>
+                                  <SelectItem value="lt">Menor que</SelectItem>
+                                </SelectContent>
+                              </Select>
+
+                              <Input 
+                                value={f.value} 
+                                onChange={(e) => {
+                                  const newFilters = [...config.filters];
+                                  newFilters[idx].value = e.target.value;
+                                  setConfig(p => ({...p, filters: newFilters}));
+                                }}
+                                className="bg-white"
+                                placeholder="Valor..."
+                              />
+
+                              <Button type="button" variant="ghost" size="icon" className="justify-self-end" onClick={() => removeFilter(idx)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                          {config.filters.length === 0 && (
+                            <div className="text-center py-8 text-muted-foreground italic border-2 border-dashed rounded-lg">
+                              Sin filtros. Se mostrarán todos los registros.
+                            </div>
+                          )}
+                        </div>
+                      </TabsContent>
+                    </CardContent>
+                  </Tabs>
+                </Card>
+              </div>
+
+              {/* BARRA LATERAL: RESUMEN Y CONFIG */}
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">Configuración</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-xs space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Fuente:</span>
+                        <span className="font-bold text-primary">{config.primaryDataSource}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Columnas:</span>
+                        <span className="font-bold">{config.fields.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Filtros:</span>
+                        <span className="font-bold">{config.filters.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Agregaciones:</span>
+                        <span className="font-bold">{(config.aggregations || []).length}</span>
+                      </div>
+                    </div>
+                    <Button 
+                      type="button" 
+                      className="w-full" 
+                      onClick={() => runReport(config)}
+                    >
+                      Actualizar Vista Previa
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="pt-6 text-xs text-muted-foreground space-y-2">
+                    <p className="font-bold text-primary italic">💡 Consejo Profesional:</p>
+                    <p>Si quieres ver el total facturado por cliente, selecciona <b>Servicios</b> como fuente, añade el campo <b>clients.name</b> y usa una agregación <b>SUMA</b> sobre <b>services.monthlyFee</b> agrupando por el nombre del cliente.</p>
+                  </CardContent>
+                </Card>
               </div>
             </form>
           </Form>
 
-          {reportConfig && reportResult && (
+          {/* VISTA PREVIA DE RESULTADOS */}
+          {reportResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 py-8">
               <div className="flex items-center justify-between border-b pb-2">
                 <h3 className="text-lg font-bold">Vista Previa ({reportResult.data.length} registros)</h3>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold uppercase border border-green-200">
-                  Configuración IA Aplicada
+                  Ejecutando en tiempo real
                 </span>
               </div>
               <ReportResultTable columns={reportResult.columns} data={reportResult.data} />
