@@ -1,5 +1,3 @@
-
-
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -114,7 +112,7 @@ export const translations = {
       copyContactId: 'Copy Contact ID',
       editContract: 'Edit Contract',
       deleteContract: 'Delete Contract',
-      copyContractId: 'Copy Contact ID',
+      copyContractId: 'Copy Contract ID',
       editReport: 'Edit Report',
       deleteReport: 'Delete Report',
       editOpportunity: 'Edit Opportunity',
@@ -419,6 +417,7 @@ export const translations = {
     Equipment: {
       title: 'Equipment Inventory',
       add: 'Add Equipment',
+      view: 'View',
       edit: 'Edit Equipment',
       noEquipment: 'No equipment found.',
     },
@@ -450,7 +449,7 @@ export const translations = {
         missingMapping: 'Missing required columns: {fields}',
         invalidField: '{field}: {message}',
         duplicateInFile: 'Duplicate {field} in file (Row {row})',
-        duplicateInDB: 'Existing {field} in database',
+        duplicateInDB: '{field} ya existe en el sistema',
         clientNotFound: 'Client CUIT not found',
       }
     },
@@ -941,6 +940,7 @@ export const translations = {
     Equipment: {
       title: 'Inventario de Equipos',
       add: 'Añadir Equipo',
+      view: 'Ver',
       edit: 'Editar Equipo',
       noEquipment: 'No se encontraron equipos.',
     },

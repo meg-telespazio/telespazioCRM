@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -20,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 
 const LocationsMap = dynamic(() => import('@/components/locations/locations-map'), {
@@ -94,7 +93,13 @@ export default function ClientSummaryPage() {
 
         {/* Contract -> PO -> Service -> Equipment Cascading View */}
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />{t('Sidebar.contracts')} & Operaciones</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />{t('Sidebar.contracts')} & Operaciones</CardTitle>
+            <Button variant="outline" size="sm" onClick={() => router.push(`/clients/${clientId}/services`)}>
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              Ver Gestión de Servicios
+            </Button>
+          </CardHeader>
           <CardContent>
             {contracts && contracts.length > 0 ? (
               <Accordion type="single" collapsible className="w-full">
