@@ -39,9 +39,13 @@ export function ServiceImporter({ isOpen, onOpenChange, pos }: { isOpen: boolean
   const [selectedPo, setSelectedPo] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    const extension = file.name.split('.').pop()?.toLowerCase();
+
+    if (extension === 'csv') {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
@@ -51,29 +55,21 @@ export function ServiceImporter({ isOpen, onOpenChange, pos }: { isOpen: boolean
           setStep('map');
         }
       });
-    }
-  };
-
-  const startImport = async () => {
-    if (!user || !selectedPo) return;
-    setIsImporting(true);
-    const mappedData = csvData.map(row => {
-      const obj: any = {};
-      SERVICE_FIELDS.forEach(f => {
-        const header = mapping[f.key];
-        if (header && header !== 'unmapped') obj[f.key] = row[header];
-      });
-      return obj;
-    });
-
-    try {
-      await importServices(firestore, user.uid, mappedData, selectedPo);
-      onOpenChange(false);
-      setStep('upload');
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsImporting(false);
+    } else if (extension === 'xlsx' || extension === 'xls') {
+      const { read, utils } = await import('xlsx');
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const bstr = evt.target?.result;
+        const wb = read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const jsonData = utils.sheet_to_json(ws);
+        const headers = utils.sheet_to_json(ws, { header: 1 })[0] as string[];
+        setCsvHeaders(headers);
+        setCsvData(jsonData);
+        setStep('map');
+      };
+      reader.readAsBinaryString(file);
     }
   };
 
@@ -92,7 +88,7 @@ export function ServiceImporter({ isOpen, onOpenChange, pos }: { isOpen: boolean
             <Button asChild>
               <label className="cursor-pointer">
                 {t('Importer.uploadButton')}
-                <input type="file" className="sr-only" onChange={handleFileChange} accept=".csv" />
+                <input type="file" className="sr-only" onChange={handleFileChange} accept=".csv, .xlsx, .xls" />
               </label>
             </Button>
           </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -139,32 +140,59 @@ export function LocationImporter({
     onOpenChange(open);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
       setError(null);
 
-      Papa.parse(selectedFile, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (results.errors.length) {
+      const extension = selectedFile.name.split('.').pop()?.toLowerCase();
+
+      if (extension === 'csv') {
+        Papa.parse(selectedFile, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            if (results.errors.length) {
+              setError(t('Importer.fileReadError'));
+              return;
+            }
+            if (!results.meta.fields || results.meta.fields.length === 0) {
+              setError(t('Importer.noHeaderError'));
+              return;
+            }
+            setCsvHeaders(results.meta.fields);
+            setCsvData(results.data);
+            setStep('map');
+          },
+          error: () => {
             setError(t('Importer.fileReadError'));
-            return;
+          },
+        });
+      } else if (extension === 'xlsx' || extension === 'xls') {
+        const { read, utils } = await import('xlsx');
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const bstr = evt.target?.result;
+            const wb = read(bstr, { type: 'binary' });
+            const wsname = wb.SheetNames[0];
+            const ws = wb.Sheets[wsname];
+            const jsonData = utils.sheet_to_json(ws);
+            const headers = utils.sheet_to_json(ws, { header: 1 })[0] as string[];
+            if (!headers || headers.length === 0) {
+              setError(t('Importer.noHeaderError'));
+              return;
+            }
+            setCsvHeaders(headers);
+            setCsvData(jsonData);
+            setStep('map');
+          } catch (e) {
+            setError(t('Importer.fileReadError'));
           }
-          if (!results.meta.fields || results.meta.fields.length === 0) {
-            setError(t('Importer.noHeaderError'));
-            return;
-          }
-          setCsvHeaders(results.meta.fields);
-          setCsvData(results.data);
-          setStep('map');
-        },
-        error: () => {
-          setError(t('Importer.fileReadError'));
-        },
-      });
+        };
+        reader.readAsBinaryString(selectedFile);
+      }
     }
   };
 
@@ -300,7 +328,7 @@ export function LocationImporter({
               <input
                 id="csv-upload"
                 type="file"
-                accept=".csv"
+                accept=".csv, .xlsx, .xls"
                 className="sr-only"
                 onChange={handleFileChange}
               />
