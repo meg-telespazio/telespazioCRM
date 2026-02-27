@@ -7,6 +7,7 @@ import {
   ArrowUp,
   ChevronsUpDown,
   MoreHorizontal,
+  ShoppingCart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import type { Contract, Client, ContractStatus } from '@/lib/types';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 const getClientName = (clientId: string, clients: Client[]) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
@@ -39,7 +41,8 @@ export const columns = (
   t: (key: string) => string,
   clients: Client[],
   onEdit: (contract: Contract) => void,
-  onDelete: (contractId: string) => void
+  onDelete: (contractId: string) => void,
+  router: ReturnType<typeof useRouter>
 ): ColumnDef<Contract>[] => [
   {
     id: 'select',
@@ -170,6 +173,11 @@ export const columns = (
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              <span>{t('Actions.addPO')}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onEdit(contract)}>
               {t('Actions.editContract')}
             </DropdownMenuItem>

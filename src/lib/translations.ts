@@ -135,6 +135,7 @@ export const translations = {
       bulkActions: 'Bulk Actions',
       bulkStatusUpdate: 'Update Status',
       confirmBulkUpdate: 'Are you sure you want to update {count} records to {status}?',
+      addPO: 'Add Purchase Order',
     },
     Contracts: {
       edit: 'Edit Contract',
@@ -681,6 +682,7 @@ export const translations = {
       bulkActions: 'Acciones Masivas',
       bulkStatusUpdate: 'Actualizar Estado',
       confirmBulkUpdate: '¿Está seguro de que desea actualizar {count} registros a {status}?',
+      addPO: 'Nueva Orden de Compra',
     },
     Contracts: {
       edit: 'Editar Contrato',

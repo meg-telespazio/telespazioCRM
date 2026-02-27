@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -35,6 +36,7 @@ import type { Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
+import { useRouter } from 'next/navigation';
 
 type ContractTableProps = {
   data: Contract[];
@@ -52,6 +54,7 @@ export function ContractTable({
   const { t } = useI18n();
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
   const tableId = 'contracts';
   const defaultVisibility = {
     endDate: false,
@@ -87,8 +90,8 @@ export function ContractTable({
   };
 
   const tableColumns = React.useMemo(
-    () => columns(t, clients, onEdit, onDelete),
-    [t, clients, onEdit, onDelete]
+    () => columns(t, clients, onEdit, onDelete, router),
+    [t, clients, onEdit, onDelete, router]
   );
 
   const table = useReactTable({
