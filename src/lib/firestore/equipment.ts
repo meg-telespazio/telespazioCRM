@@ -1,4 +1,3 @@
-
 'use client';
 import {
   setDoc,
@@ -10,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import type { Equipment } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const COLLECTION = 'equipment';
 
@@ -28,13 +27,15 @@ export async function addEquipment(
 
   try {
     await setDoc(docRef, fullData);
-  } catch (serverError) {
-    const permissionError = new FirestorePermissionError({
-      path: docRef.path,
-      operation: 'create',
-      requestResourceData: fullData,
-    });
-    errorEmitter.emit('permission-error', permissionError);
+  } catch (serverError: any) {
+    if (serverError.code === 'permission-denied') {
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'create',
+        requestResourceData: fullData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    }
     throw serverError;
   }
 }
@@ -45,23 +46,23 @@ export function updateEquipment(
   data: Partial<Equipment>
 ) {
   const docRef = doc(firestore, COLLECTION, id);
-  updateDoc(docRef, data).catch((serverError) => {
+  updateDoc(docRef, data).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,
       operation: 'update',
       requestResourceData: data,
-    });
+    } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });
 }
 
 export function deleteEquipment(firestore: Firestore, id: string) {
   const docRef = doc(firestore, COLLECTION, id);
-  deleteDoc(docRef).catch((serverError) => {
+  deleteDoc(docRef).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,
       operation: 'delete',
-    });
+    } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });
 }

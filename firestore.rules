@@ -44,7 +44,7 @@ service cloud.firestore {
     match /activities/{activityId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
       allow read: if request.auth != null;
-      allow update: if request.auth != null; // More permissive to allow timestamp updates on comments by any user.
+      allow update: if request.auth != null; 
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
 
       match /followUps/{followUpId} {
@@ -53,6 +53,24 @@ service cloud.firestore {
     }
 
     match /contracts/{contractId} {
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      allow get, list: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /purchaseOrders/{poId} {
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      allow get, list: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /services/{serviceId} {
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      allow get, list: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /equipment/{equipmentId} {
       allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
       allow get, list: if request.auth != null;
       allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;

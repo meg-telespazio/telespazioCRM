@@ -10,7 +10,7 @@ import {
 } from 'firebase/firestore';
 import type { Contract } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const CONTRACTS_COLLECTION = 'contracts';
 
@@ -34,7 +34,7 @@ export async function addContract(
       
       const publicId = `CON-${year}-${String(newCount).padStart(7, '0')}`;
 
-      const newOppRef = doc(contractCollectionRef);
+      const newContractRef = doc(contractCollectionRef);
 
       const data = {
         ...contractData,
@@ -43,17 +43,25 @@ export async function addContract(
         createdAt: serverTimestamp(),
       };
 
-      transaction.set(newOppRef, data);
+      transaction.set(newContractRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Contract creation transaction failed: ", error);
-     const permissionError = new FirestorePermissionError({
-      path: `/${CONTRACTS_COLLECTION} or /counters/contracts_${year}`,
-      operation: 'create',
-      requestResourceData: contractData,
-    });
-    errorEmitter.emit('permission-error', permissionError);
+    
+    // Si es un error de permisos, emitimos el error contextual para el overlay de desarrollo
+    if (error.code === 'permission-denied') {
+      const permissionError = new FirestorePermissionError({
+        path: `/${CONTRACTS_COLLECTION} or /counters/contracts_${year}`,
+        operation: 'create',
+        requestResourceData: {
+          ...contractData,
+          createdBy: uid,
+        },
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    }
+    
     throw error;
   }
 }
@@ -64,14 +72,13 @@ export function updateContract(
   contractData: Partial<ContractData>
 ) {
   const contractRef = doc(firestore, CONTRACTS_COLLECTION, contractId);
-  const { publicId, ...updateData } = contractData as any;
-
-  return updateDoc(contractRef, updateData).catch((serverError) => {
+  
+  return updateDoc(contractRef, contractData).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: contractRef.path,
       operation: 'update',
       requestResourceData: contractData,
-    });
+    } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;
   });
@@ -79,11 +86,11 @@ export function updateContract(
 
 export function deleteContract(firestore: Firestore, contractId: string) {
   const contractRef = doc(firestore, CONTRACTS_COLLECTION, contractId);
-  deleteDoc(contractRef).catch((serverError) => {
+  deleteDoc(contractRef).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: contractRef.path,
       operation: 'delete',
-    });
+    } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });
 }

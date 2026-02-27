@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -10,9 +9,9 @@ import {
   type Firestore,
   writeBatch,
 } from 'firebase/firestore';
-import type { Service, Equipment } from '@/lib/types';
+import type { Service } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const SERVICES_COLLECTION = 'services';
 const EQUIPMENT_COLLECTION = 'equipment';
@@ -31,13 +30,15 @@ export async function addService(
 
   try {
     return await addDoc(collectionRef, data);
-  } catch (serverError) {
-    const permissionError = new FirestorePermissionError({
-      path: `/${SERVICES_COLLECTION}`,
-      operation: 'create',
-      requestResourceData: data,
-    });
-    errorEmitter.emit('permission-error', permissionError);
+  } catch (serverError: any) {
+    if (serverError.code === 'permission-denied') {
+      const permissionError = new FirestorePermissionError({
+        path: `/${SERVICES_COLLECTION}`,
+        operation: 'create',
+        requestResourceData: data,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    }
     throw serverError;
   }
 }
@@ -76,8 +77,10 @@ export async function importServices(
 
   try {
     await batch.commit();
-  } catch (serverError) {
-    errorEmitter.emit('permission-error', new Error('Batch import failed'));
+  } catch (serverError: any) {
+    if (serverError.code === 'permission-denied') {
+      errorEmitter.emit('permission-error', new Error('Batch import failed: Permission Denied'));
+    }
     throw serverError;
   }
 }
@@ -88,23 +91,23 @@ export function updateService(
   data: Partial<Service>
 ) {
   const docRef = doc(firestore, SERVICES_COLLECTION, id);
-  updateDoc(docRef, data).catch((serverError) => {
+  updateDoc(docRef, data).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,
       operation: 'update',
       requestResourceData: data,
-    });
+    } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });
 }
 
 export function deleteService(firestore: Firestore, id: string) {
   const docRef = doc(firestore, SERVICES_COLLECTION, id);
-  deleteDoc(docRef).catch((serverError) => {
+  deleteDoc(docRef).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,
       operation: 'delete',
-    });
+    } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });
 }
