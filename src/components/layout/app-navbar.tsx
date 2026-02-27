@@ -119,7 +119,7 @@ export function AppNavbar() {
         { href: '/purchase-orders', label: t('Sidebar.pos'), icon: ShoppingCart },
         { href: '/services', label: t('Sidebar.services'), icon: Zap },
         { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive },
-        { href: '/locations', label: t('Locations.view'), icon: MapPin },
+        { href: '/locations', label: t('Pages.locations'), icon: MapPin },
         { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon },
       ]
     },
