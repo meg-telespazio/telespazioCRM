@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -35,7 +36,7 @@ const statusVariant: {
 };
 
 export const columns = (
-  t: (key: string) => void,
+  t: (key: string) => string,
   clients: Client[],
   onEdit: (contract: Contract) => void,
   onDelete: (contractId: string) => void
