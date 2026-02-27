@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -42,7 +43,7 @@ import { Loader2, Calendar as CalendarIcon, Plus, Trash2, ArrowDown, ArrowUp } f
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { nanoid } from 'nanoid';
 import { Badge } from '@/components/ui/badge';
@@ -196,12 +197,12 @@ export default function ReportBuilderPage() {
   const { data: existingReport, loading: reportLoading } = useDoc<Report>(reportDocRef);
 
   const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
-  const { data: clientsData, loading: clientsLoading } = useCollection<Client>(useMemo(() => baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: contactsData, loading: contactsLoading } = useCollection<Contact>(useMemo(() => baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(useMemo(() => baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: psData, loading: psLoading } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery) : null, [firestore, baseQuery]));
+  const { data: clientsData } = useCollection<Client>(useMemo(() => baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null, [firestore, baseQuery]));
+  const { data: contactsData } = useCollection<Contact>(useMemo(() => baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null, [firestore, baseQuery]));
+  const { data: opportunitiesData } = useCollection<Opportunity>(useMemo(() => baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null, [firestore, baseQuery]));
+  const { data: psData } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery) : null, [firestore, baseQuery]));
   
-  const pageIsLoading = userLoading || reportLoading || clientsLoading || contactsLoading || opportunitiesLoading || psLoading;
+  const pageIsLoading = userLoading || reportLoading;
 
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
@@ -363,8 +364,13 @@ export default function ReportBuilderPage() {
   const watchedDataSource = form.watch('primaryDataSource');
   const watchedSelectedFields = form.watch('selectedFields');
 
-  if ((reportLoading && !isNew) || userLoading) {
-    return <div className="flex-1 p-6"><Skeleton className="h-96 w-full" /></div>
+  if (pageIsLoading) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <AppHeader title={t('App.loading')} />
+        <main className="flex-1 p-4 sm:p-6"><Skeleton className="h-96 w-full" /></main>
+      </div>
+    );
   }
 
   const renderFilterValueInput = (index: number) => {
@@ -564,7 +570,7 @@ export default function ReportBuilderPage() {
                     <Button type="button" variant="outline" onClick={() => router.push('/reports')}>{t('Auth.cancelLabel')}</Button>
                     <Button type="submit" disabled={isSaving}>{isSaving ? <Loader2 className="animate-spin" /> : t('Reports.saveReport')}</Button>
                     <Button type="button" onClick={() => generateReport(form.getValues('primaryDataSource'), form.getValues('selectedFields'), form.getValues('filters'), form.getValues('sorting'))} disabled={isGenerating || pageIsLoading || !watchedDataSource || watchedSelectedFields.length === 0}>
-                        {isGenerating || pageIsLoading ? <Loader2 className="animate-spin" /> : t('Reports.generateReport')}
+                        {isGenerating ? <Loader2 className="animate-spin" /> : t('Reports.generateReport')}
                     </Button>
                 </div>
             </form>
