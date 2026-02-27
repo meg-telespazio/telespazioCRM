@@ -196,7 +196,8 @@ export type Equipment = {
   type: string;
   physicalStatus: PhysicalStatus;
   installationDate?: Date;
-  installationPlace?: string;
+  latitude?: number;
+  longitude?: number;
   currentServiceId?: string;
   createdBy: string;
   createdAt: Date;

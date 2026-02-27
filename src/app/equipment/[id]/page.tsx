@@ -31,7 +31,8 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   type: z.string().min(1, t('Validation.fieldRequired')),
   physicalStatus: z.enum(['Activa', 'En reparación', 'Retirada']),
   installationDate: z.date().optional(),
-  installationPlace: z.string().optional(),
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
 });
 
 export default function EquipmentFormPage() {
@@ -55,7 +56,8 @@ export default function EquipmentFormPage() {
       type: 'Antena Standard',
       physicalStatus: 'Activa',
       installationDate: undefined,
-      installationPlace: '',
+      latitude: undefined,
+      longitude: undefined,
     },
   });
 
@@ -64,6 +66,8 @@ export default function EquipmentFormPage() {
       form.reset({
         ...eqData,
         installationDate: eqData.installationDate ? new Date(eqData.installationDate) : undefined,
+        latitude: eqData.latitude,
+        longitude: eqData.longitude,
       });
     }
   }, [eqData, form]);
@@ -74,7 +78,6 @@ export default function EquipmentFormPage() {
       if (isNew) {
         await addEquipment(firestore, user.uid, values as any);
       } else {
-        // En updateEquipment pasamos el id original y los nuevos valores
         await updateEquipment(firestore, id, values as any);
       }
       router.back();
@@ -116,14 +119,21 @@ export default function EquipmentFormPage() {
                       <SelectContent><SelectItem value="Activa">Activa</SelectItem><SelectItem value="En reparación">En reparación</SelectItem><SelectItem value="Retirada">Retirada</SelectItem></SelectContent></Select></FormItem>
                     )} />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="installationDate" render={({ field }) => (
                       <FormItem className="flex flex-col"><FormLabel>{t('Forms.installationDate')}</FormLabel>
                       <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'P') : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
                       <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover></FormItem>
                     )} />
-                    <FormField control={form.control} name="installationPlace" render={({ field }) => (
-                      <FormItem><FormLabel>{t('Forms.installationPlace')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                    <FormField control={form.control} name="latitude" render={({ field }) => (
+                      <FormItem><FormLabel>{t('Locations.latitude')}</FormLabel>
+                      <FormControl><Input type="number" step="any" {...field} placeholder="-34.6037" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="longitude" render={({ field }) => (
+                      <FormItem><FormLabel>{t('Locations.longitude')}</FormLabel>
+                      <FormControl><Input type="number" step="any" {...field} placeholder="-58.3816" /></FormControl><FormMessage /></FormItem>
                     )} />
                   </div>
                 </CardContent>

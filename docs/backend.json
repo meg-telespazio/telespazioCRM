@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -329,7 +328,8 @@
         "type": { "type": "string" },
         "physicalStatus": { "type": "string", "enum": ["Activa", "En reparación", "Retirada"] },
         "installationDate": { "type": "string", "format": "date-time" },
-        "installationPlace": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
         "currentServiceId": { "type": "string" },
         "createdBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }

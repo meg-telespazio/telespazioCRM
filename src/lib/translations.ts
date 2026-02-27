@@ -113,7 +113,7 @@ export const translations = {
       copyContactId: 'Copy Contact ID',
       editContract: 'Edit Contract',
       deleteContract: 'Delete Contract',
-      copyContractId: 'Copy Contract ID',
+      copyContractId: 'Copy Contact ID',
       editReport: 'Edit Report',
       deleteReport: 'Delete Report',
       editOpportunity: 'Edit Opportunity',
