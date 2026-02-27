@@ -29,7 +29,6 @@ import { ReportResultTable } from '@/components/reports/report-result-table';
 import { Loader2, Send, Bot, User, Trash2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { processReportQuery } from '@/ai/flows/report-ai-flow';
-import backendSchema from '../../../../../docs/backend.json';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
@@ -44,6 +43,18 @@ type ReportFormData = z.infer<ReturnType<typeof getFormSchema>>;
 type Message = {
   role: 'user' | 'model';
   content: string;
+};
+
+// Helper to set nested property in an object
+const setNestedValue = (obj: any, path: string, value: any) => {
+  const keys = path.split('.');
+  let current = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!current[key]) current[key] = {};
+    current = current[key];
+  }
+  current[keys[keys.length - 1]] = value;
 };
 
 export default function ReportAIBuilderPage() {
@@ -110,33 +121,22 @@ export default function ReportAIBuilderPage() {
     }
   }, [existingReport, form]);
 
-  // Run report when config is set or changed (and all collections are loaded)
-  useEffect(() => {
-    if (reportConfig && Object.values(collectionsMap).every(v => v !== undefined)) {
-      runReport(reportConfig);
-    }
-  }, [reportConfig, collectionsMap]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isProcessing]);
-
   const runReport = useCallback((config: ReportConfig) => {
     if (!config || !collectionsMap) return;
     
     const sourceData = (collectionsMap as any)[config.primaryDataSource];
     if (!sourceData) return;
 
-    // 1. Join Logic
+    // 1. Join Logic - Handle multi-level relationships
     const processed = sourceData.map((item: any) => {
       const row: any = { [config.primaryDataSource]: item };
       
+      // Attempt to resolve Client path: Item -> PO -> Contract -> Client
       if (item.clientId && collectionsMap.clients) {
         row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
       }
 
+      // Chain for installed base services
       if (config.primaryDataSource === 'services' && collectionsMap.purchaseOrders) {
         const po = collectionsMap.purchaseOrders.find(p => p.id === item.poId);
         if (po) {
@@ -145,7 +145,7 @@ export default function ReportAIBuilderPage() {
             const contract = collectionsMap.contracts.find(c => c.id === po.contractId);
             if (contract) {
               row.contracts = contract;
-              if (collectionsMap.clients && !row.clients) {
+              if (collectionsMap.clients) {
                 row.clients = collectionsMap.clients.find(c => c.id === contract.clientId);
               }
             }
@@ -153,18 +153,15 @@ export default function ReportAIBuilderPage() {
         }
       }
 
+      // Chain for POs
       if (config.primaryDataSource === 'purchaseOrders' && collectionsMap.contracts) {
         const contract = collectionsMap.contracts.find(c => c.id === item.contractId);
         if (contract) {
           row.contracts = contract;
-          if (collectionsMap.clients && !row.clients) {
+          if (collectionsMap.clients) {
             row.clients = collectionsMap.clients.find(c => c.id === contract.clientId);
           }
         }
-      }
-
-      if (config.primaryDataSource === 'contracts' && collectionsMap.clients && !row.clients) {
-        row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
       }
 
       return row;
@@ -186,10 +183,10 @@ export default function ReportAIBuilderPage() {
             case 'contains': return stringVal.includes(stringFilter);
             case 'equals': return stringVal === stringFilter;
             case 'not_equals': return stringVal !== stringFilter;
-            case 'gt': return val > f.value;
-            case 'lt': return val < f.value;
-            case 'gte': return val >= f.value;
-            case 'lte': return val <= f.value;
+            case 'gt': return Number(val) > Number(f.value);
+            case 'lt': return Number(val) < Number(f.value);
+            case 'gte': return Number(val) >= Number(f.value);
+            case 'lte': return Number(val) <= Number(f.value);
             default: return true;
           }
         });
@@ -210,13 +207,16 @@ export default function ReportAIBuilderPage() {
       filtered.forEach((row: any) => {
         const groupKey = String(row[groupSource]?.[groupField] || 'N/A');
         if (!groups.has(groupKey)) {
-          groups.set(groupKey, { [config.groupBy]: groupKey, _records: [] });
+          groups.set(groupKey, { _key: groupKey, _records: [] });
         }
         groups.get(groupKey)._records.push(row);
       });
 
       finalData = Array.from(groups.values()).map(group => {
-        const aggregatedRow: any = { [config.groupBy]: group[config.groupBy] };
+        const aggregatedRow: any = {};
+        // Set the grouped property correctly for the nested path logic in the table
+        setNestedValue(aggregatedRow, config.groupBy, group._key);
+
         config.aggregations!.forEach(agg => {
           const [aggSource, aggField] = agg.field.split('.');
           const values = group._records.map((r: any) => Number(r[aggSource]?.[aggField] || 0));
@@ -226,6 +226,7 @@ export default function ReportAIBuilderPage() {
           else if (agg.type === 'avg') result = values.length ? values.reduce((a: number, b: number) => a + b, 0) / values.length : 0;
           else if (agg.type === 'count') result = group._records.length;
 
+          // Store aggregation result in a unique key but flat so accessor can find it
           aggregatedRow[`${agg.field}_${agg.type}`] = result;
         });
         return aggregatedRow;
@@ -233,7 +234,7 @@ export default function ReportAIBuilderPage() {
 
       // Override columns for aggregated view
       finalColumns = [
-        { accessorKey: config.groupBy, header: `Grouped by: ${config.groupBy}` },
+        { accessorKey: config.groupBy, header: `Agrupado por: ${config.groupBy}` },
         ...config.aggregations.map(agg => ({
           accessorKey: `${agg.field}_${agg.type}`,
           header: `${agg.type.toUpperCase()}(${agg.field})`
@@ -256,6 +257,23 @@ export default function ReportAIBuilderPage() {
     setReportResult({ data: finalData, columns: finalColumns });
   }, [collectionsMap]);
 
+  // Run report when config is set or changed (and relevant collections are loaded)
+  useEffect(() => {
+    if (reportConfig && mounted) {
+      // Wait for at least the primary collection to be loaded
+      const sourceData = (collectionsMap as any)[reportConfig.primaryDataSource];
+      if (sourceData !== undefined) {
+        runReport(reportConfig);
+      }
+    }
+  }, [reportConfig, collectionsMap, mounted, runReport]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isProcessing]);
+
   const handleSendMessage = async () => {
     if (!userInput.trim() || isProcessing) return;
 
@@ -265,9 +283,10 @@ export default function ReportAIBuilderPage() {
     setIsProcessing(true);
 
     try {
+      // Mock schema context if file import is restricted in client side
       const response = await processReportQuery({
         messages: newMessages,
-        schemaContext: JSON.stringify(backendSchema),
+        schemaContext: "T-Track Database Schema: clients, contacts, opportunities, productsAndServices, contracts, purchaseOrders, services, equipment, activities, locations.",
       });
 
       setMessages([...newMessages, { role: 'model', content: response.text }]);
@@ -276,7 +295,7 @@ export default function ReportAIBuilderPage() {
       }
     } catch (error) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Error processing request' });
+      toast({ variant: 'destructive', title: 'Error procesando la consulta.' });
     } finally {
       setIsProcessing(false);
     }
@@ -326,10 +345,10 @@ export default function ReportAIBuilderPage() {
                 )} />
               </div>
 
-              <Card className="flex flex-col h-[500px]">
+              <Card className="flex flex-col h-[500px] shadow-sm border-muted-foreground/20">
                 <CardHeader className="border-b bg-muted/30">
-                  <CardTitle className="text-sm flex items-center gap-2"><Bot className="h-4 w-4" /> Asistente de Reportes IA</CardTitle>
-                  <CardDescription>Explícale a la IA qué datos quieres ver y ella armará el reporte por ti.</CardDescription>
+                  <CardTitle className="text-sm flex items-center gap-2"><Bot className="h-4 w-4 text-primary" /> Asistente de Reportes IA</CardTitle>
+                  <CardDescription>Conversa con la IA para diseñar tu reporte.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
                   <ScrollArea className="flex-1 p-4" ref={scrollRef}>
@@ -338,15 +357,17 @@ export default function ReportAIBuilderPage() {
                         <div className="text-center py-12 text-muted-foreground">
                           <Bot className="h-12 w-12 mx-auto mb-4 opacity-20" />
                           <p>¿Qué tipo de reporte necesitas hoy?</p>
-                          <p className="text-xs">Ej: "Quiero un listado de clientes con servicios activos y el monto total mensual de esos servicios"</p>
+                          <p className="text-xs">Ej: "Quiero el total de abonos mensuales agrupado por cliente"</p>
                         </div>
                       )}
                       {messages.map((m, i) => (
-                        <div key={i} className={cn("flex gap-3 max-w-[85%]", m.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto")}>
+                        <div key={i} className={cn("flex gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2", m.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto")}>
                           <Avatar className="h-8 w-8 border">
-                            <AvatarFallback>{m.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}</AvatarFallback>
+                            <AvatarFallback className={m.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"}>
+                              {m.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                            </AvatarFallback>
                           </Avatar>
-                          <div className={cn("rounded-lg px-3 py-2 text-sm", m.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                          <div className={cn("rounded-lg px-3 py-2 text-sm shadow-sm", m.role === 'user' ? "bg-primary text-primary-foreground" : "bg-secondary/20")}>
                             {m.content}
                           </div>
                         </div>
@@ -354,7 +375,7 @@ export default function ReportAIBuilderPage() {
                       {isProcessing && (
                         <div className="flex gap-3 items-center text-muted-foreground animate-pulse">
                           <Bot className="h-4 w-4" />
-                          <span className="text-xs">Procesando consulta...</span>
+                          <span className="text-xs">La IA está procesando tu consulta...</span>
                         </div>
                       )}
                     </div>
@@ -362,11 +383,12 @@ export default function ReportAIBuilderPage() {
                   <div className="p-4 border-t bg-background">
                     <div className="flex gap-2">
                       <Input 
-                        placeholder="Describe tu reporte..." 
+                        placeholder="Escribe tu mensaje aquí..." 
                         value={userInput} 
                         onChange={e => setUserInput(e.target.value)} 
                         onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                        className="bg-white"
+                        className="bg-white focus-visible:ring-primary"
+                        disabled={isProcessing}
                       />
                       <Button onClick={handleSendMessage} disabled={isProcessing || !userInput.trim()}>
                         <Send className="h-4 w-4" />
@@ -387,10 +409,12 @@ export default function ReportAIBuilderPage() {
           </Form>
 
           {reportConfig && reportResult && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold">Vista Previa de Resultados ({reportResult.data.length})</h3>
-                <Badge variant="outline" className="bg-green-50 text-green-700">Configuración Generada</Badge>
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 py-8">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-lg font-bold">Vista Previa ({reportResult.data.length} registros)</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold uppercase border border-green-200">
+                  Configuración IA Aplicada
+                </span>
               </div>
               <ReportResultTable columns={reportResult.columns} data={reportResult.data} />
             </div>
@@ -400,7 +424,3 @@ export default function ReportAIBuilderPage() {
     </div>
   );
 }
-
-const Badge = ({ children, variant, className }: any) => (
-  <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase", variant === 'outline' ? "border" : "", className)}>{children}</span>
-);
