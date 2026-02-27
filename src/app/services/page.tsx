@@ -13,7 +13,8 @@ import {
   ChevronRight, 
   Search,
   Building,
-  ShoppingCart
+  ShoppingCart,
+  DollarSign
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -117,7 +118,7 @@ export default function ServicesPage() {
             <TableHeader>
               <TableRow className="bg-destructive hover:bg-destructive">
                 <TableHead className="text-destructive-foreground">{t('Forms.serviceNickname')}</TableHead>
-                <TableHead className="text-destructive-foreground">{t('Forms.serviceLineNumber')}</TableHead>
+                <TableHead className="text-destructive-foreground">{t('Forms.monthlyFee')}</TableHead>
                 <TableHead className="text-destructive-foreground">{t('Forms.servicePlan')}</TableHead>
                 <TableHead className="text-destructive-foreground">{t('Pages.clients')}</TableHead>
                 <TableHead className="text-destructive-foreground">{t('Forms.poNumber')}</TableHead>
@@ -139,9 +140,13 @@ export default function ServicesPage() {
                         <Zap className="h-3 w-3 text-yellow-500" />
                         {s.serviceNickname}
                       </button>
+                      <p className="text-[10px] text-muted-foreground font-mono ml-5">{s.serviceLineNumber}</p>
                     </TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">
-                      {s.serviceLineNumber}
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 font-semibold">
+                        <span className="text-muted-foreground text-[10px] uppercase">{s.currency || 'USD'}</span>
+                        <span>{s.monthlyFee?.toLocaleString() || '0'}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-xs">{s.servicePlan}</TableCell>
                     <TableCell>

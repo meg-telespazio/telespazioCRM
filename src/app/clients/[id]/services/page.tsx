@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -41,6 +42,7 @@ import {
   PlusCircle,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
 } from 'lucide-react';
 import { ServiceImporter } from '@/components/services/service-importer';
 
@@ -81,6 +83,7 @@ function PaginatedServiceTable({
             <TableRow className="bg-muted/50">
               <TableHead className="w-[200px]">{t('Forms.serviceNickname')}</TableHead>
               <TableHead>{t('Forms.servicePlan')}</TableHead>
+              <TableHead>{t('Forms.monthlyFee')}</TableHead>
               <TableHead>{t('Forms.userTerminal')}</TableHead>
               <TableHead className="text-right">{t('Table.actions')}</TableHead>
             </TableRow>
@@ -103,6 +106,9 @@ function PaginatedServiceTable({
                     <p className="text-[10px] text-muted-foreground font-mono">{service.serviceLineNumber}</p>
                   </TableCell>
                   <TableCell className="text-xs">{service.servicePlan}</TableCell>
+                  <TableCell className="text-xs font-semibold">
+                    {service.monthlyFee ? `${service.currency || 'USD'} ${service.monthlyFee.toLocaleString()}` : '-'}
+                  </TableCell>
                   <TableCell>
                     {equip ? (
                       <div className="flex items-center gap-2">

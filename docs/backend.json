@@ -312,6 +312,8 @@
         "topUp": { "type": "string" },
         "poId": { "type": "string" },
         "equipmentId": { "type": "string" },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "ARS"] },
+        "monthlyFee": { "type": "number" },
         "createdBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },

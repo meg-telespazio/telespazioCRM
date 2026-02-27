@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -51,6 +52,8 @@ const SERVICE_FIELDS = [
   { key: 'servicePlan', required: false },
   { key: 'serviceAllocationGb', required: false },
   { key: 'topUp', required: false },
+  { key: 'currency', required: false },
+  { key: 'monthlyFee', required: false },
   { key: 'equipmentId', required: true, label: 'User Terminal ID (UUID)' },
   { key: 'userTerminal', required: false, label: 'Terminal Nickname (KIT...)' }
 ];
@@ -143,7 +146,11 @@ export function ServiceImporter({
       SERVICE_FIELDS.forEach((f) => {
         const mappedHeader = mapping[f.key];
         if (mappedHeader && mappedHeader !== 'unmapped') {
-          service[f.key] = row[mappedHeader];
+          let value = row[mappedHeader];
+          if (f.key === 'monthlyFee' || f.key === 'serviceAllocationGb') {
+            value = parseFloat(value) || 0;
+          }
+          service[f.key] = value;
         }
       });
       return service;
@@ -288,6 +295,7 @@ export function ServiceImporter({
                     <TableHead>Nickname</TableHead>
                     <TableHead>Terminal (UUID)</TableHead>
                     <TableHead>Plan</TableHead>
+                    <TableHead>Abono</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -302,11 +310,14 @@ export function ServiceImporter({
                       <TableCell className="text-xs">
                         {row[mapping['servicePlan']] || '-'}
                       </TableCell>
+                      <TableCell className="text-xs">
+                        {row[mapping['currency']] || 'USD'} {row[mapping['monthlyFee']] || '0'}
+                      </TableCell>
                     </TableRow>
                   ))}
                   {csvData.length > 5 && (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground italic text-xs">
+                      <TableCell colSpan={4} className="text-center text-muted-foreground italic text-xs">
                         ... and {csvData.length - 5} more records
                       </TableCell>
                     </TableRow>

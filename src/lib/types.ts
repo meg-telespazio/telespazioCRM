@@ -182,6 +182,8 @@ export type Service = {
   topUp: string;
   poId: string;
   equipmentId: string;
+  currency?: 'USD' | 'EUR' | 'ARS';
+  monthlyFee?: number;
   createdBy: string;
   createdAt: Date;
 };

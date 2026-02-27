@@ -1,3 +1,4 @@
+
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -250,6 +251,7 @@ export const translations = {
       servicePlan: 'Service Plan',
       serviceAllocationGb: 'Allocation (GB)',
       topUp: 'Top Up',
+      monthlyFee: 'Monthly Fee',
       pickDate: 'Pick a date',
       selectClient: 'Select a client...',
       selectContact: 'Select a contact...',
@@ -451,7 +453,7 @@ export const translations = {
         missingMapping: 'Missing required columns: {fields}',
         invalidField: '{field}: {message}',
         duplicateInFile: 'Duplicate {field} in file (Row {row})',
-        duplicateInDB: '{field} ya existe en el sistema',
+        duplicateInDB: '{field} already exists in the system',
         clientNotFound: 'Client CUIT not found',
       }
     },
@@ -775,6 +777,7 @@ export const translations = {
       servicePlan: 'Plan de Servicio',
       serviceAllocationGb: 'GB Asignados',
       topUp: 'Top Up',
+      monthlyFee: 'Abono Mensual',
       pickDate: 'Elige una fecha',
       selectClient: 'Seleccione un cliente...',
       selectContact: 'Seleccione un contacto...',

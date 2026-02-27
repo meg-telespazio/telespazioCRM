@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -17,8 +18,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save, ArrowLeft, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
   serviceNickname: z.string().min(1, t('Validation.fieldRequired')),
@@ -29,6 +32,8 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   servicePlan: z.string().optional(),
   serviceAllocationGb: z.coerce.number().min(0),
   topUp: z.string().optional(),
+  currency: z.enum(['USD', 'EUR', 'ARS']).optional(),
+  monthlyFee: z.coerce.number().min(0).optional(),
 });
 
 type ServiceFormData = z.infer<ReturnType<typeof getFormSchema>>;
@@ -61,6 +66,8 @@ export default function ServiceEditPage() {
       servicePlan: '',
       serviceAllocationGb: 0,
       topUp: '',
+      currency: 'USD',
+      monthlyFee: 0,
     },
   });
 
@@ -75,6 +82,8 @@ export default function ServiceEditPage() {
         servicePlan: service.servicePlan || '',
         serviceAllocationGb: service.serviceAllocationGb || 0,
         topUp: service.topUp || '',
+        currency: service.currency || 'USD',
+        monthlyFee: service.monthlyFee || 0,
       });
     }
   }, [service, form]);
@@ -173,6 +182,32 @@ export default function ServiceEditPage() {
                     )} />
                   </div>
 
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <FormField control={form.control} name="currency" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.currency')}</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger><SelectValue placeholder={t('Forms.currency')} /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="ARS">ARS</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="monthlyFee" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.monthlyFee')}</FormLabel>
+                        <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
                   <Separator className="my-2" />
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -224,5 +259,3 @@ export default function ServiceEditPage() {
     </div>
   );
 }
-
-import { Separator } from '@/components/ui/separator';
