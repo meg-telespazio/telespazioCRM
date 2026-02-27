@@ -13,14 +13,25 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 
 const COLLECTION = 'purchaseOrders';
 
+const cleanData = (data: any) => {
+  const result: any = {};
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined) {
+      result[key] = data[key];
+    }
+  });
+  return result;
+};
+
 export async function addPurchaseOrder(
   firestore: Firestore,
   uid: string,
   data: Omit<PurchaseOrder, 'createdBy' | 'createdAt'>
 ) {
   const docRef = doc(firestore, COLLECTION, data.id);
+  const cleaned = cleanData(data);
   const fullData = {
-    ...data,
+    ...cleaned,
     createdBy: uid,
     createdAt: serverTimestamp(),
   };
@@ -46,11 +57,12 @@ export function updatePurchaseOrder(
   data: Partial<PurchaseOrder>
 ) {
   const docRef = doc(firestore, COLLECTION, poId);
-  updateDoc(docRef, data).catch(async (serverError) => {
+  const cleaned = cleanData(data);
+  updateDoc(docRef, cleaned).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,
       operation: 'update',
-      requestResourceData: data,
+      requestResourceData: cleaned,
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });

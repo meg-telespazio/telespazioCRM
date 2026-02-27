@@ -17,6 +17,16 @@ const OPPORTUNITIES_COLLECTION = 'opportunities';
 
 type OpportunityData = Omit<Opportunity, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
 
+const cleanData = (data: any) => {
+  const result: any = {};
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined) {
+      result[key] = data[key];
+    }
+  });
+  return result;
+};
+
 export async function addOpportunity(
   firestore: Firestore,
   uid: string,
@@ -38,7 +48,7 @@ export async function addOpportunity(
       const newOppRef = doc(opportunityCollectionRef);
 
       const data = {
-        ...opportunityData,
+        ...cleanData(opportunityData),
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
@@ -65,8 +75,8 @@ export function updateOpportunity(
   opportunityData: Partial<OpportunityData>
 ) {
   const opportunityRef = doc(firestore, OPPORTUNITIES_COLLECTION, opportunityId);
-  // publicId should not be editable
-  const { publicId, ...updateData } = opportunityData as any;
+  const cleaned = cleanData(opportunityData);
+  const { publicId, ...updateData } = cleaned as any;
 
   return updateDoc(opportunityRef, updateData).catch((serverError) => {
     const permissionError = new FirestorePermissionError({

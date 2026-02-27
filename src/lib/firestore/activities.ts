@@ -18,6 +18,16 @@ const FOLLOW_UPS_SUBCOLLECTION = 'followUps';
 type ActivityData = Omit<Activity, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'latestFollowUpContent' | 'latestFollowUpBy'>;
 type FollowUpData = Omit<ActivityFollowUp, 'id' | 'activityId' | 'createdAt'>;
 
+const cleanData = (data: any) => {
+  const result: any = {};
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined) {
+      result[key] = data[key];
+    }
+  });
+  return result;
+};
+
 export async function addActivity(
   firestore: Firestore,
   activityData: ActivityData
@@ -37,7 +47,7 @@ export async function addActivity(
       const newActivityRef = doc(activityCollectionRef);
       
       const data = {
-        ...activityData,
+        ...cleanData(activityData),
         publicId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -73,7 +83,7 @@ export function addFollowUp(
   );
 
   const data = {
-    ...followUpData,
+    ...cleanData(followUpData),
     createdAt: serverTimestamp(),
   };
 
@@ -87,8 +97,6 @@ export function addFollowUp(
       latestFollowUpBy: followUpData.createdBy,
     });
   }).catch((serverError) => {
-    // This could be a permission error on either the followup creation or the activity update.
-    // For simplicity, we'll just log one. A more robust implementation might check the error code.
     const permissionError = new FirestorePermissionError({
       path: activityRef.path,
       operation: 'update',

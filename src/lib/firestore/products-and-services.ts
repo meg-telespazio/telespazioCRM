@@ -17,6 +17,16 @@ const PS_COLLECTION = 'productsAndServices';
 
 type PSData = Omit<ProductOrService, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
 
+const cleanData = (data: any) => {
+  const result: any = {};
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined) {
+      result[key] = data[key];
+    }
+  });
+  return result;
+};
+
 export async function addProductOrService(
   firestore: Firestore,
   uid: string,
@@ -39,7 +49,7 @@ export async function addProductOrService(
       const newItemRef = doc(itemCollectionRef);
       
       const data = {
-        ...itemData,
+        ...cleanData(itemData),
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
@@ -66,11 +76,12 @@ export function updateProductOrService(
   itemData: Partial<PSData>
 ) {
   const itemRef = doc(firestore, PS_COLLECTION, itemId);
-  return updateDoc(itemRef, itemData).catch((serverError) => {
+  const cleaned = cleanData(itemData);
+  return updateDoc(itemRef, cleaned).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: itemRef.path,
       operation: 'update',
-      requestResourceData: itemData,
+      requestResourceData: cleaned,
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;

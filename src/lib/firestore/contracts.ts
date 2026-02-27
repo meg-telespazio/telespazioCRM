@@ -16,6 +16,16 @@ const CONTRACTS_COLLECTION = 'contracts';
 
 type ContractData = Omit<Contract, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
 
+const cleanData = (data: any) => {
+  const result: any = {};
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined) {
+      result[key] = data[key];
+    }
+  });
+  return result;
+};
+
 export async function addContract(
   firestore: Firestore,
   uid: string,
@@ -37,7 +47,7 @@ export async function addContract(
       const newContractRef = doc(contractCollectionRef);
 
       const data = {
-        ...contractData,
+        ...cleanData(contractData),
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
@@ -49,7 +59,6 @@ export async function addContract(
   } catch (error: any) {
     console.error("Contract creation transaction failed: ", error);
     
-    // Si es un error de permisos, emitimos el error contextual para el overlay de desarrollo
     if (error.code === 'permission-denied') {
       const permissionError = new FirestorePermissionError({
         path: `/${CONTRACTS_COLLECTION} or /counters/contracts_${year}`,
@@ -72,12 +81,13 @@ export function updateContract(
   contractData: Partial<ContractData>
 ) {
   const contractRef = doc(firestore, CONTRACTS_COLLECTION, contractId);
+  const data = cleanData(contractData);
   
-  return updateDoc(contractRef, contractData).catch(async (serverError) => {
+  return updateDoc(contractRef, data).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: contractRef.path,
       operation: 'update',
-      requestResourceData: contractData,
+      requestResourceData: data,
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;

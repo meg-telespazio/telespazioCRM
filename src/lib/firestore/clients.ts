@@ -20,16 +20,26 @@ const CLIENTS_COLLECTION = 'clients';
 
 type ClientData = Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
 
+const cleanData = (data: any) => {
+  const result: any = {};
+  Object.keys(data).forEach(key => {
+    if (data[key] !== undefined) {
+      result[key] = data[key];
+    }
+  });
+  return result;
+};
+
 export async function addClient(
   firestore: Firestore,
   uid: string,
   clientData: ClientData
 ) {
   const clientCollectionRef = collection(firestore, CLIENTS_COLLECTION);
-  const cleanCuit = clientData.cuit;
+  const cleanCuitValue = clientData.cuit;
 
-  if (cleanCuit && cleanCuit !== '00000000000') {
-    const q = query(clientCollectionRef, where('cuit', '==', cleanCuit));
+  if (cleanCuitValue && cleanCuitValue !== '00000000000') {
+    const q = query(clientCollectionRef, where('cuit', '==', cleanCuitValue));
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
       throw new Error('This CUIT is already registered.');
@@ -50,7 +60,7 @@ export async function addClient(
       const newClientRef = doc(clientCollectionRef);
       
       const data = {
-        ...clientData,
+        ...cleanData(clientData),
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
@@ -93,13 +103,14 @@ export async function updateClient(
   }
 
   const clientRef = doc(firestore, CLIENTS_COLLECTION, clientId);
+  const data = cleanData(clientData);
   try {
-    await updateDoc(clientRef, clientData);
+    await updateDoc(clientRef, data);
   } catch(serverError) {
     const permissionError = new FirestorePermissionError({
       path: clientRef.path,
       operation: 'update',
-      requestResourceData: clientData,
+      requestResourceData: data,
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError; // rethrow after emitting
