@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { doc } from 'firebase/firestore';
-import type { Equipment, PhysicalStatus } from '@/lib/types';
+import type { Equipment } from '@/lib/types';
 import { addEquipment, updateEquipment } from '@/lib/firestore/equipment';
 
 import { AppHeader } from '@/components/layout/app-header';
@@ -70,15 +70,20 @@ export default function EquipmentFormPage() {
 
   const onSubmit = async (values: z.infer<ReturnType<typeof getFormSchema>>) => {
     if (!user) return;
-    if (isNew) {
-      await addEquipment(firestore, user.uid, values as any);
-    } else {
-      await updateEquipment(firestore, id, values as any);
+    try {
+      if (isNew) {
+        await addEquipment(firestore, user.uid, values as any);
+      } else {
+        // En updateEquipment pasamos el id original y los nuevos valores
+        await updateEquipment(firestore, id, values as any);
+      }
+      router.back();
+    } catch (error: any) {
+      console.error("Error saving equipment:", error);
     }
-    router.back();
   };
 
-  if (eqLoading) return <div className="p-6"><Skeleton className="h-96" /></div>;
+  if (eqLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -93,11 +98,11 @@ export default function EquipmentFormPage() {
                 <CardContent className="grid gap-6 p-6">
                   <FormField control={form.control} name="id" render={({ field }) => (
                     <FormItem><FormLabel>{t('Forms.userTerminalId')}</FormLabel>
-                    <FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
+                    <FormControl><Input {...field} placeholder="UUID..." /></FormControl><FormMessage /></FormItem>
                   )} />
                   <FormField control={form.control} name="userTerminal" render={({ field }) => (
                     <FormItem><FormLabel>{t('Forms.userTerminal')}</FormLabel>
-                    <FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormControl><Input {...field} placeholder="Serial o Nickname..." /></FormControl><FormMessage /></FormItem>
                   )} />
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="type" render={({ field }) => (
