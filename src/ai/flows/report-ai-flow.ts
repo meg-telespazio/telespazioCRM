@@ -23,8 +23,9 @@ const ReportConfigSchema = z.object({
     field: z.string(),
     direction: z.enum(['asc', 'desc']),
   })),
+  groupBy: z.string().optional().describe('Field to group data by if aggregations are used (e.g., "clients.name")'),
   aggregations: z.array(z.object({
-    field: z.string(),
+    field: z.string().describe('Field to aggregate, format: "collection.field"'),
     type: z.enum(['sum', 'avg', 'count']),
   })).optional(),
 });
@@ -57,7 +58,7 @@ Your job is to translate natural language user requests into a structured report
 SCHEMA CONTEXT:
 {{{schemaContext}}}
 
-RELATIONSHIP RULES (CRITICAL):
+RELATIONSHIP RULES:
 1. 'services' link to 'purchaseOrders' via 'poId'.
 2. 'purchaseOrders' link to 'contracts' via 'contractId'.
 3. 'contracts' link to 'clients' via 'clientId'.
@@ -65,17 +66,11 @@ RELATIONSHIP RULES (CRITICAL):
 5. 'contacts' link to 'clients' via 'clientId'.
 6. 'opportunities' link to 'clients' via 'clientId'.
 
-DATA RETRIEVAL LOGIC:
-- If a user asks for "services of client X", you must start with 'services' as primaryDataSource, and use a filter like "clients.name contains X". The system handles the multi-step join automatically.
-- Always include helpful fields like "clients.name" or "services.serviceNickname" if relevant to the request.
-
-INSTRUCTIONS:
-1. Analyze the user message and history.
-2. If the request is clear, return a 'config' with the data source, fields, filters, and sorts.
-3. Use only the fields and collections defined in the SCHEMA CONTEXT.
-4. If the request is ambiguous (e.g., "I want a report of sales" - which stage? which period?), return a 'question' to ask for details.
-5. In the 'text' field, explain what you are doing (e.g., "I've generated a report showing active services for Western Union with their monthly fees").
-6. For date filters, assume relative terms (like "this month") should be translated to actual date ranges if possible.
+CRITICAL INSTRUCTIONS:
+1. BE CONVERSATIONAL: Before jumping to a 'config', if the user's request is broad (e.g., "report of services"), ASK for details like: "Which fields do you want to see?", "Should I group them by client?", "Do you want to see the total sum of monthly fees or the individual list?".
+2. AGGREGATIONS (TOTALS): If the user mentions "total", "sum", "average", or "summary", you MUST use the 'aggregations' and 'groupBy' fields in the config. For example, to show total monthly fee per client, set primaryDataSource to 'services', groupBy to 'clients.name', and an aggregation for 'services.monthlyFee' with type 'sum'.
+3. DATA RETRIEVAL: Always ensure the 'primaryDataSource' is the one that contains the main metric or records (e.g., for fees, use 'services').
+4. LANGUAGE: Always respond in the same language the user is using (usually Spanish).
 
 MESSAGES:
 {{#each messages}}

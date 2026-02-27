@@ -127,22 +127,16 @@ export default function ReportAIBuilderPage() {
     if (!config || !collectionsMap) return;
     
     const sourceData = (collectionsMap as any)[config.primaryDataSource];
-    if (!sourceData) {
-      console.warn(`Primary data source ${config.primaryDataSource} not found or empty.`);
-      return;
-    }
+    if (!sourceData) return;
 
-    // Advanced Join and Enrichement Logic
+    // 1. Join Logic
     const processed = sourceData.map((item: any) => {
       const row: any = { [config.primaryDataSource]: item };
       
-      // Auto-join logic based on relationships
-      // 1. Direct Client Link
       if (item.clientId && collectionsMap.clients) {
         row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
       }
 
-      // 2. Service -> PO -> Contract -> Client
       if (config.primaryDataSource === 'services' && collectionsMap.purchaseOrders) {
         const po = collectionsMap.purchaseOrders.find(p => p.id === item.poId);
         if (po) {
@@ -159,7 +153,6 @@ export default function ReportAIBuilderPage() {
         }
       }
 
-      // 3. PO -> Contract -> Client
       if (config.primaryDataSource === 'purchaseOrders' && collectionsMap.contracts) {
         const contract = collectionsMap.contracts.find(c => c.id === item.contractId);
         if (contract) {
@@ -170,7 +163,6 @@ export default function ReportAIBuilderPage() {
         }
       }
 
-      // 4. Contract -> Client
       if (config.primaryDataSource === 'contracts' && collectionsMap.clients && !row.clients) {
         row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
       }
@@ -178,7 +170,7 @@ export default function ReportAIBuilderPage() {
       return row;
     });
 
-    // Filters
+    // 2. Filter Logic
     let filtered = processed;
     if (config.filters?.length) {
       filtered = processed.filter((item: any) => {
@@ -204,9 +196,52 @@ export default function ReportAIBuilderPage() {
       });
     }
 
-    // Sort
-    if (config.sorting?.length) {
-      filtered.sort((a: any, b: any) => {
+    // 3. Aggregation & Grouping Logic
+    let finalData = filtered;
+    let finalColumns = config.fields.map(fKey => {
+      const [source, field] = fKey.split('.');
+      return { accessorKey: fKey, header: `${source}.${field}` };
+    });
+
+    if (config.aggregations?.length && config.groupBy) {
+      const groups = new Map<string, any>();
+      const [groupSource, groupField] = config.groupBy.split('.');
+
+      filtered.forEach((row: any) => {
+        const groupKey = String(row[groupSource]?.[groupField] || 'N/A');
+        if (!groups.has(groupKey)) {
+          groups.set(groupKey, { [config.groupBy]: groupKey, _records: [] });
+        }
+        groups.get(groupKey)._records.push(row);
+      });
+
+      finalData = Array.from(groups.values()).map(group => {
+        const aggregatedRow: any = { [config.groupBy]: group[config.groupBy] };
+        config.aggregations!.forEach(agg => {
+          const [aggSource, aggField] = agg.field.split('.');
+          const values = group._records.map((r: any) => Number(r[aggSource]?.[aggField] || 0));
+          
+          let result = 0;
+          if (agg.type === 'sum') result = values.reduce((a: number, b: number) => a + b, 0);
+          else if (agg.type === 'avg') result = values.length ? values.reduce((a: number, b: number) => a + b, 0) / values.length : 0;
+          else if (agg.type === 'count') result = group._records.length;
+
+          aggregatedRow[`${agg.field}_${agg.type}`] = result;
+        });
+        return aggregatedRow;
+      });
+
+      // Override columns for aggregated view
+      finalColumns = [
+        { accessorKey: config.groupBy, header: `Grouped by: ${config.groupBy}` },
+        ...config.aggregations.map(agg => ({
+          accessorKey: `${agg.field}_${agg.type}`,
+          header: `${agg.type.toUpperCase()}(${agg.field})`
+        }))
+      ];
+    } else if (config.sorting?.length) {
+      // Sort if no aggregation
+      finalData.sort((a: any, b: any) => {
         for (const sort of config.sorting) {
           const [source, field] = sort.field.split('.');
           const valA = a[source]?.[field];
@@ -218,13 +253,7 @@ export default function ReportAIBuilderPage() {
       });
     }
 
-    // Map Columns for Table
-    const columns = config.fields.map(fKey => {
-      const [source, field] = fKey.split('.');
-      return { accessorKey: fKey, header: `${source}.${field}` };
-    });
-
-    setReportResult({ data: filtered, columns });
+    setReportResult({ data: finalData, columns: finalColumns });
   }, [collectionsMap]);
 
   const handleSendMessage = async () => {
@@ -309,7 +338,7 @@ export default function ReportAIBuilderPage() {
                         <div className="text-center py-12 text-muted-foreground">
                           <Bot className="h-12 w-12 mx-auto mb-4 opacity-20" />
                           <p>¿Qué tipo de reporte necesitas hoy?</p>
-                          <p className="text-xs">Ej: "Quiero un listado de clientes con servicios activos y su abono mensual"</p>
+                          <p className="text-xs">Ej: "Quiero un listado de clientes con servicios activos y el monto total mensual de esos servicios"</p>
                         </div>
                       )}
                       {messages.map((m, i) => (
