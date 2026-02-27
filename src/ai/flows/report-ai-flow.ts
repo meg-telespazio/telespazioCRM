@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI Flow to generate report configurations based on natural language queries.
@@ -58,14 +57,25 @@ Your job is to translate natural language user requests into a structured report
 SCHEMA CONTEXT:
 {{{schemaContext}}}
 
+RELATIONSHIP RULES (CRITICAL):
+1. 'services' link to 'purchaseOrders' via 'poId'.
+2. 'purchaseOrders' link to 'contracts' via 'contractId'.
+3. 'contracts' link to 'clients' via 'clientId'.
+4. 'equipment' link to 'services' via 'currentServiceId'.
+5. 'contacts' link to 'clients' via 'clientId'.
+6. 'opportunities' link to 'clients' via 'clientId'.
+
+DATA RETRIEVAL LOGIC:
+- If a user asks for "services of client X", you must start with 'services' as primaryDataSource, and use a filter like "clients.name contains X". The system handles the multi-step join automatically.
+- Always include helpful fields like "clients.name" or "services.serviceNickname" if relevant to the request.
+
 INSTRUCTIONS:
 1. Analyze the user message and history.
 2. If the request is clear, return a 'config' with the data source, fields, filters, and sorts.
 3. Use only the fields and collections defined in the SCHEMA CONTEXT.
 4. If the request is ambiguous (e.g., "I want a report of sales" - which stage? which period?), return a 'question' to ask for details.
-5. In the 'text' field, explain what you are doing (e.g., "I've generated a report showing active clients with their total monthly fees").
-6. For date filters, assume relative terms (like "this month") should be translated to actual date ranges if possible, or keep them generic if not.
-7. Available Data Sources: clients, contacts, opportunities, productsAndServices, contracts, purchaseOrders, services, equipment, activities, locations.
+5. In the 'text' field, explain what you are doing (e.g., "I've generated a report showing active services for Western Union with their monthly fees").
+6. For date filters, assume relative terms (like "this month") should be translated to actual date ranges if possible.
 
 MESSAGES:
 {{#each messages}}

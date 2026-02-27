@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
@@ -108,11 +107,15 @@ export default function ReportAIBuilderPage() {
         description: existingReport.description || '',
       });
       setReportConfig(existingReport.config);
-      if (shouldRunOnLoad) {
-        // Trigger report execution
-      }
     }
-  }, [existingReport, form, shouldRunOnLoad]);
+  }, [existingReport, form]);
+
+  // Run report when config is set or changed (and all collections are loaded)
+  useEffect(() => {
+    if (reportConfig && Object.values(collectionsMap).every(v => v !== undefined)) {
+      runReport(reportConfig);
+    }
+  }, [reportConfig, collectionsMap]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -124,21 +127,54 @@ export default function ReportAIBuilderPage() {
     if (!config || !collectionsMap) return;
     
     const sourceData = (collectionsMap as any)[config.primaryDataSource];
-    if (!sourceData) return;
+    if (!sourceData) {
+      console.warn(`Primary data source ${config.primaryDataSource} not found or empty.`);
+      return;
+    }
 
-    // Simplified Join Logic
+    // Advanced Join and Enrichement Logic
     const processed = sourceData.map((item: any) => {
       const row: any = { [config.primaryDataSource]: item };
-      // Basic Joins
+      
+      // Auto-join logic based on relationships
+      // 1. Direct Client Link
       if (item.clientId && collectionsMap.clients) {
         row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
       }
-      if (item.contactId && collectionsMap.contacts) {
-        row.contacts = collectionsMap.contacts.find(c => c.id === item.contactId);
+
+      // 2. Service -> PO -> Contract -> Client
+      if (config.primaryDataSource === 'services' && collectionsMap.purchaseOrders) {
+        const po = collectionsMap.purchaseOrders.find(p => p.id === item.poId);
+        if (po) {
+          row.purchaseOrders = po;
+          if (collectionsMap.contracts) {
+            const contract = collectionsMap.contracts.find(c => c.id === po.contractId);
+            if (contract) {
+              row.contracts = contract;
+              if (collectionsMap.clients && !row.clients) {
+                row.clients = collectionsMap.clients.find(c => c.id === contract.clientId);
+              }
+            }
+          }
+        }
       }
-      if (item.poId && collectionsMap.purchaseOrders) {
-        row.purchaseOrders = collectionsMap.purchaseOrders.find(p => p.id === item.poId);
+
+      // 3. PO -> Contract -> Client
+      if (config.primaryDataSource === 'purchaseOrders' && collectionsMap.contracts) {
+        const contract = collectionsMap.contracts.find(c => c.id === item.contractId);
+        if (contract) {
+          row.contracts = contract;
+          if (collectionsMap.clients && !row.clients) {
+            row.clients = collectionsMap.clients.find(c => c.id === contract.clientId);
+          }
+        }
       }
+
+      // 4. Contract -> Client
+      if (config.primaryDataSource === 'contracts' && collectionsMap.clients && !row.clients) {
+        row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
+      }
+
       return row;
     });
 
@@ -149,19 +185,40 @@ export default function ReportAIBuilderPage() {
         return config.filters.every(f => {
           const [source, field] = f.field.split('.');
           const val = item[source]?.[field];
-          if (val === undefined) return false;
+          if (val === undefined || val === null) return false;
+          
+          const stringVal = String(val).toLowerCase();
+          const stringFilter = String(f.value).toLowerCase();
+
           switch (f.operator) {
-            case 'contains': return String(val).toLowerCase().includes(String(f.value).toLowerCase());
-            case 'equals': return String(val) === String(f.value);
+            case 'contains': return stringVal.includes(stringFilter);
+            case 'equals': return stringVal === stringFilter;
+            case 'not_equals': return stringVal !== stringFilter;
             case 'gt': return val > f.value;
             case 'lt': return val < f.value;
+            case 'gte': return val >= f.value;
+            case 'lte': return val <= f.value;
             default: return true;
           }
         });
       });
     }
 
-    // Map Columns
+    // Sort
+    if (config.sorting?.length) {
+      filtered.sort((a: any, b: any) => {
+        for (const sort of config.sorting) {
+          const [source, field] = sort.field.split('.');
+          const valA = a[source]?.[field];
+          const valB = b[source]?.[field];
+          if (valA < valB) return sort.direction === 'asc' ? -1 : 1;
+          if (valA > valB) return sort.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    // Map Columns for Table
     const columns = config.fields.map(fKey => {
       const [source, field] = fKey.split('.');
       return { accessorKey: fKey, header: `${source}.${field}` };
@@ -187,7 +244,6 @@ export default function ReportAIBuilderPage() {
       setMessages([...newMessages, { role: 'model', content: response.text }]);
       if (response.type === 'config' && response.config) {
         setReportConfig(response.config);
-        runReport(response.config);
       }
     } catch (error) {
       console.error(error);
@@ -304,7 +360,7 @@ export default function ReportAIBuilderPage() {
           {reportConfig && reportResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold">Vista Previa de Resultados</h3>
+                <h3 className="text-lg font-bold">Vista Previa de Resultados ({reportResult.data.length})</h3>
                 <Badge variant="outline" className="bg-green-50 text-green-700">Configuración Generada</Badge>
               </div>
               <ReportResultTable columns={reportResult.columns} data={reportResult.data} />
