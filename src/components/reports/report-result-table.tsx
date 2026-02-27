@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -23,7 +24,7 @@ import { useI18n } from '@/firebase/client-provider';
 import { format } from 'date-fns';
 import { DataTablePagination } from '../ui/data-table-pagination';
 import { Button } from '../ui/button';
-import { Download } from 'lucide-react';
+import { Download, FileDown } from 'lucide-react';
 import Papa from 'papaparse';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
@@ -34,6 +35,11 @@ type ReportResultTableProps = {
 
 const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
   const { t } = useI18n();
+
+  const getNestedValue = (obj: any, path: string) => {
+    if (!path) return undefined;
+    return path.split('.').reduce((p, c) => (p && p[c]), obj);
+  };
 
   const formatCellForDisplay = (value: any): string => {
       if (value instanceof Date) {
@@ -47,7 +53,7 @@ const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
           return value.join(', ');
       }
       if (typeof value === 'object' && value !== null) {
-          return JSON.stringify(value);
+          return value.name || value.displayName || value.publicId || JSON.stringify(value);
       }
       if(typeof value === 'boolean') {
           return value ? t('Yes') : t('No');
@@ -77,29 +83,16 @@ const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
-  
-  const getNestedValue = (obj: any, path: string) => {
-    if (!path) return undefined;
-    return path.split('.').reduce((p, c) => (p && p[c]), obj);
-  }
 
   const formatCellForExport = (value: any): string => {
     if (value instanceof Date) return format(value, 'yyyy-MM-dd');
     if (Array.isArray(value)) {
       if (value.length === 0) return '';
-      if (typeof value[0] === 'object' && value[0] !== null) {
-        return value
-          .map((item) => item.address || item.number || JSON.stringify(item))
-          .join('; ');
-      }
-      return value.join('; ');
+      return value.map((item) => item.address || item.number || JSON.stringify(item)).join('; ');
     }
-    if (typeof value === 'object' && value !== null) return JSON.stringify(value);
-    if (typeof value === 'boolean') return value ? t('Yes') : t('No');
-    if (typeof value === 'number') return value.toString();
+    if (typeof value === 'object' && value !== null) return value.name || value.displayName || JSON.stringify(value);
     return String(value ?? '');
   };
-
 
   const handleDownload = () => {
     const headers = columns.map(col => col.header);
@@ -111,42 +104,34 @@ const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', 'report.csv');
+    link.setAttribute('download', `report-${new Date().getTime()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-
   return (
-    <Card className="mt-8">
-      <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t('Reports.results')}</CardTitle>
-            <Button onClick={handleDownload} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
+    <Card className="border-none shadow-none bg-transparent">
+      <CardHeader className="flex flex-row items-center justify-between px-0">
+            <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Resultados del Reporte</CardTitle>
+            <Button onClick={handleDownload} variant="outline" size="sm">
+              <FileDown className="mr-2 h-4 w-4" />
               {t('Reports.downloadCsv')}
             </Button>
           </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-        <div className="relative w-full overflow-auto">
+      <CardContent className="px-0">
+        <div className="rounded-md border bg-card overflow-hidden">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id} onClick={header.column.getToggleSortingHandler()}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                          {{
-                              asc: ' 🔼',
-                              desc: ' 🔽',
-                          }[header.column.getIsSorted() as string] ?? null}
+                      <TableHead key={header.id} onClick={header.column.getToggleSortingHandler()} className="cursor-pointer select-none">
+                        <div className="flex items-center gap-2">
+                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                          {{ asc: ' 🔼', desc: ' 🔽' }[header.column.getIsSorted() as string] ?? null}
+                        </div>
                       </TableHead>
                     );
                   })}
@@ -156,26 +141,17 @@ const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                  >
+                  <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={tableColumns.length}
-                    className="h-24 text-center"
-                  >
+                  <TableCell colSpan={tableColumns.length} className="h-24 text-center italic text-muted-foreground">
                     {t('Reports.noResults')}
                   </TableCell>
                 </TableRow>
@@ -183,8 +159,9 @@ const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
             </TableBody>
           </Table>
         </div>
-      </div>
-      <DataTablePagination table={table} />
+        <div className="mt-4">
+          <DataTablePagination table={table} />
+        </div>
       </CardContent>
     </Card>
   );

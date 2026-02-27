@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { redirect, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
@@ -9,7 +10,7 @@ import { collection, query, orderBy } from 'firebase/firestore';
 import type { Report } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, FileText, MoreVertical, Trash2, Edit } from 'lucide-react';
+import { PlusCircle, FileText, MoreVertical, Trash2, Edit, Bot } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
@@ -27,6 +28,9 @@ export default function ReportsPage() {
   const dateLocale = locale === 'es' ? es : enUS;
   const firestore = useFirestore();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const reportsQuery = useMemo(() => {
     if (!user) return null;
@@ -51,11 +55,13 @@ export default function ReportsPage() {
 
   const isLoading = userLoading || reportsLoading;
 
+  if (!mounted) return null;
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Pages.reports')}>
         <Button onClick={() => router.push('/reports/builder/new')}>
-          <PlusCircle />
+          <PlusCircle className="mr-2 h-4 w-4" />
           {t('Reports.createNew')}
         </Button>
       </AppHeader>
@@ -67,18 +73,18 @@ export default function ReportsPage() {
         ) : reports && reports.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {reports.map((report) => (
-              <Card key={report.id}>
+              <Card key={report.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="flex flex-row items-start justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <CardTitle>{report.name}</CardTitle>
-                    <CardDescription className="line-clamp-2">
+                  <div className="space-y-1.5 overflow-hidden">
+                    <CardTitle className="truncate">{report.name}</CardTitle>
+                    <CardDescription className="line-clamp-2 min-h-[2.5rem]">
                       {report.description || t('Reports.noDescription')}
                     </CardDescription>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                        <MoreVertical />
+                        <MoreVertical className="h-4 w-4" />
                         <span className="sr-only">{t('Actions.title')}</span>
                       </Button>
                     </DropdownMenuTrigger>
@@ -95,26 +101,29 @@ export default function ReportsPage() {
                   </DropdownMenu>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full" onClick={() => router.push(`/reports/builder/${report.id}?run=true`)}>
-                    <FileText />
+                  <Button variant="secondary" className="w-full" onClick={() => router.push(`/reports/builder/${report.id}?run=true`)}>
+                    <FileText className="mr-2 h-4 w-4" />
                     {t('Reports.runReport')}
                   </Button>
                 </CardContent>
-                <CardFooter>
-                  <p className="text-xs text-muted-foreground">
-                    {t('Table.createdDate')}: {format(new Date(report.createdAt), 'P', { locale: dateLocale })}
-                  </p>
+                <CardFooter className="border-t bg-muted/20 pt-4">
+                  <div className="flex items-center justify-between w-full">
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                      {format(new Date(report.createdAt), 'PPP', { locale: dateLocale })}
+                    </p>
+                    <Bot className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  </div>
                 </CardFooter>
               </Card>
             ))}
           </div>
         ) : (
           <div className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
-            <FileText className="h-16 w-16 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">{t('Reports.noReportsTitle')}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{t('Reports.noReportsDescription')}</p>
+            <Bot className="h-16 w-16 text-muted-foreground/30 mb-4" />
+            <h3 className="text-lg font-semibold">{t('Reports.noReportsTitle')}</h3>
+            <p className="mt-2 text-sm text-muted-foreground text-center max-w-md">{t('Reports.noReportsDescription')}</p>
             <Button className="mt-6" onClick={() => router.push('/reports/builder/new')}>
-              <PlusCircle />
+              <PlusCircle className="mr-2 h-4 w-4" />
               {t('Reports.createNew')}
             </Button>
           </div>

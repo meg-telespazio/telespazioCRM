@@ -242,14 +242,35 @@ export type Location = {
   createdBy: string;
 };
 
+export type ReportFilter = {
+  field: string;
+  operator: string;
+  value: any;
+};
+
+export type ReportSort = {
+  field: string;
+  direction: 'asc' | 'desc';
+};
+
+export type ReportAggregation = {
+  field: string;
+  type: 'sum' | 'avg' | 'count';
+};
+
+export type ReportConfig = {
+  primaryDataSource: string;
+  fields: string[];
+  filters: ReportFilter[];
+  sorting: ReportSort[];
+  aggregations?: ReportAggregation[];
+};
+
 export type Report = {
   id: string;
   name: string;
   description?: string;
-  primaryDataSource: 'clients' | 'contacts' | 'opportunities' | 'productsAndServices';
-  selectedFields: string[];
-  filters: any[];
-  sorting: any[];
+  config: ReportConfig;
   createdAt: Date;
   createdBy: string;
 };
