@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -17,6 +16,10 @@ import {
   DollarSign,
   CheckCircle2,
   Loader2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Filter,
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -57,8 +60,14 @@ import { ServiceImporter } from '@/components/services/service-importer';
 import { useRouter } from 'next/navigation';
 import { bulkUpdateServicePrices } from '@/lib/firestore/services';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const SERVICES_PER_PAGE = 10;
+
+type SortConfig = {
+  key: string;
+  direction: 'asc' | 'desc' | null;
+};
 
 export default function ServicesPage() {
   const { user, loading: userLoading } = useUser();
@@ -70,6 +79,8 @@ export default function ServicesPage() {
   const [isImporterOpen, setImporterOpen] = useState(false);
   const [isBulkPriceDialogOpen, setBulkPriceDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [clientFilter, setClientFilter] = useState<string>('all');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'serviceNickname', direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
@@ -103,20 +114,69 @@ export default function ServicesPage() {
   const contractMap = useMemo(() => new Map(contracts?.map(c => [c.id, c])), [contracts]);
   const clientMap = useMemo(() => new Map(clients?.map(c => [c.id, c])), [clients]);
 
-  // Filtering and Pagination
-  const filteredServices = useMemo(() => {
+  // Filtering, Sorting and Pagination
+  const processedServices = useMemo(() => {
     if (!services) return [];
-    return services.filter(s => 
-      s.serviceNickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.serviceLineNumber.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [services, searchQuery]);
+    
+    // 1. Filter
+    let filtered = services.filter(s => {
+      const matchesSearch = s.serviceNickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            s.serviceLineNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const po = poMap.get(s.poId);
+      const contract = po ? contractMap.get(po.contractId) : null;
+      const matchesClient = clientFilter === 'all' || contract?.clientId === clientFilter;
+      
+      return matchesSearch && matchesClient;
+    });
 
-  const totalPages = Math.ceil(filteredServices.length / SERVICES_PER_PAGE);
+    // 2. Sort
+    if (sortConfig.key && sortConfig.direction) {
+      filtered.sort((a, b) => {
+        let valA: any = '';
+        let valB: any = '';
+
+        if (sortConfig.key === 'client') {
+          const poA = poMap.get(a.poId);
+          const contractA = poA ? contractMap.get(poA.contractId) : null;
+          valA = clientMap.get(contractA?.clientId || '')?.name || '';
+
+          const poB = poMap.get(b.poId);
+          const contractB = poB ? contractMap.get(poB.contractId) : null;
+          valB = clientMap.get(contractB?.clientId || '')?.name || '';
+        } else {
+          valA = (a as any)[sortConfig.key] || '';
+          valB = (b as any)[sortConfig.key] || '';
+        }
+
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [services, searchQuery, clientFilter, sortConfig, poMap, contractMap, clientMap]);
+
+  const totalPages = Math.ceil(processedServices.length / SERVICES_PER_PAGE);
   const paginatedServices = useMemo(() => {
     const start = (currentPage - 1) * SERVICES_PER_PAGE;
-    return filteredServices.slice(start, start + SERVICES_PER_PAGE);
-  }, [filteredServices, currentPage]);
+    return processedServices.slice(start, start + SERVICES_PER_PAGE);
+  }, [processedServices, currentPage]);
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+  };
 
   const toggleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -162,6 +222,8 @@ export default function ServicesPage() {
 
   if (isLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
+  const sortedClients = [...(clients || [])].sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Services.title')}>
@@ -172,25 +234,42 @@ export default function ServicesPage() {
       </AppHeader>
 
       <main className="flex-1 p-4 sm:p-6 space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="relative max-w-md flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
-            <Input 
-              placeholder="Buscar por Nickname o Service Line Number..." 
-              className="pl-10 bg-white shadow-sm border-muted-foreground/20 focus-visible:ring-destructive"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-                setSelectedIds([]);
-              }}
-            />
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex flex-1 flex-col md:flex-row items-center gap-4 w-full">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+              <Input 
+                placeholder="Buscar por Nickname o Línea..." 
+                className="pl-10 bg-white shadow-sm border-muted-foreground/20 focus-visible:ring-destructive"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                  setSelectedIds([]);
+                }}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Select value={clientFilter} onValueChange={(v) => { setClientFilter(v); setCurrentPage(1); setSelectedIds([]); }}>
+                <SelectTrigger className="w-full md:w-[250px] bg-white shadow-sm border-muted-foreground/20">
+                  <SelectValue placeholder={t('Forms.selectClient')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('Table.all')} {t('Sidebar.clients')}</SelectItem>
+                  {sortedClients.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           {selectedIds.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-primary text-primary animate-in fade-in zoom-in-95">
+                <Button variant="outline" className="border-primary text-primary animate-in fade-in zoom-in-95 shrink-0">
                   {t('Actions.bulkActions')} ({selectedIds.length})
                 </Button>
               </DropdownMenuTrigger>
@@ -216,11 +295,31 @@ export default function ServicesPage() {
                     className="border-white data-[state=checked]:bg-white data-[state=checked]:text-destructive"
                   />
                 </TableHead>
-                <TableHead className="text-destructive-foreground">{t('Forms.serviceNickname')}</TableHead>
-                <TableHead className="text-destructive-foreground">{t('Forms.monthlyFee')}</TableHead>
-                <TableHead className="text-destructive-foreground">{t('Forms.servicePlan')}</TableHead>
-                <TableHead className="text-destructive-foreground">{t('Pages.clients')}</TableHead>
-                <TableHead className="text-destructive-foreground">{t('Forms.poNumber')}</TableHead>
+                <TableHead className="text-destructive-foreground">
+                  <button onClick={() => handleSort('serviceNickname')} className="flex items-center hover:opacity-80">
+                    {t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}
+                  </button>
+                </TableHead>
+                <TableHead className="text-destructive-foreground">
+                  <button onClick={() => handleSort('monthlyFee')} className="flex items-center hover:opacity-80">
+                    {t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}
+                  </button>
+                </TableHead>
+                <TableHead className="text-destructive-foreground">
+                  <button onClick={() => handleSort('servicePlan')} className="flex items-center hover:opacity-80">
+                    {t('Forms.servicePlan')} {getSortIcon('servicePlan')}
+                  </button>
+                </TableHead>
+                <TableHead className="text-destructive-foreground">
+                  <button onClick={() => handleSort('client')} className="flex items-center hover:opacity-80">
+                    {t('Pages.clients')} {getSortIcon('client')}
+                  </button>
+                </TableHead>
+                <TableHead className="text-destructive-foreground">
+                  <button onClick={() => handleSort('poId')} className="flex items-center hover:opacity-80">
+                    {t('Forms.poNumber')} {getSortIcon('poId')}
+                  </button>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -362,7 +461,7 @@ export default function ServicesPage() {
               {t('Auth.cancelLabel')}
             </Button>
             <Button onClick={handleBulkUpdate} disabled={!bulkFee || isUpdating}>
-              {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              {isUpdating ? <Loader2 className="animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
               {t('Forms.save')}
             </Button>
           </DialogFooter>
