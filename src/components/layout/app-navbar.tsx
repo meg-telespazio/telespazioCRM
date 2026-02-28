@@ -130,7 +130,7 @@ export function AppNavbar() {
 
   return (
     <header className="sticky top-0 z-[100] w-full border-b bg-destructive text-destructive-foreground">
-      <div className="container flex h-16 items-center px-4 sm:px-6">
+      <div className="flex h-16 w-full items-center px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Image
@@ -185,7 +185,7 @@ export function AppNavbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4 md:ml-auto">
+        <div className="ml-auto flex items-center gap-4">
           <div className="hidden items-center gap-2 md:flex">
             <LanguageSwitcher className="text-white hover:bg-red-700" />
             <DropdownMenu>
