@@ -277,8 +277,8 @@ export default function ReportManualBuilderPage() {
           const [source, field] = sort.field.split('.');
           const valA = a[source]?.[field];
           const valB = b[source]?.[field];
-          if (valA < valB) return sort.direction === 'asc' ? -1 : 1;
-          if (valA > valB) return sort.direction === 'asc' ? 1 : -1;
+          if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+          if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
         }
         return 0;
       });
@@ -406,18 +406,18 @@ export default function ReportManualBuilderPage() {
 
                 <Card className="shadow-md">
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <CardHeader className="border-b bg-slate-50/50 p-0">
-                      <TabsList className="w-full justify-start rounded-none bg-transparent h-12">
-                        <TabsTrigger value="source" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2">
+                    <CardHeader className="border-b bg-slate-50/50 p-0 overflow-hidden">
+                      <TabsList className="w-full justify-start rounded-none bg-transparent h-12 overflow-x-auto flex-nowrap scrollbar-hide">
+                        <TabsTrigger value="source" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2 shrink-0">
                           <Database className="h-4 w-4" /> {t('Reports.dataSource')}
                         </TabsTrigger>
-                        <TabsTrigger value="fields" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2">
+                        <TabsTrigger value="fields" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2 shrink-0">
                           <Columns className="h-4 w-4" /> {t('Reports.step3')}
                         </TabsTrigger>
-                        <TabsTrigger value="aggregation" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2">
+                        <TabsTrigger value="aggregation" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2 shrink-0">
                           <Sigma className="h-4 w-4" /> Agregaciones
                         </TabsTrigger>
-                        <TabsTrigger value="filters" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2">
+                        <TabsTrigger value="filters" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2 shrink-0">
                           <FilterIcon className="h-4 w-4" /> Filtros
                         </TabsTrigger>
                       </TabsList>
