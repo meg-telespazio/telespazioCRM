@@ -1,4 +1,3 @@
-
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -180,6 +179,12 @@ export const translations = {
         contacts: 'Contacts',
         opportunities: 'Opportunities',
         productsAndServices: 'Products & Services',
+        contracts: 'Contracts',
+        purchaseOrders: 'Purchase Orders',
+        services: 'Services (Installations)',
+        equipment: 'Equipment Inventory',
+        activities: 'Activities',
+        locations: 'Locations',
         ps: 'Products & Services'
       },
       validation: {
@@ -757,6 +762,12 @@ export const translations = {
         contacts: 'Contactos',
         opportunities: 'Oportunidades',
         productsAndServices: 'Productos y Servicios',
+        contracts: 'Contratos',
+        purchaseOrders: 'Órdenes de Compra',
+        services: 'Servicios (Instalaciones)',
+        equipment: 'Inventario de Equipos',
+        activities: 'Actividades',
+        locations: 'Locaciones',
         ps: 'Productos y Servicios'
       },
       validation: {
@@ -804,7 +815,7 @@ export const translations = {
     },
     RenewalTerms: {
       '1 month': '1 mes',
-      '2 meses': '2 meses',
+      '2 months': '2 meses',
     },
     Currencies: {
       USD: 'USD',
@@ -992,7 +1003,7 @@ export const translations = {
       Won: 'Ganada',
       Lost: 'Perdida',
       Canceled: 'Cancelada',
-      Suspended: 'Suspended',
+      Suspended: 'Suspendida',
     },
     StagesAbbr: {
       Prospecting: 'Pros.',
