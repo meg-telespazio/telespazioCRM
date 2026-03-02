@@ -23,7 +23,7 @@ import { addContract, updateContract } from '@/lib/firestore/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { format, addMonths } from 'date-fns';
+import { format, addMonths, isValid } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { ArrowLeft, Calendar as CalendarIcon, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -158,9 +158,12 @@ export default function ContractFormPage() {
   const watchedAutoRenews = form.watch('autoRenews');
   const watchedHasSpecialClauses = form.watch('hasSpecialClauses');
 
+  // Cálculo automático de Fecha Fin
   useEffect(() => {
-    if (watchedStartDate && watchedDuration > 0) {
-      form.setValue('endDate', addMonths(new Date(watchedStartDate), watchedDuration));
+    const duration = Number(watchedDuration);
+    if (watchedStartDate && isValid(watchedStartDate) && !isNaN(duration) && duration > 0) {
+      const newEndDate = addMonths(new Date(watchedStartDate), duration);
+      form.setValue('endDate', newEndDate, { shouldValidate: true });
     }
   }, [watchedStartDate, watchedDuration, form]);
 
@@ -252,7 +255,7 @@ export default function ContractFormPage() {
                     <SelectContent>{contractStatuses.map(s => <SelectItem key={s} value={s}>{t(`ContractStatuses.${s}`)}</SelectItem>)}</SelectContent>
                   </Select><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="amount" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.amount')}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormLabel>{t('Contracts.amount')}</FormLabel><FormControl><Input type="number" {...field} placeholder={t('Forms.chargePlaceholder')} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="currency" render={({ field }) => (<FormItem>
                   <FormLabel>{t('Contracts.currency')}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -281,13 +284,25 @@ export default function ContractFormPage() {
                     <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setSignatureDateOpen(false)} onCancel={() => setSignatureDateOpen(false)} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
                   </PopoverContent></Popover><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.endDate')}</FormLabel><FormControl>
-                  <Input value={format(field.value, 'PPP', { locale: datePickerLocale })} readOnly disabled className="bg-muted" />
+                  <Input value={field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : ''} readOnly disabled className="bg-muted" />
                 </FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="durationMonths" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.durationMonths')}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="autoRenews" render={({ field }) => (<FormItem className="flex flex-row items-center justify-start gap-x-3 space-y-0 rounded-md border p-4 h-full">
-                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                  <FormLabel className="font-normal">{t('Contracts.autoRenews')}</FormLabel></FormItem>)} />
+                  <FormLabel>{t('Contracts.durationMonths')}</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      {...field} 
+                      onChange={(e) => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>)} />
+                <FormField control={form.control} name="autoRenews" render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-start gap-x-3 space-y-0 rounded-md border p-4 h-full">
+                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    <FormLabel className="font-normal">{t('Contracts.autoRenews')}</FormLabel>
+                  </FormItem>
+                )} />
                 {watchedAutoRenews && <FormField control={form.control} name="renewalTerm" render={({ field }) => (<FormItem>
                   <FormLabel>{t('Contracts.renewalTerm')}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -305,7 +320,7 @@ export default function ContractFormPage() {
                   <FormControl><Textarea {...field} rows={5} /></FormControl><FormMessage /></FormItem>)} />}
                  <FormField control={form.control} name="notes" render={({ field }) => (<FormItem>
                   <FormLabel>{t('Contracts.notes')}</FormLabel>
-                  <FormControl><Textarea {...field} rows={3} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormControl><Textarea {...field} rows={3} placeholder={t('Forms.notesPlaceholder')} /></FormControl><FormMessage /></FormItem>)} />
               </CardContent></Card>
               
               <AttachmentsManager disabled={false} />
