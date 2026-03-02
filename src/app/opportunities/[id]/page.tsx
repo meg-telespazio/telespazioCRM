@@ -212,8 +212,6 @@ export default function OpportunityFormPage() {
 
   const productsAndServicesQuery = useMemo(() => {
     if (!baseClientQuery) return null;
-    // Query all items and filter for active status on the client
-    // to avoid composite index requirements in Firestore.
     return query(collection(firestore, 'productsAndServices'), baseClientQuery);
   }, [firestore, baseClientQuery]);
 
@@ -352,7 +350,6 @@ export default function OpportunityFormPage() {
     ]);
 
   useEffect(() => {
-    // Round to 2 decimal places for consistent display
     const roundedFcv = parseFloat(totalFcv.toFixed(2));
     form.setValue('value', roundedFcv, { shouldValidate: true });
   }, [totalFcv, form]);
@@ -377,7 +374,7 @@ export default function OpportunityFormPage() {
             quantity: bundleItem.quantity,
             oneTimeCharge: fullItem.oneTimeCharge || 0,
             recurringCharge: fullItem.recurringCharge || 0,
-            discount: 0, // Bundles apply their own logic, start with 0 discount
+            discount: 0,
           });
         }
       });
@@ -393,7 +390,6 @@ export default function OpportunityFormPage() {
       });
     }
   
-    // Reset adder
     setAdderState({
       selectedCatalogItemId: '',
       quantity: 1,
@@ -642,7 +638,7 @@ export default function OpportunityFormPage() {
                         <FormControl>
                           <Input
                             type="number"
-                            placeholder="0.00"
+                            placeholder={t('Forms.chargePlaceholder')}
                             {...field}
                             readOnly
                             className="font-bold"
@@ -701,7 +697,7 @@ export default function OpportunityFormPage() {
                           <SelectContent>
                             {contractMonthsOptions.map((months) => (
                               <SelectItem key={months} value={String(months)}>
-                                {months} {t('Forms.contractMonths')}
+                                {months} {t('Months').toLowerCase()}
                               </SelectItem>
                             ))}
                           </SelectContent>
