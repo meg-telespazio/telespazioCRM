@@ -82,11 +82,38 @@ body {
   }
 }
 
-/* DatePicker Styles */
+/* Calendar Dropdown Styles for react-day-picker v9 */
 .rdp-dropdown {
-  @apply bg-background border rounded-md px-1 py-0.5 text-xs focus:ring-1 focus:ring-ring outline-none;
+  @apply appearance-none bg-transparent border-none font-medium cursor-pointer py-1 px-2 rounded-md hover:bg-accent focus:outline-none text-sm inline-flex items-center;
+}
+
+.rdp-dropdown_container {
+  @apply relative inline-flex items-center;
+}
+
+.rdp-dropdown_container::after {
+  content: "▾";
+  @apply absolute right-1 pointer-events-none text-[10px] text-muted-foreground;
+}
+
+.rdp-dropdown select {
+  @apply pr-4 bg-transparent border-none focus:ring-0 outline-none cursor-pointer;
 }
 
 .rdp-caption_dropdowns {
-  @apply flex items-center gap-1;
+  @apply flex items-center justify-center gap-1 font-semibold;
+}
+
+/* DatePicker Dropdown overrides */
+.rdp-dropdown_month, .rdp-dropdown_year {
+  @apply font-bold text-primary;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
