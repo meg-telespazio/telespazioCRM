@@ -20,15 +20,16 @@ import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
-const stageVariant: { [key in Opportunity['stage']]: "default" | "secondary" | "destructive" } = {
-  Prospecting: "secondary",
-  Proposal: "secondary",
-  Negotiation: "secondary",
-  Won: "default",
-  Lost: "destructive",
-  Canceled: "destructive",
-  Suspended: "secondary",
+const stageClasses: { [key in Opportunity['stage']]: string } = {
+  Prospecting: 'bg-yellow-400 text-black hover:bg-yellow-500 border-transparent',
+  Proposal: 'bg-[#000080] text-white hover:bg-[#000066] border-transparent',
+  Negotiation: 'bg-[#000080] text-white hover:bg-[#000066] border-transparent',
+  Won: 'bg-green-600 text-white hover:bg-green-700 border-transparent',
+  Lost: 'bg-red-600 text-white hover:bg-red-700 border-transparent',
+  Canceled: 'bg-gray-300 text-gray-900 hover:bg-gray-400 border-transparent',
+  Suspended: 'bg-gray-300 text-gray-900 hover:bg-gray-400 border-transparent',
 };
 
 type RecentOpportunitiesProps = {
@@ -79,7 +80,9 @@ export function RecentOpportunities({ opportunities, clients }: RecentOpportunit
                 {!isMobile && <TableCell>{getClientName(opp.clientId)}</TableCell>}
                 {!isMobile && <TableCell>${opp.value.toLocaleString()}</TableCell>}
                 <TableCell className="text-right">
-                  <Badge variant={stageVariant[opp.stage]} className="whitespace-nowrap">{t(isMobile ? `StagesAbbr.${opp.stage}` : `Stages.${opp.stage}`)}</Badge>
+                  <Badge className={cn('whitespace-nowrap', stageClasses[opp.stage])}>
+                    {t(isMobile ? `StagesAbbr.${opp.stage}` : `Stages.${opp.stage}`)}
+                  </Badge>
                 </TableCell>
               </TableRow>
             ))}
