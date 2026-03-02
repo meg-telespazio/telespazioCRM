@@ -81,3 +81,12 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* DatePicker Styles */
+.rdp-dropdown {
+  @apply bg-background border rounded-md px-1 py-0.5 text-xs focus:ring-1 focus:ring-ring outline-none;
+}
+
+.rdp-caption_dropdowns {
+  @apply flex items-center gap-1;
+}

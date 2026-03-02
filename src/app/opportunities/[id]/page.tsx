@@ -500,6 +500,11 @@ export default function OpportunityFormPage() {
     );
   }
 
+  const calendarRange = {
+    startMonth: new Date(2000, 0),
+    endMonth: new Date(2050, 11),
+  };
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader
@@ -762,6 +767,8 @@ export default function OpportunityFormPage() {
                               locale={datePickerLocale}
                               formatters={{ formatWeekdayName }}
                               disabled={isLocked}
+                              captionLayout="dropdown"
+                              {...calendarRange}
                             />
                           </PopoverContent>
                         </Popover>
@@ -815,6 +822,8 @@ export default function OpportunityFormPage() {
                               locale={datePickerLocale}
                               formatters={{ formatWeekdayName }}
                               disabled={isLocked}
+                              captionLayout="dropdown"
+                              {...calendarRange}
                             />
                           </PopoverContent>
                         </Popover>
@@ -868,6 +877,8 @@ export default function OpportunityFormPage() {
                               locale={datePickerLocale}
                               formatters={{ formatWeekdayName }}
                               disabled={isLocked}
+                              captionLayout="dropdown"
+                              {...calendarRange}
                             />
                           </PopoverContent>
                         </Popover>

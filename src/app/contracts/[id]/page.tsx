@@ -208,6 +208,12 @@ export default function ContractFormPage() {
   const currencyOptions: Contract['currency'][] = ['USD', 'EUR', 'ARS'];
   const renewalTerms: ContractRenewalTerm[] = ['1 month', '2 months'];
 
+  // Calendar range configuration
+  const calendarRange = {
+    startMonth: new Date(2000, 0),
+    endMonth: new Date(2050, 11),
+  };
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={isNew ? t('Pages.addContract') : t('Contracts.edit')} />
@@ -262,12 +268,16 @@ export default function ContractFormPage() {
                   <Button variant="outline" className={cn(!field.value && "text-muted-foreground")}>
                     {field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : <span>{t('Forms.pickDate')}</span>}
                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+                  </Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus captionLayout="dropdown" {...calendarRange} />
+                  </PopoverContent></Popover><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="signatureDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.signatureDate')}</FormLabel><Popover><PopoverTrigger asChild><FormControl>
                   <Button variant="outline" className={cn(!field.value && "text-muted-foreground")}>
                     {field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : <span>{t('Forms.pickDate')}</span>}
                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+                  </Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus captionLayout="dropdown" {...calendarRange} />
+                  </PopoverContent></Popover><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.endDate')}</FormLabel><FormControl>
                   <Input value={format(field.value, 'PPP', { locale: datePickerLocale })} readOnly disabled />
                 </FormControl><FormMessage /></FormItem>)} />
@@ -299,8 +309,8 @@ export default function ContractFormPage() {
               <AttachmentsManager disabled={false} />
 
               <div className="flex items-center justify-end gap-4 pt-4">
-                <Button type="button" variant="outline" onClick={() => router.back()}><ArrowLeft />{t('Auth.cancelLabel')}</Button>
-                <Button type="submit"><Save />{t('Contracts.save')}</Button>
+                <Button type="button" variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" />{t('Auth.cancelLabel')}</Button>
+                <Button type="submit"><Save className="mr-2 h-4 w-4" />{t('Contracts.save')}</Button>
               </div>
             </form>
           </Form>
