@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
@@ -44,6 +43,8 @@ export default function EquipmentFormPage() {
 
   const { user } = useUser();
   const firestore = useFirestore();
+
+  const [isInstallationDateOpen, setInstallationDateOpen] = useState(false);
 
   const docRef = useMemo(() => isNew ? null : doc(firestore, 'equipment', id), [firestore, id, isNew]);
   const { data: eqData, loading: eqLoading } = useDoc<Equipment>(docRef);
@@ -122,8 +123,8 @@ export default function EquipmentFormPage() {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="installationDate" render={({ field }) => (
                       <FormItem className="flex flex-col"><FormLabel>{t('Forms.installationDate')}</FormLabel>
-                      <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'P') : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
-                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover></FormItem>
+                      <Popover open={isInstallationDateOpen} onOpenChange={setInstallationDateOpen}><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'P') : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
+                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setInstallationDateOpen(false)} onCancel={() => setInstallationDateOpen(false)} initialFocus captionLayout="dropdown" startMonth={new Date(2000, 0)} endMonth={new Date(2050, 11)} /></PopoverContent></Popover></FormItem>
                     )} />
                   </div>
                   <div className="grid grid-cols-2 gap-4 border-t pt-4">

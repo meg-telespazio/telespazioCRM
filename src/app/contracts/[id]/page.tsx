@@ -101,6 +101,9 @@ export default function ContractFormPage() {
   const datePickerLocale = locale === 'es' ? es : enUS;
 
   const [mounted, setMounted] = useState(false);
+  const [isStartDateOpen, setStartDateOpen] = useState(false);
+  const [isSignatureDateOpen, setSignatureDateOpen] = useState(false);
+
   useEffect(() => { setMounted(true); }, []);
 
   const contractId = params?.id as string;
@@ -263,19 +266,19 @@ export default function ContractFormPage() {
               </CardContent></Card>
               
               <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.startDate')}</FormLabel><Popover><PopoverTrigger asChild><FormControl>
+                <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.startDate')}</FormLabel><Popover open={isStartDateOpen} onOpenChange={setStartDateOpen}><PopoverTrigger asChild><FormControl>
                   <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                     {field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : <span>{t('Forms.pickDate')}</span>}
                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                   </Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
+                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setStartDateOpen(false)} onCancel={() => setStartDateOpen(false)} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
                   </PopoverContent></Popover><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="signatureDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.signatureDate')}</FormLabel><Popover><PopoverTrigger asChild><FormControl>
+                <FormField control={form.control} name="signatureDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.signatureDate')}</FormLabel><Popover open={isSignatureDateOpen} onOpenChange={setSignatureDateOpen}><PopoverTrigger asChild><FormControl>
                   <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                     {field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : <span>{t('Forms.pickDate')}</span>}
                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                   </Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
+                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setSignatureDateOpen(false)} onCancel={() => setSignatureDateOpen(false)} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
                   </PopoverContent></Popover><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.endDate')}</FormLabel><FormControl>
                   <Input value={format(field.value, 'PPP', { locale: datePickerLocale })} readOnly disabled className="bg-muted" />

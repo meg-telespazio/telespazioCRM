@@ -10,19 +10,22 @@ import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { useI18n } from "@/firebase/client-provider"
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>
+export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  onAccept?: () => void;
+  onCancel?: () => void;
+}
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  onAccept,
+  onCancel,
   ...props
 }: CalendarProps) {
   const { locale } = useI18n()
   const dateLocale = locale === 'es' ? es : enUS
   
-  // Try to find the selected date for the header display
-  // Supports single date and assumes it's a Date object or can be converted
   const selectedDate = React.useMemo(() => {
     if (props.mode === "single" && props.selected instanceof Date) {
       return props.selected
@@ -41,10 +44,10 @@ function Calendar({
           <h2 className="text-3xl font-semibold mt-2 leading-tight">
             {selectedDate ? (
               <span className="capitalize">
-                {format(selectedDate, "EEE, MMM d", { locale: dateLocale })}
+                {format(selectedDate, "EEE, d MMM", { locale: dateLocale })}
               </span>
             ) : (
-              <span className="opacity-50">---, --- --</span>
+              <span className="opacity-50">---, -- ---</span>
             )}
           </h2>
         </div>
@@ -57,9 +60,9 @@ function Calendar({
         classNames={{
           months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
           month: "space-y-4 w-full",
-          month_caption: "flex justify-between items-center h-10 px-1 mb-4",
-          caption_label: "hidden", // We use dropdowns for month/year
-          nav: "flex items-center gap-1",
+          month_caption: "flex flex-col items-center gap-3 mb-4", // Stack dropdowns and nav
+          caption_label: "hidden", 
+          nav: "flex items-center justify-center gap-12 w-full order-last mt-1", // Arrows centered below dropdowns
           button_previous: cn(
             buttonVariants({ variant: "ghost" }),
             "h-8 w-8 p-0 opacity-60 hover:opacity-100 hover:bg-accent rounded-full"
@@ -84,7 +87,7 @@ function Calendar({
           disabled: "text-muted-foreground/20 pointer-events-none",
           range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
           hidden: "invisible",
-          dropdowns: "flex items-center gap-1 font-bold text-sm text-foreground/90",
+          dropdowns: "flex items-center justify-center gap-1 font-bold text-sm text-foreground/90 order-first",
           dropdown: "rdp-dropdown hover:bg-accent px-2 py-1 rounded-md transition-colors",
           dropdown_container: "relative inline-flex items-center",
           dropdown_month: "hover:text-primary transition-colors",
@@ -102,12 +105,13 @@ function Calendar({
       />
       
       {/* Footer section with Material style buttons */}
-      <div className="flex justify-end gap-1 px-4 pb-4">
+      <div className="flex justify-end gap-1 px-4 pb-4 border-t pt-2">
         <Button 
           variant="ghost" 
           size="sm" 
           className="text-primary font-bold hover:bg-primary/5 text-xs tracking-wide px-4 h-9"
           type="button"
+          onClick={onCancel}
         >
           {locale === 'es' ? 'CANCELAR' : 'CANCEL'}
         </Button>
@@ -116,6 +120,7 @@ function Calendar({
           size="sm" 
           className="text-primary font-bold hover:bg-primary/5 text-xs tracking-wide px-4 h-9"
           type="button"
+          onClick={onAccept}
         >
           OK
         </Button>

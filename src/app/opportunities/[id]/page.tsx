@@ -759,10 +759,9 @@ export default function OpportunityFormPage() {
                             <Calendar
                               mode="single"
                               selected={field.value}
-                              onSelect={(date) => {
-                                field.onChange(date);
-                                setRequestDatePickerOpen(false);
-                              }}
+                              onSelect={field.onChange}
+                              onAccept={() => setRequestDatePickerOpen(false)}
+                              onCancel={() => setRequestDatePickerOpen(false)}
                               initialFocus
                               locale={datePickerLocale}
                               formatters={{ formatWeekdayName }}
@@ -814,10 +813,9 @@ export default function OpportunityFormPage() {
                             <Calendar
                               mode="single"
                               selected={field.value}
-                              onSelect={(date) => {
-                                field.onChange(date);
-                                setOfferDatePickerOpen(false);
-                              }}
+                              onSelect={field.onChange}
+                              onAccept={() => setOfferDatePickerOpen(false)}
+                              onCancel={() => setOfferDatePickerOpen(false)}
                               initialFocus
                               locale={datePickerLocale}
                               formatters={{ formatWeekdayName }}
@@ -869,10 +867,9 @@ export default function OpportunityFormPage() {
                             <Calendar
                               mode="single"
                               selected={field.value}
-                              onSelect={(date) => {
-                                field.onChange(date);
-                                setCloseDatePickerOpen(false);
-                              }}
+                              onSelect={field.onChange}
+                              onAccept={() => setCloseDatePickerOpen(false)}
+                              onCancel={() => setCloseDatePickerOpen(false)}
                               initialFocus
                               locale={datePickerLocale}
                               formatters={{ formatWeekdayName }}

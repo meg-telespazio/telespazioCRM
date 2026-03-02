@@ -47,6 +47,8 @@ export default function POFormPage() {
   const contractIdFromQuery = searchParams.get('contractId');
 
   const [mounted, setMounted] = useState(false);
+  const [isEmissionDateOpen, setEmissionDateOpen] = useState(false);
+
   useEffect(() => { setMounted(true); }, []);
 
   const { user } = useUser();
@@ -131,8 +133,8 @@ export default function POFormPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="emissionDate" render={({ field }) => (
                       <FormItem className="flex flex-col"><FormLabel>{t('Forms.emissionDate')}</FormLabel>
-                      <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'P') : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
-                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover></FormItem>
+                      <Popover open={isEmissionDateOpen} onOpenChange={setEmissionDateOpen}><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'P') : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
+                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setEmissionDateOpen(false)} onCancel={() => setEmissionDateOpen(false)} initialFocus captionLayout="dropdown" startMonth={new Date(2000, 0)} endMonth={new Date(2050, 11)} /></PopoverContent></Popover></FormItem>
                     )} />
                     <FormField control={form.control} name="buyerId" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.buyer')}</FormLabel>
