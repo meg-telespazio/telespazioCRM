@@ -84,7 +84,7 @@ body {
 
 /* Calendar Dropdown Styles for react-day-picker v9 */
 .rdp-dropdown {
-  @apply appearance-none bg-transparent border-none font-medium cursor-pointer py-1 px-2 rounded-md hover:bg-accent focus:outline-none text-sm inline-flex items-center;
+  @apply appearance-none bg-transparent border-none font-bold cursor-pointer py-1 px-2 rounded-md hover:bg-accent focus:outline-none text-sm inline-flex items-center;
 }
 
 .rdp-dropdown_container {
@@ -93,20 +93,20 @@ body {
 
 .rdp-dropdown_container::after {
   content: "▾";
-  @apply absolute right-1 pointer-events-none text-[10px] text-muted-foreground;
+  @apply absolute right-1 pointer-events-none text-[10px] text-muted-foreground opacity-50;
 }
 
 .rdp-dropdown select {
-  @apply pr-4 bg-transparent border-none focus:ring-0 outline-none cursor-pointer;
+  @apply pr-5 bg-transparent border-none focus:ring-0 outline-none cursor-pointer text-foreground appearance-none;
 }
 
 .rdp-caption_dropdowns {
-  @apply flex items-center justify-center gap-1 font-semibold;
+  @apply flex items-center justify-start gap-1 font-bold;
 }
 
 /* DatePicker Dropdown overrides */
 .rdp-dropdown_month, .rdp-dropdown_year {
-  @apply font-bold text-primary;
+  @apply font-bold text-foreground hover:text-primary transition-colors;
 }
 
 /* Scrollbar hide utility */
