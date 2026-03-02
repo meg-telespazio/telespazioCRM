@@ -229,7 +229,7 @@ export default function ClientFormPage() {
         await addClient(firestore, user.uid, dataToSave as any);
         toast({
           variant: 'success',
-          title: t('Forms.saveClient'),
+          title: t('Actions.saveSuccess'),
           description: `Client ${values.name} has been created.`,
         });
       } else {
@@ -237,7 +237,7 @@ export default function ClientFormPage() {
         await updateClient(firestore, clientId, updateData);
         toast({
           variant: 'success',
-          title: t('Forms.saveClient'),
+          title: t('Actions.saveSuccess'),
           description: `Client ${values.name} has been updated.`,
         });
       }

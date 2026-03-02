@@ -178,7 +178,6 @@ export default function ProductServiceFormPage() {
   async function onSubmit(values: ItemFormData) {
     if (!user) return;
     setIsSaving(true);
-    toast({ title: t('PS.saveItem') });
     
     let dataToSave: Partial<ItemFormData> = {
       ...values,
@@ -188,25 +187,26 @@ export default function ProductServiceFormPage() {
     if (values.type !== 'bundle') {
         dataToSave.bundleItems = [];
     } else {
-        delete dataToSave.oneTimeCharge;
-        delete dataToSave.recurringCharge;
-        delete dataToSave.unitOfMeasure;
-        delete dataToSave.currency;
+        delete (dataToSave as any).oneTimeCharge;
+        delete (dataToSave as any).recurringCharge;
+        delete (dataToSave as any).unitOfMeasure;
+        delete (dataToSave as any).currency;
     }
 
     try {
       if (isNew) {
         await addProductOrService(firestore, user.uid, dataToSave as any);
+        toast({ variant: 'success', title: t('PS.saveSuccess') });
       } else {
         await updateProductOrService(firestore, itemId, dataToSave);
+        toast({ variant: 'success', title: t('PS.saveSuccess') });
       }
-      toast({ variant: 'success', title: 'Item guardado exitosamente' });
       router.push('/products-and-services');
     } catch (error: any) {
       console.error('Failed to save item', error);
       toast({
         variant: 'destructive',
-        title: 'Error al guardar',
+        title: t('Actions.saveErrorGeneric'),
         description: error.message,
       });
     } finally {
@@ -329,14 +329,14 @@ export default function ProductServiceFormPage() {
                         <FormField control={form.control} name="oneTimeCharge" render={({ field }) => (
                         <FormItem>
                             <FormLabel>{t('PS.oneTimeCharge')}</FormLabel>
-                            <FormControl><Input type="number" placeholder={t('PS.chargePlaceholder')} {...field} /></FormControl>
+                            <FormControl><Input type="number" placeholder={t('Forms.chargePlaceholder')} {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                         )} />
                         <FormField control={form.control} name="recurringCharge" render={({ field }) => (
                         <FormItem>
                             <FormLabel>{t('PS.recurringCharge')}</FormLabel>
-                            <FormControl><Input type="number" placeholder={t('PS.chargePlaceholder')} {...field} /></FormControl>
+                            <FormControl><Input type="number" placeholder={t('Forms.chargePlaceholder')} {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                         )} />

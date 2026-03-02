@@ -71,6 +71,7 @@ import {
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { AttachmentsManager } from '@/components/opportunities/attachments-manager';
+import { useToast } from '@/hooks/use-toast';
 
 const getFormSchema = (t: (key: string) => string) => {
   const lineItemSchema = z.object({
@@ -165,6 +166,7 @@ export default function OpportunityFormPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const { t, locale } = useI18n();
+  const { toast } = useToast();
   const datePickerLocale = locale === 'es' ? es : enUS;
 
   const [isRequestDatePickerOpen, setRequestDatePickerOpen] = useState(false);
@@ -286,8 +288,6 @@ export default function OpportunityFormPage() {
   const watchedApplyToNrc = form.watch('applyDiscountToNrc', false);
   const watchedApplyToMrc = form.watch('applyDiscountToMrc', false);
 
-  // El registro se bloquea solo si ya estaba guardado en un estado terminal.
-  // Esto permite al usuario cambiar el estado a "Cancelado" y cargar el motivo antes de grabar.
   const isLocked = useMemo(() => {
     if (isNew || !opportunityData) return false;
     return ['Won', 'Lost', 'Canceled', 'Suspended'].includes(opportunityData.stage);
@@ -450,12 +450,15 @@ export default function OpportunityFormPage() {
     try {
       if (isNew) {
         await addOpportunity(firestore, user.uid, dataToSave as any);
+        toast({ variant: 'success', title: t('Actions.saveSuccess') });
       } else {
         await updateOpportunity(firestore, opportunityId, dataToSave);
+        toast({ variant: 'success', title: t('Actions.saveSuccess') });
       }
       router.push('/opportunities');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save opportunity', error);
+      toast({ variant: 'destructive', title: t('Actions.saveErrorGeneric'), description: error.message });
     }
   }
 
@@ -974,8 +977,7 @@ export default function OpportunityFormPage() {
                           <FormMessage />
                         </FormItem>
                       )}
-                    />
-                  </CardContent>
+                    </CardContent>
                 </Card>
               )}
               
