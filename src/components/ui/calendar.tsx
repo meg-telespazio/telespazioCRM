@@ -7,7 +7,7 @@ import { format } from "date-fns"
 import { es, enUS } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { useI18n } from "@/firebase/client-provider"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
