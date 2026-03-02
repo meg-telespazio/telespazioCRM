@@ -976,6 +976,7 @@ export default function OpportunityFormPage() {
                       )}
                     />
                   </CardContent>
+                </Card>
               )}
               
               <Card>
@@ -1186,7 +1187,7 @@ export default function OpportunityFormPage() {
                   <Separator />
 
                   <div className="flex justify-end">
-                    <div className="w-full max-w-sm space-y-2">
+                    <div className="w-full max-sm:w-full max-w-sm space-y-2">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">
                           {t('Table.subtotal')} {t('Table.nrc')}
