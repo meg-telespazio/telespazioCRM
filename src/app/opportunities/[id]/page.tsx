@@ -286,8 +286,12 @@ export default function OpportunityFormPage() {
   const watchedApplyToNrc = form.watch('applyDiscountToNrc', false);
   const watchedApplyToMrc = form.watch('applyDiscountToMrc', false);
 
-  const isLocked =
-    !isNew && ['Won', 'Lost', 'Canceled', 'Suspended'].includes(watchedStage);
+  // El registro se bloquea solo si ya estaba guardado en un estado terminal.
+  // Esto permite al usuario cambiar el estado a "Cancelado" y cargar el motivo antes de grabar.
+  const isLocked = useMemo(() => {
+    if (isNew || !opportunityData) return false;
+    return ['Won', 'Lost', 'Canceled', 'Suspended'].includes(opportunityData.stage);
+  }, [isNew, opportunityData]);
 
   const selectedCatalogItem = useMemo(() => {
     if (!adderState.selectedCatalogItemId || !catalogItems) return null;
@@ -972,7 +976,6 @@ export default function OpportunityFormPage() {
                       )}
                     />
                   </CardContent>
-                </Card>
               )}
               
               <Card>
