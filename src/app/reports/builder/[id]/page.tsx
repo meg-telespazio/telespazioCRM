@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -41,7 +40,8 @@ import {
   ArrowUpDown,
   Plus,
   Trash2,
-  ChevronRight
+  ChevronRight,
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -234,7 +234,7 @@ export default function ReportManualBuilderPage() {
       return { accessorKey: fKey, header: `${source}.${field}` };
     });
 
-    if (reportConfig.aggregations?.length && reportConfig.groupBy) {
+    if (reportConfig.aggregations?.length && reportConfig.groupBy && reportConfig.groupBy !== 'none') {
       const groups = new Map<string, any>();
       const [groupSource, groupField] = reportConfig.groupBy.split('.');
 
@@ -265,7 +265,7 @@ export default function ReportManualBuilderPage() {
       });
 
       finalColumns = [
-        { accessorKey: reportConfig.groupBy, header: `Agrupado por: ${reportConfig.groupBy}` },
+        { accessorKey: reportConfig.groupBy, header: t('Reports.groupBy') + ' ' + reportConfig.groupBy },
         ...reportConfig.aggregations.map(agg => ({
           accessorKey: `${agg.field}_${agg.type}`,
           header: `${agg.type.toUpperCase()}(${agg.field})`
@@ -277,15 +277,15 @@ export default function ReportManualBuilderPage() {
           const [source, field] = sort.field.split('.');
           const valA = a[source]?.[field];
           const valB = b[source]?.[field];
-          if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-          if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+          if (valA < valB) return sort.direction === 'asc' ? -1 : 1;
+          if (valA > valB) return sort.direction === 'asc' ? 1 : -1;
         }
         return 0;
       });
     }
 
     setReportResult({ data: finalData, columns: finalColumns });
-  }, [collectionsMap]);
+  }, [collectionsMap, t]);
 
   // Run report when config is set or changed
   useEffect(() => {
@@ -390,7 +390,7 @@ export default function ReportManualBuilderPage() {
                     <FormField control={form.control} name="name" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Reports.reportName')}</FormLabel>
-                        <FormControl><Input {...field} placeholder="Ej: Resumen de Abonos Mensuales" /></FormControl>
+                        <FormControl><Input {...field} placeholder={t('Reports.reportNamePlaceholder')} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -415,10 +415,10 @@ export default function ReportManualBuilderPage() {
                           <Columns className="h-4 w-4" /> {t('Reports.step3')}
                         </TabsTrigger>
                         <TabsTrigger value="aggregation" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2 shrink-0">
-                          <Sigma className="h-4 w-4" /> Agregaciones
+                          <Sigma className="h-4 w-4" /> {t('Reports.aggregation')}
                         </TabsTrigger>
                         <TabsTrigger value="filters" className="data-[state=active]:bg-background rounded-none border-b-2 data-[state=active]:border-primary px-6 h-full flex gap-2 shrink-0">
-                          <FilterIcon className="h-4 w-4" /> Filtros
+                          <FilterIcon className="h-4 w-4" /> {t('Reports.filters')}
                         </TabsTrigger>
                       </TabsList>
                     </CardHeader>
@@ -453,7 +453,7 @@ export default function ReportManualBuilderPage() {
                           <div>
                             <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
                               <Badge variant="outline">{t(`Reports.dataSources.${config.primaryDataSource}`)}</Badge>
-                              Tabla Principal
+                              {t('Reports.primaryTable')}
                             </h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {SCHEMA[config.primaryDataSource as keyof typeof SCHEMA].map(field => {
@@ -477,8 +477,7 @@ export default function ReportManualBuilderPage() {
                           {/* Campos de Tablas Relacionadas (Joins) */}
                           <div>
                             <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
-                              <Badge variant="secondary">Relaciones</Badge>
-                              Tablas Vinculadas
+                              <Badge variant="secondary">{t('Reports.relatedTables')}</Badge>
                             </h4>
                             <div className="space-y-4">
                               {relatedOptions.map(source => (
@@ -509,25 +508,25 @@ export default function ReportManualBuilderPage() {
                       {/* STEP 4: AGGREGATION */}
                       <TabsContent value="aggregation" className="mt-0 space-y-6">
                         <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex gap-3">
-                          <Sigma className="h-5 w-5 text-amber-600" />
+                          <Info className="h-5 w-5 text-amber-600" />
                           <div className="text-sm">
-                            <p className="font-bold text-amber-900">¿Cómo funcionan los totales?</p>
-                            <p className="text-amber-800">Selecciona un campo para agrupar (ej: Cliente) y luego añade cálculos para otros campos (ej: Suma de Abono).</p>
+                            <p className="font-bold text-amber-900">{t('Reports.howTotallingWorks')}</p>
+                            <p className="text-amber-800">{t('Reports.howTotallingWorksDesc')}</p>
                           </div>
                         </div>
 
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <FormLabel>Agrupar por:</FormLabel>
+                            <FormLabel>{t('Reports.groupBy')}</FormLabel>
                             <Select 
-                              value={config.groupBy || ''} 
+                              value={config.groupBy || 'none'} 
                               onValueChange={(v) => setConfig(p => ({...p, groupBy: v}))}
                             >
                               <SelectTrigger className="bg-white">
-                                <SelectValue placeholder="Sin agrupamiento (Detalle completo)" />
+                                <SelectValue placeholder={t('Reports.noGrouping')} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">Sin agrupamiento</SelectItem>
+                                <SelectItem value="none">{t('Reports.noGrouping')}</SelectItem>
                                 {config.fields.map(f => (
                                   <SelectItem key={f} value={f}>{f}</SelectItem>
                                 ))}
@@ -537,9 +536,9 @@ export default function ReportManualBuilderPage() {
 
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <FormLabel>Cálculos (Totales):</FormLabel>
+                              <FormLabel>{t('Reports.calculations')}</FormLabel>
                               <Button type="button" variant="outline" size="sm" onClick={addAggregation}>
-                                <Plus className="h-4 w-4 mr-2" /> Añadir Cálculo
+                                <Plus className="h-4 w-4 mr-2" /> {t('Reports.addCalculation')}
                               </Button>
                             </div>
                             
@@ -557,9 +556,9 @@ export default function ReportManualBuilderPage() {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="sum">SUMA</SelectItem>
-                                    <SelectItem value="avg">PROMEDIO</SelectItem>
-                                    <SelectItem value="count">CONTAR</SelectItem>
+                                    <SelectItem value="sum">SUM</SelectItem>
+                                    <SelectItem value="avg">AVG</SelectItem>
+                                    <SelectItem value="count">COUNT</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 
@@ -593,9 +592,9 @@ export default function ReportManualBuilderPage() {
                       {/* STEP 5: FILTERS */}
                       <TabsContent value="filters" className="mt-0 space-y-4">
                         <div className="flex items-center justify-between">
-                          <FormLabel>Filtros aplicados:</FormLabel>
+                          <FormLabel>{t('Reports.appliedFilters')}</FormLabel>
                           <Button type="button" variant="outline" size="sm" onClick={addFilter}>
-                            <Plus className="h-4 w-4 mr-2" /> Añadir Filtro
+                            <Plus className="h-4 w-4 mr-2" /> {t('Reports.addFilter')}
                           </Button>
                         </div>
 
@@ -632,10 +631,10 @@ export default function ReportManualBuilderPage() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="contains">Contiene</SelectItem>
-                                  <SelectItem value="equals">Es igual a</SelectItem>
-                                  <SelectItem value="gt">Mayor que</SelectItem>
-                                  <SelectItem value="lt">Menor que</SelectItem>
+                                  <SelectItem value="contains">CONTAINS</SelectItem>
+                                  <SelectItem value="equals">EQUALS</SelectItem>
+                                  <SelectItem value="gt">GREATER THAN</SelectItem>
+                                  <SelectItem value="lt">LESS THAN</SelectItem>
                                 </SelectContent>
                               </Select>
 
@@ -647,7 +646,7 @@ export default function ReportManualBuilderPage() {
                                   setConfig(p => ({...p, filters: newFilters}));
                                 }}
                                 className="bg-white"
-                                placeholder="Valor..."
+                                placeholder={t('Reports.selectValue')}
                               />
 
                               <Button type="button" variant="ghost" size="icon" className="justify-self-end" onClick={() => removeFilter(idx)}>
@@ -657,7 +656,7 @@ export default function ReportManualBuilderPage() {
                           ))}
                           {config.filters.length === 0 && (
                             <div className="text-center py-8 text-muted-foreground italic border-2 border-dashed rounded-lg">
-                              Sin filtros. Se mostrarán todos los registros.
+                              {t('Reports.noFiltersDesc')}
                             </div>
                           )}
                         </div>
@@ -671,24 +670,24 @@ export default function ReportManualBuilderPage() {
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">Configuración</CardTitle>
+                    <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">{t('Reports.configSummary')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="text-xs space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Fuente:</span>
-                        <span className="font-bold text-primary">{config.primaryDataSource}</span>
+                        <span className="text-muted-foreground">{t('Reports.source')}</span>
+                        <span className="font-bold text-primary">{t(`Reports.dataSources.${config.primaryDataSource}`)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Columnas:</span>
+                        <span className="text-muted-foreground">{t('Reports.columns')}</span>
                         <span className="font-bold">{config.fields.length}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Filtros:</span>
+                        <span className="text-muted-foreground">{t('Reports.filters')}:</span>
                         <span className="font-bold">{config.filters.length}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Agregaciones:</span>
+                        <span className="text-muted-foreground">{t('Reports.aggregations')}</span>
                         <span className="font-bold">{(config.aggregations || []).length}</span>
                       </div>
                     </div>
@@ -697,15 +696,15 @@ export default function ReportManualBuilderPage() {
                       className="w-full" 
                       onClick={() => runReport(config)}
                     >
-                      Actualizar Vista Previa
+                      {t('Reports.updatePreview')}
                     </Button>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-primary/5 border-primary/20">
                   <CardContent className="pt-6 text-xs text-muted-foreground space-y-2">
-                    <p className="font-bold text-primary italic">💡 Consejo Profesional:</p>
-                    <p>Si quieres ver el total facturado por cliente, selecciona <b>Servicios</b> como fuente, añade el campo <b>clients.name</b> y usa una agregación <b>SUMA</b> sobre <b>services.monthlyFee</b> agrupando por el nombre del cliente.</p>
+                    <p className="font-bold text-primary italic">{t('Reports.proTip')}</p>
+                    <p>{t('Reports.proTipText')}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -716,9 +715,9 @@ export default function ReportManualBuilderPage() {
           {reportResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 py-8">
               <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="text-lg font-bold">Vista Previa ({reportResult.data.length} registros)</h3>
+                <h3 className="text-lg font-bold">{t('Reports.previewTitle', { count: reportResult.data.length })}</h3>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold uppercase border border-green-200">
-                  Ejecutando en tiempo real
+                  {t('Reports.realTime')}
                 </span>
               </div>
               <ReportResultTable columns={reportResult.columns} data={reportResult.data} />

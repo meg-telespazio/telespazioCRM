@@ -14,8 +14,6 @@ import type {
   Client,
   Contact,
   ProductOrService,
-  OpportunityLineItem,
-  OpportunityAttachment,
 } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -977,7 +975,8 @@ export default function OpportunityFormPage() {
                           <FormMessage />
                         </FormItem>
                       )}
-                    </CardContent>
+                    />
+                  </CardContent>
                 </Card>
               )}
               
