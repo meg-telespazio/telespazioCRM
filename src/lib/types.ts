@@ -154,6 +154,18 @@ export type Contract = {
   createdAt: Date;
 };
 
+export type AddendumType = 'Extension' | 'Price Change' | 'Clause Modification' | 'Service Change' | 'Other';
+
+export type Addendum = {
+  id: string;
+  contractId: string;
+  date: Date;
+  type: AddendumType;
+  description: string;
+  createdBy: string;
+  createdAt: Date;
+};
+
 export type PurchaseOrderStatus = 'pending' | 'approved' | 'canceled' | 'received';
 
 export type PurchaseOrder = {

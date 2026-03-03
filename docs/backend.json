@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -277,6 +278,20 @@
         "status": { "type": "string", "enum": ["activo", "vencido", "renovado", "renovado automatico"] }
       }
     },
+    "Addendum": {
+      "title": "Addendum",
+      "description": "Modifications or extensions to an existing contract.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["Extension", "Price Change", "Clause Modification", "Service Change", "Other"] },
+        "description": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "type", "description", "createdBy", "createdAt"]
+    },
     "PurchaseOrder": {
       "title": "Purchase Order",
       "description": "Represents a purchase order linked to a contract.",
@@ -345,6 +360,7 @@
     "/clients/{clientId}": { "schema": { "$ref": "#/entities/Client" }, "description": "..." },
     "/contacts/{contactId}": { "schema": { "$ref": "#/entities/Contact" }, "description": "..." },
     "/contracts/{contractId}": { "schema": { "$ref": "#/entities/Contract" }, "description": "..." },
+    "/contracts/{contractId}/addendums/{addendumId}": { "schema": { "$ref": "#/entities/Addendum" }, "description": "..." },
     "/purchaseOrders/{poId}": { "schema": { "$ref": "#/entities/PurchaseOrder" }, "description": "..." },
     "/services/{serviceId}": { "schema": { "$ref": "#/entities/Service" }, "description": "..." },
     "/equipment/{equipmentId}": { "schema": { "$ref": "#/entities/Equipment" }, "description": "..." }

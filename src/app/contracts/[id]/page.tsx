@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -56,6 +57,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { AttachmentsManager } from '@/components/contracts/attachments-manager';
+import { AddendumManager } from '@/components/contracts/addendum-manager';
 
 const getFormSchema = (t: (key: string) => string) => {
   return z.object({
@@ -223,7 +225,7 @@ export default function ContractFormPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader title={isNew ? t('Pages.addContract') : t('Contracts.edit')} />
       <main className="flex-1 p-4 sm:p-6">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-4xl space-y-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -323,6 +325,10 @@ export default function ContractFormPage() {
                   <FormControl><Textarea {...field} rows={3} placeholder={t('Forms.notesPlaceholder')} /></FormControl><FormMessage /></FormItem>)} />
               </CardContent></Card>
               
+              {!isNew && (
+                <AddendumManager contractId={contractId} disabled={false} />
+              )}
+
               <AttachmentsManager disabled={false} />
 
               <div className="flex items-center justify-end gap-4 pt-4">

@@ -1,3 +1,4 @@
+
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -262,6 +263,19 @@ export const translations = {
       attachments: 'Attachments',
       save: 'Save Contract',
       noContracts: 'No contracts found.',
+      addendums: 'Addendums & Modifications',
+      addAddendum: 'Add Addendum',
+      addendumType: 'Addendum Type',
+      addendumDate: 'Date',
+      addendumDescription: 'Description of changes',
+      noAddendums: 'No addendums registered for this contract.',
+    },
+    AddendumTypes: {
+      Extension: 'Contract Extension',
+      PriceChange: 'Price Adjustment',
+      ClauseModification: 'Clause Modification',
+      ServiceChange: 'Service Portfolio Change',
+      Other: 'Other Modification',
     },
     ContractStatuses: {
       activo: 'Active',
@@ -939,6 +953,19 @@ export const translations = {
       attachments: 'Archivos Adjuntos',
       save: 'Guardar Contrato',
       noContracts: 'No se encontraron contratos.',
+      addendums: 'Adendas y Modificaciones',
+      addAddendum: 'Añadir Adenda',
+      addendumType: 'Tipo de Adenda',
+      addendumDate: 'Fecha',
+      addendumDescription: 'Descripción de los cambios',
+      noAddendums: 'No hay adendas registradas para este contrato.',
+    },
+    AddendumTypes: {
+      Extension: 'Prórroga de Contrato',
+      PriceChange: 'Ajuste de Precios',
+      ClauseModification: 'Modificación de Cláusula',
+      ServiceChange: 'Cambio de Porfolio de Servicios',
+      Other: 'Otra Modificación',
     },
     ContractStatuses: {
       activo: 'Activo',
@@ -1028,7 +1055,7 @@ export const translations = {
       customerName: 'Nombre del Cliente',
       customerAccountNumber: 'Nro de Cuenta Cliente',
       servicePlan: 'Plan de Servicio',
-      serviceAllocationGb: 'GB Asignados',
+      serviceAllocationGb: 'Allocation (GB)',
       topUp: 'Top Up',
       monthlyFee: 'Abono Mensual',
       pickDate: 'Elige una fecha',
@@ -1146,7 +1173,7 @@ export const translations = {
       Won: 'Ganada',
       Lost: 'Perdida',
       Canceled: 'Cancelada',
-      Suspended: 'Suspendida',
+      Suspended: 'Suspended',
     },
     StagesAbbr: {
       Prospecting: 'Pros.',
