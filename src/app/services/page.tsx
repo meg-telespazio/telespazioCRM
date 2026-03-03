@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -14,8 +13,6 @@ import {
   Search,
   Building,
   ShoppingCart,
-  DollarSign,
-  CheckCircle2,
   Loader2,
   ArrowUpDown,
   ArrowUp,
@@ -25,6 +22,7 @@ import {
   Edit,
   Trash2,
   LayoutGrid,
+  DollarSign,
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -74,6 +72,8 @@ type SortConfig = {
   key: string;
   direction: 'asc' | 'desc' | null;
 };
+
+type BulkMode = 'price' | 'plan' | null;
 
 function InlineFeeEdit({ 
   service, 
@@ -133,7 +133,7 @@ export default function ServicesPage() {
   const { toast } = useToast();
   
   const [isImporterOpen, setImporterOpen] = useState(false);
-  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState<BulkMode>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'serviceNickname', direction: 'asc' });
@@ -251,15 +251,15 @@ export default function ServicesPage() {
   };
 
   const handleBulkUpdate = async () => {
-    if (!selectedIds.length || (!bulkFee && !bulkPlan)) return;
+    if (!selectedIds.length || (bulkMode === 'price' && !bulkFee) || (bulkMode === 'plan' && !bulkPlan)) return;
     setIsBulkUpdating(true);
     
     const updates: Partial<Service> = {};
-    if (bulkFee) {
+    if (bulkMode === 'price' && bulkFee) {
       updates.monthlyFee = parseFloat(bulkFee);
       updates.currency = bulkCurrency;
     }
-    if (bulkPlan) {
+    if (bulkMode === 'plan' && bulkPlan) {
       updates.servicePlan = bulkPlan;
     }
     
@@ -270,7 +270,7 @@ export default function ServicesPage() {
       setSelectedIds([]);
       setBulkFee('');
       setBulkPlan('');
-      setBulkDialogOpen(false);
+      setBulkMode(null);
       
       toast({
         variant: 'success',
@@ -367,9 +367,13 @@ export default function ServicesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setBulkDialogOpen(true)} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => setBulkMode('price')} className="cursor-pointer">
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  <span>{t('Actions.bulkUpdatePrice')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setBulkMode('plan')} className="cursor-pointer">
                   <LayoutGrid className="mr-2 h-4 w-4" />
-                  <span>{t('Actions.bulkUpdatePrices')}</span>
+                  <span>{t('Actions.bulkUpdatePlan')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -527,69 +531,80 @@ export default function ServicesPage() {
       </main>
 
       <Dialog 
-        open={isBulkDialogOpen} 
+        open={bulkMode !== null} 
         onOpenChange={(open) => {
-          if (!isBulkUpdating) setBulkDialogOpen(open);
+          if (!isBulkUpdating && !open) setBulkMode(null);
         }}
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{t('Services.bulkUpdateServices')}</DialogTitle>
+            <DialogTitle>
+              {bulkMode === 'price' ? t('Actions.bulkUpdatePrice') : t('Actions.bulkUpdatePlan')}
+            </DialogTitle>
             <DialogDescription>
               {t('Services.bulkUpdateServicesDesc', { count: selectedIds.length })}
             </DialogDescription>
           </DialogHeader>
+          
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="plan" className="text-right text-sm font-medium">
-                {t('Forms.servicePlan')}
-              </label>
-              <Input
-                id="plan"
-                className="col-span-3"
-                value={bulkPlan}
-                onChange={(e) => setBulkPlan(e.target.value)}
-                placeholder={t('Forms.servicePlan')}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="currency" className="text-right text-sm font-medium">
-                {t('Forms.currency')}
-              </label>
-              <div className="col-span-3">
-                <Select value={bulkCurrency} onValueChange={(v: any) => setBulkCurrency(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="ARS">ARS</SelectItem>
-                  </SelectContent>
-                </Select>
+            {bulkMode === 'plan' && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="plan" className="text-right text-sm font-medium">
+                  {t('Forms.servicePlan')}
+                </label>
+                <Input
+                  id="plan"
+                  className="col-span-3"
+                  value={bulkPlan}
+                  onChange={(e) => setBulkPlan(e.target.value)}
+                  placeholder={t('Forms.servicePlan')}
+                />
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="fee" className="text-right text-sm font-medium">
-                {t('Forms.monthlyFee')}
-              </label>
-              <Input
-                id="fee"
-                type="number"
-                step="0.01"
-                className="col-span-3"
-                value={bulkFee}
-                onChange={(e) => setBulkFee(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
+            )}
+
+            {bulkMode === 'price' && (
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="currency" className="text-right text-sm font-medium">
+                    {t('Forms.currency')}
+                  </label>
+                  <div className="col-span-3">
+                    <Select value={bulkCurrency} onValueChange={(v: any) => setBulkCurrency(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="ARS">ARS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="fee" className="text-right text-sm font-medium">
+                    {t('Forms.monthlyFee')}
+                  </label>
+                  <Input
+                    id="fee"
+                    type="number"
+                    step="0.01"
+                    className="col-span-3"
+                    value={bulkFee}
+                    onChange={(e) => setBulkFee(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+              </>
+            )}
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkDialogOpen(false)} disabled={isBulkUpdating}>
+            <Button variant="outline" onClick={() => setBulkMode(null)} disabled={isBulkUpdating}>
               {t('Auth.cancelLabel')}
             </Button>
-            <Button onClick={handleBulkUpdate} disabled={(!bulkFee && !bulkPlan) || isBulkUpdating}>
-              {isBulkUpdating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+            <Button onClick={handleBulkUpdate} disabled={isBulkUpdating || (bulkMode === 'price' && !bulkFee) || (bulkMode === 'plan' && !bulkPlan)}>
+              {isBulkUpdating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Zap className="mr-2 h-4 w-4" />}
               {t('Forms.save')}
             </Button>
           </DialogFooter>

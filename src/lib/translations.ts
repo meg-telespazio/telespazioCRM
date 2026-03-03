@@ -1,4 +1,3 @@
-
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -172,7 +171,8 @@ export const translations = {
       printOffer: 'Print Offer',
       bulkActions: 'Bulk Actions',
       bulkStatusUpdate: 'Update Status',
-      bulkUpdatePrices: 'Bulk Update',
+      bulkUpdatePrice: 'Update Fees',
+      bulkUpdatePlan: 'Update Plans',
       bulkUpdateSuccess: 'Updates applied correctly',
       bulkUpdateError: 'Error applying bulk updates',
       confirmBulkUpdate: 'Are you sure you want to update {count} records to {status}?',
@@ -541,7 +541,7 @@ export const translations = {
       telespazioEquipment: 'Telespazio Equipment',
       clientEquipment: 'Client Equipment',
       bulkUpdateServices: 'Bulk Update Services',
-      bulkUpdateServicesDesc: 'Update plan and prices for {count} selected services.',
+      bulkUpdateServicesDesc: 'Update selected services.',
     },
     Equipment: {
       title: 'Equipment Inventory',
@@ -868,7 +868,8 @@ export const translations = {
       printOffer: 'Imprimir Oferta',
       bulkActions: 'Acciones Masivas',
       bulkStatusUpdate: 'Actualizar Estado',
-      bulkUpdatePrices: 'Ajuste Masivo',
+      bulkUpdatePrice: 'Actualizar Abonos',
+      bulkUpdatePlan: 'Actualizar Planes',
       bulkUpdateSuccess: 'Actualizaciones aplicadas correctamente',
       bulkUpdateError: 'Error al aplicar cambios masivos',
       confirmBulkUpdate: '¿Está seguro de que desea actualizar {count} registros a {status}?',
@@ -1237,7 +1238,7 @@ export const translations = {
       telespazioEquipment: 'Equipo de Telespazio',
       clientEquipment: 'Equipo del Cliente',
       bulkUpdateServices: 'Actualización Masiva de Servicios',
-      bulkUpdateServicesDesc: 'Actualiza el plan y precios de los {count} servicios seleccionados.',
+      bulkUpdateServicesDesc: 'Actualiza los servicios seleccionados.',
     },
     Equipment: {
       title: 'Inventario de Equipos',
