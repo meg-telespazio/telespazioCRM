@@ -84,7 +84,6 @@ function InlineFeeEdit({
   const [val, setVal] = useState(service.monthlyFee?.toString() || '0');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sincronizar valor si cambia externamente (ej: por actualización masiva)
   useEffect(() => {
     setVal(service.monthlyFee?.toString() || '0');
   }, [service.monthlyFee]);
@@ -96,6 +95,9 @@ function InlineFeeEdit({
     setIsSaving(true);
     try {
       await onUpdate(service.id, numericFee);
+    } catch (e) {
+      // Revertir valor en caso de error
+      setVal(service.monthlyFee?.toString() || '0');
     } finally {
       setIsSaving(false);
     }
@@ -140,7 +142,7 @@ export default function ServicesPage() {
   
   const [bulkFee, setBulkFee] = useState<string>('');
   const [bulkCurrency, setBulkCurrency] = useState<'USD' | 'EUR' | 'ARS'>('USD');
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   // Data fetching
   const servicesQuery = useMemo(() => 
@@ -163,16 +165,13 @@ export default function ServicesPage() {
   [user, firestore]);
   const { data: clients } = useCollection<Client>(clientsQuery);
 
-  // Maps for quick lookup
   const poMap = useMemo(() => new Map(pos?.map(p => [p.id, p])), [pos]);
   const contractMap = useMemo(() => new Map(contracts?.map(c => [c.id, c])), [contracts]);
   const clientMap = useMemo(() => new Map(clients?.map(c => [c.id, c])), [clients]);
 
-  // Filtering, Sorting and Pagination
   const processedServices = useMemo(() => {
     if (!services) return [];
     
-    // 1. Filter
     let filtered = services.filter(s => {
       const nickname = s.serviceNickname || '';
       const line = s.serviceLineNumber || '';
@@ -186,7 +185,6 @@ export default function ServicesPage() {
       return matchesSearch && matchesClient;
     });
 
-    // 2. Sort
     if (sortConfig.key && sortConfig.direction) {
       filtered.sort((a, b) => {
         let valA: any = '';
@@ -252,18 +250,22 @@ export default function ServicesPage() {
 
   const handleBulkUpdate = async () => {
     if (!selectedIds.length || !bulkFee) return;
-    setIsUpdating(true);
+    setIsBulkUpdating(true);
+    
     try {
+      const count = selectedIds.length;
       await bulkUpdateServicePrices(firestore, selectedIds, parseFloat(bulkFee), bulkCurrency);
+      
+      // Resetear estado inmediatamente antes de cerrar el diálogo
+      setSelectedIds([]);
+      setBulkFee('');
+      setBulkPriceDialogOpen(false);
+      
       toast({
         variant: 'success',
         title: t('Actions.bulkUpdateSuccess'),
-        description: `${selectedIds.length} services updated.`,
+        description: `${count} services updated.`,
       });
-      // Limpieza inmediata del estado para evitar bloqueos visuales
-      setSelectedIds([]);
-      setBulkPriceDialogOpen(false);
-      setBulkFee('');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -271,7 +273,10 @@ export default function ServicesPage() {
         description: error.message,
       });
     } finally {
-      setIsUpdating(false);
+      // Pequeño delay para asegurar que el DOM se libere después del cierre del Dialog
+      setTimeout(() => {
+        setIsBulkUpdating(false);
+      }, 300);
     }
   };
 
@@ -281,6 +286,7 @@ export default function ServicesPage() {
       toast({ variant: 'success', title: 'Precio actualizado' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error al actualizar', description: error.message });
+      throw error;
     }
   };
 
@@ -510,7 +516,12 @@ export default function ServicesPage() {
         )}
       </main>
 
-      <Dialog open={isBulkPriceDialogOpen} onOpenChange={setBulkPriceDialogOpen}>
+      <Dialog 
+        open={isBulkPriceDialogOpen} 
+        onOpenChange={(open) => {
+          if (!isBulkUpdating) setBulkPriceDialogOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{t('Actions.bulkUpdatePrices')}</DialogTitle>
@@ -552,11 +563,11 @@ export default function ServicesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkPriceDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setBulkPriceDialogOpen(false)} disabled={isBulkUpdating}>
               {t('Auth.cancelLabel')}
             </Button>
-            <Button onClick={handleBulkUpdate} disabled={!bulkFee || isUpdating}>
-              {isUpdating ? <Loader2 className="animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+            <Button onClick={handleBulkUpdate} disabled={!bulkFee || isBulkUpdating}>
+              {isBulkUpdating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
               {t('Forms.save')}
             </Button>
           </DialogFooter>
