@@ -42,7 +42,8 @@ import {
   PlusCircle,
   ChevronLeft,
   ChevronRight,
-  DollarSign,
+  ShieldCheck,
+  User,
 } from 'lucide-react';
 import { ServiceImporter } from '@/components/services/service-importer';
 
@@ -85,6 +86,7 @@ function PaginatedServiceTable({
               <TableHead>{t('Forms.servicePlan')}</TableHead>
               <TableHead>{t('Forms.monthlyFee')}</TableHead>
               <TableHead>{t('Forms.userTerminal')}</TableHead>
+              <TableHead>{t('Forms.isTelespazioOwned')}</TableHead>
               <TableHead className="text-right">{t('Table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -118,6 +120,19 @@ function PaginatedServiceTable({
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground italic">No linked equipment</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {service.isTelespazioOwned !== false ? (
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1">
+                        <ShieldCheck className="h-3 w-3" />
+                        Telespazio
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] gap-1">
+                        <User className="h-3 w-3" />
+                        {t('Dashboard.recentOpportunities.clientHeader')}
+                      </Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-right">

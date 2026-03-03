@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -19,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users, ShieldCheck, User } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
 
@@ -242,6 +243,15 @@ export default function ClientSummaryPage() {
                                                 <div className="flex items-center gap-2">
                                                   <Zap className="h-4 w-4 text-yellow-500" />
                                                   <span className="font-bold text-sm">{service.serviceNickname}</span>
+                                                  {service.isTelespazioOwned !== false ? (
+                                                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] h-4 leading-none">
+                                                      Telespazio
+                                                    </Badge>
+                                                  ) : (
+                                                    <Badge variant="outline" className="text-[9px] h-4 leading-none">
+                                                      Cliente
+                                                    </Badge>
+                                                  )}
                                                 </div>
                                                 <div className="text-right">
                                                   <span className="text-xs font-bold text-primary">{service.currency} {service.monthlyFee?.toLocaleString()}</span>

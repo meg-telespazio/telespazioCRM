@@ -196,6 +196,7 @@ export type Service = {
   equipmentId: string;
   currency?: 'USD' | 'EUR' | 'ARS';
   monthlyFee?: number;
+  isTelespazioOwned: boolean;
   createdBy: string;
   createdAt: Date;
 };

@@ -328,6 +328,7 @@
         "equipmentId": { "type": "string" },
         "currency": { "type": "string", "enum": ["USD", "EUR", "ARS"] },
         "monthlyFee": { "type": "number" },
+        "isTelespazioOwned": { "type": "boolean", "description": "True if equipment is Telespazio's, false if client's." },
         "createdBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },

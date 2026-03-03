@@ -16,9 +16,10 @@ import { AppHeader } from '@/components/layout/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Save, ArrowLeft, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -34,6 +35,7 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   topUp: z.string().optional(),
   currency: z.enum(['USD', 'EUR', 'ARS']).optional(),
   monthlyFee: z.coerce.number().min(0).optional(),
+  isTelespazioOwned: z.boolean().default(true),
 });
 
 type ServiceFormData = z.infer<ReturnType<typeof getFormSchema>>;
@@ -68,6 +70,7 @@ export default function ServiceEditPage() {
       topUp: '',
       currency: 'USD',
       monthlyFee: 0,
+      isTelespazioOwned: true,
     },
   });
 
@@ -84,6 +87,7 @@ export default function ServiceEditPage() {
         topUp: service.topUp || '',
         currency: service.currency || 'USD',
         monthlyFee: service.monthlyFee || 0,
+        isTelespazioOwned: service.isTelespazioOwned !== undefined ? service.isTelespazioOwned : true,
       });
     }
   }, [service, form]);
@@ -94,14 +98,14 @@ export default function ServiceEditPage() {
       await updateService(firestore, serviceId, values);
       toast({
         variant: 'success',
-        title: t('Services.save'),
+        title: t('Actions.saveSuccess'),
         description: 'Service updated successfully.',
       });
       router.back();
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('Actions.saveErrorGeneric'),
         description: error.message,
       });
     }
@@ -207,6 +211,31 @@ export default function ServiceEditPage() {
                       </FormItem>
                     )} />
                   </div>
+
+                  <Separator className="my-2" />
+
+                  <FormField
+                    control={form.control}
+                    name="isTelespazioOwned"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/20">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            {t('Forms.isTelespazioOwned')}
+                          </FormLabel>
+                          <FormDescription>
+                            {field.value ? t('Services.telespazioEquipment') : t('Services.clientEquipment')}
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
                   <Separator className="my-2" />
 
