@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -23,6 +24,7 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
+  LayoutGrid,
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -62,7 +64,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ServiceImporter } from '@/components/services/service-importer';
 import { useRouter } from 'next/navigation';
-import { bulkUpdateServicePrices, deleteService, updateService } from '@/lib/firestore/services';
+import { bulkUpdateServices, deleteService, updateService } from '@/lib/firestore/services';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -73,7 +75,6 @@ type SortConfig = {
   direction: 'asc' | 'desc' | null;
 };
 
-// Componente para edición en línea del abono
 function InlineFeeEdit({ 
   service, 
   onUpdate 
@@ -96,7 +97,6 @@ function InlineFeeEdit({
     try {
       await onUpdate(service.id, numericFee);
     } catch (e) {
-      // Revertir valor en caso de error
       setVal(service.monthlyFee?.toString() || '0');
     } finally {
       setIsSaving(false);
@@ -133,13 +133,15 @@ export default function ServicesPage() {
   const { toast } = useToast();
   
   const [isImporterOpen, setImporterOpen] = useState(false);
-  const [isBulkPriceDialogOpen, setBulkPriceDialogOpen] = useState(false);
+  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'serviceNickname', direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
+  // Bulk state
+  const [bulkPlan, setBulkPlan] = useState<string>('');
   const [bulkFee, setBulkFee] = useState<string>('');
   const [bulkCurrency, setBulkCurrency] = useState<'USD' | 'EUR' | 'ARS'>('USD');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
@@ -195,7 +197,7 @@ export default function ServicesPage() {
           const contractA = poA ? contractMap.get(poA.contractId) : null;
           valA = clientMap.get(contractA?.clientId || '')?.name || '';
 
-          const poB = poMap.get(b.poId);
+          const poB = b.poId ? poMap.get(b.poId) : null;
           const contractB = poB ? contractMap.get(poB.contractId) : null;
           valB = clientMap.get(contractB?.clientId || '')?.name || '';
         } else {
@@ -249,17 +251,26 @@ export default function ServicesPage() {
   };
 
   const handleBulkUpdate = async () => {
-    if (!selectedIds.length || !bulkFee) return;
+    if (!selectedIds.length || (!bulkFee && !bulkPlan)) return;
     setIsBulkUpdating(true);
+    
+    const updates: Partial<Service> = {};
+    if (bulkFee) {
+      updates.monthlyFee = parseFloat(bulkFee);
+      updates.currency = bulkCurrency;
+    }
+    if (bulkPlan) {
+      updates.servicePlan = bulkPlan;
+    }
     
     try {
       const count = selectedIds.length;
-      await bulkUpdateServicePrices(firestore, selectedIds, parseFloat(bulkFee), bulkCurrency);
+      await bulkUpdateServices(firestore, selectedIds, updates);
       
-      // Resetear estado inmediatamente antes de cerrar el diálogo
       setSelectedIds([]);
       setBulkFee('');
-      setBulkPriceDialogOpen(false);
+      setBulkPlan('');
+      setBulkDialogOpen(false);
       
       toast({
         variant: 'success',
@@ -273,7 +284,6 @@ export default function ServicesPage() {
         description: error.message,
       });
     } finally {
-      // Pequeño delay para asegurar que el DOM se libere después del cierre del Dialog
       setTimeout(() => {
         setIsBulkUpdating(false);
       }, 300);
@@ -357,8 +367,8 @@ export default function ServicesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setBulkPriceDialogOpen(true)} className="cursor-pointer">
-                  <DollarSign className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={() => setBulkDialogOpen(true)} className="cursor-pointer">
+                  <LayoutGrid className="mr-2 h-4 w-4" />
                   <span>{t('Actions.bulkUpdatePrices')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -517,19 +527,31 @@ export default function ServicesPage() {
       </main>
 
       <Dialog 
-        open={isBulkPriceDialogOpen} 
+        open={isBulkDialogOpen} 
         onOpenChange={(open) => {
-          if (!isBulkUpdating) setBulkPriceDialogOpen(open);
+          if (!isBulkUpdating) setBulkDialogOpen(open);
         }}
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{t('Actions.bulkUpdatePrices')}</DialogTitle>
+            <DialogTitle>{t('Services.bulkUpdateServices')}</DialogTitle>
             <DialogDescription>
-              Se actualizará el abono mensual para los {selectedIds.length} servicios seleccionados.
+              {t('Services.bulkUpdateServicesDesc', { count: selectedIds.length })}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="plan" className="text-right text-sm font-medium">
+                {t('Forms.servicePlan')}
+              </label>
+              <Input
+                id="plan"
+                className="col-span-3"
+                value={bulkPlan}
+                onChange={(e) => setBulkPlan(e.target.value)}
+                placeholder={t('Forms.servicePlan')}
+              />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <label htmlFor="currency" className="text-right text-sm font-medium">
                 {t('Forms.currency')}
@@ -563,10 +585,10 @@ export default function ServicesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkPriceDialogOpen(false)} disabled={isBulkUpdating}>
+            <Button variant="outline" onClick={() => setBulkDialogOpen(false)} disabled={isBulkUpdating}>
               {t('Auth.cancelLabel')}
             </Button>
-            <Button onClick={handleBulkUpdate} disabled={!bulkFee || isBulkUpdating}>
+            <Button onClick={handleBulkUpdate} disabled={(!bulkFee && !bulkPlan) || isBulkUpdating}>
               {isBulkUpdating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
               {t('Forms.save')}
             </Button>

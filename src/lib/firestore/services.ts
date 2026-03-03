@@ -20,7 +20,7 @@ const EQUIPMENT_COLLECTION = 'equipment';
 const cleanData = (data: any) => {
   const result: any = {};
   Object.keys(data).forEach(key => {
-    if (data[key] !== undefined) {
+    if (data[key] !== undefined && data[key] !== null) {
       result[key] = data[key];
     }
   });
@@ -98,20 +98,17 @@ export async function importServices(
   }
 }
 
-export async function bulkUpdateServicePrices(
+export async function bulkUpdateServices(
   firestore: Firestore,
   serviceIds: string[],
-  monthlyFee: number,
-  currency: 'USD' | 'EUR' | 'ARS'
+  updates: Partial<Service>
 ) {
   const batch = writeBatch(firestore);
+  const cleanedUpdates = cleanData(updates);
   
   serviceIds.forEach(id => {
     const serviceRef = doc(firestore, SERVICES_COLLECTION, id);
-    batch.update(serviceRef, {
-      monthlyFee,
-      currency,
-    });
+    batch.update(serviceRef, cleanedUpdates);
   });
 
   try {
