@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ServiceImporter } from '@/components/services/service-importer';
 import { useRouter } from 'next/navigation';
-import { bulkUpdateServicePrices, deleteService } from '@/lib/firestore/services';
+import { bulkUpdateServicePrices, deleteService, updateService } from '@/lib/firestore/services';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -72,6 +72,56 @@ type SortConfig = {
   key: string;
   direction: 'asc' | 'desc' | null;
 };
+
+// Componente para edición en línea del abono
+function InlineFeeEdit({ 
+  service, 
+  onUpdate 
+}: { 
+  service: Service, 
+  onUpdate: (id: string, fee: number) => Promise<void> 
+}) {
+  const [val, setVal] = useState(service.monthlyFee?.toString() || '0');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Sincronizar valor si cambia externamente (ej: por actualización masiva)
+  useEffect(() => {
+    setVal(service.monthlyFee?.toString() || '0');
+  }, [service.monthlyFee]);
+
+  const handleBlur = async () => {
+    const numericFee = parseFloat(val);
+    if (isNaN(numericFee) || numericFee === service.monthlyFee) return;
+    
+    setIsSaving(true);
+    try {
+      await onUpdate(service.id, numericFee);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-muted-foreground text-[10px] uppercase font-bold w-8">{service.currency || 'USD'}</span>
+      <div className="relative flex items-center">
+        <Input
+          type="number"
+          step="0.01"
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+          className={cn(
+            "h-7 w-24 text-xs px-2 font-semibold bg-transparent border-transparent hover:border-input focus:border-primary transition-all text-right",
+            isSaving && "opacity-50 pointer-events-none"
+          )}
+        />
+        {isSaving && <Loader2 className="absolute -right-5 h-3 w-3 animate-spin text-primary" />}
+      </div>
+    </div>
+  );
+}
 
 export default function ServicesPage() {
   const { user, loading: userLoading } = useUser();
@@ -210,6 +260,7 @@ export default function ServicesPage() {
         title: t('Actions.bulkUpdateSuccess'),
         description: `${selectedIds.length} services updated.`,
       });
+      // Limpieza inmediata del estado para evitar bloqueos visuales
       setSelectedIds([]);
       setBulkPriceDialogOpen(false);
       setBulkFee('');
@@ -221,6 +272,15 @@ export default function ServicesPage() {
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleInlineUpdate = async (id: string, monthlyFee: number) => {
+    try {
+      await updateService(firestore, id, { monthlyFee });
+      toast({ variant: 'success', title: 'Precio actualizado' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error al actualizar', description: error.message });
     }
   };
 
@@ -364,10 +424,7 @@ export default function ServicesPage() {
                       <p className="text-[10px] text-muted-foreground font-mono ml-5">{s.serviceLineNumber}</p>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5 font-semibold">
-                        <span className="text-muted-foreground text-[10px] uppercase">{s.currency || 'USD'}</span>
-                        <span>{s.monthlyFee?.toLocaleString() || '0'}</span>
-                      </div>
+                      <InlineFeeEdit service={s} onUpdate={handleInlineUpdate} />
                     </TableCell>
                     <TableCell className="text-xs">{s.servicePlan}</TableCell>
                     <TableCell>
