@@ -1,3 +1,4 @@
+
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -269,6 +270,20 @@ export const translations = {
       addendumDate: 'Date',
       addendumDescription: 'Description of changes',
       noAddendums: 'No addendums registered for this contract.',
+    },
+    Holdings: {
+      title: 'Holding Group Details',
+      name: 'Holding Name',
+      description: 'Business Description',
+      companies: 'Companies in this Holding',
+      summary: 'Consolidated MRR Summary',
+      edit: 'Edit Holding',
+      save: 'Save Holding Details',
+      noDescription: 'No description provided for this holding group.',
+      consolidatedStats: 'Group Statistics',
+      totalCompanies: 'Total Companies',
+      totalServices: 'Active Services',
+      totalMrr: 'Group Monthly Recurring Revenue',
     },
     AddendumTypes: {
       Extension: 'Contract Extension',
@@ -889,7 +904,7 @@ export const translations = {
       saveSuccess: '¡Reporte guardado con éxito!',
       updateSuccess: '¡Reporte actualizado con éxito!',
       saveError: 'Error al guardar el reporte.',
-      noReportsTitle: 'Aún no hay reportes',
+      noReportsTitle: 'No hay reportes',
       noReportsDescription: 'Crea reportes personalizados para analizar tus datos de ventas.',
       step1: '1. Información Básica',
       step3: '3. Selección de Campos',
@@ -966,6 +981,20 @@ export const translations = {
       addendumDate: 'Fecha',
       addendumDescription: 'Descripción de los cambios',
       noAddendums: 'No hay adendas registradas para este contrato.',
+    },
+    Holdings: {
+      title: 'Detalle de Grupo Económico',
+      name: 'Nombre del Holding',
+      description: 'Descripción del Negocio',
+      companies: 'Empresas del Holding',
+      summary: 'Resumen MRR Consolidado',
+      edit: 'Editar Holding',
+      save: 'Guardar Detalles del Holding',
+      noDescription: 'No hay descripción cargada para este grupo económico.',
+      consolidatedStats: 'Estadísticas del Grupo',
+      totalCompanies: 'Empresas Vinculadas',
+      totalServices: 'Servicios Activos',
+      totalMrr: 'MRR Total del Grupo',
     },
     AddendumTypes: {
       Extension: 'Prórroga de Contrato',

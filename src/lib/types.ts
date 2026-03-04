@@ -19,6 +19,14 @@ export type Client = {
   logoURL?: string | null;
 };
 
+export type Holding = {
+  id: string;
+  name: string;
+  description?: string;
+  createdBy: string;
+  createdAt: Date;
+};
+
 export type EmailEntry = {
   type: 'work' | 'personal' | 'other';
   address: string;

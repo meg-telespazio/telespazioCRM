@@ -147,6 +147,18 @@
         "industry"
       ]
     },
+    "Holding": {
+      "title": "Holding",
+      "description": "Represents an economic group.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "createdBy", "createdAt"]
+    },
     "Contact": {
       "title": "Contact",
       "description": "Represents a contact person at a client company.",
@@ -359,6 +371,7 @@
   "firestore": {
     "/users/{userId}": { "schema": { "$ref": "#/entities/UserProfile" }, "description": "..." },
     "/clients/{clientId}": { "schema": { "$ref": "#/entities/Client" }, "description": "..." },
+    "/holdings/{holdingId}": { "schema": { "$ref": "#/entities/Holding" }, "description": "..." },
     "/contacts/{contactId}": { "schema": { "$ref": "#/entities/Contact" }, "description": "..." },
     "/contracts/{contractId}": { "schema": { "$ref": "#/entities/Contract" }, "description": "..." },
     "/contracts/{contractId}/addendums/{addendumId}": { "schema": { "$ref": "#/entities/Addendum" }, "description": "..." },
