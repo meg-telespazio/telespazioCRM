@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -23,6 +24,7 @@ import {
   Trash2,
   LayoutGrid,
   DollarSign,
+  Link2,
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -73,7 +75,7 @@ type SortConfig = {
   direction: 'asc' | 'desc' | null;
 };
 
-type BulkMode = 'price' | 'plan' | null;
+type BulkMode = 'price' | 'plan' | 'po' | null;
 
 function InlineFeeEdit({ 
   service, 
@@ -144,6 +146,7 @@ export default function ServicesPage() {
   const [bulkPlan, setBulkPlan] = useState<string>('');
   const [bulkFee, setBulkFee] = useState<string>('');
   const [bulkCurrency, setBulkCurrency] = useState<'USD' | 'EUR' | 'ARS'>('USD');
+  const [bulkPoId, setBulkPoId] = useState<string>('');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   // Data fetching
@@ -251,7 +254,11 @@ export default function ServicesPage() {
   };
 
   const handleBulkUpdate = async () => {
-    if (!selectedIds.length || (bulkMode === 'price' && !bulkFee) || (bulkMode === 'plan' && !bulkPlan)) return;
+    if (!selectedIds.length || 
+        (bulkMode === 'price' && !bulkFee) || 
+        (bulkMode === 'plan' && !bulkPlan) ||
+        (bulkMode === 'po' && !bulkPoId)) return;
+        
     setIsBulkUpdating(true);
     
     const updates: Partial<Service> = {};
@@ -262,6 +269,9 @@ export default function ServicesPage() {
     if (bulkMode === 'plan' && bulkPlan) {
       updates.servicePlan = bulkPlan;
     }
+    if (bulkMode === 'po' && bulkPoId) {
+      updates.poId = bulkPoId;
+    }
     
     try {
       const count = selectedIds.length;
@@ -270,6 +280,7 @@ export default function ServicesPage() {
       setSelectedIds([]);
       setBulkFee('');
       setBulkPlan('');
+      setBulkPoId('');
       setBulkMode(null);
       
       toast({
@@ -375,6 +386,10 @@ export default function ServicesPage() {
                   <LayoutGrid className="mr-2 h-4 w-4" />
                   <span>{t('Actions.bulkUpdatePlan')}</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setBulkMode('po')} className="cursor-pointer">
+                  <Link2 className="mr-2 h-4 w-4" />
+                  <span>{t('Actions.bulkUpdatePo')}</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -458,7 +473,10 @@ export default function ServicesPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-bold text-destructive">{s.poId}</span>
+                        <span className="font-bold text-destructive">
+                          {po?.poNumber || '...'}
+                        </span>
+                        <span className="text-[9px] font-mono text-muted-foreground">({s.poId.substring(0, 5)}...)</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -539,7 +557,9 @@ export default function ServicesPage() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              {bulkMode === 'price' ? t('Actions.bulkUpdatePrice') : t('Actions.bulkUpdatePlan')}
+              {bulkMode === 'price' && t('Actions.bulkUpdatePrice')}
+              {bulkMode === 'plan' && t('Actions.bulkUpdatePlan')}
+              {bulkMode === 'po' && t('Actions.bulkUpdatePo')}
             </DialogTitle>
             <DialogDescription>
               {t('Services.bulkUpdateServicesDesc', { count: selectedIds.length })}
@@ -597,13 +617,39 @@ export default function ServicesPage() {
                 </div>
               </>
             )}
+
+            {bulkMode === 'po' && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="po" className="text-right text-sm font-medium">
+                  {t('Forms.poNumber')}
+                </label>
+                <div className="col-span-3">
+                  <Select value={bulkPoId} onValueChange={setBulkPoId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione PO de destino..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {pos?.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime()).map(po => {
+                        const contract = contractMap.get(po.contractId);
+                        const client = contract ? clientMap.get(contract.clientId) : null;
+                        return (
+                          <SelectItem key={po.id} value={po.id}>
+                            {po.poNumber} - {client?.name || '...'}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkMode(null)} disabled={isBulkUpdating}>
               {t('Auth.cancelLabel')}
             </Button>
-            <Button onClick={handleBulkUpdate} disabled={isBulkUpdating || (bulkMode === 'price' && !bulkFee) || (bulkMode === 'plan' && !bulkPlan)}>
+            <Button onClick={handleBulkUpdate} disabled={isBulkUpdating || (bulkMode === 'price' && !bulkFee) || (bulkMode === 'plan' && !bulkPlan) || (bulkMode === 'po' && !bulkPoId)}>
               {isBulkUpdating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Zap className="mr-2 h-4 w-4" />}
               {t('Forms.save')}
             </Button>
