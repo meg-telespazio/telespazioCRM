@@ -148,6 +148,13 @@ export default function ServicesPage() {
   const [bulkPoId, setBulkPoId] = useState<string>('');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
+  // Safety cleanup for Radix Dialog body lock
+  useEffect(() => {
+    if (bulkMode === null) {
+      document.body.style.pointerEvents = 'auto';
+    }
+  }, [bulkMode]);
+
   // Data fetching
   const servicesQuery = useMemo(() => 
     user ? query(collection(firestore, 'services'), where('createdBy', '==', user.uid)) : null, 
@@ -276,23 +283,24 @@ export default function ServicesPage() {
       const idsToUpdate = [...selectedIds];
       await bulkUpdateServices(firestore, idsToUpdate, updates);
       
-      // Limpiar selección y estados ANTES de cerrar el modal para evitar bloqueos de UI
-      setSelectedIds([]);
-      setBulkFee('');
-      setBulkPlan('');
-      setBulkPoId('');
-      
-      toast({
-        variant: 'success',
-        title: t('Actions.bulkUpdateSuccess'),
-        description: `${idsToUpdate.length} servicios actualizados correctamente.`,
-      });
+      // 1. CERRAR EL MODAL PRIMERO para que Radix procese el desmontaje
+      setBulkMode(null);
+      setIsBulkUpdating(false);
 
-      // Cerrar el modal con un pequeño delay para que Radix procese bien el cierre
+      // 2. Esperar a que la animación de cierre termine antes de limpiar la tabla
       setTimeout(() => {
-        setBulkMode(null);
-        setIsBulkUpdating(false);
-      }, 100);
+        setSelectedIds([]);
+        setBulkFee('');
+        setBulkPlan('');
+        setBulkPoId('');
+        document.body.style.pointerEvents = 'auto'; // Triple chequeo de seguridad
+        
+        toast({
+          variant: 'success',
+          title: t('Actions.bulkUpdateSuccess'),
+          description: `${idsToUpdate.length} servicios actualizados correctamente.`,
+        });
+      }, 300);
 
     } catch (error: any) {
       setIsBulkUpdating(false);
@@ -381,15 +389,15 @@ export default function ServicesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setBulkMode('price')} className="cursor-pointer">
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setBulkMode('price'); }} className="cursor-pointer">
                   <DollarSign className="mr-2 h-4 w-4" />
                   <span>{t('Actions.bulkUpdatePrice')}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setBulkMode('plan')} className="cursor-pointer">
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setBulkMode('plan'); }} className="cursor-pointer">
                   <LayoutGrid className="mr-2 h-4 w-4" />
                   <span>{t('Actions.bulkUpdatePlan')}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setBulkMode('po')} className="cursor-pointer">
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setBulkMode('po'); }} className="cursor-pointer">
                   <Link2 className="mr-2 h-4 w-4" />
                   <span>{t('Actions.bulkUpdatePo')}</span>
                 </DropdownMenuItem>
