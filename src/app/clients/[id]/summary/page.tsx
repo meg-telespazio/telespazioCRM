@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -107,7 +106,9 @@ export default function ClientSummaryPage() {
                 </Badge>
               </div>
               <CardDescription className="text-base flex items-center gap-2">
-                {t(`Industries.${client.industry}`)} • <span className="font-mono">{client.publicId}</span>
+                {t(`Industries.${client.industry}`)} 
+                {client.holding && <span className="text-muted-foreground">• {client.holding}</span>}
+                • <span className="font-mono">{client.publicId}</span>
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2 pt-2 sm:pt-0">
@@ -129,7 +130,7 @@ export default function ClientSummaryPage() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6 text-sm">
+          <CardContent className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 text-sm">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Auth.emailLabel')}</span>
               <div className="flex items-center gap-2">
@@ -149,6 +150,13 @@ export default function ClientSummaryPage() {
               <div className="flex items-center gap-2 text-foreground font-medium">
                 <Building className="h-4 w-4 text-muted-foreground" />
                 <span>{client.cuit}</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Forms.holding')}</span>
+              <div className="flex items-center gap-2 text-foreground font-medium">
+                <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                <span>{client.holding || '-'}</span>
               </div>
             </div>
           </CardContent>
