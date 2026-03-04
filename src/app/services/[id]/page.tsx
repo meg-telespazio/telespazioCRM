@@ -1,15 +1,14 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useUser, useFirestore, useDoc } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { doc } from 'firebase/firestore';
-import type { Service } from '@/lib/types';
+import { doc, collection, query, where } from 'firebase/firestore';
+import type { Service, ProductOrService } from '@/lib/types';
 import { updateService } from '@/lib/firestore/services';
 
 import { AppHeader } from '@/components/layout/app-header';
@@ -20,7 +19,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, ArrowLeft, Zap } from 'lucide-react';
+import { Save, ArrowLeft, Zap, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
@@ -57,6 +56,26 @@ export default function ServiceEditPage() {
 
   const { data: service, loading: serviceLoading } = useDoc<Service>(serviceDocRef);
 
+  // Fetch Service Catalog Plans
+  const catalogQuery = useMemo(() => {
+    if (!user || !firestore) return null;
+    return query(
+      collection(firestore, 'productsAndServices'),
+      where('createdBy', '==', user.uid),
+      where('status', '==', 'active')
+    );
+  }, [user, firestore]);
+
+  const { data: catalogItems, loading: catalogLoading } = useCollection<ProductOrService>(catalogQuery);
+
+  const servicePlans = useMemo(() => {
+    if (!catalogItems) return [];
+    // We include 'service' and 'bundle' types as valid plans
+    return catalogItems
+      .filter(item => item.type === 'service' || item.type === 'bundle')
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [catalogItems]);
+
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(getFormSchema(t)),
     defaultValues: {
@@ -85,7 +104,7 @@ export default function ServiceEditPage() {
         servicePlan: service.servicePlan || '',
         serviceAllocationGb: service.serviceAllocationGb || 0,
         topUp: service.topUp || '',
-        currency: service.currency || 'USD',
+        currency: (service.currency as any) || 'USD',
         monthlyFee: service.monthlyFee || 0,
         isTelespazioOwned: service.isTelespazioOwned !== undefined ? service.isTelespazioOwned : true,
       });
@@ -111,13 +130,16 @@ export default function ServiceEditPage() {
     }
   };
 
-  const isLoading = userLoading || serviceLoading;
+  const isLoading = userLoading || serviceLoading || catalogLoading;
 
   if (isLoading) {
     return (
       <div className="flex flex-1 flex-col">
         <AppHeader title={t('App.loading')} />
-        <main className="flex-1 p-4 sm:p-6"><Skeleton className="h-96 w-full" /></main>
+        <main className="flex-1 p-4 sm:p-6 text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+          <Skeleton className="h-96 w-full max-w-2xl mx-auto" />
+        </main>
       </div>
     );
   }
@@ -173,7 +195,24 @@ export default function ServiceEditPage() {
                     <FormField control={form.control} name="servicePlan" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.servicePlan')}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('PS.selectUnit')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {servicePlans.map(plan => (
+                              <SelectItem key={plan.id} value={plan.name}>
+                                {plan.name} {plan.type === 'bundle' ? '(Combo)' : ''}
+                              </SelectItem>
+                            ))}
+                            {servicePlans.length === 0 && (
+                              <SelectItem value="none" disabled>No active plans in catalog</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>Seleccione un plan del catálogo configurado.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />
