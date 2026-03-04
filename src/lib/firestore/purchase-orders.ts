@@ -1,6 +1,8 @@
+
 'use client';
 import {
-  setDoc,
+  collection,
+  addDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -26,9 +28,9 @@ const cleanData = (data: any) => {
 export async function addPurchaseOrder(
   firestore: Firestore,
   uid: string,
-  data: Omit<PurchaseOrder, 'createdBy' | 'createdAt'>
+  data: Omit<PurchaseOrder, 'id' | 'createdBy' | 'createdAt'>
 ) {
-  const docRef = doc(firestore, COLLECTION, data.id);
+  const collectionRef = collection(firestore, COLLECTION);
   const cleaned = cleanData(data);
   const fullData = {
     ...cleaned,
@@ -37,11 +39,11 @@ export async function addPurchaseOrder(
   };
 
   try {
-    await setDoc(docRef, fullData);
+    return await addDoc(collectionRef, fullData);
   } catch (serverError: any) {
     if (serverError.code === 'permission-denied') {
       const permissionError = new FirestorePermissionError({
-        path: docRef.path,
+        path: collectionRef.path,
         operation: 'create',
         requestResourceData: fullData,
       } satisfies SecurityRuleContext);
@@ -54,7 +56,7 @@ export async function addPurchaseOrder(
 export function updatePurchaseOrder(
   firestore: Firestore,
   poId: string,
-  data: Partial<PurchaseOrder>
+  data: Partial<Omit<PurchaseOrder, 'id'>>
 ) {
   const docRef = doc(firestore, COLLECTION, poId);
   const cleaned = cleanData(data);

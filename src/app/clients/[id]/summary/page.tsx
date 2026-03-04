@@ -249,7 +249,7 @@ export default function ClientSummaryPage() {
                                   <div className="flex items-center justify-between bg-slate-50 p-3 border-b">
                                     <div className="flex items-center gap-3">
                                       <ShoppingCart className="h-4 w-4 text-primary" />
-                                      <span className="font-bold text-sm">PO: {po.id}</span>
+                                      <span className="font-bold text-sm">PO: {po.poNumber}</span>
                                       <Badge variant="secondary" className="text-[10px]">{po.amount.toLocaleString()} {po.currency}</Badge>
                                     </div>
                                     <span className="text-[10px] font-bold text-muted-foreground uppercase">{t(`Status.${po.status}`)}</span>

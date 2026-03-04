@@ -62,17 +62,17 @@ export default function PurchaseOrdersPage() {
                 const client = contract ? clientMap.get(contract.clientId) : null;
                 return (
                   <TableRow key={po.id} className="cursor-pointer" onClick={() => router.push(`/purchase-orders/${po.id}`)}>
-                    <TableCell className="font-bold">{po.id}</TableCell>
+                    <TableCell className="font-bold">{po.poNumber}</TableCell>
                     <TableCell>{client?.name || '...'}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{contract?.publicId || '...'}</TableCell>
                     <TableCell>{po.amount.toLocaleString()} {po.currency}</TableCell>
-                    <TableCell><Badge>{t(`Status.${po.status}`)}</Badge></TableCell>
+                    <TableCell><Badge variant="secondary">{t(`Status.${po.status}`)}</Badge></TableCell>
                     <TableCell>{format(po.emissionDate, 'P')}</TableCell>
                   </TableRow>
                 );
               }) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">
                     {t('PO.noPos')}
                   </TableCell>
                 </TableRow>

@@ -221,7 +221,7 @@ export function ServiceImporter({
                 <SelectContent>
                   {pos.map((po) => (
                     <SelectItem key={po.id} value={po.id}>
-                      {po.id} ({po.contractId})
+                      {po.poNumber} ({po.contractId})
                     </SelectItem>
                   ))}
                 </SelectContent>

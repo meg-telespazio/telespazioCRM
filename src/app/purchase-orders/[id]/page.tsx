@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -26,7 +27,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
-  id: z.string().min(1, t('Validation.fieldRequired')),
+  poNumber: z.string().min(1, t('Validation.fieldRequired')),
   emissionDate: z.date(),
   buyerId: z.string().min(1, t('Validation.fieldRequired')),
   amount: z.coerce.number().min(0),
@@ -36,6 +37,8 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   idContractStarfleet: z.string().optional(),
   idClientStarfleet: z.string().optional(),
 });
+
+type POFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
 export default function POFormPage() {
   const { t } = useI18n();
@@ -60,10 +63,10 @@ export default function POFormPage() {
   const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
 
-  const form = useForm<z.infer<ReturnType<typeof getFormSchema>>>({
+  const form = useForm<POFormData>({
     resolver: zodResolver(getFormSchema(t)),
     defaultValues: {
-      id: '',
+      poNumber: '',
       emissionDate: new Date(),
       buyerId: '',
       amount: 0,
@@ -95,14 +98,18 @@ export default function POFormPage() {
     }
   }, [poData, form]);
 
-  const onSubmit = async (values: z.infer<ReturnType<typeof getFormSchema>>) => {
+  const onSubmit = async (values: POFormData) => {
     if (!user) return;
-    if (isNew) {
-      await addPurchaseOrder(firestore, user.uid, values);
-    } else {
-      await updatePurchaseOrder(firestore, poId, values);
+    try {
+      if (isNew) {
+        await addPurchaseOrder(firestore, user.uid, values);
+      } else {
+        await updatePurchaseOrder(firestore, poId, values);
+      }
+      router.back();
+    } catch (err) {
+      console.error(err);
     }
-    router.back();
   };
 
   const pageIsLoading = !mounted || poLoading || !contracts;
@@ -119,14 +126,14 @@ export default function POFormPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <Card>
                 <CardContent className="grid gap-6 p-6">
-                  <FormField control={form.control} name="id" render={({ field }) => (
+                  <FormField control={form.control} name="poNumber" render={({ field }) => (
                     <FormItem><FormLabel>{t('Forms.poNumber')}</FormLabel>
-                    <FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
+                    <FormControl><Input {...field} placeholder="Referencia manual..." /></FormControl><FormMessage /></FormItem>
                   )} />
                   <FormField control={form.control} name="contractId" render={({ field }) => (
                     <FormItem><FormLabel>{t('Forms.contract')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value} disabled={!!contractIdFromQuery}>
-                      <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar contrato..." /></SelectTrigger></FormControl>
                       <SelectContent>{contracts?.map(c => <SelectItem key={c.id} value={c.id}>{c.publicId}</SelectItem>)}</SelectContent>
                     </Select><FormMessage /></FormItem>
                   )} />
@@ -134,12 +141,12 @@ export default function POFormPage() {
                     <FormField control={form.control} name="emissionDate" render={({ field }) => (
                       <FormItem className="flex flex-col"><FormLabel>{t('Forms.emissionDate')}</FormLabel>
                       <Popover open={isEmissionDateOpen} onOpenChange={setEmissionDateOpen}><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'P') : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
-                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setEmissionDateOpen(false)} onCancel={() => setEmissionDateOpen(false)} initialFocus captionLayout="dropdown" startMonth={new Date(2000, 0)} endMonth={new Date(2050, 11)} /></PopoverContent></Popover></FormItem>
+                      <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setEmissionDateOpen(false)} onCancel={() => setEmissionDateOpen(false)} initialFocus captionLayout="dropdown" startMonth={new Date(2000, 0)} endMonth={new Date(2050, 11)} /></PopoverContent></Popover></FormItem>
                     )} />
                     <FormField control={form.control} name="buyerId" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.buyer')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!watchedContractId}>
-                        <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar comprador..." /></SelectTrigger></FormControl>
                         <SelectContent>
                           {contacts && contacts.length > 0 ? (
                             contacts.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)

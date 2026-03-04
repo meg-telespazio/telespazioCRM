@@ -177,7 +177,8 @@ export type Addendum = {
 export type PurchaseOrderStatus = 'pending' | 'approved' | 'canceled' | 'received';
 
 export type PurchaseOrder = {
-  id: string; // Manual PO Number
+  id: string; // Firestore Doc ID
+  poNumber: string; // Manual Reference Number
   emissionDate: Date;
   buyerId: string;
   amount: number;
