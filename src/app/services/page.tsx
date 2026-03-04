@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -274,30 +273,34 @@ export default function ServicesPage() {
     }
     
     try {
-      const count = selectedIds.length;
-      await bulkUpdateServices(firestore, selectedIds, updates);
+      const idsToUpdate = [...selectedIds];
+      await bulkUpdateServices(firestore, idsToUpdate, updates);
       
+      // Limpiar selección y estados ANTES de cerrar el modal para evitar bloqueos de UI
       setSelectedIds([]);
       setBulkFee('');
       setBulkPlan('');
       setBulkPoId('');
-      setBulkMode(null);
       
       toast({
         variant: 'success',
         title: t('Actions.bulkUpdateSuccess'),
-        description: `${count} services updated.`,
+        description: `${idsToUpdate.length} servicios actualizados correctamente.`,
       });
+
+      // Cerrar el modal con un pequeño delay para que Radix procese bien el cierre
+      setTimeout(() => {
+        setBulkMode(null);
+        setIsBulkUpdating(false);
+      }, 100);
+
     } catch (error: any) {
+      setIsBulkUpdating(false);
       toast({
         variant: 'destructive',
         title: t('Actions.bulkUpdateError'),
         description: error.message,
       });
-    } finally {
-      setTimeout(() => {
-        setIsBulkUpdating(false);
-      }, 300);
     }
   };
 
@@ -551,10 +554,12 @@ export default function ServicesPage() {
       <Dialog 
         open={bulkMode !== null} 
         onOpenChange={(open) => {
-          if (!isBulkUpdating && !open) setBulkMode(null);
+          if (!isBulkUpdating && !open) {
+            setBulkMode(null);
+          }
         }}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px]" onPointerDownOutside={(e) => isBulkUpdating && e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>
               {bulkMode === 'price' && t('Actions.bulkUpdatePrice')}
@@ -578,6 +583,7 @@ export default function ServicesPage() {
                   value={bulkPlan}
                   onChange={(e) => setBulkPlan(e.target.value)}
                   placeholder={t('Forms.servicePlan')}
+                  disabled={isBulkUpdating}
                 />
               </div>
             )}
@@ -589,7 +595,7 @@ export default function ServicesPage() {
                     {t('Forms.currency')}
                   </label>
                   <div className="col-span-3">
-                    <Select value={bulkCurrency} onValueChange={(v: any) => setBulkCurrency(v)}>
+                    <Select value={bulkCurrency} onValueChange={(v: any) => setBulkCurrency(v)} disabled={isBulkUpdating}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -613,6 +619,7 @@ export default function ServicesPage() {
                     value={bulkFee}
                     onChange={(e) => setBulkFee(e.target.value)}
                     placeholder="0.00"
+                    disabled={isBulkUpdating}
                   />
                 </div>
               </>
@@ -624,7 +631,7 @@ export default function ServicesPage() {
                   {t('Forms.poNumber')}
                 </label>
                 <div className="col-span-3">
-                  <Select value={bulkPoId} onValueChange={setBulkPoId}>
+                  <Select value={bulkPoId} onValueChange={setBulkPoId} disabled={isBulkUpdating}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione PO de destino..." />
                     </SelectTrigger>
