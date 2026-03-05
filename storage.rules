@@ -1,16 +1,21 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow users to read and write their own avatar
+    // Permitir a usuarios leer y escribir sus avatares
     match /avatars/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Allow authenticated users to upload to the opportunities folder
+    // Carpeta de Oportunidades: organizada por ID de oportunidad
     match /opportunities/{opportunityId}/{allPaths=**} {
-       allow write: if false; // No client-side uploads allowed
-       allow read: if request.auth != null;
+       allow read, write: if request.auth != null;
+    }
+
+    // Carpeta de Contratos: organizada por ID de contrato
+    match /contracts/{contractId}/{allPaths=**} {
+       allow read, write: if request.auth != null;
     }
   }
 }

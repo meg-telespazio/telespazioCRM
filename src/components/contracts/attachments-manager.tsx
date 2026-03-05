@@ -1,14 +1,19 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
+import { useStorage } from '@/firebase';
+import { uploadFile, deleteFile } from '@/lib/storage';
+import { useParams } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Paperclip, Trash2, FileText, UploadCloud } from 'lucide-react';
-import type { ContractAttachment } from '@/lib/types';
+import { Progress } from '@/components/ui/progress';
+import type { OpportunityAttachment } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -19,16 +24,19 @@ interface AttachmentsManagerProps {
 const ALLOWED_FILE_TYPES = [
   'application/pdf',
   'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ];
-const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_MB = 30;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
   const { t } = useI18n();
   const { toast } = useToast();
+  const storage = useStorage();
+  const params = useParams();
+  const contractId = params.id as string;
   const { control } = useFormContext();
 
   const { fields, append, remove } = useFieldArray({
@@ -37,68 +45,69 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
   });
 
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
 
-  const handleFileUpload = useCallback((files: FileList | null) => {
-    if (!files || disabled) return;
+  const handleFileUpload = useCallback(async (files: FileList | null) => {
+    if (!files || disabled || !contractId || contractId === 'new') {
+      if (contractId === 'new') {
+        toast({ variant: 'destructive', title: 'Acción requerida', description: 'Guarde el contrato antes de subir archivos.' });
+      }
+      return;
+    }
 
-    Array.from(files).forEach(file => {
+    for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
-        toast({
-          variant: 'destructive',
-          title: 'File too large',
-          description: `File "${file.name}" exceeds the ${MAX_FILE_SIZE_MB}MB limit.`
-        });
-        return;
+        toast({ variant: 'destructive', title: 'Archivo excedido', description: `Max ${MAX_FILE_SIZE_MB}MB.` });
+        continue;
       }
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        toast({
-          variant: 'destructive',
-          title: 'Invalid file type',
-          description: `File "${file.name}" is not a supported file type.`
+
+      const fileId = `${Date.now()}_${file.name}`;
+      setUploadingFiles(prev => ({ ...prev, [fileId]: 0 }));
+
+      try {
+        const path = `contracts/${contractId}/${fileId}`;
+        const attachment = await uploadFile(storage, path, file, (progress) => {
+          setUploadingFiles(prev => ({ ...prev, [fileId]: progress }));
         });
-        return;
+
+        append(attachment);
+        toast({ title: 'Archivo guardado', description: file.name });
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Error al subir el archivo.' });
+      } finally {
+        setUploadingFiles(prev => {
+          const next = { ...prev };
+          delete next[fileId];
+          return next;
+        });
       }
-      
-      const placeholderAttachment: ContractAttachment = {
-        name: file.name,
-        url: '#simulated',
-        type: file.type,
-        size: file.size,
-        path: `simulated/${Date.now()}_${file.name}`,
-      };
+    }
+  }, [append, disabled, contractId, storage, toast]);
 
-      append(placeholderAttachment);
-      
-      toast({
-        variant: 'default',
-        title: 'Archivo añadido (simulado)',
-        description: `${file.name} se ha añadido a la lista, pero no se subirá.`,
-      });
-    });
-  }, [append, disabled, t, toast]);
-
-  const handleDelete = async (index: number) => {
+  const handleDelete = async (index: number, attachment: any) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
-    remove(index);
-    toast({ variant: 'default', title: 'Adjunto eliminado de la lista' });
+    try {
+      if (attachment.path) await deleteFile(storage, attachment.path);
+      remove(index);
+      toast({ title: 'Adjunto eliminado' });
+    } catch (e) {
+      remove(index);
+    }
   };
 
   const onDragEnter = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); if (!disabled) setIsDragging(true); };
   const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); };
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    if (!disabled && e.dataTransfer.files) {
-      handleFileUpload(e.dataTransfer.files);
-    }
+    e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+    if (!disabled && e.dataTransfer.files) handleFileUpload(e.dataTransfer.files);
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('Contracts.attachments')}</CardTitle>
+        <CardDescription>Los archivos se guardarán en el bucket bajo la carpeta: contracts/{contractId}/</CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {!disabled ? (
@@ -114,9 +123,9 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
           >
             <UploadCloud className="w-10 h-10 text-muted-foreground" />
             <p className="mt-2 text-sm text-center text-muted-foreground">
-              <span className="font-semibold text-primary">Clic para subir</span> o arrastrar y soltar
+              <span className="font-semibold text-primary">Subir Archivo</span>
             </p>
-            <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX (max ${MAX_FILE_SIZE_MB}MB)</p>
+            <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX (max {MAX_FILE_SIZE_MB}MB)</p>
             <input
               id="file-upload"
               type="file"
@@ -124,57 +133,47 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               onChange={(e) => handleFileUpload(e.target.files)}
               accept={ALLOWED_FILE_TYPES.join(',')}
-              disabled={disabled}
+              disabled={disabled || contractId === 'new'}
             />
           </div>
         ) : (
             <div className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg bg-muted/50 h-full min-h-[200px]">
                 <Paperclip className="h-8 w-8 mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground text-center">La subida de adjuntos está deshabilitada.</p>
+                <p className="text-sm text-muted-foreground text-center">Edición deshabilitada.</p>
             </div>
         )}
         
         <div className="space-y-4">
+            <h4 className="text-sm font-medium">Archivos del Contrato</h4>
+            
+            {Object.entries(uploadingFiles).map(([id, progress]) => (
+              <div key={id} className="space-y-1">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="truncate">{id.split('_').slice(1).join('_')}</span>
+                  <span>{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-1" />
+              </div>
+            ))}
+
             <div className="space-y-2">
-                <h4 className="text-sm font-medium">Archivos Adjuntos</h4>
-                {(fields as ContractAttachment[]).length > 0 ? (
-                  (fields as ContractAttachment[]).map((attachment, index) => {
-                    const isSimulated = attachment.url === '#simulated';
-                    return (
-                      <div key={attachment.path} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50">
-                          <FileText className="h-6 w-6 shrink-0 text-muted-foreground" />
-                          <div className="flex-1 truncate">
-                          {isSimulated ? (
-                            <span className="text-sm font-medium italic text-muted-foreground" title="Subida simulada">
-                                {attachment.name}
-                            </span>
-                          ) : (
-                            <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">
-                                {attachment.name}
-                            </Link>
-                          )}
-                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                              {(attachment.size / 1024 / 1024).toFixed(2)} MB
-                              {isSimulated && <span className="text-amber-600">(No subido)</span>}
-                          </p>
-                          </div>
-                          <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(index)}
-                          disabled={disabled}
-                          >
+                {fields.length > 0 ? (
+                  fields.map((attachment: any, index) => (
+                    <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md bg-background">
+                        <FileText className="h-6 w-6 shrink-0 text-primary" />
+                        <div className="flex-1 truncate">
+                          <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold hover:underline">
+                              {attachment.name}
+                          </Link>
+                          <p className="text-[10px] text-muted-foreground">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => handleDelete(index, attachment)} disabled={disabled}>
                           <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="flex flex-col items-center justify-center pt-8 text-center text-sm text-muted-foreground">
-                      <Paperclip className="h-8 w-8 mb-2" />
-                      <p>Aún no hay archivos adjuntos.</p>
-                  </div>
+                        </Button>
+                    </div>
+                  ))
+                ) : Object.keys(uploadingFiles).length === 0 && (
+                  <p className="text-center text-xs text-muted-foreground py-8 italic border rounded-lg border-dashed">Sin documentos adjuntos.</p>
                 )}
             </div>
         </div>
