@@ -130,6 +130,8 @@ export type UserProfile = {
   notes?: string;
   status: 'active' | 'suspended';
   position: 'Director' | 'Manager' | 'Executive' | 'Project Manager';
+  country?: string;
+  management?: 'Satellite Communications' | 'GeoInformacion';
   tablePreferences?: Record<string, Record<string, boolean>>;
 };
 

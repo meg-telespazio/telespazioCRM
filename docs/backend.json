@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -51,6 +52,15 @@
           "type": "string",
           "enum": ["Director", "Manager", "Executive", "Project Manager"],
           "description": "The user's job position."
+        },
+        "country": {
+          "type": "string",
+          "description": "User's country of operation."
+        },
+        "management": {
+          "type": "string",
+          "enum": ["Satellite Communications", "GeoInformacion"],
+          "description": "User's management area."
         },
         "tablePreferences": {
           "type": "object",

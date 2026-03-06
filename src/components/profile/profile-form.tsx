@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -46,6 +47,8 @@ const getProfileFormSchema = (t: (key: string) => string) =>
     mobile: z.string().optional().or(z.literal('')),
     position: z.enum(['Director', 'Manager', 'Executive', 'Project Manager']),
     status: z.enum(['active', 'suspended']),
+    country: z.string().optional().or(z.literal('')),
+    management: z.enum(['Satellite Communications', 'GeoInformacion']).optional(),
     notes: z.string().optional(),
   });
 
@@ -71,6 +74,8 @@ export function ProfileForm() {
       mobile: '',
       position: 'Executive',
       status: 'active',
+      country: '',
+      management: undefined,
       notes: '',
     },
   });
@@ -85,6 +90,8 @@ export function ProfileForm() {
         mobile: user.mobile || '',
         position: user.position || 'Executive',
         status: user.status || 'active',
+        country: user.country || '',
+        management: user.management as any,
         notes: user.notes || '',
       });
     }
@@ -126,6 +133,8 @@ export function ProfileForm() {
         mobile: values.mobile,
         position: values.position,
         status: values.status,
+        country: values.country,
+        management: values.management,
         notes: values.notes,
       };
 
@@ -151,7 +160,7 @@ export function ProfileForm() {
       setCroppedAvatar(null);
     } catch (error: any) {
       console.error('Profile update error:', error);
-      if (!error.name.includes('FirestorePermissionError')) {
+      if (!error.name?.includes('FirestorePermissionError')) {
         toast({
           variant: 'destructive',
           title: t('Profile.updateFailure'),
@@ -173,6 +182,19 @@ export function ProfileForm() {
     'Project Manager',
   ];
   const statusOptions: UserProfile['status'][] = ['active', 'suspended'];
+  
+  const countryOptions = [
+    'Argentina', 'Bolivia', 'Brazil', 'Chile', 'Colombia', 'CostaRica', 'Cuba', 
+    'DominicanRepublic', 'Ecuador', 'ElSalvador', 'Guatemala', 'Honduras', 
+    'Jamaica', 'Mexico', 'Nicaragua', 'Panama', 'Paraguay', 'Peru', 'PuertoRico', 
+    'Uruguay', 'Venezuela', 'USA', 'Canada', 'Bahamas', 'Barbados', 'Belize', 
+    'Guyana', 'Suriname', 'TrinidadAndTobago'
+  ].sort((a, b) => t(`Countries.${a}`).localeCompare(t(`Countries.${b}`)));
+
+  const managementOptions: UserProfile['management'][] = [
+    'Satellite Communications',
+    'GeoInformacion'
+  ];
 
   return (
     <>
@@ -283,7 +305,7 @@ export function ProfileForm() {
                   <FormLabel>{t('Profile.position')}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     disabled={isSaving}
                   >
                     <FormControl>
@@ -305,6 +327,65 @@ export function ProfileForm() {
             />
           </div>
 
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Profile.country')}</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSaving}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('Profile.country')} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {countryOptions.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {t(`Countries.${country}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="management"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Profile.management')}</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSaving}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('Profile.management')} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {managementOptions.map((opt) => (
+                        <SelectItem key={opt} value={opt || ''}>
+                          {t(`Management.${opt?.replace(' ', '')}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
             name="status"
@@ -313,7 +394,7 @@ export function ProfileForm() {
                 <FormLabel>{t('Profile.status')}</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   disabled={isSaving}
                 >
                   <FormControl>
