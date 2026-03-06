@@ -137,6 +137,11 @@ export type ContractType = 'Acuerdo Marco' | 'Locación de Servicios' | 'Comprav
 export type ContractStatus = 'activo' | 'vencido' | 'renovado' | 'renovado automatico';
 export type ContractRenewalTerm = '1 month' | '2 months';
 
+export type PriceListItem = {
+  planName: string;
+  price: number;
+};
+
 export type Contract = {
   id: string;
   publicId: string;
@@ -158,6 +163,9 @@ export type Contract = {
   specialClauses?: string;
   notes?: string;
   attachments?: OpportunityAttachment[];
+  priceList?: PriceListItem[];
+  topUp50GbPrice?: number;
+  topUp500GbPrice?: number;
   createdBy: string;
   createdAt: Date;
 };

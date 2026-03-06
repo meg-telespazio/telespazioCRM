@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -287,7 +286,19 @@
         "clientId": { "type": "string" },
         "createdBy": { "type": "string" },
         "notes": { "type": "string" },
-        "status": { "type": "string", "enum": ["activo", "vencido", "renovado", "renovado automatico"] }
+        "status": { "type": "string", "enum": ["activo", "vencido", "renovado", "renovado automatico"] },
+        "priceList": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "planName": { "type": "string" },
+              "price": { "type": "number" }
+            }
+          }
+        },
+        "topUp50GbPrice": { "type": "number" },
+        "topUp500GbPrice": { "type": "number" }
       }
     },
     "Addendum": {
@@ -309,7 +320,8 @@
       "description": "Represents a purchase order linked to a contract.",
       "type": "object",
       "properties": {
-        "id": { "type": "string", "description": "Manual PO Number." },
+        "id": { "type": "string", "description": "System generated PO ID." },
+        "poNumber": { "type": "string", "description": "Manual PO Number (reference)." },
         "emissionDate": { "type": "string", "format": "date-time" },
         "buyerId": { "type": "string", "description": "Contact ID of the buyer." },
         "amount": { "type": "number" },
@@ -321,7 +333,7 @@
         "createdBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "emissionDate", "buyerId", "amount", "currency", "status", "contractId", "createdBy", "createdAt"]
+      "required": ["id", "poNumber", "emissionDate", "buyerId", "amount", "currency", "status", "contractId", "createdBy", "createdAt"]
     },
     "Service": {
       "title": "Service",

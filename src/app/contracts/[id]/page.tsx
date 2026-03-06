@@ -17,16 +17,18 @@ import type {
   ContractType,
   ContractStatus,
   ContractRenewalTerm,
+  ProductOrService,
+  PriceListItem,
 } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { addContract, updateContract } from '@/lib/firestore/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addMonths, isValid } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Save } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -53,11 +55,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { AttachmentsManager } from '@/components/contracts/attachments-manager';
 import { AddendumManager } from '@/components/contracts/addendum-manager';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 
 const getFormSchema = (t: (key: string) => string) => {
   return z.object({
@@ -85,6 +89,12 @@ const getFormSchema = (t: (key: string) => string) => {
         size: z.number(),
         path: z.string(),
       })).optional(),
+      priceList: z.array(z.object({
+        planName: z.string().min(1),
+        price: z.coerce.number().min(0),
+      })).optional(),
+      topUp50GbPrice: z.coerce.number().min(0).optional(),
+      topUp500GbPrice: z.coerce.number().min(0).optional(),
     }).refine(data => !data.autoRenews || !!data.renewalTerm, {
         message: "Renewal term is required if auto-renews is selected",
         path: ["renewalTerm"],
@@ -119,14 +129,24 @@ export default function ContractFormPage() {
 
   const { data: contractData, loading: contractLoading } = useDoc<Contract>(contractDocRef);
 
-  const baseClientQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
-  const clientsQuery = useMemo(() => baseClientQuery ? query(collection(firestore, 'clients'), baseClientQuery) : null, [firestore, baseClientQuery]);
-  const contactsQuery = useMemo(() => baseClientQuery ? query(collection(firestore, 'contacts'), baseClientQuery) : null, [firestore, baseClientQuery]);
+  const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
+  
+  const clientsQuery = useMemo(() => baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null, [firestore, baseQuery]);
+  const contactsQuery = useMemo(() => baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null, [firestore, baseQuery]);
+  const psQuery = useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery, where('status', '==', 'active')) : null, [firestore, baseQuery]);
 
   const { data: clientsData, loading: clientsLoading } = useCollection<Client>(clientsQuery);
   const { data: allContactsData, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
+  const { data: catalogData, loading: catalogLoading } = useCollection<ProductOrService>(psQuery);
 
   const clients = useMemo(() => clientsData ? [...clientsData].sort((a, b) => a.name.localeCompare(b.name)) : [], [clientsData]);
+  
+  const servicePlans = useMemo(() => {
+    if (!catalogData) return [];
+    return catalogData
+      .filter(item => item.type === 'service' || item.type === 'bundle')
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [catalogData]);
 
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
@@ -151,7 +171,15 @@ export default function ContractFormPage() {
       specialClauses: '',
       notes: '',
       attachments: [],
+      priceList: [],
+      topUp50GbPrice: 0,
+      topUp500GbPrice: 0,
     },
+  });
+
+  const { fields: priceListFields, append: appendPriceItem, remove: removePriceItem } = useFieldArray({
+    control: form.control,
+    name: 'priceList',
   });
 
   const watchedClientId = form.watch('clientId');
@@ -159,6 +187,9 @@ export default function ContractFormPage() {
   const watchedDuration = form.watch('durationMonths');
   const watchedAutoRenews = form.watch('autoRenews');
   const watchedHasSpecialClauses = form.watch('hasSpecialClauses');
+
+  // New item for price list state
+  const [newPriceItem, setNewPriceItem] = useState<{planName: string, price: number}>({ planName: '', price: 0 });
 
   // Cálculo automático de Fecha Fin
   useEffect(() => {
@@ -181,6 +212,9 @@ export default function ContractFormPage() {
         startDate: contractData.startDate ? new Date(contractData.startDate) : new Date(),
         endDate: contractData.endDate ? new Date(contractData.endDate) : new Date(),
         signatureDate: contractData.signatureDate ? new Date(contractData.signatureDate) : undefined,
+        priceList: contractData.priceList || [],
+        topUp50GbPrice: contractData.topUp50GbPrice || 0,
+        topUp500GbPrice: contractData.topUp500GbPrice || 0,
       });
     }
   }, [contractData, form]);
@@ -201,7 +235,13 @@ export default function ContractFormPage() {
     }
   }
 
-  const pageIsLoading = !mounted || userLoading || clientsLoading || contactsLoading || (contractLoading && !isNew);
+  const handleAddPriceItem = () => {
+    if (!newPriceItem.planName) return;
+    appendPriceItem({ planName: newPriceItem.planName, price: newPriceItem.price });
+    setNewPriceItem({ planName: '', price: 0 });
+  };
+
+  const pageIsLoading = !mounted || userLoading || clientsLoading || contactsLoading || catalogLoading || (contractLoading && !isNew);
   if (pageIsLoading) {
     return (
       <div className="flex flex-1 flex-col">
@@ -229,89 +269,257 @@ export default function ContractFormPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Pages.clients')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!!clientIdFromQuery}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl>
-                    <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="clientContactId" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.clientContact')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!watchedClientId}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectContact')} /></SelectTrigger></FormControl>
-                    <SelectContent>{filteredContacts.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="clientId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Pages.clients')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!!clientIdFromQuery}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl>
+                      <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="clientContactId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.clientContact')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!watchedClientId}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectContact')} /></SelectTrigger></FormControl>
+                      <SelectContent>{filteredContacts.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </CardContent></Card>
 
               <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="type" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.type')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('Contracts.selectType')} /></SelectTrigger></FormControl>
-                    <SelectContent>{contractTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="status" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.status')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>{contractStatuses.map(s => <SelectItem key={s} value={s}>{t(`ContractStatuses.${s}`)}</SelectItem>)}</SelectContent>
-                  </Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="amount" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.amount')}</FormLabel><FormControl><Input type="number" {...field} placeholder={t('Forms.chargePlaceholder')} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="currency" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.currency')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>{currencyOptions.map(c => <SelectItem key={c} value={c}>{t(`Currencies.${c}`)}</SelectItem>)}</SelectContent>
-                  </Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="country" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.country')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="authorizedBy" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.authorizedBy')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="type" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.type')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={t('Contracts.selectType')} /></SelectTrigger></FormControl>
+                      <SelectContent>{contractTypes.map(type => <SelectItem key={type} value={type}>{t(`ContractTypes.${type}`)}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="status" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.status')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>{contractStatuses.map(s => <SelectItem key={s} value={s}>{t(`ContractStatuses.${s}`)}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="amount" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.amount')}</FormLabel>
+                    <FormControl><Input type="number" {...field} placeholder={t('Forms.chargePlaceholder')} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="currency" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.currency')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>{currencyOptions.map(c => <SelectItem key={c} value={c}>{t(`Currencies.${c}`)}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="country" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.country')}</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="authorizedBy" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.authorizedBy')}</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </CardContent></Card>
               
               <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.startDate')}</FormLabel><Popover open={isStartDateOpen} onOpenChange={setStartDateOpen}><PopoverTrigger asChild><FormControl>
-                  <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                    {field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : <span>{t('Forms.pickDate')}</span>}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setStartDateOpen(false)} onCancel={() => setStartDateOpen(false)} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
-                  </PopoverContent></Popover><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="signatureDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.signatureDate')}</FormLabel><Popover open={isSignatureDateOpen} onOpenChange={setSignatureDateOpen}><PopoverTrigger asChild><FormControl>
-                  <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                    {field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : <span>{t('Forms.pickDate')}</span>}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setSignatureDateOpen(false)} onCancel={() => setSignatureDateOpen(false)} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
-                  </PopoverContent></Popover><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Contracts.endDate')}</FormLabel><FormControl>
-                  <Input value={field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : ''} readOnly disabled className="bg-muted" />
-                </FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="durationMonths" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.durationMonths')}</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      onChange={(e) => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>)} />
+                <FormField control={form.control} name="startDate" render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>{t('Contracts.startDate')}</FormLabel>
+                    <Popover open={isStartDateOpen} onOpenChange={setStartDateOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : <span>{t('Forms.pickDate')}</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setStartDateOpen(false)} onCancel={() => setStartDateOpen(false)} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="signatureDate" render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>{t('Contracts.signatureDate')}</FormLabel>
+                    <Popover open={isSignatureDateOpen} onOpenChange={setSignatureDateOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : <span>{t('Forms.pickDate')}</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setSignatureDateOpen(false)} onCancel={() => setSignatureDateOpen(false)} initialFocus captionLayout="dropdown" {...calendarRange} locale={datePickerLocale} />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="endDate" render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>{t('Contracts.endDate')}</FormLabel>
+                    <FormControl>
+                      <Input value={field.value ? format(field.value, 'PPP', { locale: datePickerLocale }) : ''} readOnly disabled className="bg-muted" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="durationMonths" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.durationMonths')}</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        {...field} 
+                        onChange={(e) => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
                 <FormField control={form.control} name="autoRenews" render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-start gap-x-3 space-y-0 rounded-md border p-4 h-full">
                     <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     <FormLabel className="font-normal">{t('Contracts.autoRenews')}</FormLabel>
                   </FormItem>
                 )} />
-                {watchedAutoRenews && <FormField control={form.control} name="renewalTerm" render={({ field }) => (<FormItem>
-                  <FormLabel>{t('Contracts.renewalTerm')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('Contracts.selectRenewal')} /></SelectTrigger></FormControl>
-                    <SelectContent>{renewalTerms.map(rt => <SelectItem key={rt} value={rt}>{t(`RenewalTerms.${rt}`)}</SelectItem>)}</SelectContent>
-                  </Select><FormMessage /></FormItem>)} />}
+                {watchedAutoRenews && <FormField control={form.control} name="renewalTerm" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Contracts.renewalTerm')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={t('Contracts.selectRenewal')} /></SelectTrigger></FormControl>
+                      <SelectContent>{renewalTerms.map(rt => <SelectItem key={rt} value={rt}>{t(`RenewalTerms.${rt}`)}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />}
               </CardContent></Card>
+
+              {/* Price List Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    {t('Contracts.priceList')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-[2fr,1fr,auto] gap-4 items-end bg-muted/30 p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <Label>{t('Contracts.planName')}</Label>
+                      <Select 
+                        value={newPriceItem.planName} 
+                        onValueChange={(v) => setNewPriceItem(p => ({ ...p, planName: v }))}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder={t('Forms.selectItem')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {servicePlans.map(plan => (
+                            <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t('Contracts.agreedPrice')}</Label>
+                      <Input 
+                        type="number" 
+                        value={newPriceItem.price} 
+                        onChange={(e) => setNewPriceItem(p => ({ ...p, price: Number(e.target.value) }))}
+                        className="bg-background"
+                      />
+                    </div>
+                    <Button type="button" onClick={handleAddPriceItem} disabled={!newPriceItem.planName}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('Contracts.addPlan')}
+                    </Button>
+                  </div>
+
+                  <div className="border rounded-md">
+                    {priceListFields.length > 0 ? (
+                      <ul className="divide-y">
+                        {priceListFields.map((field, index) => (
+                          <li key={field.id} className="flex items-center justify-between p-3 hover:bg-slate-50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-primary/10 rounded-full">
+                                <Zap className="h-4 w-4 text-primary" />
+                              </div>
+                              <span className="font-medium text-sm">{field.planName}</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="font-bold text-primary">{form.watch('currency')} {field.price.toLocaleString()}</span>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => removePriceItem(index)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="py-8 text-center text-sm text-muted-foreground italic">
+                        No hay planes cargados en la lista de precios.
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <Label className="text-base font-bold flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-yellow-500" />
+                        {t('Contracts.topUps')}
+                      </Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="topUp50GbPrice" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Contracts.topUp50Gb')} ({form.watch('currency')})</FormLabel>
+                            <FormControl><Input type="number" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="topUp500GbPrice" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Contracts.topUp500Gb')} ({form.watch('currency')})</FormLabel>
+                            <FormControl><Input type="number" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
               
               <Card><CardContent className="p-6 space-y-4">
                  <FormField control={form.control} name="hasSpecialClauses" render={({ field }) => (<FormItem className="flex flex-row items-center justify-start gap-x-3 space-y-0">
