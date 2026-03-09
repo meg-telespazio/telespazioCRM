@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertTriangle, RefreshCw, Terminal } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -48,7 +48,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
   const [hasCorsError, setHasCorsError] = useState(false);
 
-  const bucketName = storage.app.options.storageBucket || 'studio-1413684383-379c9.firebasestorage.app';
+  const bucketName = storage.app.options.storageBucket || 'studio-1413684383-379c9.appspot.com';
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || disabled || !contractId || contractId === 'new') {
@@ -78,6 +78,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
+        console.error('Upload error:', error);
         if (error.message === 'CORS_ERROR') {
           setHasCorsError(true);
         } else {
@@ -128,17 +129,26 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle className="font-bold">Error de Acceso (CORS / Bucket)</AlertTitle>
-            <AlertDescription className="text-xs space-y-3">
-              <p>Es probable que necesites aplicar los permisos al bucket correcto o refrescar la página.</p>
+            <AlertDescription className="text-xs space-y-4">
+              <p>El servidor ha rechazado la subida. Por favor, ejecuta estos comandos en el <strong>Cloud Shell</strong> ({'>'}_) de Google Cloud:</p>
               
-              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
-                <p># Ejecuta estos comandos en el Cloud Shell ({'>'}_):</p>
-                <p className="break-all whitespace-normal">
-                  {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
-                </p>
-                <p className="break-all">
-                  {`gsutil cors set cors.json gs://${bucketName}`}
-                </p>
+              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-3">
+                <div>
+                  <p className="text-primary mb-1"># 1. Crear archivo de reglas</p>
+                  <p className="break-all whitespace-normal">
+                    {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-primary mb-1"># 2. Aplicar al bucket (intenta con este nombre):</p>
+                  <p className="break-all">
+                    {`gsutil cors set cors.json gs://${bucketName}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-primary mb-1"># 3. Si el anterior dio 404, busca tu nombre real con:</p>
+                  <p>{`gsutil ls`}</p>
+                </div>
               </div>
 
               <div className="flex gap-2">
@@ -149,7 +159,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
                   onClick={() => window.location.reload()}
                 >
                   <RefreshCw className="mr-2 h-3 w-3" />
-                  1. Refrescar App (F5)
+                  Luego refresca la página (F5)
                 </Button>
               </div>
             </AlertDescription>
