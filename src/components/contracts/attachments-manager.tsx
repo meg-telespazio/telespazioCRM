@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertTriangle } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -125,10 +125,25 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         {hasCorsError && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold">Error de Configuración (CORS)</AlertTitle>
-            <AlertDescription className="text-xs space-y-2">
-              <p>El bucket <strong>t-track-bucket</strong> está bloqueando la subida.</p>
-              <p className="font-semibold">Si ya ejecutaste los comandos en GCP, intenta refrescar la página (F5).</p>
+            <AlertTitle className="font-bold">Error de Configuración Detectado</AlertTitle>
+            <AlertDescription className="text-xs space-y-3">
+              <p>El navegador ha bloqueado la subida por una política de CORS.</p>
+              <div className="bg-white p-3 rounded border border-red-100 space-y-2">
+                <p className="font-bold text-red-900">Pasos para solucionar:</p>
+                <ol className="list-decimal pl-4 space-y-1">
+                  <li>Asegúrate de haber ejecutado los comandos <code>gsutil cors</code> en la consola de Google.</li>
+                  <li><strong>Importante:</strong> Refresca esta página (F5) para limpiar el error del navegador.</li>
+                </ol>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 w-full bg-white" 
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="mr-2 h-3 w-3" />
+                Refrescar Página (F5)
+              </Button>
             </AlertDescription>
           </Alert>
         )}
