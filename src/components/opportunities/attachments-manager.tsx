@@ -131,9 +131,9 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               <p>El navegador ha bloqueado la conexión por políticas de CORS.</p>
               
               <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
-                <p># Ejecuta estos comandos en el Cloud Shell (>_):</p>
+                <p># Ejecuta estos comandos en el Cloud Shell (&gt;_):</p>
                 <p className="break-all whitespace-normal">
-                  echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' &gt; cors.json
+                  {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
                 </p>
                 <p className="break-all">
                   gsutil cors set cors.json gs://t-track-bucket
