@@ -35,20 +35,18 @@ export async function uploadFile(
         if (onProgress) onProgress(Math.max(progress, 1));
       },
       (error) => {
-        console.error('Firebase Storage Error Detail:', {
-          code: error.code,
-          message: error.message,
-          bucket: storage.app.options.storageBucket,
-          fullError: error
-        });
+        // Log detallado para diagnóstico
+        console.error('Firebase Storage Error Detail:', error);
         
-        // Detectamos si es un error de CORS o de red (que en Storage se manifiesta como unknown)
-        if (
+        // Si el error es unknown o el objeto está vacío, en este entorno suele ser CORS.
+        const isCors = 
+          !error.code || 
           error.code === 'storage/unknown' || 
-          error.message.includes('Access-Control') ||
-          error.message.includes('CORS') ||
-          error.message.includes('preflight')
-        ) {
+          error.message?.includes('CORS') || 
+          error.message?.includes('preflight') ||
+          Object.keys(error).length === 0;
+
+        if (isCors) {
           reject(new Error('CORS_ERROR'));
         } else {
           reject(error);

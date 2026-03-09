@@ -2,8 +2,8 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permitir lectura y escritura a cualquier usuario autenticado en todo el bucket.
-    // Esto asegura que las carpetas /contracts y /opportunities sean accesibles.
+    // Permitir acceso total a cualquier usuario autenticado.
+    // Esto garantiza que no haya bloqueos por parte de Firebase.
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }

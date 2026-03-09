@@ -78,7 +78,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        console.error('Upload error:', error);
+        console.error('Upload error caught in component:', error);
         if (error.message === 'CORS_ERROR') {
           setHasCorsError(true);
         } else {
@@ -128,34 +128,31 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         {hasCorsError && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold">Acceso Bloqueado (CORS)</AlertTitle>
+            <AlertTitle className="font-bold">Error de Acceso (CORS)</AlertTitle>
             <AlertDescription className="text-xs space-y-4">
-              <p>El servidor ha rechazado la subida por seguridad. Ejecuta estos comandos en el <strong>Cloud Shell</strong> ({'>'}_) de Google Cloud:</p>
+              <p>Aunque hayas ejecutado los comandos, el navegador sigue bloqueando la conexión. Sigue estos pasos:</p>
               
-              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-3">
-                <div>
-                  <p className="text-primary mb-1"># 1. Crea las reglas</p>
-                  <p className="break-all whitespace-normal">
-                    {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-primary mb-1"># 2. Aplica al bucket:</p>
-                  <p className="break-all">
-                    {`gsutil cors set cors.json gs://${bucketName}`}
-                  </p>
-                </div>
+              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
+                <p>{"# 1. Asegura que el CORS esté aplicado al bucket correcto:"}</p>
+                <p className="break-all whitespace-normal">
+                  {`gsutil cors set cors.json gs://${bucketName}`}
+                </p>
               </div>
 
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full bg-white" 
-                onClick={() => window.location.reload()}
-              >
-                <RefreshCw className="mr-2 h-3 w-3" />
-                Refrescar App (Vital para aplicar cambios)
-              </Button>
+              <div className="flex flex-col gap-2">
+                <p className="font-semibold text-primary">2. ¡PASO CRUCIAL!</p>
+                <p>El navegador guarda el error de "Acceso Denegado" en caché. Para limpiar la conexión:</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full bg-white border-primary text-primary hover:bg-primary/5" 
+                  onClick={() => window.location.reload()}
+                >
+                  <RefreshCw className="mr-2 h-3 w-3" />
+                  Recargar App (F5)
+                </Button>
+                <p className="text-[9px] text-muted-foreground italic">Si el error persiste tras recargar, intenta subir el archivo en una ventana de <b>Incógnito</b>.</p>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -175,7 +172,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             >
               <UploadCloud className={cn("w-10 h-10 mb-2", hasCorsError ? "text-destructive" : "text-muted-foreground")} />
               <p className="text-sm text-center text-muted-foreground">
-                <span className="font-semibold text-primary">Subir Archivo</span>
+                <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar aquí
               </p>
               <input
                 id="file-upload"
