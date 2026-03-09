@@ -82,7 +82,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
           toast({ 
             variant: 'destructive', 
             title: 'Error de subida', 
-            description: error.message || 'Ocurrió un error inesperado al subir el archivo.' 
+            description: error.message || 'Ocurrió un error inesperado.' 
           });
         }
       } finally {
@@ -119,7 +119,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
     <Card>
       <CardHeader>
         <CardTitle>{t('Contracts.attachments')}</CardTitle>
-        <CardDescription>Archivos vinculados al contrato en el bucket t-track-bucket.</CardDescription>
+        <CardDescription>Archivos vinculados al contrato en el bucket.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {hasCorsError && (
@@ -127,13 +127,8 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle className="font-bold">Error de Configuración (CORS)</AlertTitle>
             <AlertDescription className="text-xs space-y-2">
-              <p>El bucket <strong>t-track-bucket</strong> está bloqueando la subida desde este dominio.</p>
-              <p className="font-semibold">Para solucionarlo:</p>
-              <ol className="list-decimal pl-4 space-y-1">
-                <li>Abre la consola de Google Cloud y pulsa el botón <strong>&gt;_ (Cloud Shell)</strong> arriba a la derecha.</li>
-                <li>Pega este comando: <code className="bg-black text-white p-1 rounded">{`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["Content-Type", "x-goog-resumable"], "maxAgeSeconds": 3600}]' > cors.json`}</code></li>
-                <li>Pega este segundo comando: <code className="bg-black text-white p-1 rounded">{`gsutil cors set cors.json gs://t-track-bucket`}</code></li>
-              </ol>
+              <p>El bucket <strong>t-track-bucket</strong> está bloqueando la subida.</p>
+              <p className="font-semibold">Si ya ejecutaste los comandos en GCP, intenta refrescar la página (F5).</p>
             </AlertDescription>
           </Alert>
         )}

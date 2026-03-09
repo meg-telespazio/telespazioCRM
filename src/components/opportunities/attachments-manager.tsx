@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -10,9 +9,10 @@ import { uploadFile, deleteFile } from '@/lib/storage';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import type { OpportunityAttachment } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -30,7 +30,7 @@ const ALLOWED_FILE_TYPES = [
   'image/jpeg',
   'image/png'
 ];
-const MAX_FILE_SIZE_MB = 20;
+const MAX_FILE_SIZE_MB = 30;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManagerProps) {
@@ -46,69 +46,64 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
 
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
+  const [hasCorsError, setHasCorsError] = useState(false);
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || disabled || !opportunityId || opportunityId === 'new') {
       if (opportunityId === 'new') {
-        toast({
-          variant: 'destructive',
-          title: 'Guarde primero',
-          description: 'Debe guardar la oportunidad antes de adjuntar archivos.'
-        });
+        toast({ variant: 'destructive', title: 'Acción requerida', description: 'Guarde la oportunidad antes de subir archivos.' });
       }
       return;
     }
 
-    const fileArray = Array.from(files);
-    
-    for (const file of fileArray) {
+    setHasCorsError(false);
+
+    for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
-        toast({
-          variant: 'destructive',
-          title: 'Archivo muy grande',
-          description: `"${file.name}" excede el límite de ${MAX_FILE_SIZE_MB}MB.`
-        });
+        toast({ variant: 'destructive', title: 'Archivo excedido', description: `Máximo ${MAX_FILE_SIZE_MB}MB.` });
         continue;
       }
-      
-      const fileId = `${Date.now()}-${file.name}`;
-      setUploadingFiles(prev => ({ ...prev, [fileId]: 0 }));
+
+      const fileId = `${Date.now()}_${file.name}`;
+      setUploadingFiles(prev => ({ ...prev, [fileId]: 1 }));
 
       try {
         const path = `opportunities/${opportunityId}/${fileId}`;
         const attachment = await uploadFile(storage, path, file, (progress) => {
-          setUploadingFiles(prev => ({ ...prev, [fileId]: progress }));
+          setUploadingFiles(prev => ({ ...prev, [fileId]: Math.max(1, progress) }));
         });
 
         append(attachment);
-        toast({ title: 'Archivo subido', description: file.name });
+        toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Error de subida',
-          description: `No se pudo subir "${file.name}".`
-        });
+        if (error.message === 'CORS_ERROR') {
+          setHasCorsError(true);
+        } else {
+          toast({ 
+            variant: 'destructive', 
+            title: 'Error de subida', 
+            description: error.message || 'Ocurrió un error inesperado.' 
+          });
+        }
       } finally {
         setUploadingFiles(prev => {
-          const newState = { ...prev };
-          delete newState[fileId];
-          return newState;
+          const next = { ...prev };
+          delete next[fileId];
+          return next;
         });
       }
     }
   }, [append, disabled, opportunityId, storage, toast]);
 
-  const handleDelete = async (index: number, attachment: OpportunityAttachment) => {
+  const handleDelete = async (index: number, attachment: any) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
-
     try {
-      if (attachment.path && !attachment.url.includes('#simulated')) {
-        await deleteFile(storage, attachment.path);
-      }
+      if (attachment.path) await deleteFile(storage, attachment.path);
       remove(index);
-      toast({ title: 'Archivo eliminado' });
-    } catch (error) {
-      remove(index); // Remove from list anyway if not found in storage
+      toast({ title: 'Adjunto eliminado' });
+    } catch (e) {
+      console.error('Delete error:', e);
+      remove(index);
     }
   };
 
@@ -116,99 +111,113 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); };
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    if (!disabled && e.dataTransfer.files) {
-      handleFileUpload(e.dataTransfer.files);
-    }
+    e.preventDefault(); e.stopPropagation(); setIsDragging(false);
+    if (!disabled && e.dataTransfer.files) handleFileUpload(e.dataTransfer.files);
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Archivos Adjuntos de la Propuesta</CardTitle>
-        <CardDescription>Organizados en la carpeta: opportunities/{opportunityId}/</CardDescription>
+        <CardTitle>Documentación de la Oferta</CardTitle>
+        <CardDescription>Archivos vinculados a esta oportunidad en el bucket.</CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {!disabled ? (
-          <div
-            className={cn(
-              "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors h-full min-h-[200px]",
-              isDragging && "border-primary bg-primary/10"
-            )}
-            onDragEnter={onDragEnter}
-            onDragLeave={onDragLeave}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-          >
-            <UploadCloud className="w-10 h-10 text-muted-foreground" />
-            <p className="mt-2 text-sm text-center text-muted-foreground">
-              <span className="font-semibold text-primary">Clic para subir</span> o arrastrar
-            </p>
-            <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX, Imágenes (max {MAX_FILE_SIZE_MB}MB)</p>
-            <input
-              id="file-upload"
-              type="file"
-              multiple
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              onChange={(e) => handleFileUpload(e.target.files)}
-              accept={ALLOWED_FILE_TYPES.join(',')}
-              disabled={disabled || opportunityId === 'new'}
-            />
-          </div>
-        ) : (
-            <div className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg bg-muted/50 h-full min-h-[200px]">
-                <Paperclip className="h-8 w-8 mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground text-center">La subida de adjuntos está deshabilitada.</p>
-            </div>
+      <CardContent className="space-y-6">
+        {hasCorsError && (
+          <Alert variant="destructive" className="bg-red-50 border-red-200">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className="font-bold">Error de Configuración (CORS)</AlertTitle>
+            <AlertDescription className="text-xs space-y-2">
+              <p>El bucket <strong>t-track-bucket</strong> está bloqueando la subida.</p>
+              <p className="font-semibold">Si ya ejecutaste los comandos en GCP, intenta refrescar la página (F5).</p>
+            </AlertDescription>
+          </Alert>
         )}
-        
-        <div className="space-y-4">
-            <h4 className="text-sm font-medium">Lista de Documentos</h4>
-            
-            {/* Uploading Status */}
-            {Object.entries(uploadingFiles).map(([id, progress]) => (
-              <div key={id} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="truncate max-w-[200px]">{id.split('-').slice(1).join('-')}</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <Progress value={progress} className="h-1" />
-              </div>
-            ))}
 
-            <div className="space-y-2">
-                {(fields as OpportunityAttachment[]).length > 0 ? (
-                  (fields as OpportunityAttachment[]).map((attachment, index) => (
-                    <div key={attachment.path} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50">
-                        <FileText className="h-6 w-6 shrink-0 text-muted-foreground" />
-                        <div className="flex-1 truncate">
-                          <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">
-                              {attachment.name}
-                          </Link>
-                          <p className="text-[10px] text-muted-foreground">
-                              {(attachment.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(index, attachment)}
-                          disabled={disabled}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                    </div>
-                  ))
-                ) : Object.keys(uploadingFiles).length === 0 && (
-                  <div className="flex flex-col items-center justify-center pt-8 text-center text-sm text-muted-foreground">
-                      <Paperclip className="h-8 w-8 mb-2 opacity-20" />
-                      <p>No hay archivos.</p>
-                  </div>
-                )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          {!disabled ? (
+            <div
+              className={cn(
+                "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors h-full min-h-[200px]",
+                isDragging && "border-primary bg-primary/10",
+                hasCorsError && "border-destructive/50"
+              )}
+              onDragEnter={onDragEnter}
+              onDragLeave={onDragLeave}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+            >
+              <UploadCloud className={cn("w-10 h-10 mb-2", hasCorsError ? "text-destructive" : "text-muted-foreground")} />
+              <p className="text-sm text-center text-muted-foreground">
+                <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">PDF, DOCX, XLSX (máx {MAX_FILE_SIZE_MB}MB)</p>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={(e) => handleFileUpload(e.target.files)}
+                accept={ALLOWED_FILE_TYPES.join(',')}
+                disabled={disabled || opportunityId === 'new'}
+              />
             </div>
+          ) : (
+              <div className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg bg-muted/50 h-full min-h-[200px]">
+                  <Paperclip className="h-8 w-8 mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground text-center">Edición deshabilitada.</p>
+              </div>
+          )}
+          
+          <div className="space-y-4">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                Lista de Archivos
+                <Badge variant="secondary" className="text-[10px]">{fields.length}</Badge>
+              </h4>
+              
+              {Object.entries(uploadingFiles).map(([id, progress]) => (
+                <div key={id} className="space-y-1 bg-muted/30 p-2 rounded border border-dashed">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="truncate max-w-[150px]">{id.split('_').slice(1).join('_')}</span>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                      <span>{Math.round(progress)}%</span>
+                    </div>
+                  </div>
+                  <Progress value={progress} className="h-1" />
+                </div>
+              ))}
+
+              <div className="space-y-2">
+                  {fields.length > 0 ? (
+                    fields.map((attachment: any, index) => (
+                      <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md bg-background group hover:border-primary/50 transition-colors">
+                          <FileText className="h-6 w-6 shrink-0 text-primary opacity-70" />
+                          <div className="flex-1 truncate">
+                            <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline">
+                                {attachment.name}
+                            </Link>
+                            <p className="text-[10px] text-muted-foreground">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
+                          </div>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDelete(index, attachment)} 
+                            disabled={disabled} 
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                      </div>
+                    ))
+                  ) : Object.keys(uploadingFiles).length === 0 && (
+                    <div className="text-center py-10 border rounded-lg border-dashed bg-slate-50/50">
+                      <Paperclip className="h-8 w-8 mx-auto text-muted-foreground/20 mb-2" />
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Sin documentos</p>
+                    </div>
+                  )}
+              </div>
+          </div>
         </div>
       </CardContent>
     </Card>
