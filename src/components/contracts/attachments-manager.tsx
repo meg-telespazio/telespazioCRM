@@ -61,7 +61,6 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
       }
 
       const fileId = `${Date.now()}_${file.name}`;
-      // Inicializamos el progreso en 1% para mostrar que algo está pasando inmediatamente
       setUploadingFiles(prev => ({ ...prev, [fileId]: 1 }));
 
       try {
@@ -74,10 +73,12 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
         console.error('Upload error in component:', error);
+        
+        // Error descriptivo para el usuario sobre CORS
         toast({ 
           variant: 'destructive', 
-          title: 'Error de subida', 
-          description: error.message || 'Error de conexión o permisos. Verifique el bucket.' 
+          title: 'Error de conexión (CORS)', 
+          description: 'El navegador bloqueó la subida. Asegúrate de haber configurado el CORS en el bucket t-track-bucket desde la consola de Google Cloud (botón >_).' 
         });
       } finally {
         setUploadingFiles(prev => {

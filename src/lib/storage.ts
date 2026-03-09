@@ -19,11 +19,10 @@ export async function uploadFile(
   file: File,
   onProgress?: UploadProgressCallback
 ): Promise<{ url: string; path: string; name: string; size: number; type: string }> {
-  // Limpiamos el path para evitar errores de Firebase
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  // Firebase Storage no permite rutas que empiecen con /
+  const cleanPath = path.replace(/^\//, '');
   const storageRef = ref(storage, cleanPath);
   
-  // Forzamos los metadatos para evitar problemas de tipo MIME
   const metadata = {
     contentType: file.type || 'application/octet-stream',
   };
@@ -34,12 +33,11 @@ export async function uploadFile(
     uploadTask.on(
       'state_changed',
       (snapshot) => {
-        // Calculamos el progreso de forma segura
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         if (onProgress) onProgress(progress);
       },
       (error) => {
-        // Logueamos el error completo para depuración
+        // El error de CORS suele manifestarse aquí como un error de red o 'storage/unknown'
         console.error('Firebase Storage Error Detail:', error);
         reject(error);
       },
@@ -54,7 +52,7 @@ export async function uploadFile(
             type: file.type,
           });
         } catch (urlError) {
-          console.error('Error al obtener URL de descarga:', urlError);
+          console.error('Error getting download URL:', urlError);
           reject(urlError);
         }
       }
@@ -63,7 +61,7 @@ export async function uploadFile(
 }
 
 export async function deleteFile(storage: FirebaseStorage, path: string) {
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  const cleanPath = path.replace(/^\//, '');
   const storageRef = ref(storage, cleanPath);
   return deleteObject(storageRef);
 }
