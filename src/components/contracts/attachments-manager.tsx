@@ -11,9 +11,8 @@ import { useParams } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Trash2, FileText, UploadCloud } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import type { OpportunityAttachment } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -72,8 +71,13 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
 
         append(attachment);
         toast({ title: 'Archivo guardado', description: file.name });
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Error al subir el archivo.' });
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        toast({ 
+          variant: 'destructive', 
+          title: 'Error de subida', 
+          description: error.message || 'Asegúrese de que el bucket permita escrituras y el archivo sea válido.' 
+        });
       } finally {
         setUploadingFiles(prev => {
           const next = { ...prev };
@@ -91,6 +95,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
       remove(index);
       toast({ title: 'Adjunto eliminado' });
     } catch (e) {
+      console.error('Delete error:', e);
       remove(index);
     }
   };
@@ -107,7 +112,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
     <Card>
       <CardHeader>
         <CardTitle>{t('Contracts.attachments')}</CardTitle>
-        <CardDescription>Los archivos se guardarán en el bucket bajo la carpeta: contracts/{contractId}/</CardDescription>
+        <CardDescription>Los archivos se guardarán en: contracts/{contractId}/</CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {!disabled ? (
@@ -150,7 +155,10 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               <div key={id} className="space-y-1">
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="truncate">{id.split('_').slice(1).join('_')}</span>
-                  <span>{Math.round(progress)}%</span>
+                  <div className="flex items-center gap-2">
+                    {progress === 0 && <Loader2 className="h-3 w-3 animate-spin" />}
+                    <span>{Math.round(progress)}%</span>
+                  </div>
                 </div>
                 <Progress value={progress} className="h-1" />
               </div>
@@ -159,7 +167,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             <div className="space-y-2">
                 {fields.length > 0 ? (
                   fields.map((attachment: any, index) => (
-                    <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md bg-background">
+                    <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md bg-background group">
                         <FileText className="h-6 w-6 shrink-0 text-primary" />
                         <div className="flex-1 truncate">
                           <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold hover:underline">
@@ -167,7 +175,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
                           </Link>
                           <p className="text-[10px] text-muted-foreground">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleDelete(index, attachment)} disabled={disabled}>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => handleDelete(index, attachment)} disabled={disabled} className="opacity-0 group-hover:opacity-100 transition-opacity">
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                     </div>
