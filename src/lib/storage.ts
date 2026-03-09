@@ -18,7 +18,6 @@ export async function uploadFile(
   file: File,
   onProgress?: UploadProgressCallback
 ): Promise<{ url: string; path: string; name: string; size: number; type: string }> {
-  // Firebase Storage no permite rutas que empiecen con /
   const cleanPath = path.replace(/^\//, '');
   const storageRef = ref(storage, cleanPath);
   
@@ -26,7 +25,6 @@ export async function uploadFile(
     contentType: file.type || 'application/octet-stream',
   };
 
-  // Iniciamos la tarea de subida
   const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
   return new Promise((resolve, reject) => {
@@ -37,13 +35,19 @@ export async function uploadFile(
         if (onProgress) onProgress(Math.max(progress, 1));
       },
       (error) => {
-        console.error('Detailed Firebase Storage Error:', error);
+        console.error('Firebase Storage Error Detail:', {
+          code: error.code,
+          message: error.message,
+          bucket: storage.app.options.storageBucket,
+          fullError: error
+        });
         
-        // Detección de CORS basada en códigos de error comunes de red/storage
+        // Detectamos si es un error de CORS o de red (que en Storage se manifiesta como unknown)
         if (
           error.code === 'storage/unknown' || 
           error.message.includes('Access-Control') ||
-          error.message.includes('CORS')
+          error.message.includes('CORS') ||
+          error.message.includes('preflight')
         ) {
           reject(new Error('CORS_ERROR'));
         } else {

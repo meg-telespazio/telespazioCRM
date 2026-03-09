@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +48,8 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
   const [hasCorsError, setHasCorsError] = useState(false);
 
+  const bucketName = storage.app.options.storageBucket || 'studio-1413684383-379c9.firebasestorage.app';
+
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || disabled || !contractId || contractId === 'new') {
       if (contractId === 'new') {
@@ -76,8 +78,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        console.error('Upload catch block:', error);
-        if (error.message === 'CORS_ERROR' || error.code === 'storage/unknown') {
+        if (error.message === 'CORS_ERROR') {
           setHasCorsError(true);
         } else {
           toast({ 
@@ -120,23 +121,23 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
     <Card>
       <CardHeader>
         <CardTitle>{t('Contracts.attachments')}</CardTitle>
-        <CardDescription>Archivos vinculados al contrato en el bucket.</CardDescription>
+        <CardDescription>Archivos vinculados al contrato.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {hasCorsError && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold">Acceso Denegado por CORS</AlertTitle>
+            <AlertTitle className="font-bold">Error de Acceso (CORS / Bucket)</AlertTitle>
             <AlertDescription className="text-xs space-y-3">
-              <p>El navegador ha bloqueado la subida. Es necesario autorizar este dominio en el bucket de Google Cloud.</p>
+              <p>Es probable que necesites aplicar los permisos al bucket correcto o refrescar la página.</p>
               
               <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
                 <p># Ejecuta estos comandos en el Cloud Shell ({'>'}_):</p>
                 <p className="break-all whitespace-normal">
-                  echo &apos;[{`{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}`}]&apos; {'>'} cors.json
+                  {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
                 </p>
                 <p className="break-all">
-                  gsutil cors set cors.json gs://t-track-bucket
+                  {`gsutil cors set cors.json gs://${bucketName}`}
                 </p>
               </div>
 
@@ -148,15 +149,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
                   onClick={() => window.location.reload()}
                 >
                   <RefreshCw className="mr-2 h-3 w-3" />
-                  1. Refrescar página
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1 bg-white" 
-                  onClick={() => window.open('https://console.cloud.google.com/home/dashboard', '_blank')}
-                >
-                  2. Abrir GCP Console
+                  1. Refrescar App (F5)
                 </Button>
               </div>
             </AlertDescription>
@@ -178,9 +171,8 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             >
               <UploadCloud className={cn("w-10 h-10 mb-2", hasCorsError ? "text-destructive" : "text-muted-foreground")} />
               <p className="text-sm text-center text-muted-foreground">
-                <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar
+                <span className="font-semibold text-primary">Subir Archivo</span>
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">PDF, DOCX, XLSX (máx {MAX_FILE_SIZE_MB}MB)</p>
               <input
                 id="file-upload"
                 type="file"
@@ -200,24 +192,21 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
           
           <div className="space-y-4">
               <h4 className="text-sm font-semibold flex items-center gap-2">
-                Documentación cargada
+                Documentación
                 <Badge variant="secondary" className="text-[10px]">{fields.length}</Badge>
               </h4>
               
-              {Object.entries(uploadingFiles).map(([id, progress]) => (
-                <div key={id} className="space-y-1 bg-muted/30 p-2 rounded border border-dashed animate-pulse">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="truncate max-w-[150px]">{id.split('_').slice(1).join('_')}</span>
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                      <span>{Math.round(progress)}%</span>
-                    </div>
-                  </div>
-                  <Progress value={progress} className="h-1" />
-                </div>
-              ))}
-
               <div className="space-y-2">
+                  {Object.entries(uploadingFiles).map(([id, progress]) => (
+                    <div key={id} className="space-y-1 bg-muted/30 p-2 rounded border border-dashed animate-pulse">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="truncate max-w-[150px]">{id.split('_').slice(1).join('_')}</span>
+                        <span>{Math.round(progress)}%</span>
+                      </div>
+                      <Progress value={progress} className="h-1" />
+                    </div>
+                  ))}
+
                   {fields.length > 0 ? (
                     fields.map((attachment: any, index) => (
                       <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md bg-background group hover:border-primary/50 transition-colors">
