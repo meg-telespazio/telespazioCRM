@@ -12,9 +12,6 @@ export type UploadProgressCallback = (progress: number) => void;
 
 /**
  * Sube un archivo a una ruta específica en el bucket.
- * Rutas sugeridas: 
- * - opportunities/{id}/{filename}
- * - contracts/{id}/{filename}
  */
 export async function uploadFile(
   storage: FirebaseStorage,
@@ -22,35 +19,51 @@ export async function uploadFile(
   file: File,
   onProgress?: UploadProgressCallback
 ): Promise<{ url: string; path: string; name: string; size: number; type: string }> {
-  const storageRef = ref(storage, path);
-  const uploadTask = uploadBytesResumable(storageRef, file);
+  // Limpiamos el path para evitar errores de Firebase
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  const storageRef = ref(storage, cleanPath);
+  
+  // Forzamos los metadatos para evitar problemas de tipo MIME
+  const metadata = {
+    contentType: file.type || 'application/octet-stream',
+  };
+
+  const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
   return new Promise((resolve, reject) => {
     uploadTask.on(
       'state_changed',
       (snapshot) => {
+        // Calculamos el progreso de forma segura
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         if (onProgress) onProgress(progress);
       },
       (error) => {
-        console.error('Upload failed:', error);
+        // Logueamos el error completo para depuración
+        console.error('Firebase Storage Error Detail:', error);
         reject(error);
       },
       async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        resolve({
-          url: downloadURL,
-          path: path,
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        });
+        try {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve({
+            url: downloadURL,
+            path: cleanPath,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+          });
+        } catch (urlError) {
+          console.error('Error al obtener URL de descarga:', urlError);
+          reject(urlError);
+        }
       }
     );
   });
 }
 
 export async function deleteFile(storage: FirebaseStorage, path: string) {
-  const storageRef = ref(storage, path);
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  const storageRef = ref(storage, cleanPath);
   return deleteObject(storageRef);
 }

@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2 } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -61,22 +61,23 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
       }
 
       const fileId = `${Date.now()}_${file.name}`;
-      setUploadingFiles(prev => ({ ...prev, [fileId]: 0 }));
+      // Inicializamos el progreso en 1% para mostrar que algo está pasando inmediatamente
+      setUploadingFiles(prev => ({ ...prev, [fileId]: 1 }));
 
       try {
         const path = `contracts/${contractId}/${fileId}`;
         const attachment = await uploadFile(storage, path, file, (progress) => {
-          setUploadingFiles(prev => ({ ...prev, [fileId]: progress }));
+          setUploadingFiles(prev => ({ ...prev, [fileId]: Math.max(1, progress) }));
         });
 
         append(attachment);
-        toast({ title: 'Archivo guardado', description: file.name });
+        toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        console.error('Upload error:', error);
+        console.error('Upload error in component:', error);
         toast({ 
           variant: 'destructive', 
           title: 'Error de subida', 
-          description: error.message || 'Asegúrese de que el bucket permita escrituras y el archivo sea válido.' 
+          description: error.message || 'Error de conexión o permisos. Verifique el bucket.' 
         });
       } finally {
         setUploadingFiles(prev => {
@@ -112,7 +113,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
     <Card>
       <CardHeader>
         <CardTitle>{t('Contracts.attachments')}</CardTitle>
-        <CardDescription>Los archivos se guardarán en: contracts/{contractId}/</CardDescription>
+        <CardDescription>Archivos vinculados al contrato.</CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {!disabled ? (
@@ -149,14 +150,14 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         )}
         
         <div className="space-y-4">
-            <h4 className="text-sm font-medium">Archivos del Contrato</h4>
+            <h4 className="text-sm font-medium">Documentación adjunta</h4>
             
             {Object.entries(uploadingFiles).map(([id, progress]) => (
               <div key={id} className="space-y-1">
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="truncate">{id.split('_').slice(1).join('_')}</span>
                   <div className="flex items-center gap-2">
-                    {progress === 0 && <Loader2 className="h-3 w-3 animate-spin" />}
+                    {progress <= 1 && <Loader2 className="h-3 w-3 animate-spin" />}
                     <span>{Math.round(progress)}%</span>
                   </div>
                 </div>
