@@ -47,13 +47,6 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
   const [hasCorsError, setHasCorsError] = useState(false);
-  const [originDomain, setOriginDomain] = useState('');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setOriginDomain(window.location.origin);
-    }
-  }, []);
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || disabled || !contractId || contractId === 'new') {
@@ -72,7 +65,6 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
       }
 
       const fileId = `${Date.now()}_${file.name}`;
-      // Empezamos en 1% para mostrar actividad
       setUploadingFiles(prev => ({ ...prev, [fileId]: 1 }));
 
       try {
@@ -139,9 +131,9 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               <p>El navegador ha bloqueado la subida. Es necesario autorizar este dominio en el bucket de Google Cloud.</p>
               
               <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
-                <p># Ejecuta estos comandos en el Cloud Shell (&gt;_):</p>
+                <p># Ejecuta estos comandos en el Cloud Shell ({'>'}_):</p>
                 <p className="break-all whitespace-normal">
-                  {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
+                  echo &apos;[{`{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}`}]&apos; {'>'} cors.json
                 </p>
                 <p className="break-all">
                   gsutil cors set cors.json gs://t-track-bucket
