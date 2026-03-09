@@ -10,7 +10,7 @@ import { uploadFile, deleteFile } from '@/lib/storage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -48,7 +48,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
   const [hasCorsError, setHasCorsError] = useState(false);
 
-  const bucketName = storage.app.options.storageBucket || 'studio-1413684383-379c9.appspot.com';
+  const bucketName = storage.app.options.storageBucket || 'studio-1413684383-379c9.firebasestorage.app';
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || disabled || !opportunityId || opportunityId === 'new') {
@@ -128,13 +128,13 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         {hasCorsError && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold">Error de Acceso (CORS / Bucket)</AlertTitle>
+            <AlertTitle className="font-bold">Error de Acceso (CORS)</AlertTitle>
             <AlertDescription className="text-xs space-y-4">
-              <p>El servidor ha rechazado la subida. Por favor, ejecuta estos comandos en el <strong>Cloud Shell</strong> ({'>'}_) de Google Cloud:</p>
+              <p>El servidor ha rechazado la subida por seguridad. Ejecuta estos comandos en el <strong>Cloud Shell</strong> ({'>'}_) de Google Cloud:</p>
               
               <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-3">
                 <div>
-                  <p className="text-primary mb-1"># 1. Crear reglas</p>
+                  <p className="text-primary mb-1"># 1. Crear archivo de reglas</p>
                   <p className="break-all whitespace-normal">
                     {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
                   </p>
@@ -145,23 +145,17 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
                     {`gsutil cors set cors.json gs://${bucketName}`}
                   </p>
                 </div>
-                <div>
-                  <p className="text-primary mb-1"># 3. Si el anterior dio 404, busca tu nombre real con:</p>
-                  <p>{`gsutil ls`}</p>
-                </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1 bg-white" 
-                  onClick={() => window.location.reload()}
-                >
-                  <RefreshCw className="mr-2 h-3 w-3" />
-                  Luego refresca la página (F5)
-                </Button>
-              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full bg-white" 
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="mr-2 h-3 w-3" />
+                Refrescar App (Vital para aplicar cambios)
+              </Button>
             </AlertDescription>
           </Alert>
         )}

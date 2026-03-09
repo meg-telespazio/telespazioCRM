@@ -1,12 +1,11 @@
 import { FirebaseOptions } from 'firebase/app';
 
-// Probamos con el sufijo .appspot.com que es el estándar para la mayoría de los proyectos
 const firebaseConfig: FirebaseOptions = {
   projectId: 'studio-1413684383-379c9',
   appId: '1:271369109791:web:3752b36b02a',
   apiKey: 'AIzaSyB08ZbfRZIfdDXjYBwA5hivWJEt7cqq2lo',
   authDomain: 'studio-1413684383-379c9.firebaseapp.com',
-  storageBucket: 'studio-1413684383-379c9.appspot.com',
+  storageBucket: 'studio-1413684383-379c9.firebasestorage.app',
   messagingSenderId: '271369109791',
 };
 
