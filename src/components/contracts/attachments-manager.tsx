@@ -130,8 +130,8 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               <p className="font-semibold">Para solucionarlo:</p>
               <ol className="list-decimal pl-4 space-y-1">
                 <li>Abre la consola de Google Cloud y pulsa el botón <strong>&gt;_ (Cloud Shell)</strong> arriba a la derecha.</li>
-                <li>Pega este comando: <code className="bg-black text-white p-1 rounded">echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["Content-Type", "x-goog-resumable"], "maxAgeSeconds": 3600}]' &gt; cors.json</code></li>
-                <li>Pega este segundo comando: <code className="bg-black text-white p-1 rounded">gsutil cors set cors.json gs://t-track-bucket</code></li>
+                <li>Pega este comando: <code className="bg-black text-white p-1 rounded">{`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["Content-Type", "x-goog-resumable"], "maxAgeSeconds": 3600}]' > cors.json`}</code></li>
+                <li>Pega este segundo comando: <code className="bg-black text-white p-1 rounded">{`gsutil cors set cors.json gs://t-track-bucket`}</code></li>
               </ol>
             </AlertDescription>
           </Alert>
