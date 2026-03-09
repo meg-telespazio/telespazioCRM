@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -72,13 +72,13 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        console.error('Upload error in component:', error);
+        console.error('Upload error detail:', error);
         
-        // Error descriptivo para el usuario sobre CORS
+        // Mensaje específico para el error de CORS detectado
         toast({ 
           variant: 'destructive', 
-          title: 'Error de conexión (CORS)', 
-          description: 'El navegador bloqueó la subida. Asegúrate de haber configurado el CORS en el bucket t-track-bucket desde la consola de Google Cloud (botón >_).' 
+          title: 'Error de Conexión (CORS)', 
+          description: 'El bucket t-track-bucket bloqueó la subida. Por favor, aplica la configuración CORS en el Cloud Shell (botón >_ de la consola de Google) como se indicó anteriormente.' 
         });
       } finally {
         setUploadingFiles(prev => {
