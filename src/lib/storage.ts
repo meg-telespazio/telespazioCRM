@@ -1,4 +1,3 @@
-
 'use client';
 import { 
   ref, 
@@ -11,7 +10,7 @@ import {
 export type UploadProgressCallback = (progress: number) => void;
 
 /**
- * Sube un archivo a una ruta específica en el bucket.
+ * Sube un archivo a una ruta específica en el bucket de Google Cloud.
  */
 export async function uploadFile(
   storage: FirebaseStorage,
@@ -27,6 +26,7 @@ export async function uploadFile(
     contentType: file.type || 'application/octet-stream',
   };
 
+  // Iniciamos la tarea de subida
   const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
   return new Promise((resolve, reject) => {
@@ -34,12 +34,20 @@ export async function uploadFile(
       'state_changed',
       (snapshot) => {
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        if (onProgress) onProgress(progress);
+        // Evitamos que se quede en 0% visualmente si ya empezó
+        if (onProgress) onProgress(Math.max(progress, 1));
       },
       (error) => {
-        // El error de CORS suele manifestarse aquí como un error de red o 'storage/unknown'
-        console.error('Firebase Storage Error Detail:', error);
-        reject(error);
+        // Log detallado para depuración en consola
+        console.error('Error detallado de Firebase Storage:', error);
+        
+        // El error de CORS suele manifestarse como 'storage/unknown' o error de red
+        if (error.code === 'storage/unknown' || error.message.includes('Access-Control-Allow-Origin')) {
+          const corsError = new Error('CORS_ERROR');
+          reject(corsError);
+        } else {
+          reject(error);
+        }
       },
       async () => {
         try {
@@ -52,7 +60,7 @@ export async function uploadFile(
             type: file.type,
           });
         } catch (urlError) {
-          console.error('Error getting download URL:', urlError);
+          console.error('Error al obtener la URL de descarga:', urlError);
           reject(urlError);
         }
       }
