@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
@@ -76,7 +76,8 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        if (error.message === 'CORS_ERROR') {
+        console.error('Opportunity upload error:', error);
+        if (error.message === 'CORS_ERROR' || error.code === 'storage/unknown') {
           setHasCorsError(true);
         } else {
           toast({ 
@@ -127,23 +128,29 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle className="font-bold">Error de Configuración Detectado</AlertTitle>
             <AlertDescription className="text-xs space-y-3">
-              <p>El navegador ha bloqueado la subida por una política de CORS.</p>
-              <div className="bg-white p-3 rounded border border-red-100 space-y-2">
-                <p className="font-bold text-red-900">Pasos para solucionar:</p>
-                <ol className="list-decimal pl-4 space-y-1">
-                  <li>Asegúrate de haber ejecutado los comandos <code>gsutil cors</code> en la consola de Google.</li>
-                  <li><strong>Importante:</strong> Refresca esta página (F5) para limpiar el error del navegador.</li>
-                </ol>
+              <p>El navegador ha bloqueado la conexión por políticas de CORS.</p>
+              
+              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
+                <p># Ejecuta estos comandos en el Cloud Shell (>_):</p>
+                <p className="break-all whitespace-normal">
+                  echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' &gt; cors.json
+                </p>
+                <p className="break-all">
+                  gsutil cors set cors.json gs://t-track-bucket
+                </p>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2 w-full bg-white" 
-                onClick={() => window.location.reload()}
-              >
-                <RefreshCw className="mr-2 h-3 w-3" />
-                Refrescar Página (F5)
-              </Button>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 bg-white" 
+                  onClick={() => window.location.reload()}
+                >
+                  <RefreshCw className="mr-2 h-3 w-3" />
+                  Refrescar Página (F5)
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -165,7 +172,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               <p className="text-sm text-center text-muted-foreground">
                 <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar
               </p>
-              <p className="text-[10px] text-muted-foreground mt-1">PDF, DOCX, XLSX (máx {MAX_FILE_SIZE_MB}MB)</p>
+              <p className="text-[10px] text-muted-foreground mt-1">PDF, DOCX, XLSX, JPG (máx {MAX_FILE_SIZE_MB}MB)</p>
               <input
                 id="file-upload"
                 type="file"
@@ -190,7 +197,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               </h4>
               
               {Object.entries(uploadingFiles).map(([id, progress]) => (
-                <div key={id} className="space-y-1 bg-muted/30 p-2 rounded border border-dashed">
+                <div key={id} className="space-y-1 bg-muted/30 p-2 rounded border border-dashed animate-pulse">
                   <div className="flex items-center justify-between text-[10px]">
                     <span className="truncate max-w-[150px]">{id.split('_').slice(1).join('_')}</span>
                     <div className="flex items-center gap-2">

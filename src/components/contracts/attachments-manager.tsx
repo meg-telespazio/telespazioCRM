@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +47,13 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
   const [hasCorsError, setHasCorsError] = useState(false);
+  const [originDomain, setOriginDomain] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOriginDomain(window.location.origin);
+    }
+  }, []);
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || disabled || !contractId || contractId === 'new') {
@@ -65,6 +72,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
       }
 
       const fileId = `${Date.now()}_${file.name}`;
+      // Empezamos en 1% para mostrar actividad
       setUploadingFiles(prev => ({ ...prev, [fileId]: 1 }));
 
       try {
@@ -76,7 +84,8 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        if (error.message === 'CORS_ERROR') {
+        console.error('Upload catch block:', error);
+        if (error.message === 'CORS_ERROR' || error.code === 'storage/unknown') {
           setHasCorsError(true);
         } else {
           toast({ 
@@ -125,25 +134,39 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         {hasCorsError && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold">Error de Configuración Detectado</AlertTitle>
+            <AlertTitle className="font-bold">Acceso Denegado por CORS</AlertTitle>
             <AlertDescription className="text-xs space-y-3">
-              <p>El navegador ha bloqueado la subida por una política de CORS.</p>
-              <div className="bg-white p-3 rounded border border-red-100 space-y-2">
-                <p className="font-bold text-red-900">Pasos para solucionar:</p>
-                <ol className="list-decimal pl-4 space-y-1">
-                  <li>Asegúrate de haber ejecutado los comandos <code>gsutil cors</code> en la consola de Google.</li>
-                  <li><strong>Importante:</strong> Refresca esta página (F5) para limpiar el error del navegador.</li>
-                </ol>
+              <p>El navegador ha bloqueado la subida. Es necesario autorizar este dominio en el bucket de Google Cloud.</p>
+              
+              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
+                <p># Ejecuta estos comandos en el Cloud Shell (>_):</p>
+                <p className="break-all whitespace-normal">
+                  echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' &gt; cors.json
+                </p>
+                <p className="break-all">
+                  gsutil cors set cors.json gs://t-track-bucket
+                </p>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2 w-full bg-white" 
-                onClick={() => window.location.reload()}
-              >
-                <RefreshCw className="mr-2 h-3 w-3" />
-                Refrescar Página (F5)
-              </Button>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 bg-white" 
+                  onClick={() => window.location.reload()}
+                >
+                  <RefreshCw className="mr-2 h-3 w-3" />
+                  1. Refrescar página
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 bg-white" 
+                  onClick={() => window.open('https://console.cloud.google.com/home/dashboard', '_blank')}
+                >
+                  2. Abrir GCP Console
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -190,7 +213,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               </h4>
               
               {Object.entries(uploadingFiles).map(([id, progress]) => (
-                <div key={id} className="space-y-1 bg-muted/30 p-2 rounded border border-dashed">
+                <div key={id} className="space-y-1 bg-muted/30 p-2 rounded border border-dashed animate-pulse">
                   <div className="flex items-center justify-between text-[10px]">
                     <span className="truncate max-w-[150px]">{id.split('_').slice(1).join('_')}</span>
                     <div className="flex items-center gap-2">

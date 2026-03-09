@@ -34,17 +34,18 @@ export async function uploadFile(
       'state_changed',
       (snapshot) => {
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        // Evitamos que se quede en 0% visualmente si ya empezó
         if (onProgress) onProgress(Math.max(progress, 1));
       },
       (error) => {
-        // Log detallado para depuración en consola
-        console.error('Error detallado de Firebase Storage:', error);
+        console.error('Detailed Firebase Storage Error:', error);
         
-        // El error de CORS suele manifestarse como 'storage/unknown' o error de red
-        if (error.code === 'storage/unknown' || error.message.includes('Access-Control-Allow-Origin')) {
-          const corsError = new Error('CORS_ERROR');
-          reject(corsError);
+        // Detección de CORS basada en códigos de error comunes de red/storage
+        if (
+          error.code === 'storage/unknown' || 
+          error.message.includes('Access-Control') ||
+          error.message.includes('CORS')
+        ) {
+          reject(new Error('CORS_ERROR'));
         } else {
           reject(error);
         }
@@ -60,7 +61,7 @@ export async function uploadFile(
             type: file.type,
           });
         } catch (urlError) {
-          console.error('Error al obtener la URL de descarga:', urlError);
+          console.error('Error getting download URL:', urlError);
           reject(urlError);
         }
       }
