@@ -9,10 +9,6 @@ import {
 
 export type UploadProgressCallback = (progress: number) => void;
 
-/**
- * Sube un archivo a una ruta específica en el bucket de Firebase.
- * Maneja específicamente errores de CORS y Permisos para diagnóstico.
- */
 export async function uploadFile(
   storage: FirebaseStorage,
   path: string,
@@ -33,38 +29,11 @@ export async function uploadFile(
       'state_changed',
       (snapshot) => {
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        if (onProgress) onProgress(Math.max(1, progress));
+        if (onProgress) onProgress(progress);
       },
-      (error: any) => {
-        // Extraemos las propiedades manualmente porque Firebase las oculta en logs directos
-        const errorDetail = {
-          code: error?.code || 'unknown',
-          message: error?.message || 'No specific message',
-          path: cleanPath,
-          bucket: storage.app.options.storageBucket
-        };
-        
-        // Log explícito como cadena para evitar objetos vacíos {} en la consola de NextJS
-        console.error(`Detailed Storage Error Info: [${errorDetail.code}] ${errorDetail.message} at path: ${errorDetail.path}`);
-        
-        // Error de reglas de seguridad (Firebase Rules)
-        if (errorDetail.code === 'storage/unauthorized') {
-          reject(new Error('PERMISSION_DENIED'));
-          return;
-        }
-
-        // Error de red o CORS
-        const isNetworkOrCorsError = 
-          errorDetail.code === 'storage/unknown' || 
-          errorDetail.code === 'unknown' ||
-          errorDetail.message.toLowerCase().includes('cors') ||
-          errorDetail.message.toLowerCase().includes('network');
-
-        if (isNetworkOrCorsError) {
-          reject(new Error('CORS_ERROR'));
-        } else {
-          reject(new Error(errorDetail.message));
-        }
+      (error) => {
+        console.error('Storage Error:', error);
+        reject(error);
       },
       async () => {
         try {
@@ -77,7 +46,6 @@ export async function uploadFile(
             type: file.type,
           });
         } catch (urlError) {
-          console.error('Error getting download URL:', urlError);
           reject(urlError);
         }
       }
