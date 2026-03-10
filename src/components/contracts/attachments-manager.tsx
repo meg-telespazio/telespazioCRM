@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw, ShieldAlert, CheckCircle2, LogOut } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -78,7 +78,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        console.error('Upload error:', error);
+        console.error('Upload error in component:', error);
         if (error.message === 'CORS_ERROR') {
           setErrorType('CORS');
         } else if (error.message === 'PERMISSION_DENIED') {
@@ -132,7 +132,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle className="font-bold text-red-900">Configuración de Red requerida</AlertTitle>
             <AlertDescription className="text-xs space-y-4">
-              <p>El navegador bloqueó la conexión. Por favor, asegúrate de haber ejecutado los comandos en el Cloud Shell ({'>'}_) y luego <strong>refresca esta página (F5)</strong>:</p>
+              <p>El navegador bloqueó la conexión. Ejecuta esto en el Cloud Shell ({'>'}_) y <strong>refresca (F5)</strong>:</p>
               
               <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
                 <p className="break-all whitespace-normal">
@@ -154,9 +154,12 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
           <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
             <ShieldAlert className="h-4 w-4 text-amber-600" />
             <AlertTitle className="font-bold">Error de Permisos del Servidor</AlertTitle>
-            <AlertDescription className="text-xs space-y-2">
-              <p>El servidor rechazó la subida. He actualizado las reglas de seguridad automáticamente.</p>
-              <p className="font-semibold">Por favor, espera 5 segundos e intenta subir el archivo nuevamente.</p>
+            <AlertDescription className="text-xs space-y-4">
+              <p>El servidor rechazó la subida. He actualizado las reglas de seguridad.</p>
+              <p className="font-semibold">Si el error persiste, por favor <strong>cierra sesión y vuelve a entrar</strong> para refrescar tu token de acceso.</p>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="bg-white w-full">
+                <RefreshCw className="mr-2 h-3 w-3" /> Refrescar Página (F5)
+              </Button>
             </AlertDescription>
           </Alert>
         )}

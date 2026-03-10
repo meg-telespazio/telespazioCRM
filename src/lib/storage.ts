@@ -36,14 +36,15 @@ export async function uploadFile(
         if (onProgress) onProgress(Math.max(1, progress));
       },
       (error: any) => {
+        // Los objetos de error de Firebase a veces ocultan sus propiedades
         const errorDetail = {
-          code: error?.code,
-          message: error?.message,
+          code: error?.code || 'unknown',
+          message: error?.message || 'No specific message',
           path: cleanPath,
           bucket: storage.app.options.storageBucket
         };
         
-        console.error('Detailed Storage Error:', errorDetail);
+        console.error('Detailed Storage Error Info:', errorDetail);
         
         // Error de reglas de seguridad (Firebase Rules)
         if (errorDetail.code === 'storage/unauthorized') {
@@ -52,16 +53,17 @@ export async function uploadFile(
         }
 
         // Error de red o CORS
+        // En Workstations, si el objeto de error llega vacío ({}) suele ser un bloqueo de red (CORS)
         const isNetworkOrCorsError = 
-          !errorDetail.code || 
           errorDetail.code === 'storage/unknown' || 
-          errorDetail.message?.toLowerCase().includes('cors') ||
-          (typeof error === 'object' && Object.keys(error).length === 0);
+          errorDetail.code === 'unknown' ||
+          errorDetail.message.toLowerCase().includes('cors') ||
+          errorDetail.message.toLowerCase().includes('network');
 
         if (isNetworkOrCorsError) {
           reject(new Error('CORS_ERROR'));
         } else {
-          reject(error);
+          reject(new Error(errorDetail.message));
         }
       },
       async () => {
