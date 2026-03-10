@@ -2,8 +2,8 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Reglas simplificadas para permitir el acceso a cualquier usuario autenticado.
-    // Esto asegura que la App pueda subir archivos a cualquier carpeta.
+    // Permitir acceso total a cualquier usuario autenticado.
+    // Esto cubre tanto la subida de adjuntos como las fotos de perfil.
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
