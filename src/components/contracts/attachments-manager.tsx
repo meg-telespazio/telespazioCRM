@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -46,7 +46,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
 
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
-  const [hasCorsError, setHasCorsError] = useState(false);
+  const [errorType, setErrorType] = useState<'CORS' | 'PERMISSION' | null>(null);
 
   const bucketName = storage.app.options.storageBucket || 'studio-1413684383-379c9.firebasestorage.app';
 
@@ -58,7 +58,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
       return;
     }
 
-    setHasCorsError(false);
+    setErrorType(null);
 
     for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -80,7 +80,9 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
       } catch (error: any) {
         console.error('Upload error caught in component:', error);
         if (error.message === 'CORS_ERROR') {
-          setHasCorsError(true);
+          setErrorType('CORS');
+        } else if (error.message === 'PERMISSION_DENIED') {
+          setErrorType('PERMISSION');
         } else {
           toast({ 
             variant: 'destructive', 
@@ -125,34 +127,25 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         <CardDescription>Archivos vinculados al contrato.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {hasCorsError && (
+        {errorType === 'CORS' && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold">Error de Acceso (CORS)</AlertTitle>
-            <AlertDescription className="text-xs space-y-4">
-              <p>Aunque hayas ejecutado los comandos, el navegador sigue bloqueando la conexión. Sigue estos pasos:</p>
-              
-              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
-                <p>{"# 1. Asegura que el CORS esté aplicado al bucket correcto:"}</p>
-                <p className="break-all whitespace-normal">
-                  {`gsutil cors set cors.json gs://${bucketName}`}
-                </p>
-              </div>
+            <AlertTitle className="font-bold">Error de Red (CORS)</AlertTitle>
+            <AlertDescription className="text-xs space-y-2">
+              <p>El navegador bloqueó la conexión. Si ya ejecutaste los comandos en GCP Shell, por favor:</p>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="w-full bg-white">
+                <RefreshCw className="mr-2 h-3 w-3" /> Recargar App (F5)
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
-              <div className="flex flex-col gap-2">
-                <p className="font-semibold text-primary">2. ¡PASO CRUCIAL!</p>
-                <p>El navegador guarda el error de "Acceso Denegado" en caché. Para limpiar la conexión:</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full bg-white border-primary text-primary hover:bg-primary/5" 
-                  onClick={() => window.location.reload()}
-                >
-                  <RefreshCw className="mr-2 h-3 w-3" />
-                  Recargar App (F5)
-                </Button>
-                <p className="text-[9px] text-muted-foreground italic">Si el error persiste tras recargar, intenta subir el archivo en una ventana de <b>Incógnito</b>.</p>
-              </div>
+        {errorType === 'PERMISSION' && (
+          <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="font-bold">Error de Permisos (Firebase Rules)</AlertTitle>
+            <AlertDescription className="text-xs">
+              Firebase Storage rechazó la subida. He actualizado las reglas; por favor intenta de nuevo en unos segundos.
             </AlertDescription>
           </Alert>
         )}
@@ -163,14 +156,14 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               className={cn(
                 "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors h-full min-h-[200px]",
                 isDragging && "border-primary bg-primary/10",
-                hasCorsError && "border-destructive/50"
+                errorType && "border-destructive/50"
               )}
               onDragEnter={onDragEnter}
               onDragLeave={onDragLeave}
               onDragOver={onDragOver}
               onDrop={onDrop}
             >
-              <UploadCloud className={cn("w-10 h-10 mb-2", hasCorsError ? "text-destructive" : "text-muted-foreground")} />
+              <UploadCloud className={cn("w-10 h-10 mb-2", errorType ? "text-destructive" : "text-muted-foreground")} />
               <p className="text-sm text-center text-muted-foreground">
                 <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar aquí
               </p>

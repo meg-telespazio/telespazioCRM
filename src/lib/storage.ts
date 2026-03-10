@@ -36,8 +36,18 @@ export async function uploadFile(
       },
       (error) => {
         // Log detallado para diagnóstico
-        console.error('Firebase Storage Error Detail:', error);
+        console.error('Firebase Storage Error Detail:', {
+          code: error.code,
+          message: error.message,
+          path: cleanPath
+        });
         
+        // Error de permisos (Reglas de Seguridad)
+        if (error.code === 'storage/unauthorized') {
+          reject(new Error('PERMISSION_DENIED'));
+          return;
+        }
+
         // Si el error es unknown o el objeto está vacío, en este entorno suele ser CORS.
         const isCors = 
           !error.code || 
