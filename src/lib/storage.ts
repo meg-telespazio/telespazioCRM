@@ -35,28 +35,32 @@ export async function uploadFile(
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         if (onProgress) onProgress(Math.max(1, progress));
       },
-      (error) => {
-        // Log detallado para diagnóstico en consola
-        console.error('Firebase Storage Error Detail:', {
-          code: error.code,
-          message: error.message,
+      (error: any) => {
+        // Log detallado: extraemos propiedades manualmente porque a veces no son enumerables
+        const errorDetail = {
+          code: error?.code,
+          message: error?.message,
+          name: error?.name,
+          serverResponse: error?.serverResponse,
           path: cleanPath,
           bucket: storage.app.options.storageBucket
-        });
+        };
+        
+        console.error('Firebase Storage Error Detail:', errorDetail);
         
         // Error de reglas de seguridad (Firebase Rules)
-        if (error.code === 'storage/unauthorized') {
+        if (errorDetail.code === 'storage/unauthorized') {
           reject(new Error('PERMISSION_DENIED'));
           return;
         }
 
-        // Detección de CORS/Red: Si el error no tiene código o es "unknown", es un bloqueo de red.
+        // Detección de CORS/Red: Si no hay código o el objeto está "vacío", es un bloqueo del navegador.
         const isNetworkOrCorsError = 
-          !error.code || 
-          error.code === 'storage/unknown' || 
-          error.code === 'storage/retry-limit-exceeded' ||
-          error.message?.toLowerCase().includes('cors') || 
-          error.message?.toLowerCase().includes('preflight') ||
+          !errorDetail.code || 
+          errorDetail.code === 'storage/unknown' || 
+          errorDetail.code === 'storage/retry-limit-exceeded' ||
+          errorDetail.message?.toLowerCase().includes('cors') || 
+          errorDetail.message?.toLowerCase().includes('preflight') ||
           (typeof error === 'object' && Object.keys(error).length === 0);
 
         if (isNetworkOrCorsError) {

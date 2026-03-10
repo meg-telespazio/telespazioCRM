@@ -132,7 +132,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle className="font-bold text-red-900">Configuración de Bucket requerida (CORS)</AlertTitle>
             <AlertDescription className="text-xs space-y-4">
-              <p>El navegador bloqueó la conexión. Si ya corriste los comandos, por favor <strong>refresca la página (F5)</strong>. Si no, ejecútalos en el Cloud Shell ({'>'}_):</p>
+              <p>El navegador bloqueó la conexión. Si ya corriste los comandos, por favor <strong>refresca la página (Ctrl+F5)</strong>. Si no, ejecútalos en el Cloud Shell ({'>'}_):</p>
               
               <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
                 <p className="break-all whitespace-normal">
