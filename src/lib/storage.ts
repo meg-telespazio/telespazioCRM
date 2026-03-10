@@ -36,7 +36,7 @@ export async function uploadFile(
         if (onProgress) onProgress(Math.max(1, progress));
       },
       (error: any) => {
-        // Los objetos de error de Firebase a veces ocultan sus propiedades
+        // Extraemos las propiedades manualmente porque Firebase las oculta en logs directos
         const errorDetail = {
           code: error?.code || 'unknown',
           message: error?.message || 'No specific message',
@@ -44,7 +44,8 @@ export async function uploadFile(
           bucket: storage.app.options.storageBucket
         };
         
-        console.error('Detailed Storage Error Info:', errorDetail);
+        // Log explícito como cadena para evitar objetos vacíos {} en la consola de NextJS
+        console.error(`Detailed Storage Error Info: [${errorDetail.code}] ${errorDetail.message} at path: ${errorDetail.path}`);
         
         // Error de reglas de seguridad (Firebase Rules)
         if (errorDetail.code === 'storage/unauthorized') {
@@ -53,7 +54,6 @@ export async function uploadFile(
         }
 
         // Error de red o CORS
-        // En Workstations, si el objeto de error llega vacío ({}) suele ser un bloqueo de red (CORS)
         const isNetworkOrCorsError = 
           errorDetail.code === 'storage/unknown' || 
           errorDetail.code === 'unknown' ||

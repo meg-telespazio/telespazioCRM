@@ -78,7 +78,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        console.error('Upload error in component:', error);
+        console.error('Upload error detail:', error);
         if (error.message === 'CORS_ERROR') {
           setErrorType('CORS');
         } else if (error.message === 'PERMISSION_DENIED') {
@@ -156,7 +156,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             <AlertTitle className="font-bold">Error de Permisos del Servidor</AlertTitle>
             <AlertDescription className="text-xs space-y-4">
               <p>El servidor rechazó la subida. He actualizado las reglas de seguridad.</p>
-              <p className="font-semibold">Si el error persiste, por favor <strong>cierra sesión y vuelve a entrar</strong> para refrescar tu token de acceso.</p>
+              <p className="font-semibold text-destructive">MUY IMPORTANTE: Por favor <strong>cierra sesión y vuelve a entrar</strong> (Login) para refrescar tu token de acceso.</p>
               <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="bg-white w-full">
                 <RefreshCw className="mr-2 h-3 w-3" /> Refrescar Página (F5)
               </Button>
