@@ -10,7 +10,7 @@ import { uploadFile, deleteFile } from '@/lib/storage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -46,7 +46,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
 
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
-  const [hasCorsError, setHasCorsError] = useState(false);
+  const [errorType, setErrorType] = useState<'CORS' | 'PERMISSION' | null>(null);
 
   const bucketName = storage.app.options.storageBucket || 'studio-1413684383-379c9.firebasestorage.app';
 
@@ -58,7 +58,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
       return;
     }
 
-    setHasCorsError(false);
+    setErrorType(null);
 
     for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -80,7 +80,9 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
       } catch (error: any) {
         console.error('Opportunity upload error:', error);
         if (error.message === 'CORS_ERROR') {
-          setHasCorsError(true);
+          setErrorType('CORS');
+        } else if (error.message === 'PERMISSION_DENIED') {
+          setErrorType('PERMISSION');
         } else {
           toast({ 
             variant: 'destructive', 
@@ -125,37 +127,35 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         <CardDescription>Archivos vinculados a esta oportunidad.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {hasCorsError && (
+        {errorType === 'CORS' && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold">Error de Acceso (CORS)</AlertTitle>
+            <AlertTitle className="font-bold text-red-900">Configuración de Bucket requerida (CORS)</AlertTitle>
             <AlertDescription className="text-xs space-y-4">
-              <p>El servidor ha rechazado la subida por seguridad. Ejecuta estos comandos en el <strong>Cloud Shell</strong> ({'>'}_) de Google Cloud:</p>
+              <p>El navegador bloqueó la conexión. Si ya corriste los comandos, por favor <strong>refresca la página (F5)</strong>. Si no, ejecútalos en el Cloud Shell ({'>'}_):</p>
               
-              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-3">
-                <div>
-                  <p className="text-primary mb-1"># 1. Crear archivo de reglas</p>
-                  <p className="break-all whitespace-normal">
-                    {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-primary mb-1"># 2. Aplicar al bucket:</p>
-                  <p className="break-all">
-                    {`gsutil cors set cors.json gs://${bucketName}`}
-                  </p>
-                </div>
+              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
+                <p className="break-all whitespace-normal">
+                  {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
+                </p>
+                <p className="break-all">
+                  {`gsutil cors set cors.json gs://${bucketName}`}
+                </p>
               </div>
 
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full bg-white" 
-                onClick={() => window.location.reload()}
-              >
-                <RefreshCw className="mr-2 h-3 w-3" />
-                Refrescar App (Vital para aplicar cambios)
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="bg-white w-full">
+                <RefreshCw className="mr-2 h-3 w-3" /> Refrescar App (Vital)
               </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {errorType === 'PERMISSION' && (
+          <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="font-bold">Error de Permisos (Firebase Rules)</AlertTitle>
+            <AlertDescription className="text-xs">
+              El servidor rechazó la subida. He actualizado las reglas de seguridad; por favor intenta subir de nuevo en unos segundos.
             </AlertDescription>
           </Alert>
         )}
@@ -166,16 +166,16 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               className={cn(
                 "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors h-full min-h-[200px]",
                 isDragging && "border-primary bg-primary/10",
-                hasCorsError && "border-destructive/50"
+                errorType === 'CORS' && "border-destructive/50"
               )}
               onDragEnter={onDragEnter}
               onDragLeave={onDragLeave}
               onDragOver={onDragOver}
               onDrop={onDrop}
             >
-              <UploadCloud className={cn("w-10 h-10 mb-2", hasCorsError ? "text-destructive" : "text-muted-foreground")} />
+              <UploadCloud className={cn("w-10 h-10 mb-2", errorType === 'CORS' ? "text-destructive" : "text-muted-foreground")} />
               <p className="text-sm text-center text-muted-foreground">
-                <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar
+                <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar aquí
               </p>
               <input
                 id="file-upload-opp"

@@ -132,24 +132,20 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle className="font-bold text-red-900">Configuración de Bucket requerida (CORS)</AlertTitle>
             <AlertDescription className="text-xs space-y-4">
-              <p>El navegador bloqueó la conexión. Para resolverlo definitivamente, por favor ejecuta estos comandos en el <strong>Cloud Shell</strong> ({'>'}_) de Google Cloud:</p>
+              <p>El navegador bloqueó la conexión. Si ya corriste los comandos, por favor <strong>refresca la página (F5)</strong>. Si no, ejecútalos en el Cloud Shell ({'>'}_):</p>
               
               <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
-                <p># 1. Crear configuración permitiendo todos los encabezados:</p>
                 <p className="break-all whitespace-normal">
                   {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
                 </p>
-                <p># 2. Aplicar al bucket:</p>
                 <p className="break-all">
                   {`gsutil cors set cors.json gs://${bucketName}`}
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="bg-white">
-                  <RefreshCw className="mr-2 h-3 w-3" /> Ya lo hice, refrescar App (F5)
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="bg-white w-full">
+                <RefreshCw className="mr-2 h-3 w-3" /> Refrescar App (Vital)
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -159,7 +155,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             <ShieldAlert className="h-4 w-4 text-amber-600" />
             <AlertTitle className="font-bold">Error de Permisos (Firebase Rules)</AlertTitle>
             <AlertDescription className="text-xs">
-              He actualizado las reglas de seguridad para permitir tu acceso. Por favor intenta subir el archivo de nuevo en unos segundos.
+              El servidor rechazó la subida. He actualizado las reglas de seguridad; por favor intenta subir de nuevo en unos segundos.
             </AlertDescription>
           </Alert>
         )}

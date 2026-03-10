@@ -10,7 +10,8 @@ import {
 export type UploadProgressCallback = (progress: number) => void;
 
 /**
- * Sube un archivo a una ruta específica en el bucket de Google Cloud.
+ * Sube un archivo a una ruta específica en el bucket de Firebase.
+ * Maneja específicamente errores de CORS y Permisos para diagnóstico en Cloud Workstations.
  */
 export async function uploadFile(
   storage: FirebaseStorage,
@@ -32,27 +33,31 @@ export async function uploadFile(
       'state_changed',
       (snapshot) => {
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        if (onProgress) onProgress(Math.max(progress, 1));
+        if (onProgress) onProgress(Math.max(1, progress));
       },
       (error) => {
-        // Log detallado para diagnóstico
-        console.error('Firebase Storage Error:', error);
+        // Log detallado para diagnóstico en consola
+        console.error('Firebase Storage Error Detail:', {
+          code: error.code,
+          message: error.message,
+          path: cleanPath
+        });
         
-        // Error de permisos (Reglas de Seguridad)
+        // Error de reglas de seguridad
         if (error.code === 'storage/unauthorized') {
           reject(new Error('PERMISSION_DENIED'));
           return;
         }
 
-        // Si el error es unknown o el objeto está vacío, tratamos como CORS.
-        const isNetworkError = 
+        // Detección de CORS: Si el error no tiene código o es "unknown", en este entorno suele ser CORS.
+        const isNetworkOrCorsError = 
           !error.code || 
           error.code === 'storage/unknown' || 
           error.code === 'storage/retry-limit-exceeded' ||
-          error.message?.includes('CORS') || 
-          error.message?.includes('preflight');
+          error.message?.toLowerCase().includes('cors') || 
+          error.message?.toLowerCase().includes('preflight');
 
-        if (isNetworkError) {
+        if (isNetworkOrCorsError) {
           reject(new Error('CORS_ERROR'));
         } else {
           reject(error);
