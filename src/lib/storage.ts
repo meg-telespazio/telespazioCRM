@@ -11,7 +11,7 @@ export type UploadProgressCallback = (progress: number) => void;
 
 /**
  * Sube un archivo a una ruta específica en el bucket de Firebase.
- * Maneja específicamente errores de CORS y Permisos para diagnóstico en Cloud Workstations.
+ * Maneja específicamente errores de CORS y Permisos para diagnóstico.
  */
 export async function uploadFile(
   storage: FirebaseStorage,
@@ -40,22 +40,24 @@ export async function uploadFile(
         console.error('Firebase Storage Error Detail:', {
           code: error.code,
           message: error.message,
-          path: cleanPath
+          path: cleanPath,
+          bucket: storage.app.options.storageBucket
         });
         
-        // Error de reglas de seguridad
+        // Error de reglas de seguridad (Firebase Rules)
         if (error.code === 'storage/unauthorized') {
           reject(new Error('PERMISSION_DENIED'));
           return;
         }
 
-        // Detección de CORS: Si el error no tiene código o es "unknown", en este entorno suele ser CORS.
+        // Detección de CORS/Red: Si el error no tiene código o es "unknown", es un bloqueo de red.
         const isNetworkOrCorsError = 
           !error.code || 
           error.code === 'storage/unknown' || 
           error.code === 'storage/retry-limit-exceeded' ||
           error.message?.toLowerCase().includes('cors') || 
-          error.message?.toLowerCase().includes('preflight');
+          error.message?.toLowerCase().includes('preflight') ||
+          (typeof error === 'object' && Object.keys(error).length === 0);
 
         if (isNetworkOrCorsError) {
           reject(new Error('CORS_ERROR'));
