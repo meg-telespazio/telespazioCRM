@@ -36,17 +36,14 @@ export async function uploadFile(
         if (onProgress) onProgress(Math.max(1, progress));
       },
       (error: any) => {
-        // Log detallado: extraemos propiedades manualmente porque a veces no son enumerables
         const errorDetail = {
           code: error?.code,
           message: error?.message,
-          name: error?.name,
-          serverResponse: error?.serverResponse,
           path: cleanPath,
           bucket: storage.app.options.storageBucket
         };
         
-        console.error('Firebase Storage Error Detail:', errorDetail);
+        console.error('Detailed Storage Error:', errorDetail);
         
         // Error de reglas de seguridad (Firebase Rules)
         if (errorDetail.code === 'storage/unauthorized') {
@@ -54,13 +51,11 @@ export async function uploadFile(
           return;
         }
 
-        // Detección de CORS/Red: Si no hay código o el objeto está "vacío", es un bloqueo del navegador.
+        // Error de red o CORS
         const isNetworkOrCorsError = 
           !errorDetail.code || 
           errorDetail.code === 'storage/unknown' || 
-          errorDetail.code === 'storage/retry-limit-exceeded' ||
-          errorDetail.message?.toLowerCase().includes('cors') || 
-          errorDetail.message?.toLowerCase().includes('preflight') ||
+          errorDetail.message?.toLowerCase().includes('cors') ||
           (typeof error === 'object' && Object.keys(error).length === 0);
 
         if (isNetworkOrCorsError) {

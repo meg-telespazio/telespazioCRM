@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, AlertTriangle, RefreshCw, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -78,7 +78,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        console.error('Upload error in component:', error);
+        console.error('Upload error:', error);
         if (error.message === 'CORS_ERROR') {
           setErrorType('CORS');
         } else if (error.message === 'PERMISSION_DENIED') {
@@ -130,9 +130,9 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         {errorType === 'CORS' && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold text-red-900">Configuración de Bucket requerida (CORS)</AlertTitle>
+            <AlertTitle className="font-bold text-red-900">Configuración de Red requerida</AlertTitle>
             <AlertDescription className="text-xs space-y-4">
-              <p>El navegador bloqueó la conexión. Si ya corriste los comandos, por favor <strong>refresca la página (Ctrl+F5)</strong>. Si no, ejecútalos en el Cloud Shell ({'>'}_):</p>
+              <p>El navegador bloqueó la conexión. Por favor, asegúrate de haber ejecutado los comandos en el Cloud Shell ({'>'}_) y luego <strong>refresca esta página (F5)</strong>:</p>
               
               <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
                 <p className="break-all whitespace-normal">
@@ -144,7 +144,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               </div>
 
               <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="bg-white w-full">
-                <RefreshCw className="mr-2 h-3 w-3" /> Refrescar App (Vital)
+                <RefreshCw className="mr-2 h-3 w-3" /> Refrescar Aplicación
               </Button>
             </AlertDescription>
           </Alert>
@@ -153,9 +153,10 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         {errorType === 'PERMISSION' && (
           <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
             <ShieldAlert className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="font-bold">Error de Permisos (Firebase Rules)</AlertTitle>
-            <AlertDescription className="text-xs">
-              El servidor rechazó la subida. He actualizado las reglas de seguridad; por favor intenta subir de nuevo en unos segundos.
+            <AlertTitle className="font-bold">Error de Permisos del Servidor</AlertTitle>
+            <AlertDescription className="text-xs space-y-2">
+              <p>El servidor rechazó la subida. He actualizado las reglas de seguridad automáticamente.</p>
+              <p className="font-semibold">Por favor, espera 5 segundos e intenta subir el archivo nuevamente.</p>
             </AlertDescription>
           </Alert>
         )}
@@ -166,14 +167,14 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               className={cn(
                 "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors h-full min-h-[200px]",
                 isDragging && "border-primary bg-primary/10",
-                errorType === 'CORS' && "border-destructive/50"
+                errorType !== null && "border-destructive/50"
               )}
               onDragEnter={onDragEnter}
               onDragLeave={onDragLeave}
               onDragOver={onDragOver}
               onDrop={onDrop}
             >
-              <UploadCloud className={cn("w-10 h-10 mb-2", errorType === 'CORS' ? "text-destructive" : "text-muted-foreground")} />
+              <UploadCloud className={cn("w-10 h-10 mb-2", errorType !== null ? "text-destructive" : "text-muted-foreground")} />
               <p className="text-sm text-center text-muted-foreground">
                 <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar aquí
               </p>
@@ -216,8 +217,9 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
                       <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md bg-background group hover:border-primary/50 transition-colors">
                           <FileText className="h-6 w-6 shrink-0 text-primary opacity-70" />
                           <div className="flex-1 truncate">
-                            <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline">
+                            <Link href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline flex items-center gap-1">
                                 {attachment.name}
+                                <CheckCircle2 className="h-3 w-3 text-green-600" />
                             </Link>
                             <p className="text-[10px] text-muted-foreground">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
                           </div>
