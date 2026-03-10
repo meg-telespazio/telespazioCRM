@@ -36,11 +36,7 @@ export async function uploadFile(
       },
       (error) => {
         // Log detallado para diagnóstico
-        console.error('Firebase Storage Error Detail:', {
-          code: error.code,
-          message: error.message,
-          path: cleanPath
-        });
+        console.error('Firebase Storage Error:', error);
         
         // Error de permisos (Reglas de Seguridad)
         if (error.code === 'storage/unauthorized') {
@@ -48,15 +44,15 @@ export async function uploadFile(
           return;
         }
 
-        // Si el error es unknown o el objeto está vacío, en este entorno suele ser CORS.
-        const isCors = 
+        // Si el error es unknown o el objeto está vacío, tratamos como CORS.
+        const isNetworkError = 
           !error.code || 
           error.code === 'storage/unknown' || 
+          error.code === 'storage/retry-limit-exceeded' ||
           error.message?.includes('CORS') || 
-          error.message?.includes('preflight') ||
-          Object.keys(error).length === 0;
+          error.message?.includes('preflight');
 
-        if (isCors) {
+        if (isNetworkError) {
           reject(new Error('CORS_ERROR'));
         } else {
           reject(error);

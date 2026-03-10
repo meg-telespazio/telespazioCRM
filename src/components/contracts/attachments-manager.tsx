@@ -78,7 +78,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         append(attachment);
         toast({ variant: 'success', title: 'Archivo guardado', description: file.name });
       } catch (error: any) {
-        console.error('Upload error caught in component:', error);
+        console.error('Upload error in component:', error);
         if (error.message === 'CORS_ERROR') {
           setErrorType('CORS');
         } else if (error.message === 'PERMISSION_DENIED') {
@@ -130,12 +130,26 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         {errorType === 'CORS' && (
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="font-bold">Error de Red (CORS)</AlertTitle>
-            <AlertDescription className="text-xs space-y-2">
-              <p>El navegador bloqueó la conexión. Si ya ejecutaste los comandos en GCP Shell, por favor:</p>
-              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="w-full bg-white">
-                <RefreshCw className="mr-2 h-3 w-3" /> Recargar App (F5)
-              </Button>
+            <AlertTitle className="font-bold text-red-900">Configuración de Bucket requerida (CORS)</AlertTitle>
+            <AlertDescription className="text-xs space-y-4">
+              <p>El navegador bloqueó la conexión. Para resolverlo definitivamente, por favor ejecuta estos comandos en el <strong>Cloud Shell</strong> ({'>'}_) de Google Cloud:</p>
+              
+              <div className="bg-black text-white p-3 rounded font-mono text-[10px] space-y-2">
+                <p># 1. Crear configuración permitiendo todos los encabezados:</p>
+                <p className="break-all whitespace-normal">
+                  {`echo '[{"origin": ["*"], "method": ["GET", "POST", "PUT", "DELETE", "HEAD"], "responseHeader": ["*"], "maxAgeSeconds": 3600}]' > cors.json`}
+                </p>
+                <p># 2. Aplicar al bucket:</p>
+                <p className="break-all">
+                  {`gsutil cors set cors.json gs://${bucketName}`}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="bg-white">
+                  <RefreshCw className="mr-2 h-3 w-3" /> Ya lo hice, refrescar App (F5)
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -145,7 +159,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
             <ShieldAlert className="h-4 w-4 text-amber-600" />
             <AlertTitle className="font-bold">Error de Permisos (Firebase Rules)</AlertTitle>
             <AlertDescription className="text-xs">
-              Firebase Storage rechazó la subida. He actualizado las reglas; por favor intenta de nuevo en unos segundos.
+              He actualizado las reglas de seguridad para permitir tu acceso. Por favor intenta subir el archivo de nuevo en unos segundos.
             </AlertDescription>
           </Alert>
         )}
@@ -156,14 +170,14 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               className={cn(
                 "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors h-full min-h-[200px]",
                 isDragging && "border-primary bg-primary/10",
-                errorType && "border-destructive/50"
+                errorType === 'CORS' && "border-destructive/50"
               )}
               onDragEnter={onDragEnter}
               onDragLeave={onDragLeave}
               onDragOver={onDragOver}
               onDrop={onDrop}
             >
-              <UploadCloud className={cn("w-10 h-10 mb-2", errorType ? "text-destructive" : "text-muted-foreground")} />
+              <UploadCloud className={cn("w-10 h-10 mb-2", errorType === 'CORS' ? "text-destructive" : "text-muted-foreground")} />
               <p className="text-sm text-center text-muted-foreground">
                 <span className="font-semibold text-primary">Subir Archivo</span> o arrastrar aquí
               </p>
