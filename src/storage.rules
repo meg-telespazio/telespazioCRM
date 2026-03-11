@@ -1,13 +1,7 @@
 rules_version = '2';
 
-// REGLAS DE PRUEBA: ACCESO TOTAL (Sincronizado)
+// REGLAS PÚBLICAS TOTALES (Sincronizado) - ÚLTIMA ACTUALIZACIÓN: 1773210000000
 service firebase.storage {
-  match /b/studio-1413684383-379c9.firebasestorage.app/o {
-    match /{allPaths=**} {
-      allow read, write: if true;
-    }
-  }
-  
   match /b/{bucket}/o {
     match /{allPaths=**} {
       allow read, write: if true;
