@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -11,10 +12,11 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Paperclip, Trash2, FileText, UploadCloud, Loader2 } from 'lucide-react';
+import { Paperclip, Trash2, FileText, UploadCloud, Loader2, Eye } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { FilePreviewModal } from '@/components/ui/file-preview-modal';
 
 interface AttachmentsManagerProps {
   disabled: boolean;
@@ -38,6 +40,10 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
 
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
+  
+  // Preview State
+  const [previewFile, setPreviewFile] = useState<{url: string, name: string, type: string} | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || disabled || !contractId || contractId === 'new') {
@@ -94,76 +100,110 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
     }
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('Contracts.attachments')}</CardTitle>
-        <CardDescription>Documentación vinculada al contrato.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div
-            className={cn(
-              "relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors min-h-[150px]",
-              isDragging && "border-primary bg-primary/5"
-            )}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e.dataTransfer.files); }}
-          >
-            <UploadCloud className="w-10 h-10 mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground text-center">
-              <span className="font-semibold text-primary">Subir archivo</span> o arrastrar aquí
-            </p>
-            <input
-              type="file"
-              multiple
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              onChange={(e) => handleFileUpload(e.target.files)}
-              disabled={disabled || contractId === 'new'}
-            />
-          </div>
-          
-          <div className="space-y-3">
-            {Object.entries(uploadingFiles).map(([id, progress]) => (
-              <div key={id} className="space-y-1">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="truncate">{id.split('_').slice(1).join('_')}</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <Progress value={progress} className="h-1" />
-              </div>
-            ))}
+  const handlePreview = (attachment: any) => {
+    setPreviewFile({
+      url: attachment.url,
+      name: attachment.name,
+      type: attachment.type || (attachment.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg')
+    });
+    setIsPreviewOpen(true);
+  };
 
-            {fields.map((attachment: any, index) => (
-              <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md group bg-background">
-                <FileText className="h-5 w-5 text-primary/70" />
-                <div className="flex-1 truncate">
-                  <Link href={attachment.url} target="_blank" className="text-xs font-bold hover:underline">
-                    {attachment.name}
-                  </Link>
-                  <p className="text-[9px] text-muted-foreground">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
-                </div>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => handleDelete(index, attachment)} 
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('Contracts.attachments')}</CardTitle>
+          <CardDescription>Documentación vinculada al contrato.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div
+              className={cn(
+                "relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors min-h-[150px]",
+                isDragging && "border-primary bg-primary/5"
+              )}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e.dataTransfer.files); }}
+            >
+              <UploadCloud className="w-10 h-10 mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground text-center">
+                <span className="font-semibold text-primary">Subir archivo</span> o arrastrar aquí
+              </p>
+              <input
+                type="file"
+                multiple
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={(e) => handleFileUpload(e.target.files)}
+                disabled={disabled || contractId === 'new'}
+              />
+            </div>
             
-            {fields.length === 0 && Object.keys(uploadingFiles).length === 0 && (
-              <div className="text-center py-8 border border-dashed rounded-lg text-muted-foreground text-xs uppercase font-bold tracking-widest">
-                Sin adjuntos
-              </div>
-            )}
+            <div className="space-y-3">
+              {Object.entries(uploadingFiles).map(([id, progress]) => (
+                <div key={id} className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="truncate">{id.split('_').slice(1).join('_')}</span>
+                    <span>{Math.round(progress)}%</span>
+                  </div>
+                  <Progress value={progress} className="h-1" />
+                </div>
+              ))}
+
+              {fields.map((attachment: any, index) => (
+                <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md group bg-background hover:border-primary/50 transition-colors">
+                  <FileText className="h-5 w-5 text-primary/70 shrink-0" />
+                  <div className="flex-1 truncate">
+                    <button 
+                      type="button"
+                      onClick={() => handlePreview(attachment)}
+                      className="text-xs font-bold hover:underline text-left w-full truncate"
+                    >
+                      {attachment.name}
+                    </button>
+                    <p className="text-[9px] text-muted-foreground">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handlePreview(attachment)}
+                      className="h-7 w-7 text-primary"
+                      title={t('Actions.preview')}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleDelete(index, attachment)} 
+                      className="h-7 w-7 text-destructive"
+                      disabled={disabled}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              
+              {fields.length === 0 && Object.keys(uploadingFiles).length === 0 && (
+                <div className="text-center py-8 border border-dashed rounded-lg text-muted-foreground text-xs uppercase font-bold tracking-widest">
+                  Sin adjuntos
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <FilePreviewModal 
+        isOpen={isPreviewOpen} 
+        onOpenChange={setIsPreviewOpen} 
+        file={previewFile} 
+      />
+    </>
   );
 }
