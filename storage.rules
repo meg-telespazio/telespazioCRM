@@ -1,10 +1,20 @@
 rules_version = '2';
 
-// REGLAS DE PRUEBA: ACCESO PÚBLICO TOTAL
+// REGLAS DE PRUEBA: ACCESO TOTAL
+// Esta configuración permite que cualquier usuario suba archivos.
+// Se recomienda volver a 'if request.auth != null' después de verificar que la subida funciona.
+
 service firebase.storage {
+  // Coincidencia explícita para el bucket nuevo
+  match /b/studio-1413684383-379c9.firebasestorage.app/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+  
+  // Coincidencia para el bucket por defecto
   match /b/{bucket}/o {
     match /{allPaths=**} {
-      // PERMITIR TODO PARA PRUEBAS (Desactivar tras verificar funcionamiento)
       allow read, write: if true;
     }
   }

@@ -32,7 +32,29 @@ export async function uploadFile(
         if (onProgress) onProgress(progress);
       },
       (error) => {
-        console.error('Storage Error:', error);
+        // Extraer información detallada del error de Firebase
+        const errorDetail = {
+          code: error.code || 'unknown',
+          message: error.message || 'No message',
+          path: cleanPath,
+          bucket: (storage as any).app?.options?.storageBucket || 'unknown'
+        };
+        
+        // Log explícito como cadena para evitar objetos vacíos {} en la consola de NextJS
+        console.error(`Detailed Storage Error Info: [${errorDetail.code}] ${errorDetail.message} at path: ${errorDetail.path} (Bucket: ${errorDetail.bucket})`);
+        
+        // Error de reglas de seguridad (Firebase Rules)
+        if (errorDetail.code === 'storage/unauthorized') {
+          reject(new Error('PERMISSION_DENIED'));
+          return;
+        }
+
+        // Error de red o CORS
+        if (errorDetail.code === 'storage/unknown' || !errorDetail.code || errorDetail.message.includes('CORS')) {
+          reject(new Error('CORS_ERROR'));
+          return;
+        }
+
         reject(error);
       },
       async () => {

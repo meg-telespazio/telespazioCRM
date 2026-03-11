@@ -1,10 +1,15 @@
 rules_version = '2';
 
-// REGLAS DE PRUEBA: ACCESO PÚBLICO TOTAL (Source)
+// REGLAS DE PRUEBA: ACCESO TOTAL (Sincronizado)
 service firebase.storage {
+  match /b/studio-1413684383-379c9.firebasestorage.app/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+  
   match /b/{bucket}/o {
     match /{allPaths=**} {
-      // PERMITIR TODO PARA PRUEBAS (Desactivar tras verificar funcionamiento)
       allow read, write: if true;
     }
   }
