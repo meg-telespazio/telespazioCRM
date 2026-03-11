@@ -23,17 +23,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { columns } from './columns';
 import type { Contact, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
+import { Search, ListFilter, Download } from 'lucide-react';
 
 type ContactTableProps = {
   data: Contact[];
@@ -52,17 +48,10 @@ export function ContactTable({
   const { user } = useUser();
   const firestore = useFirestore();
   const tableId = 'contacts';
-  const defaultVisibility = {
-    publicId: false,
-    createdAt: false,
-  };
   
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(defaultVisibility);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
   React.useEffect(() => {
@@ -112,59 +101,44 @@ export function ContactTable({
   });
 
   return (
-    <div className="w-full bg-card rounded-lg border shadow-sm">
-      <div className="flex items-center justify-end p-4">
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                {t('Table.columns')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  const translationKey = 
-                      column.id === 'createdAt' ? 'Table.createdDate' 
-                    : column.id === 'publicId' ? 'Table.contactId'
-                    : column.id === 'clientId' ? 'Pages.clients'
-                    : `Forms.${column.id}`;
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {t(translationKey) || column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div className="w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-4 p-3 bg-slate-50/50">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder={t('Table.filterByName')}
+            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+            onChange={(event) =>
+              table.getColumn('name')?.setFilterValue(event.target.value)
+            }
+            className="pl-10 h-10 bg-white border-slate-200 rounded-lg focus-visible:ring-primary focus-visible:ring-offset-0 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
+            <ListFilter className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
+            <Download className="h-4 w-4" />
+          </Button>
         </div>
       </div>
-      <div className="border-y">
+
+      <div className="border-t border-slate-100">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+              <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="bg-destructive h-10">
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -174,9 +148,10 @@ export function ContactTable({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className="h-10 border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="py-1">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -189,7 +164,7 @@ export function ContactTable({
               <TableRow>
                 <TableCell
                   colSpan={tableColumns.length}
-                  className="h-24 text-center"
+                  className="h-20 text-center text-slate-400 italic text-xs"
                 >
                   {t('Table.noResults')}
                 </TableCell>
@@ -198,7 +173,9 @@ export function ContactTable({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      <div className="border-t border-slate-100 bg-white">
+        <DataTablePagination table={table} />
+      </div>
     </div>
   );
 }

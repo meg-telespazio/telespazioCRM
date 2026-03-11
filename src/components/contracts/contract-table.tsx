@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -25,18 +24,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { columns } from './columns';
 import type { Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
 import { useRouter } from 'next/navigation';
+import { Search, ListFilter, Download } from 'lucide-react';
 
 type ContractTableProps = {
   data: Contract[];
@@ -56,15 +50,10 @@ export function ContractTable({
   const firestore = useFirestore();
   const router = useRouter();
   const tableId = 'contracts';
-  const defaultVisibility = {
-    endDate: false,
-    durationMonths: false,
-  };
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(defaultVisibility);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   
   React.useEffect(() => {
@@ -113,77 +102,45 @@ export function ContractTable({
     },
   });
 
-  const getColumnName = (key: string) => {
-    const map: { [key: string]: string } = {
-      'publicId': t('Table.contractId'),
-      'clientId': t('Dashboard.recentOpportunities.clientHeader'),
-      'type': t('Table.type'),
-      'amount': t('Contracts.amount'),
-      'status': t('Table.status'),
-      'startDate': t('Contracts.startDate'),
-      'endDate': t('Contracts.endDate'),
-      'durationMonths': t('Contracts.durationMonths'),
-    };
-    return map[key] || key;
-  }
-
   return (
-    <div className="w-full bg-card rounded-lg border shadow-sm">
-      <div className="flex items-center justify-between p-4">
-        <Input
-          placeholder={t('Table.filterByName')}
-          value={(table.getColumn('clientId')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('clientId')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                {t('Table.columns')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {getColumnName(column.id)}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div className="w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-4 p-3 bg-slate-50/50">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Filtrar por cliente..."
+            value={(table.getColumn('clientId')?.getFilterValue() as string) ?? ''}
+            onChange={(event) =>
+              table.getColumn('clientId')?.setFilterValue(event.target.value)
+            }
+            className="pl-10 h-10 bg-white border-slate-200 rounded-lg focus-visible:ring-primary focus-visible:ring-offset-0 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
+            <ListFilter className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
+            <Download className="h-4 w-4" />
+          </Button>
         </div>
       </div>
-      <div className="border-y">
+
+      <div className="border-t border-slate-100">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+              <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="bg-destructive h-10">
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -193,9 +150,10 @@ export function ContractTable({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className="h-10 border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="py-1">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -208,7 +166,7 @@ export function ContractTable({
               <TableRow>
                 <TableCell
                   colSpan={tableColumns.length}
-                  className="h-24 text-center"
+                  className="h-20 text-center text-slate-400 italic text-xs"
                 >
                   {t('Contracts.noContracts')}
                 </TableCell>
@@ -217,7 +175,9 @@ export function ContractTable({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      <div className="border-t border-slate-100 bg-white">
+        <DataTablePagination table={table} />
+      </div>
     </div>
   );
 }

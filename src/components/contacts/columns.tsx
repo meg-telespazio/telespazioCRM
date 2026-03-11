@@ -2,10 +2,10 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import {
-  ArrowDown,
-  ArrowUp,
-  ChevronsUpDown,
+  ArrowUpDown,
   MoreHorizontal,
+  Mail,
+  Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,14 +18,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { Contact, Client } from '@/lib/types';
-import { format } from 'date-fns';
+import Link from 'next/link';
 
 const getClientName = (clientId: string, clients: Client[]) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
 };
 
 export const columns = (
-  t: (key: string) => void,
+  t: (key: string) => string,
   clients: Client[],
   onEdit: (contact: Contact) => void,
   onDelete: (contactId: string) => void
@@ -33,219 +33,160 @@ export const columns = (
   {
     id: 'select',
     header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
+      <div className="flex justify-center px-2">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          className="border-white data-[state=checked]:bg-white data-[state=checked]:text-destructive"
+        />
+      </div>
     ),
     cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
+      <div className="flex justify-center px-2">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      </div>
     ),
     enableSorting: false,
     enableHiding: false,
   },
   {
     accessorKey: 'publicId',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        ID CONTACTO
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const contact = row.original;
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Table.contactId')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-blue-100 text-[9px] font-bold text-blue-700">
+            CT
           </div>
-        </Button>
+          <Link 
+            href={`/contacts/${contact.id}`} 
+            className="font-mono text-[11px] font-bold text-slate-600 hover:text-primary transition-colors underline-offset-2 hover:underline"
+          >
+            {contact.publicId}
+          </Link>
+        </div>
       );
-    },
+    }
   },
   {
     accessorKey: 'name',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Forms.contactName')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        NOMBRE COMPLETO
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <span className="font-bold text-slate-700 text-[11px]">
+        {row.original.name}
+      </span>
+    )
   },
   {
     accessorKey: 'clientId',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Pages.clients')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
-    cell: ({ row }) => getClientName(row.original.clientId, clients),
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        CLIENTE
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
+    cell: ({ row }) => <span className="text-slate-600 text-[11px]">{getClientName(row.original.clientId, clients)}</span>,
   },
   {
     id: 'email',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Auth.emailLabel')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        EMAIL
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
     cell: ({ row }) => {
         const email = row.original.emails?.[0]?.address;
         if (!email) return '-';
         return (
-          <a href={`mailto:${email}`} className="text-primary hover:underline">
+          <a href={`mailto:${email}`} className="text-primary hover:underline text-[11px]">
             {email}
           </a>
         );
     },
-    accessorFn: (row) => row.emails?.[0]?.address,
-    enableSorting: true,
   },
   {
     id: 'phone',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Auth.phoneLabel')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
-    cell: ({ row }) => row.original.phones?.[0]?.number || '-',
-    accessorFn: (row) => row.phones?.[0]?.number,
-    enableSorting: true,
-  },
-  {
-    accessorKey: 'createdAt',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Table.createdDate')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const { createdAt } = row.original;
-      return createdAt instanceof Date ? format(createdAt, 'PPP') : '...';
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        TELÉFONO
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
+    cell: ({ row }) => <span className="text-[11px]">{row.original.phones?.[0]?.number || '-'}</span>,
   },
   {
     id: 'actions',
+    header: () => (
+      <div className="text-white font-bold text-[10px] uppercase tracking-wider text-center px-4">
+        ACCIONES
+      </div>
+    ),
     cell: ({ row }) => {
       const contact = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(contact.id)}
-            >
-              {t('Actions.copyContactId')}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onEdit(contact)}>
-              {t('Actions.editContact')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => onDelete(contact.id)}
-            >
-              {t('Actions.deleteContact')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-slate-100">
+                <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
+              <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(contact)}>
+                <MoreHorizontal className="mr-2 h-3.5 w-3.5" />
+                <span>{t('Actions.editContact')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive text-[11px]"
+                onClick={() => onDelete(contact.id)}
+              >
+                {t('Actions.deleteContact')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   },

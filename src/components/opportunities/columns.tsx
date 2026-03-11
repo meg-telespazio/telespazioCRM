@@ -2,9 +2,7 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import {
-  ArrowDown,
-  ArrowUp,
-  ChevronsUpDown,
+  ArrowUpDown,
   MoreHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,27 +16,26 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import type { Opportunity, Client } from '@/lib/types';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 const getClientName = (clientId: string, clients: Client[]) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
 };
 
 const stageClasses: { [key in Opportunity['stage']]: string } = {
-  Prospecting: 'bg-yellow-400 text-black hover:bg-yellow-500 border-transparent',
-  Proposal: 'bg-[#000080] text-white hover:bg-[#000066] border-transparent',
-  Negotiation: 'bg-[#000080] text-white hover:bg-[#000066] border-transparent',
-  Won: 'bg-green-600 text-white hover:bg-green-700 border-transparent',
-  Lost: 'bg-red-600 text-white hover:bg-red-700 border-transparent',
-  Canceled: 'bg-gray-300 text-gray-900 hover:bg-gray-400 border-transparent',
-  Suspended: 'bg-gray-300 text-gray-900 hover:bg-gray-400 border-transparent',
+  Prospecting: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-none px-2 py-0 font-bold text-[9px]',
+  Proposal: 'bg-blue-100 text-blue-700 hover:bg-blue-100 border-none px-2 py-0 font-bold text-[9px]',
+  Negotiation: 'bg-purple-100 text-purple-700 hover:bg-purple-100 border-none px-2 py-0 font-bold text-[9px]',
+  Won: 'bg-green-100 text-green-700 hover:bg-green-100 border-none px-2 py-0 font-bold text-[9px]',
+  Lost: 'bg-red-100 text-red-700 hover:bg-red-100 border-none px-2 py-0 font-bold text-[9px]',
+  Canceled: 'bg-slate-100 text-slate-700 hover:bg-slate-100 border-none px-2 py-0 font-bold text-[9px]',
+  Suspended: 'bg-slate-100 text-slate-700 hover:bg-slate-100 border-none px-2 py-0 font-bold text-[9px]',
 };
 
 export const columns = (
-  t: (key: string) => void,
+  t: (key: string) => string,
   clients: Client[],
   onEdit: (opportunity: Opportunity) => void,
   onDelete: (opportunityId: string) => void
@@ -46,245 +43,163 @@ export const columns = (
   {
     id: 'select',
     header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
+      <div className="flex justify-center px-2">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          className="border-white data-[state=checked]:bg-white data-[state=checked]:text-destructive"
+        />
+      </div>
     ),
     cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
+      <div className="flex justify-center px-2">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      </div>
     ),
     enableSorting: false,
     enableHiding: false,
   },
   {
     accessorKey: 'publicId',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        ID NEGOCIO
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const opp = row.original;
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Table.opportunityId')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-amber-100 text-[9px] font-bold text-amber-700">
+            OP
           </div>
-        </Button>
+          <Link 
+            href={`/opportunities/${opp.id}`} 
+            className="font-mono text-[11px] font-bold text-slate-600 hover:text-primary transition-colors underline-offset-2 hover:underline"
+          >
+            {opp.publicId}
+          </Link>
+        </div>
       );
-    },
+    }
   },
   {
     accessorKey: 'title',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Dashboard.recentOpportunities.opportunityHeader')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        TÍTULO DEL PROYECTO
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
+    cell: ({ row }) => (
+      <span className="font-bold text-slate-700 text-[11px] truncate block max-w-[200px]">
+        {row.original.title}
+      </span>
+    )
   },
   {
     accessorKey: 'clientId',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Dashboard.recentOpportunities.clientHeader')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
-    cell: ({ row }) => getClientName(row.original.clientId, clients),
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        CLIENTE
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
+    cell: ({ row }) => <span className="text-slate-600 text-[11px] truncate block max-w-[150px]">{getClientName(row.original.clientId, clients)}</span>,
   },
   {
     accessorKey: 'value',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Dashboard.recentOpportunities.valueHeader')} (USD)
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        VALOR (USD)
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('value'));
       const formatted = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
       }).format(amount);
-      return <div className="font-medium">{formatted}</div>;
+      return <div className="font-bold text-slate-700 text-[11px]">{formatted}</div>;
     },
   },
   {
     accessorKey: 'stage',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Dashboard.recentOpportunities.stageHeader')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+      >
+        ETAPA
+        <ArrowUpDown className="ml-2 h-3 w-3" />
+      </Button>
+    ),
     cell: ({ row }) => (
-      <Badge className={cn('whitespace-nowrap', stageClasses[row.original.stage])}>
+      <Badge variant="outline" className={cn("rounded-full", stageClasses[row.original.stage])}>
         {t(`Stages.${row.original.stage}`)}
       </Badge>
     ),
   },
   {
-    accessorKey: 'probability',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Forms.probability')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <Progress value={row.original.probability} className="w-24" />
-        <span>{row.original.probability}%</span>
+    id: 'actions',
+    header: () => (
+      <div className="text-white font-bold text-[10px] uppercase tracking-wider text-center px-4">
+        ACCIONES
       </div>
     ),
-  },
-  {
-    accessorKey: 'closeDate',
-    header: ({ column }) => {
-      const isSorted = column.getIsSorted();
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="w-full h-full text-left justify-start p-2 sm:p-4 hover:bg-red-700 hover:text-white"
-        >
-          {t('Forms.estCloseDate')}
-          <div className="ml-auto">
-            {isSorted === 'asc' ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : isSorted === 'desc' ? (
-              <ArrowDown className="h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="h-4 w-4" />
-            )}
-          </div>
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div>{format(row.original.closeDate, 'PPP')}</div>,
-  },
-  {
-    id: 'actions',
     cell: ({ row }) => {
       const opportunity = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(opportunity.id)}
-            >
-              {t('Actions.copyOpportunityId')}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onEdit(opportunity)}>
-              {t('Actions.editOpportunity')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => onDelete(opportunity.id)}
-            >
-              {t('Actions.deleteOpportunity')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-slate-100">
+                <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
+              <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(opportunity)}>
+                <MoreHorizontal className="mr-2 h-3.5 w-3.5" />
+                <span>{t('Actions.editOpportunity')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive text-[11px]"
+                onClick={() => onDelete(opportunity.id)}
+              >
+                {t('Actions.deleteOpportunity')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   },
