@@ -188,10 +188,8 @@ export default function ContractFormPage() {
   const watchedAutoRenews = form.watch('autoRenews');
   const watchedHasSpecialClauses = form.watch('hasSpecialClauses');
 
-  // New item for price list state
   const [newPriceItem, setNewPriceItem] = useState<{planName: string, price: number}>({ planName: '', price: 0 });
 
-  // Cálculo automático de Fecha Fin
   useEffect(() => {
     const duration = Number(watchedDuration);
     if (watchedStartDate && isValid(watchedStartDate) && !isNaN(duration) && duration > 0) {
@@ -215,6 +213,7 @@ export default function ContractFormPage() {
         priceList: contractData.priceList || [],
         topUp50GbPrice: contractData.topUp50GbPrice || 0,
         topUp500GbPrice: contractData.topUp500GbPrice || 0,
+        attachments: contractData.attachments || [],
       });
     }
   }, [contractData, form]);
@@ -424,7 +423,6 @@ export default function ContractFormPage() {
                 )} />}
               </CardContent></Card>
 
-              {/* Price List Section */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

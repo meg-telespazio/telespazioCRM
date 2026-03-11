@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -20,9 +20,11 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users, ShieldCheck, User } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users, ShieldCheck, User, Paperclip, Eye, Download } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FilePreviewModal } from '@/components/ui/file-preview-modal';
 
 const LocationsMap = dynamic(() => import('@/components/locations/locations-map'), {
   ssr: false,
@@ -39,12 +41,19 @@ export default function ClientSummaryPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
+  // Preview State
+  const [previewFile, setPreviewFile] = useState<{url: string, name: string, type: string} | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
   // Data fetching
   const clientDocRef = useMemo(() => firestore ? doc(firestore, 'clients', clientId) : null, [firestore, clientId]);
   const { data: client, loading: clientLoading } = useDoc<Client>(clientDocRef);
 
   const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
+
+  const opportunitiesQuery = useMemo(() => user ? query(collection(firestore, 'opportunities'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
+  const { data: opportunities } = useCollection<Opportunity>(opportunitiesQuery);
 
   const posQuery = useMemo(() => user ? query(collection(firestore, 'purchaseOrders')) : null, [user, firestore]);
   const { data: allPos } = useCollection<PurchaseOrder>(posQuery);
@@ -74,6 +83,27 @@ export default function ClientSummaryPage() {
     return { clientServices: filteredServices, totalMRR: mrr };
   }, [contracts, allPos, allServices]);
 
+  // Aggregate all documents
+  const allDocuments = useMemo(() => {
+    const docs: any[] = [];
+    contracts?.forEach(c => {
+      c.attachments?.forEach(a => docs.push({ ...a, source: 'Contract', sourceId: c.publicId }));
+    });
+    opportunities?.forEach(o => {
+      o.attachments?.forEach(a => docs.push({ ...a, source: 'Opportunity', sourceId: o.publicId }));
+    });
+    return docs.sort((a, b) => a.name.localeCompare(b.name));
+  }, [contracts, opportunities]);
+
+  const handlePreview = (attachment: any) => {
+    setPreviewFile({
+      url: attachment.url,
+      name: attachment.name,
+      type: attachment.type || (attachment.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg')
+    });
+    setIsPreviewOpen(true);
+  };
+
   const isLoading = userLoading || clientLoading;
 
   if (isLoading) return <div className="p-6 space-y-6"><Skeleton className="h-48" /><Skeleton className="h-96" /></div>;
@@ -88,7 +118,7 @@ export default function ClientSummaryPage() {
       
       <main className="flex-1 p-4 sm:p-6 space-y-6">
         {/* Info Card */}
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden shadow-md">
           <CardHeader className="flex-col sm:flex-row items-start sm:items-center gap-4 border-b bg-muted/10 pb-6">
             <Avatar className="h-20 w-20 rounded-lg border-2 border-background shadow-sm">
               <AvatarImage src={client.logoURL || undefined} />
@@ -196,7 +226,6 @@ export default function ClientSummaryPage() {
             </CardContent>
           </Card>
           
-          {/* Quick Stats for Contracts */}
           <Card className="bg-muted/30 border-muted shadow-none">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 bg-muted rounded-full">
@@ -210,167 +239,231 @@ export default function ClientSummaryPage() {
           </Card>
         </div>
 
-        {/* Contract -> PO -> Service -> Equipment Cascading View */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5">
-            <CardTitle className="flex items-center gap-2 text-lg"><FileText className="h-5 w-5 text-primary" />{t('Sidebar.contracts')} & Operaciones</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => router.push(`/clients/${clientId}/services`)}>
-              <LayoutGrid className="h-4 w-4 mr-2" />
-              Ver Gestión de Servicios
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            {contracts && contracts.length > 0 ? (
-              <Accordion type="single" collapsible className="w-full">
-                {contracts.map(contract => {
-                  const contractPos = allPos?.filter(p => p.contractId === contract.id) || [];
-                  return (
-                    <AccordionItem key={contract.id} value={contract.id} className="border-b last:border-0 px-6">
-                      <AccordionTrigger className="hover:no-underline py-4">
-                        <div className="flex items-center gap-4 text-left">
-                          <Badge variant="outline" className="font-mono">{contract.publicId}</Badge>
-                          <span className="font-bold text-base">{contract.type}</span>
-                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded italic">
-                            {format(contract.startDate, 'P')} - {format(contract.endDate, 'P')}
-                          </span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-6 space-y-4">
-                        <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md">
-                          <span className="text-xs font-bold text-muted-foreground uppercase">{t('Sidebar.pos')}</span>
-                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}><PlusCircle className="h-3 w-3 mr-1"/>Nueva PO</Button>
-                        </div>
-                        {contractPos.length > 0 ? (
-                          <div className="space-y-2">
-                            {contractPos.map(po => {
-                              const poServices = allServices?.filter(s => s.poId === po.id) || [];
-                              return (
-                                <div key={po.id} className="border rounded-lg overflow-hidden">
-                                  <div className="flex items-center justify-between bg-slate-50 p-3 border-b">
-                                    <div className="flex items-center gap-3">
-                                      <ShoppingCart className="h-4 w-4 text-primary" />
-                                      <span className="font-bold text-sm">PO: {po.poNumber}</span>
-                                      <Badge variant="secondary" className="text-[10px]">{po.amount.toLocaleString()} {po.currency}</Badge>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{t(`Status.${po.status}`)}</span>
-                                  </div>
-                                  <div className="p-2 space-y-2">
-                                    {poServices.length > 0 ? (
-                                      <div className="grid gap-2">
-                                        {poServices.map(service => {
-                                          const equipment = allEquip?.find(e => e.id === service.equipmentId);
-                                          return (
-                                            <div key={service.id} className="flex flex-col gap-1 p-3 border rounded-lg bg-background hover:bg-slate-50 transition-colors">
-                                              <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-2">
-                                                  <Zap className="h-4 w-4 text-yellow-500" />
-                                                  <span className="font-bold text-sm">{service.serviceNickname}</span>
-                                                  {service.isTelespazioOwned !== false ? (
-                                                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] h-4 leading-none">
-                                                      Telespazio
-                                                    </Badge>
-                                                  ) : (
-                                                    <Badge variant="outline" className="text-[9px] h-4 leading-none">
-                                                      Cliente
-                                                    </Badge>
+        <Tabs defaultValue="operations" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
+            <TabsTrigger value="operations">Operaciones</TabsTrigger>
+            <TabsTrigger value="documents">Documentos ({allDocuments.length})</TabsTrigger>
+            <TabsTrigger value="activities">Actividad</TabsTrigger>
+          </TabsList>
+
+          {/* Operations View */}
+          <TabsContent value="operations" className="mt-6 space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5">
+                <CardTitle className="flex items-center gap-2 text-lg"><FileText className="h-5 w-5 text-primary" />{t('Sidebar.contracts')} & Operaciones</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => router.push(`/clients/${clientId}/services`)}>
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  Ver Gestión de Servicios
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                {contracts && contracts.length > 0 ? (
+                  <Accordion type="single" collapsible className="w-full">
+                    {contracts.map(contract => {
+                      const contractPos = allPos?.filter(p => p.contractId === contract.id) || [];
+                      return (
+                        <AccordionItem key={contract.id} value={contract.id} className="border-b last:border-0 px-6">
+                          <AccordionTrigger className="hover:no-underline py-4">
+                            <div className="flex items-center gap-4 text-left">
+                              <Badge variant="outline" className="font-mono">{contract.publicId}</Badge>
+                              <span className="font-bold text-base">{contract.type}</span>
+                              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded italic">
+                                {format(contract.startDate, 'P')} - {format(contract.endDate, 'P')}
+                              </span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-6 space-y-4">
+                            <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md">
+                              <span className="text-xs font-bold text-muted-foreground uppercase">{t('Sidebar.pos')}</span>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}><PlusCircle className="h-3 w-3 mr-1"/>Nueva PO</Button>
+                            </div>
+                            {contractPos.length > 0 ? (
+                              <div className="space-y-2">
+                                {contractPos.map(po => {
+                                  const poServices = allServices?.filter(s => s.poId === po.id) || [];
+                                  return (
+                                    <div key={po.id} className="border rounded-lg overflow-hidden">
+                                      <div className="flex items-center justify-between bg-slate-50 p-3 border-b">
+                                        <div className="flex items-center gap-3">
+                                          <ShoppingCart className="h-4 w-4 text-primary" />
+                                          <span className="font-bold text-sm">PO: {po.poNumber}</span>
+                                          <Badge variant="secondary" className="text-[10px]">{po.amount.toLocaleString()} {po.currency}</Badge>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{t(`Status.${po.status}`)}</span>
+                                      </div>
+                                      <div className="p-2 space-y-2">
+                                        {poServices.length > 0 ? (
+                                          <div className="grid gap-2">
+                                            {poServices.map(service => {
+                                              const equipment = allEquip?.find(e => e.id === service.equipmentId);
+                                              return (
+                                                <div key={service.id} className="flex flex-col gap-1 p-3 border rounded-lg bg-background hover:bg-slate-50 transition-colors">
+                                                  <div className="flex justify-between items-start">
+                                                    <div className="flex items-center gap-2">
+                                                      <Zap className="h-4 w-4 text-yellow-500" />
+                                                      <span className="font-bold text-sm">{service.serviceNickname}</span>
+                                                      {service.isTelespazioOwned !== false ? (
+                                                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] h-4 leading-none">
+                                                          Telespazio
+                                                        </Badge>
+                                                      ) : (
+                                                        <Badge variant="outline" className="text-[9px] h-4 leading-none">
+                                                          Cliente
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                    <div className="text-right">
+                                                      <span className="text-xs font-bold text-primary">{service.currency} {service.monthlyFee?.toLocaleString()}</span>
+                                                      <p className="text-[10px] font-mono text-muted-foreground">{service.serviceLineNumber}</p>
+                                                    </div>
+                                                  </div>
+                                                  <div className="text-xs text-muted-foreground">{service.servicePlan}</div>
+                                                  {equipment && (
+                                                    <div className="mt-2 flex items-center gap-2 text-[10px] bg-muted/50 p-2 rounded">
+                                                      <HardDrive className="h-3 w-3" />
+                                                      <span className="font-semibold">{equipment.userTerminal}</span>
+                                                      <Badge variant="outline" className="text-[9px] h-4 leading-none bg-background">{equipment.physicalStatus}</Badge>
+                                                      {equipment.latitude && <span className="text-muted-foreground">• Ubicación mapeada</span>}
+                                                    </div>
                                                   )}
                                                 </div>
-                                                <div className="text-right">
-                                                  <span className="text-xs font-bold text-primary">{service.currency} {service.monthlyFee?.toLocaleString()}</span>
-                                                  <p className="text-[10px] font-mono text-muted-foreground">{service.serviceLineNumber}</p>
-                                                </div>
-                                              </div>
-                                              <div className="text-xs text-muted-foreground">{service.servicePlan}</div>
-                                              {equipment && (
-                                                <div className="mt-2 flex items-center gap-2 text-[10px] bg-muted/50 p-2 rounded">
-                                                  <HardDrive className="h-3 w-3" />
-                                                  <span className="font-semibold">{equipment.userTerminal}</span>
-                                                  <Badge variant="outline" className="text-[9px] h-4 leading-none bg-background">{equipment.physicalStatus}</Badge>
-                                                  {equipment.latitude && <span className="text-muted-foreground">• Ubicación mapeada</span>}
-                                                </div>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
+                                              );
+                                            })}
+                                          </div>
+                                        ) : (
+                                          <div className="text-xs text-muted-foreground italic py-4 text-center">Sin servicios vinculados. Use el importador de servicios para cargar desde Excel.</div>
+                                        )}
                                       </div>
-                                    ) : (
-                                      <div className="text-xs text-muted-foreground italic py-4 text-center">Sin servicios vinculados. Use el importador de servicios para cargar desde Excel.</div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-muted-foreground italic py-4 text-center border-2 border-dashed rounded-lg">No hay órdenes de compra registradas para este contrato.</div>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="mx-auto h-12 w-12 opacity-20 mb-2" />
+                    <p>No hay contratos registrados.</p>
+                    <Button variant="link" className="mt-2" onClick={() => router.push(`/contracts/new?clientId=${clientId}`)}>Crear primer contrato</Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Documents View */}
+          <TabsContent value="documents" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><Paperclip className="h-5 w-5 text-primary" /> Repositorio de Documentos</CardTitle>
+                <CardDescription>Archivos cargados en contratos y oportunidades relacionadas.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                {allDocuments.length > 0 ? (
+                  <div className="divide-y border-t">
+                    {allDocuments.map((doc, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors group">
+                        <div className="flex items-center gap-4 overflow-hidden">
+                          <div className="p-2 bg-slate-100 rounded">
+                            <FileText className="h-6 w-6 text-slate-500" />
                           </div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground italic py-4 text-center border-2 border-dashed rounded-lg">No hay órdenes de compra registradas para este contrato.</div>
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <FileText className="mx-auto h-12 w-12 opacity-20 mb-2" />
-                <p>No hay contratos registrados.</p>
-                <Button variant="link" className="mt-2" onClick={() => router.push(`/contracts/new?clientId=${clientId}`)}>Crear primer contrato</Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Contacts & Activities */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="flex-row items-center justify-between border-b pb-4">
-              <CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> {t('Pages.contacts')}</CardTitle>
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => router.push(`/contacts/new?clientId=${clientId}`)}><PlusCircle className="h-5 w-5" /></Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {contacts && contacts.length > 0 ? contacts.map(contact => (
-                  <div key={contact.id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8 rounded-full border">
-                        <AvatarFallback className="text-[10px] font-bold">{contact.name.split(' ').map(n => n[0]).join('').substring(0, 2)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-bold text-sm">{contact.name}</div>
-                        <div className="text-[10px] text-muted-foreground uppercase tracking-tight font-medium">{contact.position || 'Sin cargo'}</div>
+                          <div className="overflow-hidden">
+                            <p className="font-bold text-sm truncate pr-4">{doc.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Badge variant="outline" className="text-[9px] py-0">{doc.source}: {doc.sourceId}</Badge>
+                              <span className="text-[10px] text-muted-foreground">{(doc.size / 1024 / 1024).toFixed(2)} MB</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePreview(doc)}>
+                            <Eye className="h-4 w-4 text-primary" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                            <a href={doc.url} download={doc.name}>
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => router.push(`/contacts/${contact.id}`)}><ExternalLink className="h-4 w-4" /></Button>
+                    ))}
                   </div>
-                )) : (
-                  <div className="p-8 text-center text-sm text-muted-foreground italic">No hay contactos registrados.</div>
+                ) : (
+                  <div className="py-16 text-center text-muted-foreground border-t italic">
+                    No se han encontrado documentos adjuntos para este cliente.
+                  </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <Card>
-            <CardHeader className="flex-row items-center justify-between border-b pb-4">
-              <CardTitle className="text-lg flex items-center gap-2"><ActivityIcon className="h-5 w-5 text-primary" /> {t('Dashboard.recentActivities.title')}</CardTitle>
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => router.push(`/clients/${clientId}/activity`)}><PlusCircle className="h-5 w-5" /></Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {activities && activities.length > 0 ? activities.slice(0, 4).map(activity => (
-                  <div key={activity.id} className="p-4 hover:bg-muted/20 transition-colors space-y-1">
-                    <div className="flex justify-between items-center mb-1">
-                      <Badge variant="outline" className="text-[9px] font-bold uppercase py-0">{t(`Activity.types.${activity.type}`)}</Badge>
-                      <span className="text-[10px] text-muted-foreground font-medium">{formatDistanceToNow(activity.createdAt, { addSuffix: true, locale: dateLocale })}</span>
-                    </div>
-                    <div className="text-xs text-foreground line-clamp-2 italic leading-relaxed"><RenderWithMentions text={activity.description} /></div>
+          {/* Activities & Contacts View */}
+          <TabsContent value="activities" className="mt-6 space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="flex-row items-center justify-between border-b pb-4">
+                  <CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> {t('Pages.contacts')}</CardTitle>
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => router.push(`/contacts/new?clientId=${clientId}`)}><PlusCircle className="h-5 w-5" /></Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y">
+                    {contacts && contacts.length > 0 ? contacts.map(contact => (
+                      <div key={contact.id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8 rounded-full border">
+                            <AvatarFallback className="text-[10px] font-bold">{contact.name.split(' ').map(n => n[0]).join('').substring(0, 2)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-bold text-sm">{contact.name}</div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-tight font-medium">{contact.position || 'Sin cargo'}</div>
+                          </div>
+                        </div>
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => router.push(`/contacts/${contact.id}`)}><ExternalLink className="h-4 w-4" /></Button>
+                      </div>
+                    )) : (
+                      <div className="p-8 text-center text-sm text-muted-foreground italic">No hay contactos registrados.</div>
+                    )}
                   </div>
-                )) : (
-                  <div className="p-8 text-center text-sm text-muted-foreground italic">Sin actividades registradas.</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex-row items-center justify-between border-b pb-4">
+                  <CardTitle className="text-lg flex items-center gap-2"><ActivityIcon className="h-5 w-5 text-primary" /> {t('Dashboard.recentActivities.title')}</CardTitle>
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => router.push(`/clients/${clientId}/activity`)}><PlusCircle className="h-5 w-5" /></Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y">
+                    {activities && activities.length > 0 ? activities.slice(0, 4).map(activity => (
+                      <div key={activity.id} className="p-4 hover:bg-muted/20 transition-colors space-y-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <Badge variant="outline" className="text-[9px] font-bold uppercase py-0">{t(`Activity.types.${activity.type}`)}</Badge>
+                          <span className="text-[10px] text-muted-foreground font-medium">{formatDistanceToNow(activity.createdAt, { addSuffix: true, locale: dateLocale })}</span>
+                        </div>
+                        <div className="text-xs text-foreground line-clamp-2 italic leading-relaxed"><RenderWithMentions text={activity.description} /></div>
+                      </div>
+                    )) : (
+                      <div className="p-8 text-center text-sm text-muted-foreground italic">Sin actividades registradas.</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
+
+      <FilePreviewModal 
+        isOpen={isPreviewOpen} 
+        onOpenChange={setIsPreviewOpen} 
+        file={previewFile} 
+      />
     </div>
   );
 }
