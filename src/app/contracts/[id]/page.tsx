@@ -122,6 +122,11 @@ export default function ContractFormPage() {
   const isNew = contractId === 'new';
   const clientIdFromQuery = searchParams.get('clientId');
 
+  // Resetear el flag de carga cuando cambia el ID
+  useEffect(() => {
+    isFormLoaded.current = false;
+  }, [contractId]);
+
   const contractDocRef = useMemo(() => {
     if (!firestore || !contractId || isNew) return null;
     return doc(firestore, 'contracts', contractId);
@@ -203,6 +208,7 @@ export default function ContractFormPage() {
     return allContactsData.filter((contact) => contact.clientId === watchedClientId);
   }, [allContactsData, watchedClientId]);
 
+  // Cargar datos del contrato en el formulario solo una vez al recibir los datos
   useEffect(() => {
     if (contractData && !isFormLoaded.current) {
       form.reset({

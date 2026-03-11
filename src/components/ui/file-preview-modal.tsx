@@ -6,10 +6,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, ExternalLink, FileText, X, AlertTriangle } from 'lucide-react';
+import { Download, ExternalLink, FileText, AlertTriangle } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 
 interface FilePreviewModalProps {
@@ -37,18 +36,18 @@ export function FilePreviewModal({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] w-full h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-background rounded-lg">
-        {/* Barra superior personalizada para evitar colisión con el botón X de ShadCN */}
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/20 shrink-0">
-          <div className="flex items-center gap-3 overflow-hidden">
+        {/* Header con DialogTitle para cumplir con accesibilidad */}
+        <DialogHeader className="px-4 py-3 border-b bg-muted/20 shrink-0 flex flex-row items-center justify-between space-y-0">
+          <div className="flex items-center gap-3 overflow-hidden flex-1">
             <div className="p-1.5 bg-primary/10 rounded text-primary">
               <FileText className="h-4 w-4" />
             </div>
-            <span className="text-sm font-bold truncate max-w-[200px] sm:max-w-md">
+            <DialogTitle className="text-sm font-bold truncate max-w-[200px] sm:max-w-md">
               {file.name}
-            </span>
+            </DialogTitle>
           </div>
           
-          <div className="flex items-center gap-2 pr-8"> {/* Padding derecho para no tapar el botón X nativo */}
+          <div className="flex items-center gap-2 pr-8"> {/* Espacio para no chocar con el botón X nativo */}
             <Button
               variant="outline"
               size="sm"
@@ -72,9 +71,9 @@ export function FilePreviewModal({
               </a>
             </Button>
           </div>
-        </div>
+        </DialogHeader>
 
-        {/* Área de contenido */}
+        {/* Área de contenido principal */}
         <div className="flex-1 w-full flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-2 sm:p-6 overflow-hidden relative">
           {isImage ? (
             <div className="relative w-full h-full flex items-center justify-center">

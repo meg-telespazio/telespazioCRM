@@ -188,6 +188,11 @@ export default function OpportunityFormPage() {
   const isNew = opportunityId === 'new';
   const clientIdFromQuery = searchParams.get('clientId');
 
+  // Resetear el flag de carga cuando cambia el ID
+  useEffect(() => {
+    isFormLoaded.current = false;
+  }, [opportunityId]);
+
   const opportunityDocRef = useMemo(() => {
     if (!firestore || isNew) return null;
     return doc(firestore, 'opportunities', opportunityId);
@@ -409,6 +414,7 @@ export default function OpportunityFormPage() {
     );
   }, [allContactsData, watchedClientId]);
 
+  // Cargar datos en el formulario solo una vez
   useEffect(() => {
     if (opportunityData && !isFormLoaded.current) {
       form.reset({
