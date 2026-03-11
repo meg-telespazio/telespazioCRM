@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -36,6 +37,7 @@ import { useI18n } from '@/firebase/client-provider';
 import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
 import { useRouter } from 'next/navigation';
+import { Search, ListFilter, Download } from 'lucide-react';
 
 type ClientTableProps = {
   data: Client[];
@@ -49,18 +51,16 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
   const firestore = useFirestore();
   const router = useRouter();
   const tableId = 'clients';
+  
   const defaultVisibility = {
-    createdAt: false,
-    phone: false,
-    industry: false,
+    cuit: true,
+    email: true,
+    status: true,
   };
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(defaultVisibility);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultVisibility);
   const [rowSelection, setRowSelection] = React.useState({});
 
   React.useEffect(() => {
@@ -105,66 +105,46 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
   });
 
   return (
-    <div className="w-full bg-card rounded-lg border shadow-sm">
-      <div className="flex items-center justify-between p-4">
-        <Input
-          placeholder={t('Table.filterByName')}
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+    <div className="w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Barra de Herramientas */}
+      <div className="flex items-center gap-4 p-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Buscar por ID, nombre, email o tax ID..."
+            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+            onChange={(event) =>
+              table.getColumn('name')?.setFilterValue(event.target.value)
+            }
+            className="pl-10 h-11 bg-slate-50 border-slate-200 rounded-lg focus-visible:ring-primary focus-visible:ring-offset-0"
+          />
+        </div>
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                {t('Table.columns')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  const translationKey = 
-                      column.id === 'createdAt' ? 'Table.createdDate' 
-                    : column.id === 'publicId' ? 'Table.clientId'
-                    : `Forms.${column.id}`;
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {t(translationKey) || column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600">
+            <ListFilter className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600">
+            <Download className="h-5 w-5" />
+          </Button>
         </div>
       </div>
-      <div className="border-y">
+
+      {/* Tabla */}
+      <div className="border-t border-slate-100">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+              <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="bg-destructive h-12 first:rounded-tl-none last:rounded-tr-none">
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -174,9 +154,10 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className="h-14 border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="py-2">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -188,8 +169,8 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns(t, onEdit, onDelete, router).length}
-                  className="h-24 text-center"
+                  colSpan={table.getAllColumns().length}
+                  className="h-24 text-center text-slate-400 italic"
                 >
                   {t('Table.noResults')}
                 </TableCell>
@@ -198,7 +179,11 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+
+      {/* Paginación */}
+      <div className="border-t border-slate-100 bg-white">
+        <DataTablePagination table={table} />
+      </div>
     </div>
   );
 }

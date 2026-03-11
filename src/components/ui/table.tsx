@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -9,7 +10,7 @@ const Table = React.forwardRef<
   <div className="relative w-full overflow-auto">
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-xs", className)}
+      className={cn("w-full caption-bottom text-xs border-collapse", className)}
       {...props}
     />
   </div>
@@ -73,7 +74,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-10 px-2 text-left align-middle font-medium bg-destructive text-destructive-foreground text-xs [&:has([role=checkbox])]:text-center sm:px-4",
+      "h-10 px-2 text-left align-middle font-medium bg-destructive text-destructive-foreground text-[10px] [&:has([role=checkbox])]:text-center sm:px-4",
       "has-[button]:p-0",
       className
     )}
@@ -86,11 +87,10 @@ const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => {
-  const meta = (props as any)?.cell?.column.columnDef.meta;
   return (
     <td
       ref={ref}
-      className={cn("p-2 align-middle text-xs [&:has([role=checkbox])]:text-center sm:p-4", meta?.className, className)}
+      className={cn("p-2 align-middle text-xs [&:has([role=checkbox])]:text-center sm:p-4", className)}
       {...props}
     />
   )
