@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import {
   useUser,
   useFirestore,
@@ -167,6 +166,7 @@ export default function OpportunityFormPage() {
   const { t, locale } = useI18n();
   const { toast } = useToast();
   const datePickerLocale = locale === 'es' ? es : enUS;
+  const isFormLoaded = useRef(false);
 
   const [isRequestDatePickerOpen, setRequestDatePickerOpen] = useState(false);
   const [isOfferDatePickerOpen, setOfferDatePickerOpen] = useState(false);
@@ -410,7 +410,7 @@ export default function OpportunityFormPage() {
   }, [allContactsData, watchedClientId]);
 
   useEffect(() => {
-    if (opportunityData) {
+    if (opportunityData && !isFormLoaded.current) {
       form.reset({
         ...opportunityData,
         currency: opportunityData.currency || 'USD',
@@ -429,6 +429,7 @@ export default function OpportunityFormPage() {
         reason: opportunityData.reason || '',
         competition: opportunityData.competition?.join(', ') || '',
       });
+      isFormLoaded.current = true;
     }
   }, [opportunityData, form]);
 
@@ -525,7 +526,7 @@ export default function OpportunityFormPage() {
           {t('Forms.printOffer')}
         </Button>
       </AppHeader>
-      <main className="flex-1 p-4 sm:p-6">
+      <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="mx-auto max-w-4xl">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

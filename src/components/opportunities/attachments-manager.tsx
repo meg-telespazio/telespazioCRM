@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -7,13 +6,13 @@ import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
 import { useStorage } from '@/firebase';
 import { uploadFile, deleteFile } from '@/lib/storage';
+import { useParams } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Paperclip, Trash2, FileText, UploadCloud, Eye } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { FilePreviewModal } from '@/components/ui/file-preview-modal';
 
 interface AttachmentsManagerProps {
@@ -43,12 +42,9 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
-    if (!files || disabled || !opportunityId || opportunityId === 'new') {
-      if (opportunityId === 'new') {
-        toast({ variant: 'destructive', title: 'Guarde primero', description: 'Debe guardar la oportunidad antes de subir archivos.' });
-      }
-      return;
-    }
+    if (!files || disabled) return;
+
+    const folderId = opportunityId === 'new' ? `temp-${Date.now()}` : opportunityId;
 
     for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -56,25 +52,25 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         continue;
       }
 
-      const fileId = `${Date.now()}_${file.name}`;
+      const fileId = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
       setUploadingFiles(prev => ({ ...prev, [fileId]: 1 }));
 
       try {
-        const path = `opportunities/${opportunityId}/${fileId}`;
+        const path = `opportunities/${folderId}/${fileId}`;
         const attachment = await uploadFile(storage, path, file, (progress) => {
           setUploadingFiles(prev => ({ ...prev, [fileId]: Math.max(1, progress) }));
         });
 
         append(attachment);
-        toast({ variant: 'success', title: 'Archivo subido', description: file.name });
+        toast({ variant: 'success', title: 'Archivo cargado', description: file.name });
       } catch (error: any) {
         console.error('Upload error:', error);
         toast({ 
           variant: 'destructive', 
           title: 'Error de subida', 
-          description: error.message === 'storage/unauthorized' 
-            ? 'Permiso denegado. Intente cerrar sesión y volver a entrar.' 
-            : 'Error de red o permisos.' 
+          description: error.message === 'PERMISSION_DENIED' 
+            ? 'Permiso denegado por el servidor.' 
+            : 'Error de red o configuración.' 
         });
       } finally {
         setUploadingFiles(prev => {
@@ -118,9 +114,10 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
             <div
               className={cn(
                 "relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors min-h-[150px]",
-                isDragging && "border-primary bg-primary/5"
+                isDragging && "border-primary bg-primary/5",
+                disabled && "opacity-50 cursor-not-allowed"
               )}
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragOver={(e) => { e.preventDefault(); if (!disabled) setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e.dataTransfer.files); }}
             >
@@ -131,9 +128,9 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               <input
                 type="file"
                 multiple
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 onChange={(e) => handleFileUpload(e.target.files)}
-                disabled={disabled || opportunityId === 'new'}
+                disabled={disabled}
               />
             </div>
             
@@ -141,25 +138,25 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               {Object.entries(uploadingFiles).map(([id, progress]) => (
                 <div key={id} className="space-y-1">
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="truncate">{id.split('_').slice(1).join('_')}</span>
-                    <span>{Math.round(progress)}%</span>
+                    <span className="truncate pr-4">{id.split('_').slice(1).join('_')}</span>
+                    <span className="font-bold">{Math.round(progress)}%</span>
                   </div>
                   <Progress value={progress} className="h-1" />
                 </div>
               ))}
 
               {fields.map((attachment: any, index) => (
-                <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md group bg-background hover:border-primary/50 transition-colors">
+                <div key={attachment.id} className="flex items-center gap-3 p-2 border rounded-md group bg-background hover:border-primary/50 transition-colors animate-in fade-in">
                   <FileText className="h-5 w-5 text-primary/70 shrink-0" />
                   <div className="flex-1 truncate">
                     <button 
                       type="button"
                       onClick={() => handlePreview(attachment)}
-                      className="text-xs font-bold hover:underline text-left w-full truncate"
+                      className="text-xs font-bold hover:underline text-left w-full truncate block"
                     >
                       {attachment.name}
                     </button>
-                    <p className="text-[9px] text-muted-foreground">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button 
@@ -168,7 +165,6 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
                       size="icon" 
                       onClick={() => handlePreview(attachment)}
                       className="h-7 w-7 text-primary"
-                      title={t('Actions.preview')}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -187,7 +183,8 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               ))}
               
               {fields.length === 0 && Object.keys(uploadingFiles).length === 0 && (
-                <div className="text-center py-8 border border-dashed rounded-lg text-muted-foreground text-xs uppercase font-bold tracking-widest">
+                <div className="flex flex-col items-center justify-center py-8 border border-dashed rounded-lg text-muted-foreground text-[10px] uppercase font-bold tracking-widest bg-muted/10">
+                  <Paperclip className="h-4 w-4 mb-1 opacity-30" />
                   Sin adjuntos
                 </div>
               )}

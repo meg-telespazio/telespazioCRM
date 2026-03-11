@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import {
   useUser,
   useFirestore,
@@ -115,6 +114,7 @@ export default function ContractFormPage() {
   const [mounted, setMounted] = useState(false);
   const [isStartDateOpen, setStartDateOpen] = useState(false);
   const [isSignatureDateOpen, setSignatureDateOpen] = useState(false);
+  const isFormLoaded = useRef(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -204,7 +204,7 @@ export default function ContractFormPage() {
   }, [allContactsData, watchedClientId]);
 
   useEffect(() => {
-    if (contractData) {
+    if (contractData && !isFormLoaded.current) {
       form.reset({
         ...contractData,
         startDate: contractData.startDate ? new Date(contractData.startDate) : new Date(),
@@ -215,6 +215,7 @@ export default function ContractFormPage() {
         topUp500GbPrice: contractData.topUp500GbPrice || 0,
         attachments: contractData.attachments || [],
       });
+      isFormLoaded.current = true;
     }
   }, [contractData, form]);
 
@@ -263,7 +264,7 @@ export default function ContractFormPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={isNew ? t('Pages.addContract') : t('Contracts.edit')} />
-      <main className="flex-1 p-4 sm:p-6">
+      <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="mx-auto max-w-4xl space-y-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
