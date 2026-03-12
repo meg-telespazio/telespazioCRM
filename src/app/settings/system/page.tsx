@@ -83,7 +83,16 @@ export default function SystemSettingsPage() {
     if (!user) return;
     setSaving(true);
     try {
-      await updateSystemConfig(firestore, user.uid, config);
+      // Limpiamos posibles NaN antes de guardar
+      const cleanedExchangeRates = config.exchangeRates.map(r => ({
+        ...r,
+        rate: isNaN(r.rate) ? 0 : r.rate
+      }));
+
+      await updateSystemConfig(firestore, user.uid, {
+        ...config,
+        exchangeRates: cleanedExchangeRates
+      });
       toast({ variant: 'success', title: t('Settings.configSuccess') });
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error', description: e.message });
@@ -136,7 +145,12 @@ export default function SystemSettingsPage() {
 
   const updateRate = (index: number, field: keyof ExchangeRate, value: any) => {
     const newRates = [...config.exchangeRates];
-    (newRates[index] as any)[field] = field === 'rate' ? parseFloat(value) : value;
+    if (field === 'rate') {
+      // Permitimos temporalmente NaN mientras el usuario borra/escribe
+      newRates[index].rate = value === '' ? NaN : parseFloat(value);
+    } else {
+      (newRates[index] as any)[field] = value;
+    }
     setConfig(prev => ({ ...prev, exchangeRates: newRates }));
   };
 
@@ -359,7 +373,13 @@ export default function SystemSettingsPage() {
                   </div>
                   <div className="flex items-center gap-2 w-32">
                     <Label className="text-[10px] uppercase font-bold">Valor</Label>
-                    <Input type="number" step="0.0001" value={rate.rate} onChange={(e) => updateRate(i, 'rate', e.target.value)} className="h-8 bg-white text-right font-mono" />
+                    <Input 
+                      type="number" 
+                      step="0.0001" 
+                      value={isNaN(rate.rate) ? '' : rate.rate} 
+                      onChange={(e) => updateRate(i, 'rate', e.target.value)} 
+                      className="h-8 bg-white text-right font-mono" 
+                    />
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeRate(i)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
