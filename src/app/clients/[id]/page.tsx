@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -39,6 +38,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
 import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
+import { cn } from '@/lib/utils';
 
 const formatCuit = (cuit: string): string => {
   if (!cuit || cuit.length !== 11) return cuit;
