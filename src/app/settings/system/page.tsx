@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,8 @@ import {
   Settings2, 
   TrendingUp,
   Loader2,
-  Building
+  Building,
+  Layers,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
@@ -36,7 +38,8 @@ export default function SystemSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<SystemConfig>({
     managementAreas: ['Satellite Communications', 'GeoInformacion'],
-    industries: ['Agriculture', 'Mining', 'Energy', 'Construction', 'Technology', 'Other'],
+    sectors: ['Agriculture', 'Mining', 'Energy', 'Construction', 'Technology', 'Other'],
+    subsectors: [],
     currencies: ['USD', 'EUR', 'ARS'],
     unitsOfMeasure: ['units', 'meters', 'kg', 'liters', 'GB'],
     exchangeRates: [
@@ -47,7 +50,15 @@ export default function SystemSettingsPage() {
 
   useEffect(() => {
     getSystemConfig(firestore).then(data => {
-      if (data) setConfig(data);
+      if (data) {
+        // Migration logic for old fields if necessary
+        const migratedConfig = {
+          ...data,
+          sectors: data.sectors || (data as any).industries || [],
+          subsectors: data.subsectors || [],
+        };
+        setConfig(migratedConfig);
+      }
       setLoading(false);
     });
   }, [firestore]);
@@ -123,7 +134,6 @@ export default function SystemSettingsPage() {
 
       <main className="flex-1 p-4 sm:p-6 space-y-6 max-w-5xl mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Listas Básicas */}
           <Card>
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2"><Database className="h-4 w-4" />{t('Settings.managementAreas')}</CardTitle>
@@ -160,6 +170,40 @@ export default function SystemSettingsPage() {
 
           <Card>
             <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2"><Building className="h-4 w-4" />{t('Settings.sectors')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {config.sectors.map((item, i) => (
+                  <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1 gap-2">
+                    {item}
+                    <button onClick={() => removeItem('sectors', i)} className="hover:text-destructive transition-colors"><Trash2 className="h-3 w-3" /></button>
+                  </Badge>
+                ))}
+                <Button variant="outline" size="sm" className="h-7 rounded-full px-3" onClick={() => addItem('sectors')}><Plus className="h-3 w-3 mr-1" /></Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2"><Layers className="h-4 w-4" />{t('Settings.subsectors')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {config.subsectors.map((item, i) => (
+                  <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1 gap-2">
+                    {item}
+                    <button onClick={() => removeItem('subsectors', i)} className="hover:text-destructive transition-colors"><Trash2 className="h-3 w-3" /></button>
+                  </Badge>
+                ))}
+                <Button variant="outline" size="sm" className="h-7 rounded-full px-3" onClick={() => addItem('subsectors')}><Plus className="h-3 w-3 mr-1" /></Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2"><Settings2 className="h-4 w-4" />{t('Settings.units')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -174,26 +218,8 @@ export default function SystemSettingsPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2"><Building className="h-4 w-4" />{t('Settings.industries')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {config.industries.map((item, i) => (
-                  <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1 gap-2">
-                    {item}
-                    <button onClick={() => removeItem('industries', i)} className="hover:text-destructive transition-colors"><Trash2 className="h-3 w-3" /></button>
-                  </Badge>
-                ))}
-                <Button variant="outline" size="sm" className="h-7 rounded-full px-3" onClick={() => addItem('industries')}><Plus className="h-3 w-3 mr-1" /></Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Tipos de Cambio */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="space-y-1">

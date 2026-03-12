@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -98,7 +99,12 @@ export const columns = (
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-red-100 text-[9px] font-bold text-red-700">
               {initials}
             </div>
-            <span className="font-mono text-[11px] font-bold text-slate-600">{client.publicId}</span>
+            <Link 
+              href={`/clients/${client.id}`} 
+              className="font-mono text-[11px] font-bold text-slate-600 hover:text-primary transition-colors underline-offset-2 hover:underline"
+            >
+              {client.publicId}
+            </Link>
           </div>
         );
       }
@@ -137,6 +143,20 @@ export const columns = (
         </Button>
       ),
       cell: ({ row }) => <span className="text-slate-600 font-bold text-[11px] min-w-[120px] inline-block">{formatCuit(row.original.cuit)}</span>,
+    },
+    {
+      accessorKey: 'sector',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        >
+          SECTOR
+          <ArrowUpDown className="ml-2 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-[11px] truncate block max-w-[100px]">{row.original.sector}</span>,
     },
     {
       accessorKey: 'status',

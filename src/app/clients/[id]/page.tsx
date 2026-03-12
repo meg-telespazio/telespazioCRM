@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
-import type { Client, UserProfile, ManagementArea } from '@/lib/types';
+import type { Client, UserProfile, SystemConfig } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { addClient, updateClient } from '@/lib/firestore/clients';
@@ -33,7 +34,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { translations } from '@/lib/translations';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
 import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert } from 'lucide-react';
@@ -69,8 +69,9 @@ const getFormSchema = (t: (key: string) => string) =>
         message: t('Validation.cuitInvalid'),
       }),
     status: z.enum(['active', 'suspended', 'canceled']),
-    industry: z.string().min(1, t('Validation.selectIndustry')),
-    management: z.enum(['Satellite Communications', 'GeoInformacion']),
+    sector: z.string().min(1, t('Validation.selectIndustry')),
+    subsector: z.string().optional(),
+    management: z.string().min(1, t('Validation.fieldRequired')),
     assignedTo: z.string().min(1, t('Validation.fieldRequired')),
     notes: z.string().optional(),
   });
@@ -91,6 +92,10 @@ export default function ClientFormPage() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [isFindingLogo, setIsFindingLogo] = useState(false);
+
+  // Fetch system config for dynamic dropdowns
+  const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
+  const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   const clientDocRef = useMemo(() => {
     if (!firestore || isNew) return null;
@@ -127,8 +132,9 @@ export default function ClientFormPage() {
       phone: '',
       cuit: '',
       status: 'active',
-      industry: '',
-      management: 'Satellite Communications',
+      sector: '',
+      subsector: '',
+      management: user?.management || 'Satellite Communications',
       assignedTo: user?.uid || '',
       notes: '',
     },
@@ -145,6 +151,8 @@ export default function ClientFormPage() {
         notes: clientData.notes || '',
         assignedTo: clientData.assignedTo || '',
         management: clientData.management || 'Satellite Communications',
+        sector: clientData.sector || '',
+        subsector: clientData.subsector || '',
       });
       setCroppedImage(clientData.logoURL || null);
     }
@@ -210,7 +218,11 @@ export default function ClientFormPage() {
   const isRestricted = user?.role !== 'admin' && user?.role !== 'gerente';
 
   const statusOptions: Client['status'][] = ['active', 'suspended', 'canceled'];
-  const industryOptions = Object.keys(translations.en.Industries).sort((a, b) => t(`Industries.${a}`).localeCompare(t(`Industries.${b}`)));
+  
+  // Dynamic options from config
+  const sectorOptions = configData?.sectors || [];
+  const subsectorOptions = configData?.subsectors || [];
+  const managementOptions = configData?.managementAreas || ['Satellite Communications', 'GeoInformacion'];
 
   if (userLoading || (clientLoading && !isNew)) {
     return <div className="p-6"><Skeleton className="h-[70vh] w-full" /></div>;
@@ -248,8 +260,9 @@ export default function ClientFormPage() {
                           <Select onValueChange={field.onChange} value={field.value} disabled={isRestricted}>
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
-                              <SelectItem value="Satellite Communications">Satellite Communications</SelectItem>
-                              <SelectItem value="GeoInformacion">GeoInformación</SelectItem>
+                              {managementOptions.map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           {isRestricted && <FormDescription className="text-[10px] flex items-center gap-1"><ShieldAlert className="h-3 w-3" /> Solo lectura para ejecutivos</FormDescription>}
@@ -308,7 +321,7 @@ export default function ClientFormPage() {
                       <FormItem><FormLabel>{t('Forms.cuit')}</FormLabel><FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
                     )} />
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <FormField control={form.control} name="status" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.status')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
@@ -317,11 +330,25 @@ export default function ClientFormPage() {
                           </Select><FormMessage />
                         </FormItem>
                       )} />
-                      <FormField control={form.control} name="industry" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.industry')}</FormLabel>
+                      <FormField control={form.control} name="sector" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.sector')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>{industryOptions.map(i => <SelectItem key={i} value={i}>{t(`Industries.${i}`)}</SelectItem>)}</SelectContent>
+                            <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {sectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                              {sectorOptions.length === 0 && <SelectItem value="none" disabled>No hay sectores configurados</SelectItem>}
+                            </SelectContent>
+                          </Select><FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="subsector" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.subsector')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {subsectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                              {subsectorOptions.length === 0 && <SelectItem value="none" disabled>No hay subsectores</SelectItem>}
+                            </SelectContent>
                           </Select><FormMessage />
                         </FormItem>
                       )} />

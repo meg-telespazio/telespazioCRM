@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users, ShieldCheck, User, Paperclip, Eye, Download } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users, ShieldCheck, User, Paperclip, Eye, Download, Tag } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -137,7 +137,9 @@ export default function ClientSummaryPage() {
                 </Badge>
               </div>
               <CardDescription className="text-base flex items-center gap-2">
-                {t(`Industries.${client.industry}`)} 
+                <Tag className="h-3.5 w-3.5" />
+                {client.sector} 
+                {client.subsector && <span className="text-muted-foreground">• {client.subsector}</span>}
                 {client.holding && (
                   <span className="text-muted-foreground flex items-center gap-1.5">
                     • 

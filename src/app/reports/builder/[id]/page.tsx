@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -72,7 +73,7 @@ const setNestedValue = (obj: any, path: string, value: any) => {
 
 // Available Fields Schema for the Builder
 const SCHEMA = {
-  clients: ['name', 'cuit', 'industry', 'status', 'email', 'phone', 'holding'],
+  clients: ['name', 'cuit', 'sector', 'subsector', 'status', 'email', 'phone', 'holding'],
   contacts: ['name', 'position', 'area'],
   opportunities: ['title', 'stage', 'value', 'currency', 'probability', 'closeDate'],
   contracts: ['publicId', 'type', 'status', 'amount', 'currency', 'startDate', 'endDate'],

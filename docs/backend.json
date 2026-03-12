@@ -32,11 +32,12 @@
         "cuit": { "type": "string" },
         "holding": { "type": "string" },
         "status": { "type": "string", "enum": ["active", "suspended", "canceled"] },
-        "industry": { "type": "string" },
+        "sector": { "type": "string" },
+        "subsector": { "type": "string" },
         "management": { "type": "string", "enum": ["Satellite Communications", "GeoInformacion"] },
         "assignedTo": { "type": "string", "description": "UID of the Ejecutivo de Cuentas responsible for this client." }
       },
-      "required": ["publicId", "name", "cuit", "status", "industry", "management", "assignedTo"]
+      "required": ["publicId", "name", "cuit", "status", "sector", "management", "assignedTo"]
     }
   },
   "auth": {

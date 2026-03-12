@@ -17,7 +17,8 @@ export type Client = {
   createdAt: Date;
   createdBy: string;
   status: 'active' | 'suspended' | 'canceled';
-  industry: string;
+  sector: string;
+  subsector?: string;
   notes?: string;
   logoURL?: string | null;
   management: ManagementArea;
@@ -335,7 +336,8 @@ export type ExchangeRate = {
 
 export type SystemConfig = {
   managementAreas: string[];
-  industries: string[];
+  sectors: string[];
+  subsectors: string[];
   currencies: string[];
   unitsOfMeasure: string[];
   exchangeRates: ExchangeRate[];
