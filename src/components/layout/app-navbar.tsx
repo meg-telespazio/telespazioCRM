@@ -21,6 +21,7 @@ import {
   ShoppingCart,
   Zap,
   HardDrive,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -132,6 +133,7 @@ export function AppNavbar() {
     },
     ...(!isIngeniero ? [{ href: '/products-and-services', label: t('Sidebar.ps'), icon: Package }] : []),
     { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal },
+    ...(isAdmin ? [{ href: '/settings', label: t('Sidebar.settings'), icon: SettingsIcon }] : []),
   ];
 
   if (!user) return null;
@@ -231,6 +233,14 @@ export function AppNavbar() {
                     <span>{t('Pages.profile')}</span>
                   </Link>
                 </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="cursor-pointer">
+                      <SettingsIcon className="mr-2 h-4 w-4" />
+                      <span>{t('Sidebar.settings')}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />

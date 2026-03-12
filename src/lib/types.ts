@@ -326,3 +326,19 @@ export type Report = {
   createdAt: Date;
   createdBy: string;
 };
+
+export type ExchangeRate = {
+  from: string;
+  to: string;
+  rate: number;
+};
+
+export type SystemConfig = {
+  managementAreas: string[];
+  industries: string[];
+  currencies: string[];
+  unitsOfMeasure: string[];
+  exchangeRates: ExchangeRate[];
+  updatedAt?: Date;
+  updatedBy?: string;
+};
