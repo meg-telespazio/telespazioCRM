@@ -6,399 +6,44 @@
       "description": "Represents a user's profile in the system.",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "The user's unique ID from Firebase Auth."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The user's email address."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "The user's first name."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "The user's last name."
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The user's full display name."
-        },
-        "photoURL": {
-          "type": "string",
-          "description": "Data URL of the user's profile picture."
-        },
-        "phone": {
-          "type": "string",
-          "description": "The user's primary phone number."
-        },
-        "mobile": {
-          "type": "string",
-          "description": "The user's mobile phone number."
-        },
-        "notes": {
-          "type": "string",
-          "description": "General notes about the user."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["active", "suspended"],
-          "description": "The user's account status."
-        },
-        "position": {
-          "type": "string",
-          "enum": ["Director", "Manager", "Executive", "Project Manager"],
-          "description": "The user's job position."
-        },
-        "country": {
-          "type": "string",
-          "description": "User's country of operation."
-        },
-        "management": {
-          "type": "string",
-          "enum": ["Satellite Communications", "GeoInformacion"],
-          "description": "User's management area."
-        },
-        "tablePreferences": {
-          "type": "object",
-          "description": "Stores user's column visibility preferences for various tables."
-        }
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "phone": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "role": { "type": "string", "enum": ["admin", "gerente", "ejecutivo", "ingeniero"] },
+        "position": { "type": "string", "enum": ["Director", "Manager", "Executive", "Project Manager"] },
+        "management": { "type": "string", "enum": ["Satellite Communications", "GeoInformacion"] }
       },
-      "required": [
-        "uid",
-        "email",
-        "firstName",
-        "lastName",
-        "displayName",
-        "phone",
-        "status",
-        "position"
-      ]
+      "required": ["uid", "email", "firstName", "lastName", "role", "management"]
     },
     "Client": {
       "title": "Client",
       "description": "Represents a business client.",
       "type": "object",
       "properties": {
-        "publicId": {
-          "type": "string",
-          "description": "Public-facing sequential client ID."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the client company."
-        },
-        "website": {
-          "type": "string",
-          "format": "uri",
-          "description": "Client's official website."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "Contact email for the client."
-        },
-        "phone": {
-          "type": "string",
-          "description": "Contact phone number for the client."
-        },
-        "cuit": {
-          "type": "string",
-          "description": "Client's CUIT number (11 digits)."
-        },
-        "holding": {
-          "type": "string",
-          "description": "The economic group or holding company the client belongs to."
-        },
-        "linkedinPage": {
-          "type": "string",
-          "format": "uri",
-          "description": "Client's LinkedIn page URL."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the client was created."
-        },
-        "createdBy": {
-          "type": "string",
-          "description": "UID of the user who created the client."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["active", "suspended", "canceled"]
-        },
-        "industry": {
-          "type": "string",
-          "description": "The industry the client belongs to."
-        },
-        "notes": {
-          "type": "string",
-          "description": "Additional notes about the client."
-        },
-        "logoURL": {
-          "type": "string",
-          "description": "Data URL of the client's logo."
-        }
-      },
-      "required": [
-        "publicId",
-        "name",
-        "email",
-        "phone",
-        "cuit",
-        "createdAt",
-        "createdBy",
-        "status",
-        "industry"
-      ]
-    },
-    "Holding": {
-      "title": "Holding",
-      "description": "Represents an economic group.",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["name", "createdBy", "createdAt"]
-    },
-    "Contact": {
-      "title": "Contact",
-      "description": "Represents a contact person at a client company.",
-      "type": "object",
-      "properties": {
-        "publicId": {
-          "type": "string",
-          "description": "Public-facing sequential contact ID (CT-0000001)."
-        },
-        "name": {
-          "type": "string",
-          "description": "Full name of the contact person."
-        },
-        "position": {
-          "type": "string",
-          "description": "The contact's job position.",
-          "enum": [
-            "Analyst",
-            "CEO",
-            "CFO",
-            "CIO",
-            "CISO",
-            "Head",
-            "Manager"
-          ]
-        },
-        "area": {
-          "type": "string",
-          "description": "The contact's area or department.",
-          "enum": [
-            "Administration",
-            "IT",
-            "Legal",
-            "Marketing",
-            "Procurement",
-            "Sales",
-            "Supplier Payments"
-          ]
-        },
-        "emails": {
-          "type": "array",
-          "description": "A list of email addresses for the contact.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": ["work", "personal", "other"],
-                "description": "The type of email address."
-              },
-              "address": {
-                "type": "string",
-                "format": "email",
-                "description": "The email address."
-              }
-            },
-            "required": ["type", "address"]
-          }
-        },
-        "phones": {
-          "type": "array",
-          "description": "A list of phone numbers for the contact.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": ["mobile", "landline", "work", "home"],
-                "description": "The type of phone number."
-              },
-              "number": {
-                "type": "string",
-                "description": "The phone number."
-              }
-            },
-            "required": ["type", "number"]
-          }
-        },
-        "notes": {
-          "type": "string",
-          "description": "General notes about the contact."
-        },
-        "clientId": {
-          "type": "string",
-          "description": "ID of the client this contact is associated with."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the contact was created."
-        },
-        "createdBy": {
-          "type": "string",
-          "description": "UID of the user who created the contact."
-        }
-      },
-      "required": [
-        "publicId",
-        "name",
-        "clientId",
-        "createdAt",
-        "createdBy"
-      ]
-    },
-    "Contract": {
-      "title": "Contract",
-      "description": "Represents a legal contract with a client.",
-      "type": "object",
-      "properties": {
         "publicId": { "type": "string" },
-        "type": { "type": "string", "enum": ["Acuerdo Marco", "Locación de Servicios", "Compraventa", "Locación de Equipos", "Comodato de Equipos"] },
-        "startDate": { "type": "string", "format": "date-time" },
-        "durationMonths": { "type": "number" },
-        "endDate": { "type": "string", "format": "date-time" },
-        "autoRenews": { "type": "boolean" },
-        "renewalTerm": { "type": "string", "enum": ["1 month", "2 months"] },
-        "currency": { "type": "string", "enum": ["USD", "EUR", "ARS"] },
-        "country": { "type": "string" },
-        "clientContactId": { "type": "string" },
-        "authorizedBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "signatureDate": { "type": "string", "format": "date-time" },
-        "amount": { "type": "number" },
-        "hasSpecialClauses": { "type": "boolean" },
-        "specialClauses": { "type": "string" },
-        "clientId": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "notes": { "type": "string" },
-        "status": { "type": "string", "enum": ["activo", "vencido", "renovado", "renovado automatico"] },
-        "priceList": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "planName": { "type": "string" },
-              "price": { "type": "number" }
-            }
-          }
-        },
-        "topUp50GbPrice": { "type": "number" },
-        "topUp500GbPrice": { "type": "number" }
-      }
-    },
-    "Addendum": {
-      "title": "Addendum",
-      "description": "Modifications or extensions to an existing contract.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "type": { "type": "string", "enum": ["Extension", "Price Change", "Clause Modification", "Service Change", "Other"] },
-        "description": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "cuit": { "type": "string" },
+        "holding": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "suspended", "canceled"] },
+        "industry": { "type": "string" },
+        "management": { "type": "string", "enum": ["Satellite Communications", "GeoInformacion"] },
+        "assignedTo": { "type": "string", "description": "UID of the Ejecutivo de Cuentas responsible for this client." }
       },
-      "required": ["date", "type", "description", "createdBy", "createdAt"]
-    },
-    "PurchaseOrder": {
-      "title": "Purchase Order",
-      "description": "Represents a purchase order linked to a contract.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "description": "System generated PO ID." },
-        "poNumber": { "type": "string", "description": "Manual PO Number (reference)." },
-        "emissionDate": { "type": "string", "format": "date-time" },
-        "buyerId": { "type": "string", "description": "Contact ID of the buyer." },
-        "amount": { "type": "number" },
-        "currency": { "type": "string", "enum": ["USD", "EUR", "ARS"] },
-        "status": { "type": "string", "enum": ["pending", "approved", "canceled", "received"] },
-        "contractId": { "type": "string", "description": "Linked contract ID." },
-        "idContractStarfleet": { "type": "string" },
-        "idClientStarfleet": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "poNumber", "emissionDate", "buyerId", "amount", "currency", "status", "contractId", "createdBy", "createdAt"]
-    },
-    "Service": {
-      "title": "Service",
-      "description": "Represents a service line linked to a PO.",
-      "type": "object",
-      "properties": {
-        "serviceNickname": { "type": "string" },
-        "serviceLineNumber": { "type": "string" },
-        "partnerName": { "type": "string" },
-        "customerName": { "type": "string" },
-        "customerAccountNumber": { "type": "string" },
-        "servicePlan": { "type": "string" },
-        "serviceAllocationGb": { "type": "number" },
-        "topUp": { "type": "string" },
-        "poId": { "type": "string" },
-        "equipmentId": { "type": "string" },
-        "currency": { "type": "string", "enum": ["USD", "EUR", "ARS"] },
-        "monthlyFee": { "type": "number" },
-        "isTelespazioOwned": { "type": "boolean", "description": "True if equipment is Telespazio's, false if client's." },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["serviceNickname", "serviceLineNumber", "poId", "equipmentId", "createdBy", "createdAt"]
-    },
-    "Equipment": {
-      "title": "Equipment",
-      "description": "Physical hardware inventory.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "description": "user_terminal_id (UUID)." },
-        "userTerminal": { "type": "string", "description": "Serial/Nickname." },
-        "type": { "type": "string" },
-        "physicalStatus": { "type": "string", "enum": ["Activa", "En reparación", "Retirada"] },
-        "installationDate": { "type": "string", "format": "date-time" },
-        "latitude": { "type": "number" },
-        "longitude": { "type": "number" },
-        "currentServiceId": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userTerminal", "physicalStatus", "createdBy", "createdAt"]
+      "required": ["publicId", "name", "cuit", "status", "industry", "management", "assignedTo"]
     }
   },
   "auth": {
     "providers": ["email"]
   },
   "firestore": {
-    "/users/{userId}": { "schema": { "$ref": "#/entities/UserProfile" }, "description": "..." },
-    "/clients/{clientId}": { "schema": { "$ref": "#/entities/Client" }, "description": "..." },
-    "/holdings/{holdingId}": { "schema": { "$ref": "#/entities/Holding" }, "description": "..." },
-    "/contacts/{contactId}": { "schema": { "$ref": "#/entities/Contact" }, "description": "..." },
-    "/contracts/{contractId}": { "schema": { "$ref": "#/entities/Contract" }, "description": "..." },
-    "/contracts/{contractId}/addendums/{addendumId}": { "schema": { "$ref": "#/entities/Addendum" }, "description": "..." },
-    "/purchaseOrders/{poId}": { "schema": { "$ref": "#/entities/PurchaseOrder" }, "description": "..." },
-    "/services/{serviceId}": { "schema": { "$ref": "#/entities/Service" }, "description": "..." },
-    "/equipment/{equipmentId}": { "schema": { "$ref": "#/entities/Equipment" }, "description": "..." }
+    "/users/{userId}": { "schema": { "$ref": "#/entities/UserProfile" }, "description": "User profiles and settings." },
+    "/clients/{clientId}": { "schema": { "$ref": "#/entities/Client" }, "description": "Client accounts." }
   }
 }

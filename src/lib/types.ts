@@ -1,6 +1,9 @@
 
 import type { FieldValue } from "firebase/firestore";
 
+export type UserRole = 'admin' | 'gerente' | 'ejecutivo' | 'ingeniero';
+export type ManagementArea = 'Satellite Communications' | 'GeoInformacion';
+
 export type Client = {
   id: string;
   publicId: string;
@@ -17,6 +20,8 @@ export type Client = {
   industry: string;
   notes?: string;
   logoURL?: string | null;
+  management: ManagementArea;
+  assignedTo: string; // UID of Ejecutivo
 };
 
 export type Holding = {
@@ -52,6 +57,8 @@ export type Contact = {
   clientId: string;
   createdAt: Date;
   createdBy: string;
+  management: ManagementArea;
+  assignedTo: string;
 };
 
 export type OpportunityLineItem = {
@@ -97,6 +104,8 @@ export type Opportunity = {
   generalDiscountPercentage?: number;
   applyDiscountToNrc?: boolean;
   applyDiscountToMrc?: boolean;
+  management: ManagementArea;
+  assignedTo: string;
 };
 
 export type ProductOrService = {
@@ -129,9 +138,10 @@ export type UserProfile = {
   mobile?: string;
   notes?: string;
   status: 'active' | 'suspended';
+  role: UserRole;
   position: 'Director' | 'Manager' | 'Executive' | 'Project Manager';
   country?: string;
-  management?: 'Satellite Communications' | 'GeoInformacion';
+  management: ManagementArea;
   tablePreferences?: Record<string, Record<string, boolean>>;
 };
 
@@ -170,6 +180,8 @@ export type Contract = {
   topUp500GbPrice?: number;
   createdBy: string;
   createdAt: Date;
+  management: ManagementArea;
+  assignedTo: string;
 };
 
 export type AddendumType = 'Extension' | 'Price Change' | 'Clause Modification' | 'Service Change' | 'Other';
@@ -199,6 +211,8 @@ export type PurchaseOrder = {
   idClientStarfleet?: string;
   createdBy: string;
   createdAt: Date;
+  management: ManagementArea;
+  assignedTo: string;
 };
 
 export type Service = {
@@ -218,6 +232,8 @@ export type Service = {
   isTelespazioOwned: boolean;
   createdBy: string;
   createdAt: Date;
+  management: ManagementArea;
+  assignedTo: string;
 };
 
 export type PhysicalStatus = 'Activa' | 'En reparación' | 'Retirada';
@@ -249,6 +265,8 @@ export type Activity = {
   updatedAt?: Date;
   latestFollowUpContent?: string;
   latestFollowUpBy?: string;
+  management: ManagementArea;
+  assignedTo: string;
 };
 
 export type LocationType = 'branch' | 'headquarters' | 'warehouse' | 'office' | 'property' | 'field';
@@ -272,6 +290,8 @@ export type Location = {
   longitude: number;
   createdAt: Date;
   createdBy: string;
+  management: ManagementArea;
+  assignedTo: string;
 };
 
 export type ReportFilter = {

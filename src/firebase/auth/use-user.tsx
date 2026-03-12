@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
@@ -7,6 +8,8 @@ import type { UserProfile } from '@/lib/types';
 
 // This will be the new user object type throughout the app
 export type AppUser = AuthUser & Partial<UserProfile>;
+
+const ADMIN_EMAIL = 'mariano.gonzalez@telespazio.com';
 
 export const useUser = () => {
   const auth = useAuth();
@@ -32,20 +35,18 @@ export const useUser = () => {
 
   const user: AppUser | null = useMemo(() => {
     if (!authUser) return null;
-    // We create a merged user object.
-    // Start with the auth user object, then spread the firestore profile over it.
-    // This ensures that fields like photoURL from firestore (which can be a long data URL)
-    // overwrite the ones from auth.
-    // Also provide fallbacks from auth user if firestore profile is not yet loaded or doesn't have a field.
+    
+    const isAdmin = authUser.email === ADMIN_EMAIL;
+    
     return {
       ...authUser,
-      ...userProfile, // `userProfile` from useDoc includes the id, which is fine.
-      // Explicitly define important fields to ensure they are not accidentally overwritten by `undefined`
-      // if userProfile is loading or doesn't have them.
+      ...userProfile,
+      role: isAdmin ? 'admin' : (userProfile?.role || 'ejecutivo'),
+      management: userProfile?.management || 'Satellite Communications',
       displayName: userProfile?.displayName || authUser.displayName,
       photoURL: userProfile?.photoURL || authUser.photoURL,
-      email: authUser.email, // email from auth is source of truth
-      uid: authUser.uid, // uid from auth is source of truth
+      email: authUser.email,
+      uid: authUser.uid,
     };
   }, [authUser, userProfile]);
 

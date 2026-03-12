@@ -1,25 +1,27 @@
+
 'use client';
 import {
   collection,
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
   runTransaction,
   type Firestore,
 } from 'firebase/firestore';
-import type { Contract } from '@/lib/types';
+import type { Contract, Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const CONTRACTS_COLLECTION = 'contracts';
 
-type ContractData = Omit<Contract, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
+type ContractData = Omit<Contract, 'id' | 'publicId' | 'createdAt' | 'createdBy' | 'management' | 'assignedTo'>;
 
 const cleanData = (data: any) => {
   const result: any = {};
   Object.keys(data).forEach(key => {
-    if (data[key] !== undefined) {
+    if (data[key] !== undefined && data[key] !== null) {
       result[key] = data[key];
     }
   });
@@ -31,6 +33,11 @@ export async function addContract(
   uid: string,
   contractData: ContractData
 ) {
+  const clientRef = doc(firestore, 'clients', contractData.clientId);
+  const clientSnap = await getDoc(clientRef);
+  if (!clientSnap.exists()) throw new Error('Client not found');
+  const clientData = clientSnap.data() as Client;
+
   const year = new Date().getFullYear();
   const counterRef = doc(firestore, 'counters', `contracts_${year}`);
   const contractCollectionRef = collection(firestore, CONTRACTS_COLLECTION);
@@ -38,12 +45,10 @@ export async function addContract(
   try {
     await runTransaction(firestore, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
-
-      const currentCount = counterDoc.data()?.count;
-      const newCount = (typeof currentCount === 'number' && Number.isInteger(currentCount) ? currentCount : 0) + 1;
+      const currentCount = counterDoc.data()?.count || 0;
+      const newCount = currentCount + 1;
       
       const publicId = `CON-${year}-${String(newCount).padStart(7, '0')}`;
-
       const newContractRef = doc(contractCollectionRef);
 
       const data = {
@@ -51,26 +56,15 @@ export async function addContract(
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
+        management: clientData.management,
+        assignedTo: clientData.assignedTo,
       };
 
       transaction.set(newContractRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
     });
   } catch (error: any) {
-    console.error("Contract creation transaction failed: ", error);
-    
-    if (error.code === 'permission-denied') {
-      const permissionError = new FirestorePermissionError({
-        path: `/${CONTRACTS_COLLECTION} or /counters/contracts_${year}`,
-        operation: 'create',
-        requestResourceData: {
-          ...contractData,
-          createdBy: uid,
-        },
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
-    }
-    
+    console.error("Contract creation failed: ", error);
     throw error;
   }
 }

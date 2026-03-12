@@ -1,12 +1,13 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
-import type { Client } from '@/lib/types';
+import type { Client, UserProfile, ManagementArea } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { addClient, updateClient } from '@/lib/firestore/clients';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -19,6 +20,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
@@ -35,7 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { translations } from '@/lib/translations';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera, Linkedin, Loader2, Wand2 } from 'lucide-react';
+import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
 
 const formatCuit = (cuit: string): string => {
@@ -68,6 +70,8 @@ const getFormSchema = (t: (key: string) => string) =>
       }),
     status: z.enum(['active', 'suspended', 'canceled']),
     industry: z.string().min(1, t('Validation.selectIndustry')),
+    management: z.enum(['Satellite Communications', 'GeoInformacion']),
+    assignedTo: z.string().min(1, t('Validation.fieldRequired')),
     notes: z.string().optional(),
   });
 
@@ -96,21 +100,19 @@ export default function ClientFormPage() {
   const { data: clientData, loading: clientLoading } =
     useDoc<Client>(clientDocRef);
 
-  const { data: allClients, loading: allClientsLoading } =
-    useCollection<Client>(
-      useMemo(
-        () => (firestore ? collection(firestore, 'clients') : null),
-        [firestore]
-      )
-    );
+  const { data: allClients } = useCollection<Client>(useMemo(() => (firestore ? collection(firestore, 'clients') : null), [firestore]));
+  const { data: allUsers } = useCollection<UserProfile>(useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore]));
 
   const holdings = useMemo(() => {
     if (!allClients) return [];
-    const uniqueHoldings = new Set(
-      allClients.map((c) => c.holding).filter(Boolean)
-    );
+    const uniqueHoldings = new Set(allClients.map((c) => c.holding).filter(Boolean));
     return Array.from(uniqueHoldings).sort();
   }, [allClients]);
+
+  const ejecutivos = useMemo(() => {
+    if (!allUsers) return [];
+    return allUsers.filter(u => u.role === 'ejecutivo' || u.role === 'admin').sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [allUsers]);
 
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
@@ -126,6 +128,8 @@ export default function ClientFormPage() {
       cuit: '',
       status: 'active',
       industry: '',
+      management: 'Satellite Communications',
+      assignedTo: user?.uid || '',
       notes: '',
     },
   });
@@ -139,6 +143,8 @@ export default function ClientFormPage() {
         linkedinPage: clientData.linkedinPage || '',
         holding: clientData.holding || '',
         notes: clientData.notes || '',
+        assignedTo: clientData.assignedTo || '',
+        management: clientData.management || 'Satellite Communications',
       });
       setCroppedImage(clientData.logoURL || null);
     }
@@ -153,19 +159,8 @@ export default function ClientFormPage() {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.size > 1 * 1024 * 1024) {
-        // 1MB limit
-        toast({
-          variant: 'destructive',
-          title: 'File too large',
-          description: 'Please upload an image smaller than 1MB.',
-        });
-        return;
-      }
       const reader = new FileReader();
-      reader.addEventListener('load', () => {
-        setImageToCrop(reader.result as string);
-      });
+      reader.addEventListener('load', () => setImageToCrop(reader.result as string));
       reader.readAsDataURL(file);
       e.target.value = '';
     }
@@ -178,40 +173,17 @@ export default function ClientFormPage() {
 
   const handleFindLogo = async () => {
     const websiteUrl = form.getValues('website');
-
     if (!websiteUrl || !websiteUrl.startsWith('http')) {
-      toast({
-        variant: 'destructive',
-        title: t('Importer.invalidUrlTitle'),
-        description: t('Importer.invalidUrlDesc'),
-      });
+      toast({ variant: 'destructive', title: t('Importer.invalidUrlTitle') });
       return;
     }
-
     setIsFindingLogo(true);
     try {
       const result = await findAndFetchLogo({ websiteUrl });
       if (result.dataUri) {
         setCroppedImage(result.dataUri);
-        toast({
-          variant: 'success',
-          title: t('Importer.logoFound'),
-          description: t('Importer.logoFoundDesc'),
-        });
-      } else {
-        toast({
-          variant: 'default',
-          title: t('Importer.logoNotFound'),
-          description: result.error || t('Importer.findLogoErrorDesc'),
-        });
+        toast({ variant: 'success', title: t('Importer.logoFound') });
       }
-    } catch (error: any) {
-      console.error('An unexpected error occurred while finding logo:', error);
-      toast({
-        variant: 'destructive',
-        title: t('Importer.findLogoError'),
-        description: error.message || t('Importer.findLogoErrorDesc'),
-      });
     } finally {
       setIsFindingLogo(false);
     }
@@ -220,73 +192,35 @@ export default function ClientFormPage() {
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
     try {
-      const dataToSave: Partial<Client> = {
-        ...values,
-        logoURL: croppedImage || null,
-      };
-
+      const dataToSave: Partial<Client> = { ...values, logoURL: croppedImage || null };
       if (isNew) {
         await addClient(firestore, user.uid, dataToSave as any);
-        toast({
-          variant: 'success',
-          title: t('Actions.saveSuccess'),
-          description: `Client ${values.name} has been created.`,
-        });
+        toast({ variant: 'success', title: t('Actions.saveSuccess') });
       } else {
         const { cuit, ...updateData } = dataToSave;
         await updateClient(firestore, clientId, updateData);
-        toast({
-          variant: 'success',
-          title: t('Actions.saveSuccess'),
-          description: `Client ${values.name} has been updated.`,
-        });
+        toast({ variant: 'success', title: t('Actions.saveSuccess') });
       }
       router.push('/clients');
     } catch (error: any) {
-      console.error('Failed to save client:', error);
-      if (error.message.includes('CUIT')) {
-        form.setError('cuit', { type: 'manual', message: error.message });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: t('Auth.registerFailedTitle'),
-          description: error.message,
-        });
-      }
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   }
 
-  const pageIsLoading = userLoading || (clientLoading && !isNew);
-
-  if (pageIsLoading) {
-    return (
-      <div className="flex flex-1 flex-col">
-        <AppHeader
-          title={isNew ? t('Forms.addClient') : t('Forms.editClient')}
-        />
-        <main className="flex-1 p-4 sm:p-6">
-          <div className="mx-auto max-w-2xl">
-            <Skeleton className="h-[70vh] w-full" />
-          </div>
-        </main>
-      </div>
-    );
-  }
+  const isRestricted = user?.role !== 'admin' && user?.role !== 'gerente';
 
   const statusOptions: Client['status'][] = ['active', 'suspended', 'canceled'];
-  const industryOptions = Object.keys(translations.en.Industries).sort((a, b) =>
-    t(`Industries.${a}`).localeCompare(t(`Industries.${b}`))
-  );
+  const industryOptions = Object.keys(translations.en.Industries).sort((a, b) => t(`Industries.${a}`).localeCompare(t(`Industries.${b}`)));
 
-  const currentLogoSrc = croppedImage || clientData?.logoURL;
+  if (userLoading || (clientLoading && !isNew)) {
+    return <div className="p-6"><Skeleton className="h-[70vh] w-full" /></div>;
+  }
 
   return (
     <>
       <div className="flex flex-1 flex-col">
-        <AppHeader
-          title={isNew ? t('Forms.addClient') : t('Forms.editClient')}
-        />
-        <main className="flex-1 p-4 sm:p-6">
+        <AppHeader title={isNew ? t('Forms.addClient') : t('Forms.editClient')} />
+        <main className="flex-1 p-4 sm:p-6 pb-24">
           <div className="mx-auto max-w-2xl">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -295,285 +229,120 @@ export default function ClientFormPage() {
                     <div className="flex flex-col items-center gap-4">
                       <div className="relative">
                         <Avatar className="h-32 w-32 rounded-lg">
-                          <AvatarImage
-                            src={currentLogoSrc || undefined}
-                            alt={form.getValues('name')}
-                          />
-                          <AvatarFallback className="rounded-lg bg-muted">
-                            <Building className="h-16 w-16 text-muted-foreground" />
-                          </AvatarFallback>
+                          <AvatarImage src={croppedImage || clientData?.logoURL || undefined} />
+                          <AvatarFallback className="rounded-lg bg-muted"><Building className="h-16 w-16 text-muted-foreground" /></AvatarFallback>
                         </Avatar>
-                        <Button
-                          asChild
-                          variant="outline"
-                          size="icon"
-                          className="absolute bottom-1 right-1 h-8 w-8 rounded-full"
-                        >
-                          <label
-                            htmlFor="logo-upload"
-                            className="cursor-pointer"
-                          >
+                        <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full">
+                          <label htmlFor="logo-upload" className="cursor-pointer">
                             <Camera className="h-4 w-4" />
-                            <input
-                              id="logo-upload"
-                              type="file"
-                              accept="image/*"
-                              className="sr-only"
-                              onChange={onFileChange}
-                              disabled={form.formState.isSubmitting}
-                            />
+                            <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} />
                           </label>
                         </Button>
                       </div>
                     </div>
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.clientName')}</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder={t('Forms.clientNamePlaceholder')}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="holding"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.holding')}</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder={t('Forms.holdingPlaceholder')}
-                              {...field}
-                              list="holdings-datalist"
-                            />
-                          </FormControl>
-                           <datalist id="holdings-datalist">
-                            {holdings.map((h) => (
-                                <option key={h} value={h} />
-                            ))}
-                           </datalist>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <FormField
-                        control={form.control}
-                        name="website"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>{t('Forms.website')}</FormLabel>
-                            <FormControl>
-                                <div className="relative flex items-center">
-                                <Input
-                                    placeholder={t('Forms.websitePlaceholder')}
-                                    {...field}
-                                />
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="absolute right-1 h-8 w-8"
-                                    onClick={handleFindLogo}
-                                    disabled={
-                                    isFindingLogo || !form.watch('website')
-                                    }
-                                    title={t('Importer.findLogo')}
-                                >
-                                    {isFindingLogo ? (
-                                    <Loader2 className="animate-spin" />
-                                    ) : (
-                                    <Wand2 />
-                                    )}
-                                </Button>
-                                </div>
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="linkedinPage"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('Forms.linkedinPage')}</FormLabel>
-                                <FormControl>
-                                    <Input
-                                    placeholder={t('Forms.linkedinPagePlaceholder')}
-                                    {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
+
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t('Forms.clientEmail')}</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder={t('Forms.clientEmailPlaceholder')}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t('Forms.clientPhone')}</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder={t('Forms.clientPhonePlaceholder')}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="cuit"
-                      render={({ field }) => (
+                      <FormField control={form.control} name="management" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('Forms.cuit')}</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="XX-XXXXXXXX-X"
-                              {...field}
-                              disabled={!isNew}
-                            />
-                          </FormControl>
+                          <FormLabel>{t('Profile.management')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isRestricted}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="Satellite Communications">Satellite Communications</SelectItem>
+                              <SelectItem value="GeoInformacion">GeoInformación</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {isRestricted && <FormDescription className="text-[10px] flex items-center gap-1"><ShieldAlert className="h-3 w-3" /> Solo lectura para ejecutivos</FormDescription>}
                           <FormMessage />
                         </FormItem>
-                      )}
-                    />
+                      )} />
+                      <FormField control={form.control} name="assignedTo" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Responsable / Ejecutivo</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={isRestricted}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar ejecutivo..." /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {ejecutivos.map(u => <SelectItem key={u.uid} value={u.uid}>{u.displayName}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.clientName')}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl><FormMessage />
+                      </FormItem>
+                    )} />
+                    
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t('Forms.status')}</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={t('Forms.selectStatus')}
-                                  />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {statusOptions.map((status) => (
-                                  <SelectItem key={status} value={status}>
-                                    {t(`Status.${status}`)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="industry"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t('Forms.industry')}</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={t('Forms.selectIndustry')}
-                                  />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {industryOptions.map((industry) => (
-                                  <SelectItem key={industry} value={industry}>
-                                    {t(`Industries.${industry}`)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.notes')}</FormLabel>
+                      <FormField control={form.control} name="website" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.website')}</FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder={t('Forms.notesPlaceholder')}
-                              className="resize-none"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
+                            <div className="relative flex items-center">
+                              <Input {...field} />
+                              <Button type="button" size="icon" variant="ghost" className="absolute right-1 h-8 w-8" onClick={handleFindLogo} disabled={isFindingLogo || !form.watch('website')}><Wand2 className={cn(isFindingLogo && "animate-spin")} /></Button>
+                            </div>
+                          </FormControl><FormMessage />
                         </FormItem>
-                      )}
-                    />
+                      )} />
+                      <FormField control={form.control} name="linkedinPage" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.linkedinPage')}</FormLabel>
+                          <FormControl><Input {...field} /></FormControl><FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField control={form.control} name="email" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.clientEmail')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={form.control} name="phone" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.clientPhone')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
+
+                    <FormField control={form.control} name="cuit" render={({ field }) => (
+                      <FormItem><FormLabel>{t('Forms.cuit')}</FormLabel><FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
+                    )} />
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField control={form.control} name="status" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.status')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{t(`Status.${s}`)}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="industry" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.industry')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>{industryOptions.map(i => <SelectItem key={i} value={i}>{t(`Industries.${i}`)}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <FormField control={form.control} name="notes" render={({ field }) => (
+                      <FormItem><FormLabel>{t('Forms.notes')}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
                   </CardContent>
                 </Card>
 
-                <div className="flex items-center justify-end gap-4 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.back()}
-                  >
-                    {t('Auth.cancelLabel')}
-                  </Button>
-                  <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting
-                      ? t('App.loading')
-                      : t('Forms.saveClient')}
-                  </Button>
+                <div className="flex items-center justify-end gap-4">
+                  <Button type="button" variant="outline" onClick={() => router.back()}>{t('Auth.cancelLabel')}</Button>
+                  <Button type="submit">{t('Forms.saveClient')}</Button>
                 </div>
               </form>
             </Form>
           </div>
         </main>
       </div>
-      <AvatarCropper
-        imageSrc={imageToCrop}
-        onCropComplete={handleCropComplete}
-        onClose={() => setImageToCrop(null)}
-        aspect={1}
-        cropShape="rect"
-      />
+      <AvatarCropper imageSrc={imageToCrop} onCropComplete={handleCropComplete} onClose={() => setImageToCrop(null)} aspect={1} cropShape="rect" />
     </>
   );
 }

@@ -1,26 +1,27 @@
+
 'use client';
 import {
   collection,
-  addDoc,
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
   runTransaction,
   type Firestore,
 } from 'firebase/firestore';
-import type { Opportunity } from '@/lib/types';
+import type { Opportunity, Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 const OPPORTUNITIES_COLLECTION = 'opportunities';
 
-type OpportunityData = Omit<Opportunity, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
+type OpportunityData = Omit<Opportunity, 'id' | 'publicId' | 'createdAt' | 'createdBy' | 'management' | 'assignedTo'>;
 
 const cleanData = (data: any) => {
   const result: any = {};
   Object.keys(data).forEach(key => {
-    if (data[key] !== undefined) {
+    if (data[key] !== undefined && data[key] !== null) {
       result[key] = data[key];
     }
   });
@@ -32,6 +33,12 @@ export async function addOpportunity(
   uid: string,
   opportunityData: OpportunityData
 ) {
+  const clientRef = doc(firestore, 'clients', opportunityData.clientId);
+  const clientSnap = await getDoc(clientRef);
+  
+  if (!clientSnap.exists()) throw new Error('Client not found');
+  const clientData = clientSnap.data() as Client;
+
   const year = new Date().getFullYear();
   const counterRef = doc(firestore, 'counters', `opportunities_${year}`);
   const opportunityCollectionRef = collection(firestore, OPPORTUNITIES_COLLECTION);
@@ -39,12 +46,10 @@ export async function addOpportunity(
   try {
     await runTransaction(firestore, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
-
-      const currentCount = counterDoc.data()?.count;
-      const newCount = (typeof currentCount === 'number' && Number.isInteger(currentCount) ? currentCount : 0) + 1;
+      const currentCount = counterDoc.data()?.count || 0;
+      const newCount = currentCount + 1;
       
       const publicId = `OP-${year}-${String(newCount).padStart(6, '0')}`;
-
       const newOppRef = doc(opportunityCollectionRef);
 
       const data = {
@@ -52,19 +57,15 @@ export async function addOpportunity(
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
+        management: clientData.management,
+        assignedTo: clientData.assignedTo,
       };
 
       transaction.set(newOppRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
     });
   } catch (error) {
-    console.error("Opportunity creation transaction failed: ", error);
-     const permissionError = new FirestorePermissionError({
-      path: `/${OPPORTUNITIES_COLLECTION} or /counters/opportunities_${year}`,
-      operation: 'create',
-      requestResourceData: opportunityData,
-    });
-    errorEmitter.emit('permission-error', permissionError);
+    console.error("Opportunity creation failed: ", error);
     throw error;
   }
 }
@@ -76,9 +77,9 @@ export function updateOpportunity(
 ) {
   const opportunityRef = doc(firestore, OPPORTUNITIES_COLLECTION, opportunityId);
   const cleaned = cleanData(opportunityData);
-  const { publicId, ...updateData } = cleaned as any;
+  delete (cleaned as any).publicId;
 
-  return updateDoc(opportunityRef, updateData).catch((serverError) => {
+  return updateDoc(opportunityRef, cleaned).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: opportunityRef.path,
       operation: 'update',

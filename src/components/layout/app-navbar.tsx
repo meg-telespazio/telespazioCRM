@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -97,6 +98,22 @@ export function AppNavbar() {
     router.push('/login');
   };
 
+  const isIngeniero = user?.role === 'ingeniero';
+  const isAdmin = user?.role === 'admin';
+
+  const managementSubItems = [
+    { href: '/clients', label: t('Pages.clients'), icon: Users },
+    { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
+    ...(!isIngeniero ? [
+      { href: '/contracts', label: t('Sidebar.contracts'), icon: FileText },
+      { href: '/purchase-orders', label: t('Sidebar.pos'), icon: ShoppingCart },
+      { href: '/services', label: t('Sidebar.services'), icon: Zap },
+      { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive },
+    ] : []),
+    { href: '/locations', label: t('Pages.locations'), icon: MapPin },
+    { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon },
+  ];
+
   const menuItems = [
     {
       href: '/dashboard',
@@ -111,18 +128,9 @@ export function AppNavbar() {
     {
       label: t('Sidebar.management'),
       icon: Building,
-      subItems: [
-        { href: '/clients', label: t('Pages.clients'), icon: Users },
-        { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
-        { href: '/contracts', label: t('Sidebar.contracts'), icon: FileText },
-        { href: '/purchase-orders', label: t('Sidebar.pos'), icon: ShoppingCart },
-        { href: '/services', label: t('Sidebar.services'), icon: Zap },
-        { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive },
-        { href: '/locations', label: t('Pages.locations'), icon: MapPin },
-        { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon },
-      ]
+      subItems: managementSubItems
     },
-    { href: '/products-and-services', label: t('Sidebar.ps'), icon: Package },
+    ...(!isIngeniero ? [{ href: '/products-and-services', label: t('Sidebar.ps'), icon: Package }] : []),
     { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal },
   ];
 
@@ -143,7 +151,6 @@ export function AppNavbar() {
               {t('App.appName')}
             </h1>
           </Link>
-          {/* Desktop Menu */}
           <nav className="hidden items-center gap-6 md:flex">
             {menuItems.map((item) => (
               item.subItems ? (
@@ -213,7 +220,7 @@ export function AppNavbar() {
                       {user?.displayName}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
+                      {user?.email} ({user.role})
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -233,7 +240,6 @@ export function AppNavbar() {
             </DropdownMenu>
           </div>
 
-          {/* Mobile Menu */}
           <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -333,13 +339,7 @@ export function AppNavbar() {
                         <span className="truncate font-semibold">
                           {user?.displayName || user?.email}
                         </span>
-                        <Link
-                          href="/profile"
-                          className="text-sm text-white/80 hover:underline"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {t('Pages.profile')}
-                        </Link>
+                        <span className="text-xs text-white/60">{user.role}</span>
                       </div>
                     </div>
                     <LanguageSwitcher className="mb-2 w-full justify-start text-white hover:bg-red-700" />

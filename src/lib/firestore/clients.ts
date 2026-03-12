@@ -1,3 +1,4 @@
+
 'use client';
 import {
   collection,
@@ -12,7 +13,7 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
-import type { Client } from '@/lib/types';
+import type { Client, ManagementArea } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -23,7 +24,7 @@ type ClientData = Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
 const cleanData = (data: any) => {
   const result: any = {};
   Object.keys(data).forEach(key => {
-    if (data[key] !== undefined) {
+    if (data[key] !== undefined && data[key] !== null) {
       result[key] = data[key];
     }
   });
@@ -113,7 +114,7 @@ export async function updateClient(
       requestResourceData: data,
     });
     errorEmitter.emit('permission-error', permissionError);
-    throw serverError; // rethrow after emitting
+    throw serverError;
   }
 }
 
