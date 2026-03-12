@@ -20,7 +20,8 @@ import {
   Globe, 
   Settings2, 
   TrendingUp,
-  Loader2 
+  Loader2,
+  Building
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
