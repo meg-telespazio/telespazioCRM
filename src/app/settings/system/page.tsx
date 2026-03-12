@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { getSystemConfig, updateSystemConfig } from '@/lib/firestore/system';
-import type { SystemConfig, ExchangeRate } from '@/lib/types';
+import type { SystemConfig, ExchangeRate, SubsectorConfig } from '@/lib/types';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -26,6 +26,13 @@ import {
   Layers,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import Link from 'next/link';
 
 export default function SystemSettingsPage() {
@@ -37,27 +44,36 @@ export default function SystemSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<SystemConfig>({
-    managementAreas: ['Satellite Communications', 'GeoInformacion'],
-    sectors: ['Agriculture', 'Mining', 'Energy', 'Construction', 'Technology', 'Other'],
+    managementAreas: [],
+    sectors: [],
     subsectors: [],
-    currencies: ['USD', 'EUR', 'ARS'],
-    unitsOfMeasure: ['units', 'meters', 'kg', 'liters', 'GB'],
-    exchangeRates: [
-      { from: 'USD', to: 'ARS', rate: 1000 },
-      { from: 'EUR', to: 'USD', rate: 1.08 }
-    ]
+    currencies: [],
+    unitsOfMeasure: [],
+    exchangeRates: []
   });
+
+  // Inputs para agregar nuevos items sin usar prompt
+  const [newInputs, setNewInputs] = useState<Record<string, string>>({
+    managementAreas: '',
+    currencies: '',
+    sectors: '',
+    unitsOfMeasure: '',
+  });
+
+  const [newSubsector, setNewSubsector] = useState<SubsectorConfig>({ name: '', sector: '' });
 
   useEffect(() => {
     getSystemConfig(firestore).then(data => {
       if (data) {
-        // Migration logic for old fields if necessary
-        const migratedConfig = {
+        setConfig({
           ...data,
-          sectors: data.sectors || (data as any).industries || [],
+          sectors: data.sectors || [],
           subsectors: data.subsectors || [],
-        };
-        setConfig(migratedConfig);
+          managementAreas: data.managementAreas || [],
+          currencies: data.currencies || [],
+          unitsOfMeasure: data.unitsOfMeasure || [],
+          exchangeRates: data.exchangeRates || []
+        });
       }
       setLoading(false);
     });
@@ -76,20 +92,38 @@ export default function SystemSettingsPage() {
     }
   };
 
-  const addItem = (key: keyof Omit<SystemConfig, 'exchangeRates' | 'updatedAt' | 'updatedBy'>) => {
-    const val = prompt(t('Settings.addVariable'));
-    if (val) {
-      setConfig(prev => ({
-        ...prev,
-        [key]: [...(prev[key] as string[]), val]
-      }));
-    }
+  const addItem = (key: keyof Omit<SystemConfig, 'subsectors' | 'exchangeRates' | 'updatedAt' | 'updatedBy'>) => {
+    const val = newInputs[key];
+    if (!val) return;
+    
+    setConfig(prev => ({
+      ...prev,
+      [key]: [...(prev[key] as string[]), val]
+    }));
+    
+    setNewInputs(prev => ({ ...prev, [key]: '' }));
   };
 
-  const removeItem = (key: keyof Omit<SystemConfig, 'exchangeRates' | 'updatedAt' | 'updatedBy'>, index: number) => {
+  const removeItem = (key: keyof Omit<SystemConfig, 'subsectors' | 'exchangeRates' | 'updatedAt' | 'updatedBy'>, index: number) => {
     setConfig(prev => ({
       ...prev,
       [key]: (prev[key] as string[]).filter((_, i) => i !== index)
+    }));
+  };
+
+  const addSubsector = () => {
+    if (!newSubsector.name || !newSubsector.sector) return;
+    setConfig(prev => ({
+      ...prev,
+      subsectors: [...prev.subsectors, { ...newSubsector }]
+    }));
+    setNewSubsector({ name: '', sector: '' });
+  };
+
+  const removeSubsector = (index: number) => {
+    setConfig(prev => ({
+      ...prev,
+      subsectors: prev.subsectors.filter((_, i) => i !== index)
     }));
   };
 
@@ -132,94 +166,175 @@ export default function SystemSettingsPage() {
         </Button>
       </AppHeader>
 
-      <main className="flex-1 p-4 sm:p-6 space-y-6 max-w-5xl mx-auto w-full">
+      <main className="flex-1 p-4 sm:p-6 space-y-6 max-w-5xl mx-auto w-full pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Management Areas */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><Database className="h-4 w-4" />{t('Settings.managementAreas')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 min-h-[40px]">
                 {config.managementAreas.map((item, i) => (
                   <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1 gap-2">
                     {item}
                     <button onClick={() => removeItem('managementAreas', i)} className="hover:text-destructive transition-colors"><Trash2 className="h-3 w-3" /></button>
                   </Badge>
                 ))}
-                <Button variant="outline" size="sm" className="h-7 rounded-full px-3" onClick={() => addItem('managementAreas')}><Plus className="h-3 w-3 mr-1" />{t('Actions.title')}</Button>
+              </div>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder={t('Settings.addVariable')} 
+                  value={newInputs.managementAreas} 
+                  onChange={(e) => setNewInputs(p => ({ ...p, managementAreas: e.target.value }))}
+                  className="h-8 text-xs"
+                />
+                <Button size="sm" className="h-8" onClick={() => addItem('managementAreas')}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
 
+          {/* Currencies */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><Globe className="h-4 w-4" />{t('Settings.currencies')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 min-h-[40px]">
                 {config.currencies.map((item, i) => (
                   <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1 gap-2">
                     {item}
                     <button onClick={() => removeItem('currencies', i)} className="hover:text-destructive transition-colors"><Trash2 className="h-3 w-3" /></button>
                   </Badge>
                 ))}
-                <Button variant="outline" size="sm" className="h-7 rounded-full px-3" onClick={() => addItem('currencies')}><Plus className="h-3 w-3 mr-1" /></Button>
+              </div>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder={t('Settings.addVariable')} 
+                  value={newInputs.currencies} 
+                  onChange={(e) => setNewInputs(p => ({ ...p, currencies: e.target.value }))}
+                  className="h-8 text-xs"
+                />
+                <Button size="sm" className="h-8" onClick={() => addItem('currencies')}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
 
+          {/* Sectors */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><Building className="h-4 w-4" />{t('Settings.sectors')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 min-h-[40px]">
                 {config.sectors.map((item, i) => (
                   <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1 gap-2">
                     {item}
                     <button onClick={() => removeItem('sectors', i)} className="hover:text-destructive transition-colors"><Trash2 className="h-3 w-3" /></button>
                   </Badge>
                 ))}
-                <Button variant="outline" size="sm" className="h-7 rounded-full px-3" onClick={() => addItem('sectors')}><Plus className="h-3 w-3 mr-1" /></Button>
+              </div>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder={t('Settings.addVariable')} 
+                  value={newInputs.sectors} 
+                  onChange={(e) => setNewInputs(p => ({ ...p, sectors: e.target.value }))}
+                  className="h-8 text-xs"
+                />
+                <Button size="sm" className="h-8" onClick={() => addItem('sectors')}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
 
+          {/* Units */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2"><Layers className="h-4 w-4" />{t('Settings.subsectors')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {config.subsectors.map((item, i) => (
-                  <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1 gap-2">
-                    {item}
-                    <button onClick={() => removeItem('subsectors', i)} className="hover:text-destructive transition-colors"><Trash2 className="h-3 w-3" /></button>
-                  </Badge>
-                ))}
-                <Button variant="outline" size="sm" className="h-7 rounded-full px-3" onClick={() => addItem('subsectors')}><Plus className="h-3 w-3 mr-1" /></Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><Settings2 className="h-4 w-4" />{t('Settings.units')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 min-h-[40px]">
                 {config.unitsOfMeasure.map((item, i) => (
                   <Badge key={i} variant="secondary" className="pl-3 pr-1 py-1 gap-2">
                     {item}
                     <button onClick={() => removeItem('unitsOfMeasure', i)} className="hover:text-destructive transition-colors"><Trash2 className="h-3 w-3" /></button>
                   </Badge>
                 ))}
-                <Button variant="outline" size="sm" className="h-7 rounded-full px-3" onClick={() => addItem('unitsOfMeasure')}><Plus className="h-3 w-3 mr-1" /></Button>
+              </div>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder={t('Settings.addVariable')} 
+                  value={newInputs.unitsOfMeasure} 
+                  onChange={(e) => setNewInputs(p => ({ ...p, unitsOfMeasure: e.target.value }))}
+                  className="h-8 text-xs"
+                />
+                <Button size="sm" className="h-8" onClick={() => addItem('unitsOfMeasure')}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* Hierarchical Subsectors */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2"><Layers className="h-4 w-4 text-primary" />{t('Settings.subsectors')}</CardTitle>
+            <CardDescription>Vincule subsectores específicos a un sector padre.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-slate-50 p-4 rounded-lg border">
+              <div className="space-y-2">
+                <Label className="text-xs">{t('Settings.parentSector')}</Label>
+                <Select value={newSubsector.sector} onValueChange={(v) => setNewSubsector(p => ({ ...p, sector: v }))}>
+                  <SelectTrigger className="h-8 bg-white"><SelectValue placeholder="Sector..." /></SelectTrigger>
+                  <SelectContent>
+                    {config.sectors.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">{t('Settings.subsectorName')}</Label>
+                <Input 
+                  value={newSubsector.name} 
+                  onChange={(e) => setNewSubsector(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Ej: Metalúrgica"
+                  className="h-8 bg-white text-xs"
+                />
+              </div>
+              <Button size="sm" className="h-8" onClick={addSubsector} disabled={!newSubsector.name || !newSubsector.sector}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t('Settings.addSubsector')}
+              </Button>
+            </div>
+
+            <div className="border rounded-md divide-y overflow-hidden bg-white">
+              {config.sectors.map(sector => {
+                const sectorSubsectors = config.subsectors.filter(s => s.sector === sector);
+                return (
+                  <div key={sector} className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs uppercase tracking-wider text-primary">{sector}</span>
+                      <Badge variant="outline" className="text-[10px]">{sectorSubsectors.length} ítems</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {sectorSubsectors.map((sub, i) => {
+                        const originalIndex = config.subsectors.findIndex(s => s.name === sub.name && s.sector === sub.sector);
+                        return (
+                          <Badge key={i} variant="outline" className="pl-3 pr-1 py-1 gap-2 bg-slate-50">
+                            {sub.name}
+                            <button onClick={() => removeSubsector(originalIndex)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
+                          </Badge>
+                        );
+                      })}
+                      {sectorSubsectors.length === 0 && <span className="text-[10px] italic text-muted-foreground">Sin subsectores asignados</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Exchange Rates */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="space-y-1">

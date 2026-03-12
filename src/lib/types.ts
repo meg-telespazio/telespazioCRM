@@ -334,10 +334,15 @@ export type ExchangeRate = {
   rate: number;
 };
 
+export type SubsectorConfig = {
+  name: string;
+  sector: string;
+};
+
 export type SystemConfig = {
   managementAreas: string[];
   sectors: string[];
-  subsectors: string[];
+  subsectors: SubsectorConfig[];
   currencies: string[];
   unitsOfMeasure: string[];
   exchangeRates: ExchangeRate[];

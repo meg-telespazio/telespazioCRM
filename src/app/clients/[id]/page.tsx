@@ -140,6 +140,25 @@ export default function ClientFormPage() {
     },
   });
 
+  const watchedSector = form.watch('sector');
+
+  // Filtered subsectors based on hierarchy
+  const subsectorOptions = useMemo(() => {
+    if (!configData?.subsectors || !watchedSector) return [];
+    return configData.subsectors
+      .filter(s => s.sector === watchedSector)
+      .map(s => s.name)
+      .sort();
+  }, [configData, watchedSector]);
+
+  // Reset subsector if sector changes and current value is not in new options
+  useEffect(() => {
+    const currentSubsector = form.getValues('subsector');
+    if (currentSubsector && !subsectorOptions.includes(currentSubsector)) {
+      form.setValue('subsector', '');
+    }
+  }, [watchedSector, subsectorOptions, form]);
+
   useEffect(() => {
     if (clientData) {
       form.reset({
@@ -220,8 +239,7 @@ export default function ClientFormPage() {
   const statusOptions: Client['status'][] = ['active', 'suspended', 'canceled'];
   
   // Dynamic options from config
-  const sectorOptions = configData?.sectors || [];
-  const subsectorOptions = configData?.subsectors || [];
+  const sectorOptions = (configData?.sectors || []).sort();
   const managementOptions = configData?.managementAreas || ['Satellite Communications', 'GeoInformacion'];
 
   if (userLoading || (clientLoading && !isNew)) {
@@ -343,11 +361,11 @@ export default function ClientFormPage() {
                       )} />
                       <FormField control={form.control} name="subsector" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.subsector')}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={!watchedSector}>
                             <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
                             <SelectContent>
                               {subsectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                              {subsectorOptions.length === 0 && <SelectItem value="none" disabled>No hay subsectores</SelectItem>}
+                              {subsectorOptions.length === 0 && <SelectItem value="none" disabled>Seleccione un sector primero</SelectItem>}
                             </SelectContent>
                           </Select><FormMessage />
                         </FormItem>

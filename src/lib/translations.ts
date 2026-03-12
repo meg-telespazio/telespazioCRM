@@ -174,6 +174,9 @@ export const translations = {
       addVariable: 'Add Variable',
       saveConfig: 'Save Configuration',
       configSuccess: 'Configuration saved successfully',
+      addSubsector: 'Add Subsector',
+      parentSector: 'Parent Sector',
+      subsectorName: 'Subsector Name',
     },
     Management: {
       SatelliteCommunications: 'Satellite Communications',
@@ -840,7 +843,7 @@ export const translations = {
       passwordsDontMatch: 'Las contraseñas no coinciden.',
       humanCheck: 'La verificación humana es obligatoria.',
       humanCheckError: 'Respuesta incorrecta. Intenta de nuevo.',
-      passwordLength: 'At least 8 characters',
+      passwordLength: 'Al menos 8 caracteres',
       passwordUppercase: 'Una letra mayúscula',
       passwordLowercase: 'Una letra minúscula',
       passwordNumber: 'Un número',
@@ -982,6 +985,9 @@ export const translations = {
       addVariable: 'Añadir Variable',
       saveConfig: 'Guardar Configuración',
       configSuccess: 'Configuración guardada exitosamente',
+      addSubsector: 'Agregar Subsector',
+      parentSector: 'Sector Padre',
+      subsectorName: 'Nombre del Subsector',
     },
     Management: {
       SatelliteCommunications: 'Satellite Communications',
