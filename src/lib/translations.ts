@@ -150,6 +150,7 @@ export const translations = {
       userAvatarAlt: 'User Avatar',
       mobile: 'Mobile Phone',
       position: 'Job Position',
+      role: 'System Role',
       status: 'Account Status',
       notes: 'Notes / Bio',
       saveChanges: 'Save Changes',
@@ -157,8 +158,8 @@ export const translations = {
       management: 'Management Area',
     },
     Management: {
-      'Satellite Communications': 'Satellite Communications',
-      'GeoInformacion': 'Geoinformation',
+      SatelliteCommunications: 'Satellite Communications',
+      GeoInformacion: 'Geoinformation',
     },
     Countries: {
       Argentina: 'Argentina',
@@ -196,6 +197,12 @@ export const translations = {
       Manager: 'Manager',
       Executive: 'Executive',
       'Project Manager': 'Project Manager',
+    },
+    Roles: {
+      admin: 'Administrator',
+      gerente: 'Manager',
+      ejecutivo: 'Account Executive',
+      ingeniero: 'Account Engineer',
     },
     Actions: {
       title: 'Actions',
@@ -931,6 +938,7 @@ export const translations = {
       userAvatarAlt: 'Avatar de Usuario',
       mobile: 'Teléfono Móvil',
       position: 'Cargo / Posición',
+      role: 'Rol del Sistema',
       status: 'Estado de la Cuenta',
       notes: 'Notas / Biografía',
       saveChanges: 'Guardar Cambios',
@@ -938,8 +946,8 @@ export const translations = {
       management: 'Gerencia',
     },
     Management: {
-      'Satellite Communications': 'Satellite Communications',
-      'GeoInformacion': 'GeoInformación',
+      SatelliteCommunications: 'Satellite Communications',
+      GeoInformacion: 'GeoInformación',
     },
     Countries: {
       Argentina: 'Argentina',
@@ -977,6 +985,12 @@ export const translations = {
       Manager: 'Gerente',
       Executive: 'Ejecutivo',
       'Project Manager': 'Project Manager',
+    },
+    Roles: {
+      admin: 'Administrador',
+      gerente: 'Gerente',
+      ejecutivo: 'Ejecutivo de Cuentas',
+      ingeniero: 'Ingeniero de Cuentas',
     },
     Actions: {
       title: 'Acciones',

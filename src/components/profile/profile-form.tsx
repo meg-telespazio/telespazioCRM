@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useI18n } from '@/firebase/client-provider';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { AvatarCropper } from './avatar-cropper';
-import { Camera } from 'lucide-react';
+import { Camera, ShieldAlert } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import type { UserProfile } from '@/lib/types';
@@ -46,6 +46,7 @@ const getProfileFormSchema = (t: (key: string) => string) =>
     phone: z.string().min(10, t('Validation.phoneMin')),
     mobile: z.string().optional().or(z.literal('')),
     position: z.enum(['Director', 'Manager', 'Executive', 'Project Manager']),
+    role: z.enum(['admin', 'gerente', 'ejecutivo', 'ingeniero']),
     status: z.enum(['active', 'suspended']),
     country: z.string().optional().or(z.literal('')),
     management: z.enum(['Satellite Communications', 'GeoInformacion']).optional(),
@@ -73,6 +74,7 @@ export function ProfileForm() {
       phone: '',
       mobile: '',
       position: 'Executive',
+      role: 'ejecutivo',
       status: 'active',
       country: '',
       management: undefined,
@@ -89,6 +91,7 @@ export function ProfileForm() {
         phone: user.phone || '',
         mobile: user.mobile || '',
         position: user.position || 'Executive',
+        role: user.role || 'ejecutivo',
         status: user.status || 'active',
         country: user.country || '',
         management: user.management as any,
@@ -132,6 +135,7 @@ export function ProfileForm() {
         phone: values.phone,
         mobile: values.mobile,
         position: values.position,
+        role: values.role,
         status: values.status,
         country: values.country,
         management: values.management,
@@ -181,6 +185,14 @@ export function ProfileForm() {
     'Executive',
     'Project Manager',
   ];
+  
+  const roleOptions: UserProfile['role'][] = [
+    'admin',
+    'gerente',
+    'ejecutivo',
+    'ingeniero'
+  ];
+
   const statusOptions: UserProfile['status'][] = ['active', 'suspended'];
   
   const countryOptions = [
@@ -195,6 +207,10 @@ export function ProfileForm() {
     'Satellite Communications',
     'GeoInformacion'
   ];
+
+  // Solo el email de administrador global o un usuario con rol admin puede cambiar roles y gerencias
+  const isGlobalAdmin = user?.email === 'mariano.gonzalez@telespazio.com';
+  const canEditPermissions = isGlobalAdmin;
 
   return (
     <>
@@ -327,6 +343,76 @@ export function ProfileForm() {
             />
           </div>
 
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 border-t pt-4 bg-muted/10 rounded-lg p-4">
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    {t('Profile.role')}
+                    {!canEditPermissions && <ShieldAlert className="h-3 w-3 text-muted-foreground" />}
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSaving || !canEditPermissions}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {roleOptions.map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {t(`Roles.${role}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!canEditPermissions && <p className="text-[10px] text-muted-foreground">Solo lectura para usuarios</p>}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="management"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    {t('Profile.management')}
+                    {!canEditPermissions && <ShieldAlert className="h-3 w-3 text-muted-foreground" />}
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSaving || !canEditPermissions}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('Profile.management')} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {managementOptions.map((opt) => {
+                        const translationKey = opt?.replace(' ', '');
+                        return (
+                          <SelectItem key={opt} value={opt || ''}>
+                            {t(`Management.${translationKey}`)}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {!canEditPermissions && <p className="text-[10px] text-muted-foreground">Solo lectura para usuarios</p>}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
@@ -358,24 +444,24 @@ export function ProfileForm() {
             />
             <FormField
               control={form.control}
-              name="management"
+              name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Profile.management')}</FormLabel>
+                  <FormLabel>{t('Profile.status')}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
-                    disabled={isSaving}
+                    disabled={isSaving || !canEditPermissions}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={t('Profile.management')} />
+                        <SelectValue />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {managementOptions.map((opt) => (
-                        <SelectItem key={opt} value={opt || ''}>
-                          {t(`Management.${opt?.replace(' ', '')}`)}
+                      {statusOptions.map((stat) => (
+                        <SelectItem key={stat} value={stat}>
+                          {t(`Status.${stat}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -385,35 +471,6 @@ export function ProfileForm() {
               )}
             />
           </div>
-
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Profile.status')}</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  disabled={isSaving}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {statusOptions.map((stat) => (
-                      <SelectItem key={stat} value={stat}>
-                        {t(`Status.${stat}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
           <FormField
             control={form.control}
