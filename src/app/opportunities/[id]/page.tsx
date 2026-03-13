@@ -14,6 +14,7 @@ import type {
   Client,
   Contact,
   ProductOrService,
+  SystemConfig,
 } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -187,6 +188,10 @@ export default function OpportunityFormPage() {
   const opportunityId = params.id as string;
   const isNew = opportunityId === 'new';
   const clientIdFromQuery = searchParams.get('clientId');
+
+  // Fetch system config for exchange rates
+  const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
+  const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   // Resetear el flag de carga cuando cambia el ID
   useEffect(() => {
@@ -367,6 +372,29 @@ export default function OpportunityFormPage() {
       form.setValue('probability', probabilityMap[watchedStage]);
     }
   }, [watchedStage, form]);
+
+  const convertCurrency = (oldCurrency: string, newCurrency: string) => {
+    if (!configData?.exchangeRates || oldCurrency === newCurrency) return;
+
+    const getRate = (ccy: string) => {
+      if (ccy === 'USD') return 1;
+      return configData.exchangeRates.find(r => r.from === ccy)?.rate || 1;
+    };
+
+    const rateOld = getRate(oldCurrency);
+    const rateNew = getRate(newCurrency);
+    const factor = rateOld / rateNew;
+
+    const currentItems = form.getValues('lineItems') || [];
+    const updatedItems = currentItems.map(item => ({
+      ...item,
+      oneTimeCharge: parseFloat((item.oneTimeCharge * factor).toFixed(2)),
+      recurringCharge: parseFloat((item.recurringCharge * factor).toFixed(2)),
+    }));
+
+    form.setValue('lineItems', updatedItems);
+    toast({ variant: 'default', title: `Valores convertidos a ${newCurrency}` });
+  };
 
   const handleAddLineItem = () => {
     if (!selectedCatalogItem) return;
@@ -673,7 +701,11 @@ export default function OpportunityFormPage() {
                       <FormItem>
                         <FormLabel>{t('Table.currency')}</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            const oldCurrency = field.value;
+                            field.onChange(value);
+                            convertCurrency(oldCurrency, value);
+                          }}
                           value={field.value}
                           disabled={isLocked}
                         >
