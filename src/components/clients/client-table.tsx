@@ -13,6 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { doc, updateDoc } from 'firebase/firestore';
+import Papa from 'papaparse';
 
 import {
   Table,
@@ -24,6 +25,14 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { columns } from './columns';
 import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -45,14 +54,9 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
   const router = useRouter();
   const tableId = 'clients';
   
-  const defaultVisibility = {
-    cuit: true,
-    status: true,
-  };
-
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultVisibility);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
   React.useEffect(() => {
@@ -96,9 +100,36 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
     },
   });
 
+  const handleExport = () => {
+    const exportData = table.getFilteredRowModel().rows.map(row => ({
+      ID: row.original.publicId,
+      Nombre: row.original.name,
+      'TAX ID': row.original.cuit,
+      Sector: row.original.sector,
+      Estado: t(`Status.${row.original.status}`),
+      Gerencia: row.original.management,
+    }));
+    const csv = Papa.unparse(exportData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `clientes-${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+
+  const getColumnLabel = (id: string) => {
+    switch (id) {
+      case 'publicId': return 'ID Cliente';
+      case 'name': return 'Nombre';
+      case 'cuit': return 'TAX ID';
+      case 'sector': return 'Sector';
+      case 'status': return 'Estado';
+      default: return id;
+    }
+  };
+
   return (
     <div className="w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      {/* Barra de Herramientas */}
       <div className="flex items-center gap-4 p-3 bg-slate-50/50">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -112,23 +143,46 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
           />
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
-            <ListFilter className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
+                <ListFilter className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground">Columnas</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {table.getAllColumns().filter(col => col.getCanHide()).map(column => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  className="text-xs capitalize"
+                >
+                  {getColumnLabel(column.id)}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9 text-slate-400 hover:text-slate-600"
+            onClick={handleExport}
+          >
             <Download className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Tabla */}
       <div className="border-t border-slate-100">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="bg-destructive h-10 first:rounded-tl-none last:rounded-tr-none">
+                  <TableHead key={header.id} className="bg-destructive h-10">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -172,7 +226,6 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
         </Table>
       </div>
 
-      {/* Paginación */}
       <div className="border-t border-slate-100 bg-white">
         <DataTablePagination table={table} />
       </div>

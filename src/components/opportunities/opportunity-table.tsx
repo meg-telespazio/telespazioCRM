@@ -13,6 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { doc, updateDoc } from 'firebase/firestore';
+import Papa from 'papaparse';
 
 import {
   Table,
@@ -24,6 +25,14 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { columns } from './columns';
 import type { Opportunity, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -100,6 +109,39 @@ export function OpportunityTable({
     },
   });
 
+  const handleExport = () => {
+    const exportData = table.getFilteredRowModel().rows.map(row => {
+      const client = clients.find(c => c.id === row.original.clientId);
+      return {
+        ID: row.original.publicId,
+        Proyecto: row.original.title,
+        Cliente: client?.name || 'N/A',
+        Valor: row.original.value,
+        Moneda: row.original.currency,
+        Etapa: t(`Stages.${row.original.stage}`),
+        Probabilidad: `${row.original.probability}%`,
+        'Cierre Est.': row.original.closeDate ? new Date(row.original.closeDate).toLocaleDateString() : '-',
+      };
+    });
+    const csv = Papa.unparse(exportData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `oportunidades-${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+
+  const getColumnLabel = (id: string) => {
+    switch (id) {
+      case 'publicId': return 'ID Negocio';
+      case 'title': return 'Título';
+      case 'clientId': return 'Cliente';
+      case 'value': return 'Valor';
+      case 'stage': return 'Etapa';
+      default: return id;
+    }
+  };
+
   return (
     <div className="w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="flex items-center gap-4 p-3 bg-slate-50/50">
@@ -115,10 +157,34 @@ export function OpportunityTable({
           />
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
-            <ListFilter className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
+                <ListFilter className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground">Columnas</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {table.getAllColumns().filter(col => col.getCanHide()).map(column => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  className="text-xs capitalize"
+                >
+                  {getColumnLabel(column.id)}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9 text-slate-400 hover:text-slate-600"
+            onClick={handleExport}
+          >
             <Download className="h-4 w-4" />
           </Button>
         </div>
