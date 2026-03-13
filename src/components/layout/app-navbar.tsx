@@ -25,7 +25,7 @@ import {
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '../ui/button';
 import { useI18n } from '@/firebase/client-provider';
@@ -57,8 +57,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { doc } from 'firebase/firestore';
+import type { SystemConfig } from '@/lib/types';
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
@@ -87,10 +89,20 @@ function LanguageSwitcher({ className }: { className?: string }) {
 
 function CurrencySwitcher({ className }: { className?: string }) {
   const { currency, setCurrency } = useI18n();
+  const firestore = useFirestore();
+  
+  const configDocRef = useMemo(() => doc(firestore, 'systemConfig', 'globals'), [firestore]);
+  const { data: config } = useDoc<SystemConfig>(configDocRef);
+
+  const availableCurrencies = useMemo(() => {
+    if (!config?.currencies || config.currencies.length === 0) return ['USD', 'EUR', 'ARS'];
+    return config.currencies;
+  }, [config]);
+
   return (
     <Select
       value={currency}
-      onValueChange={(value) => setCurrency(value as 'USD' | 'EUR' | 'ARS')}
+      onValueChange={(value) => setCurrency(value)}
     >
       <SelectTrigger
         className={cn(
@@ -101,9 +113,9 @@ function CurrencySwitcher({ className }: { className?: string }) {
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="USD">USD</SelectItem>
-        <SelectItem value="EUR">EUR</SelectItem>
-        <SelectItem value="ARS">ARS</SelectItem>
+        {availableCurrencies.map(ccy => (
+          <SelectItem key={ccy} value={ccy}>{ccy}</SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );

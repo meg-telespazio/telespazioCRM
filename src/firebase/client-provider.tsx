@@ -10,13 +10,12 @@ import {
 import { translations } from '@/lib/translations';
 
 type Locale = 'en' | 'es';
-type Currency = 'USD' | 'EUR' | 'ARS';
 
 type I18nContextType = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  currency: Currency;
-  setCurrency: (currency: Currency) => void;
+  currency: string;
+  setCurrency: (currency: string) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 };
 
@@ -32,7 +31,7 @@ export function useI18n() {
 
 function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>('es');
-  const [currency, setCurrency] = useState<Currency>('USD');
+  const [currency, setCurrency] = useState<string>('USD');
 
   const t = useMemo(
     () =>

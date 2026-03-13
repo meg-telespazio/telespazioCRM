@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { columns } from './columns';
-import type { Opportunity, Client } from '@/lib/types';
+import type { Opportunity, Client, ExchangeRate } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
@@ -45,6 +45,8 @@ type OpportunityTableProps = {
   clients: Client[];
   onEdit: (opportunity: Opportunity) => void;
   onDelete: (opportunityId: string) => void;
+  exchangeRates: ExchangeRate[];
+  displayCurrency: string;
 };
 
 export function OpportunityTable({
@@ -52,6 +54,8 @@ export function OpportunityTable({
   clients,
   onEdit,
   onDelete,
+  exchangeRates,
+  displayCurrency,
 }: OpportunityTableProps) {
   const { t } = useI18n();
   const { user } = useUser();
@@ -86,8 +90,8 @@ export function OpportunityTable({
   };
 
   const tableColumns = React.useMemo(
-    () => columns(t, clients, onEdit, onDelete),
-    [t, clients, onEdit, onDelete]
+    () => columns(t, clients, onEdit, onDelete, exchangeRates, displayCurrency),
+    [t, clients, onEdit, onDelete, exchangeRates, displayCurrency]
   );
 
   const table = useReactTable({
