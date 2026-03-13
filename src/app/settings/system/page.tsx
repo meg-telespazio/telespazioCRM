@@ -359,8 +359,8 @@ export default function SystemSettingsPage() {
                       <div className="relative flex-1">
                         <Input 
                           type="number" 
-                          step="0.000001" 
-                          value={isNaN(rate.rate) ? '' : rate.rate} 
+                          step="0.001" 
+                          value={isNaN(rate.rate) ? '' : rate.rate.toFixed(3)} 
                           onChange={(e) => updateRate(i, 'rate', e.target.value)} 
                           className="h-8 bg-white text-right font-mono pr-8" 
                         />
@@ -369,7 +369,7 @@ export default function SystemSettingsPage() {
                     </div>
                   </div>
                   <div className="text-[10px] font-medium text-muted-foreground min-w-[120px]">
-                    1 {rate.from} = {isNaN(rate.rate) ? '0' : rate.rate.toFixed(6)} USD
+                    1 USD = {rate.rate > 0 ? (1 / rate.rate).toFixed(3) : '0'} {rate.from}
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeRate(i)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
