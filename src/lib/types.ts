@@ -334,6 +334,13 @@ export type ExchangeRate = {
   rate: number;
 };
 
+export type ExchangeRateSnapshot = {
+  id: string;
+  date: Date;
+  rates: ExchangeRate[];
+  createdBy: string;
+};
+
 export type SubsectorConfig = {
   name: string;
   sector: string;
@@ -346,6 +353,7 @@ export type SystemConfig = {
   currencies: string[];
   unitsOfMeasure: string[];
   exchangeRates: ExchangeRate[];
+  lastRatesUpdate?: Date;
   updatedAt?: Date;
   updatedBy?: string;
 };

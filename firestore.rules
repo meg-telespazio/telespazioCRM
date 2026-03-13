@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
+      return request.auth != null && (request.auth.token.email == 'mariano.gonzalez@telespazio.com' || getUserData().role == 'admin');
     }
 
     function getUserData() {
@@ -24,6 +24,10 @@ service cloud.firestore {
       allow get: if request.auth != null;
       allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      
+      match /reports/{reportId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     match /clients/{clientId} {
@@ -93,6 +97,10 @@ service cloud.firestore {
     match /systemConfig/{configId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
+    }
+
+    match /exchangeRateHistory/{historyId} {
+      allow read, write: if isAdmin();
     }
   }
 }
