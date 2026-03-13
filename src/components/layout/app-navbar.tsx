@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -81,6 +80,30 @@ function LanguageSwitcher({ className }: { className?: string }) {
       <SelectContent>
         <SelectItem value="es">ES</SelectItem>
         <SelectItem value="en">EN</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
+function CurrencySwitcher({ className }: { className?: string }) {
+  const { currency, setCurrency } = useI18n();
+  return (
+    <Select
+      value={currency}
+      onValueChange={(value) => setCurrency(value as 'USD' | 'EUR' | 'ARS')}
+    >
+      <SelectTrigger
+        className={cn(
+          'w-fit border-0 bg-transparent focus:ring-0 focus:ring-offset-0 font-bold',
+          className
+        )}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="USD">USD</SelectItem>
+        <SelectItem value="EUR">EUR</SelectItem>
+        <SelectItem value="ARS">ARS</SelectItem>
       </SelectContent>
     </Select>
   );
@@ -196,6 +219,8 @@ export function AppNavbar() {
 
         <div className="ml-auto flex items-center gap-4">
           <div className="hidden items-center gap-2 md:flex">
+            <CurrencySwitcher className="text-white hover:bg-red-700" />
+            <div className="h-4 w-px bg-white/20 mx-1" />
             <LanguageSwitcher className="text-white hover:bg-red-700" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -328,7 +353,11 @@ export function AppNavbar() {
                     </nav>
                   </div>
 
-                  <div className="mt-auto border-t border-red-600 p-6">
+                  <div className="mt-auto border-t border-red-600 p-6 space-y-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <CurrencySwitcher className="w-1/2 justify-start text-white hover:bg-red-700" />
+                      <LanguageSwitcher className="w-1/2 justify-start text-white hover:bg-red-700" />
+                    </div>
                     <div className="mb-4 flex items-center gap-3">
                       <Link
                         href="/profile"
@@ -352,7 +381,6 @@ export function AppNavbar() {
                         <span className="text-xs text-white/60">{user.role}</span>
                       </div>
                     </div>
-                    <LanguageSwitcher className="mb-2 w-full justify-start text-white hover:bg-red-700" />
                     <Button
                       variant="ghost"
                       onClick={() => {

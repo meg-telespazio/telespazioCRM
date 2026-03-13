@@ -10,9 +10,13 @@ import {
 import { translations } from '@/lib/translations';
 
 type Locale = 'en' | 'es';
+type Currency = 'USD' | 'EUR' | 'ARS';
+
 type I18nContextType = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  currency: Currency;
+  setCurrency: (currency: Currency) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 };
 
@@ -27,7 +31,8 @@ export function useI18n() {
 }
 
 function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>('es'); // Default to Spanish
+  const [locale, setLocale] = useState<Locale>('es');
+  const [currency, setCurrency] = useState<Currency>('USD');
 
   const t = useMemo(
     () =>
@@ -37,7 +42,6 @@ function I18nProvider({ children }: { children: ReactNode }) {
         for (const k of keys) {
           result = result?.[k];
           if (result === undefined) {
-            // Fallback to English if key not found in current locale
             let fallbackResult: any = translations['en'];
             for (const fk of keys) {
               fallbackResult = fallbackResult?.[fk];
@@ -46,7 +50,7 @@ function I18nProvider({ children }: { children: ReactNode }) {
               return key;
             }
             result = fallbackResult;
-            break; // Exit loop after finding fallback
+            break;
           }
         }
 
@@ -69,9 +73,11 @@ function I18nProvider({ children }: { children: ReactNode }) {
     () => ({
       locale,
       setLocale,
+      currency,
+      setCurrency,
       t,
     }),
-    [locale, t]
+    [locale, t, currency]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

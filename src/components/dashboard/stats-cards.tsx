@@ -7,21 +7,36 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { DollarSign, Briefcase, Target, Contact as ContactIcon } from 'lucide-react';
-import type { Opportunity, Client, Contact } from '@/lib/types';
+import type { Opportunity, Client, Contact, ExchangeRate } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 
 type StatsCardsProps = {
     opportunities: Opportunity[];
     clients: Client[];
     contacts: Contact[];
+    exchangeRates: ExchangeRate[];
+    displayCurrency: string;
 }
 
-export function StatsCards({ opportunities, clients, contacts }: StatsCardsProps) {
+export function StatsCards({ opportunities, clients, contacts, exchangeRates, displayCurrency }: StatsCardsProps) {
   const { t } = useI18n();
   
-  const totalRevenue = opportunities
+  const getRateToUsd = (ccy: string) => {
+    if (ccy === 'USD') return 1;
+    return exchangeRates.find(r => r.from === ccy)?.rate || 1;
+  };
+
+  const convertValue = (val: number, fromCcy: string, toCcy: string) => {
+    if (fromCcy === toCcy) return val;
+    const rateFrom = getRateToUsd(fromCcy);
+    const rateTo = getRateToUsd(toCcy);
+    // Formula: ValueInUSD = Val * rateFrom -> ValueInTarget = ValueInUSD / rateTo
+    return (val * rateFrom) / rateTo;
+  };
+
+  const totalRevenueConverted = opportunities
     .filter((opp) => opp.stage === 'Won')
-    .reduce((sum, opp) => sum + opp.value, 0);
+    .reduce((sum, opp) => sum + convertValue(opp.value, opp.currency || 'USD', displayCurrency), 0);
 
   const totalWon = opportunities.filter(opp => opp.stage === 'Won').length;
   const totalOpportunities = opportunities.length;
@@ -42,11 +57,11 @@ export function StatsCards({ opportunities, clients, contacts }: StatsCardsProps
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{t('Dashboard.stats.totalRevenue')}</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <div className="h-4 w-4 text-muted-foreground font-bold text-[10px] flex items-center justify-center">{displayCurrency}</div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            ${totalRevenue.toLocaleString()}
+            {displayCurrency} {totalRevenueConverted.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
           <p className="text-xs text-muted-foreground">
             {t('Dashboard.stats.totalRevenueDesc')}

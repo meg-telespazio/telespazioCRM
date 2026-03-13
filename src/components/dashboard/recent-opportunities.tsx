@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { Opportunity, Client } from '@/lib/types';
+import type { Opportunity, Client, ExchangeRate } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRouter } from 'next/navigation';
@@ -35,12 +35,26 @@ const stageClasses: { [key in Opportunity['stage']]: string } = {
 type RecentOpportunitiesProps = {
   opportunities: Opportunity[];
   clients: Client[];
+  exchangeRates: ExchangeRate[];
+  displayCurrency: string;
 }
 
-export function RecentOpportunities({ opportunities, clients }: RecentOpportunitiesProps) {
+export function RecentOpportunities({ opportunities, clients, exchangeRates, displayCurrency }: RecentOpportunitiesProps) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
   const router = useRouter();
+
+  const getRateToUsd = (ccy: string) => {
+    if (ccy === 'USD') return 1;
+    return exchangeRates.find(r => r.from === ccy)?.rate || 1;
+  };
+
+  const convertValue = (val: number, fromCcy: string, toCcy: string) => {
+    if (fromCcy === toCcy) return val;
+    const rateFrom = getRateToUsd(fromCcy);
+    const rateTo = getRateToUsd(toCcy);
+    return (val * rateFrom) / rateTo;
+  };
 
   const recentOpportunities = [...opportunities]
     .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
@@ -69,23 +83,26 @@ export function RecentOpportunities({ opportunities, clients }: RecentOpportunit
             </TableRow>
           </TableHeader>
           <TableBody>
-            {recentOpportunities.map((opp) => (
-              <TableRow key={opp.id} onClick={() => router.push(`/opportunities/${opp.id}`)} className="cursor-pointer">
-                <TableCell className="font-medium">
-                  <p className="truncate">{opp.title}</p>
-                  {isMobile && (
-                    <p className="text-xs text-muted-foreground truncate">{getClientName(opp.clientId)}</p>
-                  )}
-                </TableCell>
-                {!isMobile && <TableCell>{getClientName(opp.clientId)}</TableCell>}
-                {!isMobile && <TableCell>${opp.value.toLocaleString()}</TableCell>}
-                <TableCell className="text-right">
-                  <Badge className={cn('whitespace-nowrap', stageClasses[opp.stage])}>
-                    {t(isMobile ? `StagesAbbr.${opp.stage}` : `Stages.${opp.stage}`)}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
+            {recentOpportunities.map((opp) => {
+              const convertedVal = convertValue(opp.value, opp.currency || 'USD', displayCurrency);
+              return (
+                <TableRow key={opp.id} onClick={() => router.push(`/opportunities/${opp.id}`)} className="cursor-pointer">
+                  <TableCell className="font-medium">
+                    <p className="truncate">{opp.title}</p>
+                    {isMobile && (
+                      <p className="text-xs text-muted-foreground truncate">{getClientName(opp.clientId)}</p>
+                    )}
+                  </TableCell>
+                  {!isMobile && <TableCell>{getClientName(opp.clientId)}</TableCell>}
+                  {!isMobile && <TableCell>{displayCurrency} {convertedVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>}
+                  <TableCell className="text-right">
+                    <Badge className={cn('whitespace-nowrap', stageClasses[opp.stage])}>
+                      {t(isMobile ? `StagesAbbr.${opp.stage}` : `Stages.${opp.stage}`)}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>

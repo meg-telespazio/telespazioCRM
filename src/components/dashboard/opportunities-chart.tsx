@@ -14,11 +14,11 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from '@/components/ui/chart';
-import type { Opportunity, Client } from '@/lib/types';
+import type { Opportunity, Client, ExchangeRate } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { ScrollArea } from '../ui/scroll-area';
 
-const CustomTooltip = ({ active, payload, label, clients, allOppsData, t }: any) => {
+const CustomTooltip = ({ active, payload, label, clients, allOppsData, t, displayCurrency }: any) => {
   if (active && payload && payload.length) {
     const clientMap = new Map(clients.map((c: Client) => [c.id, c.name]));
     const monthOpps = allOppsData[label as string] || [];
@@ -27,13 +27,13 @@ const CustomTooltip = ({ active, payload, label, clients, allOppsData, t }: any)
 
     return (
       <div className="z-50 min-w-[16rem] max-w-xs overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md">
-        <p className="font-bold">{label}: ${totalValue.toLocaleString()}</p>
+        <p className="font-bold">{label}: {displayCurrency} {totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
         <div className="mt-2 space-y-1">
           {payload.slice().reverse().map((pld: any) => (pld.value > 0 &&
             <div key={pld.dataKey} className="flex items-center gap-2 text-xs">
               <div className="h-2 w-2 rounded-full" style={{ backgroundColor: pld.fill }} />
               <span>{t(`Stages.${pld.dataKey}`)}:</span>
-              <span className="ml-auto font-mono">${pld.value.toLocaleString()}</span>
+              <span className="ml-auto font-mono">{displayCurrency} {pld.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
             </div>
           ))}
         </div>
@@ -61,9 +61,31 @@ const CustomTooltip = ({ active, payload, label, clients, allOppsData, t }: any)
 };
 
 
-export function OpportunitiesChart({ opportunities, clients }: { opportunities: Opportunity[], clients: Client[] }) {
+export function OpportunitiesChart({ 
+  opportunities, 
+  clients, 
+  exchangeRates, 
+  displayCurrency 
+}: { 
+  opportunities: Opportunity[], 
+  clients: Client[], 
+  exchangeRates: ExchangeRate[], 
+  displayCurrency: string 
+}) {
   const { t } = useI18n();
   
+  const getRateToUsd = (ccy: string) => {
+    if (ccy === 'USD') return 1;
+    return exchangeRates.find(r => r.from === ccy)?.rate || 1;
+  };
+
+  const convertValue = (val: number, fromCcy: string, toCcy: string) => {
+    if (fromCcy === toCcy) return val;
+    const rateFrom = getRateToUsd(fromCcy);
+    const rateTo = getRateToUsd(toCcy);
+    return (val * rateFrom) / rateTo;
+  };
+
   const { chartData, allOppsData } = useMemo(() => {
     const months = Array.from({ length: 12 }, (_, i) => {
         const date = new Date(new Date().getFullYear(), i, 1);
@@ -97,14 +119,15 @@ export function OpportunitiesChart({ opportunities, clients }: { opportunities: 
       if (new Date(opp.closeDate).getFullYear() === currentYear) {
         const month = new Date(opp.closeDate).toLocaleString('default', { month: 'short' });
         if (yearlyData[month]) {
-          yearlyData[month][opp.stage] = (yearlyData[month][opp.stage] || 0) + opp.value;
+          const convertedVal = convertValue(opp.value, opp.currency || 'USD', displayCurrency);
+          yearlyData[month][opp.stage] = (yearlyData[month][opp.stage] || 0) + convertedVal;
           allOppsData[month].push(opp);
         }
       }
     });
 
     return { chartData: Object.values(yearlyData), allOppsData };
-  }, [opportunities]);
+  }, [opportunities, displayCurrency, exchangeRates]);
 
   const chartConfig = {
     Prospecting: { label: t('Stages.Prospecting'), color: 'hsl(var(--chart-1))' },
@@ -119,7 +142,7 @@ export function OpportunitiesChart({ opportunities, clients }: { opportunities: 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('Dashboard.stats.totalRevenue')} FCV</CardTitle>
+        <CardTitle>{t('Dashboard.stats.totalRevenue')} FCV ({displayCurrency})</CardTitle>
         <CardDescription>{t('Dashboard.opportunitiesChart.byMonth')}</CardDescription>
       </CardHeader>
       <CardContent>
@@ -137,13 +160,13 @@ export function OpportunitiesChart({ opportunities, clients }: { opportunities: 
                 <YAxis 
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(value) => `$${Number(value) / 1000}k`}
+                    tickFormatter={(value) => `${displayCurrency} ${Number(value) / 1000}k`}
                     allowDecimals={false}
                     tick={{ fontSize: 12 }}
                 />
                 <ChartTooltip
                   cursor={true}
-                  content={<CustomTooltip clients={clients} allOppsData={allOppsData} t={t} />}
+                  content={<CustomTooltip clients={clients} allOppsData={allOppsData} t={t} displayCurrency={displayCurrency} />}
                 />
                 <Legend />
                 {Object.entries(chartConfig).map(([stage, config]) => (
@@ -155,5 +178,3 @@ export function OpportunitiesChart({ opportunities, clients }: { opportunities: 
     </Card>
   );
 }
-
-    

@@ -1,22 +1,25 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import { redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { OpportunitiesChart } from '@/components/dashboard/opportunities-chart';
 import { RecentOpportunities } from '@/components/dashboard/recent-opportunities';
 import { useI18n } from '@/firebase/client-provider';
-import type { Opportunity, Client, Contact, Activity } from '@/lib/types';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import type { Opportunity, Client, Contact, Activity, SystemConfig } from '@/lib/types';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RecentActivities } from '@/components/dashboard/recent-activities';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
-  const { t } = useI18n();
+  const { t, currency: displayCurrency } = useI18n();
   const firestore = useFirestore();
+
+  const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
+  const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   const baseQuery = useMemo(() => {
     if (!user) return null;
@@ -40,9 +43,6 @@ export default function DashboardPage() {
 
   const activitiesQuery = useMemo(() => {
     if (!user) return null;
-    // For the dashboard, we might want to see all activities, not just the user's.
-    // However, to keep consistency with the rest of the dashboard, we'll filter by user.
-    // The query on 'activities' collection needs a 'createdBy' field.
     return query(
       collection(firestore, 'activities'),
       where('createdBy', '==', user.uid)
@@ -76,7 +76,8 @@ export default function DashboardPage() {
     opportunitiesLoading ||
     clientsLoading ||
     contactsLoading ||
-    activitiesLoading;
+    activitiesLoading ||
+    !configData;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -94,6 +95,8 @@ export default function DashboardPage() {
             opportunities={opportunities || []}
             clients={clients || []}
             contacts={contacts || []}
+            exchangeRates={configData?.exchangeRates || []}
+            displayCurrency={displayCurrency}
           />
         )}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -101,7 +104,12 @@ export default function DashboardPage() {
             {pageIsLoading ? (
               <Skeleton className="h-[425px]" />
             ) : (
-              <OpportunitiesChart opportunities={opportunities || []} clients={clients || []} />
+              <OpportunitiesChart 
+                opportunities={opportunities || []} 
+                clients={clients || []} 
+                exchangeRates={configData?.exchangeRates || []}
+                displayCurrency={displayCurrency}
+              />
             )}
           </div>
           <div className="col-span-4 lg:col-span-3 min-w-0">
@@ -111,6 +119,8 @@ export default function DashboardPage() {
               <RecentOpportunities
                 opportunities={opportunities || []}
                 clients={clients || []}
+                exchangeRates={configData?.exchangeRates || []}
+                displayCurrency={displayCurrency}
               />
             )}
           </div>
@@ -129,5 +139,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
