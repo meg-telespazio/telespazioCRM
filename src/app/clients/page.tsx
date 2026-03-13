@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -8,7 +7,7 @@ import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Upload } from 'lucide-react';
 import { ClientTable } from '@/components/clients/client-table';
-import type { Client } from '@/lib/types';
+import type { Client, UserProfile } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where } from 'firebase/firestore';
 import { deleteClient } from '@/lib/firestore/clients';
@@ -43,10 +42,16 @@ export default function ClientsPage() {
   const { data: clientsData, loading: clientsLoading } =
     useCollection<Client>(clientsQuery);
 
+  const { data: usersData, loading: usersLoading } = useCollection<UserProfile>(
+    useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore])
+  );
+
   const clients = useMemo(() => {
     if (!clientsData) return [];
     return [...clientsData].sort((a, b) => (a.publicId || '').localeCompare(b.publicId || ''));
   }, [clientsData]);
+
+  const users = useMemo(() => usersData || [], [usersData]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -70,6 +75,8 @@ export default function ClientsPage() {
 
   if (userLoading) return <div className="p-12 text-center">{t('App.loading')}</div>;
 
+  const isLoading = clientsLoading || usersLoading;
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.clients')}>
@@ -83,10 +90,15 @@ export default function ClientsPage() {
         </Button>
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {clientsLoading ? (
+        {isLoading ? (
           <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-96 w-full" /></div>
         ) : (
-          <ClientTable data={clients} onEdit={handleEditClient} onDelete={handleDeleteClient} />
+          <ClientTable 
+            data={clients} 
+            users={users} 
+            onEdit={handleEditClient} 
+            onDelete={handleDeleteClient} 
+          />
         )}
       </main>
       <ClientImporter isOpen={isImporterOpen} onOpenChange={setImporterOpen} clients={clients} />

@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -21,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import type { Client } from '@/lib/types';
+import type { Client, UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -41,7 +40,8 @@ export const columns = (
   t: (key: string, params?: any) => string,
   onEdit: (client: Client) => void,
   onDelete: (clientId: string) => void,
-  router: ReturnType<typeof useRouter>
+  router: ReturnType<typeof useRouter>,
+  users: UserProfile[]
 ): ColumnDef<Client>[] => {
   
   return [
@@ -157,6 +157,23 @@ export const columns = (
         </Button>
       ),
       cell: ({ row }) => <span className="text-[11px] truncate block max-w-[100px]">{row.original.sector}</span>,
+    },
+    {
+      accessorKey: 'assignedTo',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        >
+          RESPONSABLE
+          <ArrowUpDown className="ml-2 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const assignedUser = users.find(u => u.uid === row.original.assignedTo);
+        return <span className="text-[11px] font-medium text-slate-600">{assignedUser?.displayName || 'Desconocido'}</span>;
+      },
     },
     {
       accessorKey: 'status',

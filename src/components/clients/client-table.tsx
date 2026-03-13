@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { columns } from './columns';
-import type { Client } from '@/lib/types';
+import type { Client, UserProfile } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
@@ -43,11 +43,12 @@ import { Search, ListFilter, Download } from 'lucide-react';
 
 type ClientTableProps = {
   data: Client[];
+  users: UserProfile[];
   onEdit: (client: Client) => void;
   onDelete: (clientId: string) => void;
 };
 
-export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
+export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps) {
   const { t } = useI18n();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -83,7 +84,7 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
 
   const table = useReactTable({
     data,
-    columns: columns(t, onEdit, onDelete, router),
+    columns: columns(t, onEdit, onDelete, router, users),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -101,14 +102,18 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
   });
 
   const handleExport = () => {
-    const exportData = table.getFilteredRowModel().rows.map(row => ({
-      ID: row.original.publicId,
-      Nombre: row.original.name,
-      'TAX ID': row.original.cuit,
-      Sector: row.original.sector,
-      Estado: t(`Status.${row.original.status}`),
-      Gerencia: row.original.management,
-    }));
+    const exportData = table.getFilteredRowModel().rows.map(row => {
+      const assignedUser = users.find(u => u.uid === row.original.assignedTo);
+      return {
+        ID: row.original.publicId,
+        Nombre: row.original.name,
+        'TAX ID': row.original.cuit,
+        Sector: row.original.sector,
+        Estado: t(`Status.${row.original.status}`),
+        Gerencia: row.original.management,
+        Responsable: assignedUser?.displayName || 'Desconocido',
+      };
+    });
     const csv = Papa.unparse(exportData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -124,6 +129,7 @@ export function ClientTable({ data, onEdit, onDelete }: ClientTableProps) {
       case 'cuit': return 'TAX ID';
       case 'sector': return 'Sector';
       case 'status': return 'Estado';
+      case 'assignedTo': return 'Responsable';
       default: return id;
     }
   };
