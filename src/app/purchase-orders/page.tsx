@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, ShoppingCart } from 'lucide-react';
@@ -21,13 +21,34 @@ export default function PurchaseOrdersPage() {
   const router = useRouter();
   const { t } = useI18n();
 
-  const posQuery = useMemo(() => user ? query(collection(firestore, 'purchaseOrders'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
+  useEffect(() => {
+    if (!userLoading && !user) redirect('/login');
+    if (user?.role === 'ingeniero') redirect('/dashboard');
+  }, [user, userLoading]);
+
+  const posQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'purchaseOrders');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
+  const contractsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'contracts');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
+  const clientsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
   const { data: pos, loading: posLoading } = useCollection<PurchaseOrder>(posQuery);
-
-  const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
-
-  const clientsQuery = useMemo(() => user ? query(collection(firestore, 'clients'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
   const { data: clients } = useCollection<Client>(clientsQuery);
 
   const contractMap = useMemo(() => new Map(contracts?.map(c => [c.id, c])), [contracts]);

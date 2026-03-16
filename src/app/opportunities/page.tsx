@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -26,16 +27,14 @@ export default function OpportunitiesPage() {
     if (!user) return null;
     const ref = collection(firestore, 'opportunities');
     if (user.role === 'admin') return query(ref);
-    if (user.role === 'gerente' || user.role === 'ingeniero') return query(ref, where('management', '==', user.management));
-    return query(ref, where('assignedTo', '==', user.uid));
+    return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
   const clientsQuery = useMemo(() => {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
-    if (user.role === 'gerente' || user.role === 'ingeniero') return query(ref, where('management', '==', user.management));
-    return query(ref, where('assignedTo', '==', user.uid));
+    return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
   const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(oppsQuery);
@@ -50,6 +49,7 @@ export default function OpportunitiesPage() {
 
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
+    if (user?.role === 'ingeniero') redirect('/dashboard');
   }, [user, userLoading]);
 
   const handleEditOpportunity = (opportunity: Opportunity) => {

@@ -6,10 +6,11 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
   type Firestore,
 } from 'firebase/firestore';
-import type { PurchaseOrder } from '@/lib/types';
+import type { PurchaseOrder, Contract } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
@@ -28,14 +29,22 @@ const cleanData = (data: any) => {
 export async function addPurchaseOrder(
   firestore: Firestore,
   uid: string,
-  data: Omit<PurchaseOrder, 'id' | 'createdBy' | 'createdAt'>
+  data: Omit<PurchaseOrder, 'id' | 'createdBy' | 'createdAt' | 'management' | 'assignedTo'>
 ) {
+  // Inherit security fields from contract
+  const contractRef = doc(firestore, 'contracts', data.contractId);
+  const contractSnap = await getDoc(contractRef);
+  if (!contractSnap.exists()) throw new Error('Contract not found');
+  const contractData = contractSnap.data() as Contract;
+
   const collectionRef = collection(firestore, COLLECTION);
   const cleaned = cleanData(data);
   const fullData = {
     ...cleaned,
     createdBy: uid,
     createdAt: serverTimestamp(),
+    management: contractData.management,
+    assignedTo: contractData.assignedTo,
   };
 
   try {

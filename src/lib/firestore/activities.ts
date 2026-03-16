@@ -1,21 +1,23 @@
+
 'use client';
 import {
   collection,
   addDoc,
   doc,
+  getDoc,
   serverTimestamp,
   runTransaction,
   type Firestore,
   updateDoc,
 } from 'firebase/firestore';
-import type { Activity, ActivityFollowUp } from '@/lib/types';
+import type { Activity, ActivityFollowUp, Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 const ACTIVITIES_COLLECTION = 'activities';
 const FOLLOW_UPS_SUBCOLLECTION = 'followUps';
 
-type ActivityData = Omit<Activity, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'latestFollowUpContent' | 'latestFollowUpBy'>;
+type ActivityData = Omit<Activity, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'latestFollowUpContent' | 'latestFollowUpBy' | 'management' | 'assignedTo'>;
 type FollowUpData = Omit<ActivityFollowUp, 'id' | 'activityId' | 'createdAt'>;
 
 const cleanData = (data: any) => {
@@ -32,6 +34,12 @@ export async function addActivity(
   firestore: Firestore,
   activityData: ActivityData
 ) {
+  // Inherit security fields from client
+  const clientRef = doc(firestore, 'clients', activityData.clientId);
+  const clientSnap = await getDoc(clientRef);
+  if (!clientSnap.exists()) throw new Error('Client not found');
+  const clientData = clientSnap.data() as Client;
+
   const counterRef = doc(firestore, 'counters', 'activities');
   const activityCollectionRef = collection(firestore, ACTIVITIES_COLLECTION);
 
@@ -53,6 +61,8 @@ export async function addActivity(
         updatedAt: serverTimestamp(),
         latestFollowUpContent: null,
         latestFollowUpBy: null,
+        management: clientData.management,
+        assignedTo: clientData.assignedTo,
       };
 
       transaction.set(newActivityRef, data);

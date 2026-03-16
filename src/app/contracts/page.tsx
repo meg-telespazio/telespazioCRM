@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -19,20 +20,19 @@ export default function ContractsPage() {
   const router = useRouter();
   const { t } = useI18n();
 
-  const baseQuery = useMemo(() => {
-    if (!user) return null;
-    return where('createdBy', '==', user.uid);
-  }, [user]);
-
   const contractsQuery = useMemo(() => {
-    if (!baseQuery) return null;
-    return query(collection(firestore, 'contracts'), baseQuery);
-  }, [firestore, baseQuery]);
+    if (!user) return null;
+    const ref = collection(firestore, 'contracts');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
 
   const clientsQuery = useMemo(() => {
-    if (!baseQuery) return null;
-    return query(collection(firestore, 'clients'), baseQuery);
-  }, [firestore, baseQuery]);
+    if (!user) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, user]);
 
   const { data: contractsData, loading: contractsLoading } = useCollection<Contract>(contractsQuery);
   const { data: clientsData, loading: clientsLoading } = useCollection<Client>(clientsQuery);
@@ -80,7 +80,7 @@ export default function ContractsPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.contracts')}>
-        <Button onClick={handleAddNew} disabled={clientsLoading}>
+        <Button onClick={handleAddNew} disabled={user?.role === 'ingeniero'}>
           <PlusCircle className="mr-2 h-4 w-4" />
           {t('Pages.addContract')}
         </Button>

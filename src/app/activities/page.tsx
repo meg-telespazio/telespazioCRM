@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -6,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Activity, Client, UserProfile, ActivityType } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { differenceInDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,15 +34,31 @@ export default function AllActivitiesPage() {
 
   const activitiesQuery = useMemo(() => {
     if (!user) return null;
+    const ref = collection(firestore, 'activities');
+    
+    // Filter by management, and exclude engineers from reading financial-linked activities (if needed)
+    // Here we respect the rule: admin sees all, others see their management.
+    if (user.role === 'admin') {
+      return query(ref, orderBy('updatedAt', 'desc'));
+    }
+    
+    // Ingenieros can't see activities according to prompt requirements
+    if (user.role === 'ingeniero') {
+      return null;
+    }
+
     return query(
-      collection(firestore, 'activities'),
+      ref,
+      where('management', '==', user.management),
       orderBy('updatedAt', 'desc')
     );
   }, [user, firestore]);
 
   const clientsQuery = useMemo(() => {
     if (!user) return null;
-    return collection(firestore, 'clients');
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
   
   const usersQuery = useMemo(() => {
@@ -65,7 +82,7 @@ export default function AllActivitiesPage() {
     return map;
   }, [users]);
 
-  const isLoading = userLoading || activitiesLoading || clientsLoading || usersLoading;
+  const isLoading = userLoading || (activitiesLoading && activitiesQuery !== null) || clientsLoading || usersLoading;
   
   const getDaysText = (days: number | null) => {
     if (days === null) return t('App.loading');
@@ -146,7 +163,9 @@ export default function AllActivitiesPage() {
           <div className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
             <ActivityIcon className="h-16 w-16 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-semibold">{t('Activity.noActivitiesTitle')}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{t('Activity.noActivitiesDescription')}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {user?.role === 'ingeniero' ? 'Ingenieros no tienen acceso a este módulo.' : t('Activity.noActivitiesDescription')}
+            </p>
           </div>
         )}
       </main>

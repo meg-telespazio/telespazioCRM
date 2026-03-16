@@ -1,3 +1,4 @@
+
 'use client';
 import {
   collection,
@@ -5,23 +6,30 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
   runTransaction,
   type Firestore,
 } from 'firebase/firestore';
-import type { Location } from '@/lib/types';
+import type { Location, Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 const LOCATIONS_COLLECTION = 'locations';
 
-type LocationData = Omit<Location, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
+type LocationData = Omit<Location, 'id' | 'publicId' | 'createdAt' | 'createdBy' | 'management' | 'assignedTo'>;
 
 export async function addLocation(
   firestore: Firestore,
   uid: string,
   locationData: LocationData
 ) {
+  // Inherit security fields from client
+  const clientRef = doc(firestore, 'clients', locationData.clientId);
+  const clientSnap = await getDoc(clientRef);
+  if (!clientSnap.exists()) throw new Error('Client not found');
+  const clientData = clientSnap.data() as Client;
+
   const counterRef = doc(firestore, 'counters', 'locations');
   const locationCollectionRef = collection(firestore, LOCATIONS_COLLECTION);
 
@@ -41,6 +49,8 @@ export async function addLocation(
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
+        management: clientData.management,
+        assignedTo: clientData.assignedTo,
       };
 
       transaction.set(newLocationRef, data);
@@ -85,5 +95,3 @@ export function deleteLocation(firestore: Firestore, locationId: string) {
     errorEmitter.emit('permission-error', permissionError);
   });
 }
-
-    

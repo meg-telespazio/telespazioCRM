@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -31,12 +32,8 @@ export default function ClientsPage() {
       return query(clientsRef);
     }
     
-    if (user.role === 'gerente' || user.role === 'ingeniero') {
-      return query(clientsRef, where('management', '==', user.management));
-    }
-    
-    // Ejecutivo
-    return query(clientsRef, where('assignedTo', '==', user.uid));
+    // Todos los demás roles (Gerente, Ejecutivo, Ingeniero) ven los clientes de su gerencia
+    return query(clientsRef, where('management', '==', user.management));
   }, [user, firestore]);
 
   const { data: clientsData, loading: clientsLoading } =

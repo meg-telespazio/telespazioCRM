@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -57,12 +58,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ServiceImporter } from '@/components/services/service-importer';
-import { useRouter } from 'next/navigation';
+import { useRouter, redirect } from 'next/navigation';
 import { bulkUpdateServices, deleteService, updateService } from '@/lib/firestore/services';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -148,32 +149,43 @@ export default function ServicesPage() {
   const [bulkPoId, setBulkPoId] = useState<string>('');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
-  // Safety cleanup for Radix Dialog body lock
   useEffect(() => {
-    if (bulkMode === null) {
-      document.body.style.pointerEvents = 'auto';
-    }
-  }, [bulkMode]);
+    if (!userLoading && !user) redirect('/login');
+    if (user?.role === 'ingeniero') redirect('/dashboard');
+  }, [user, userLoading]);
 
   // Data fetching
-  const servicesQuery = useMemo(() => 
-    user ? query(collection(firestore, 'services'), where('createdBy', '==', user.uid)) : null, 
-  [user, firestore]);
+  const servicesQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'services');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
+  const posQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'purchaseOrders');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
+  const contractsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'contracts');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
+  const clientsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
   const { data: services, loading: servicesLoading } = useCollection<Service>(servicesQuery);
-
-  const posQuery = useMemo(() => 
-    user ? query(collection(firestore, 'purchaseOrders'), where('createdBy', '==', user.uid)) : null, 
-  [user, firestore]);
   const { data: pos } = useCollection<PurchaseOrder>(posQuery);
-
-  const contractsQuery = useMemo(() => 
-    user ? query(collection(firestore, 'contracts'), where('createdBy', '==', user.uid)) : null, 
-  [user, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
-
-  const clientsQuery = useMemo(() => 
-    user ? query(collection(firestore, 'clients'), where('createdBy', '==', user.uid)) : null, 
-  [user, firestore]);
   const { data: clients } = useCollection<Client>(clientsQuery);
 
   const poMap = useMemo(() => new Map(pos?.map(p => [p.id, p])), [pos]);
@@ -260,11 +272,7 @@ export default function ServicesPage() {
   };
 
   const handleBulkUpdate = async () => {
-    if (!selectedIds.length || 
-        (bulkMode === 'price' && !bulkFee) || 
-        (bulkMode === 'plan' && !bulkPlan) ||
-        (bulkMode === 'po' && !bulkPoId)) return;
-        
+    if (!selectedIds.length) return;
     setIsBulkUpdating(true);
     
     const updates: Partial<Service> = {};
@@ -280,35 +288,14 @@ export default function ServicesPage() {
     }
     
     try {
-      const idsToUpdate = [...selectedIds];
-      await bulkUpdateServices(firestore, idsToUpdate, updates);
-      
-      // 1. CERRAR EL MODAL PRIMERO para que Radix procese el desmontaje
+      await bulkUpdateServices(firestore, selectedIds, updates);
       setBulkMode(null);
-      setIsBulkUpdating(false);
-
-      // 2. Esperar a que la animación de cierre termine antes de limpiar la tabla
-      setTimeout(() => {
-        setSelectedIds([]);
-        setBulkFee('');
-        setBulkPlan('');
-        setBulkPoId('');
-        document.body.style.pointerEvents = 'auto'; // Triple chequeo de seguridad
-        
-        toast({
-          variant: 'success',
-          title: t('Actions.bulkUpdateSuccess'),
-          description: `${idsToUpdate.length} servicios actualizados correctamente.`,
-        });
-      }, 300);
-
+      setSelectedIds([]);
+      toast({ variant: 'success', title: t('Actions.bulkUpdateSuccess') });
     } catch (error: any) {
+      toast({ variant: 'destructive', title: t('Actions.bulkUpdateError'), description: error.message });
+    } finally {
       setIsBulkUpdating(false);
-      toast({
-        variant: 'destructive',
-        title: t('Actions.bulkUpdateError'),
-        description: error.message,
-      });
     }
   };
 
@@ -332,11 +319,7 @@ export default function ServicesPage() {
     }
   }
 
-  const isLoading = userLoading || servicesLoading;
-
-  if (isLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
-
-  const sortedClients = [...(clients || [])].sort((a, b) => a.name.localeCompare(b.name));
+  if (userLoading || servicesLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -351,30 +334,24 @@ export default function ServicesPage() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex flex-1 flex-col md:flex-row items-center gap-4 w-full">
             <div className="relative w-full md:max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
               <Input 
                 placeholder="Buscar por Nickname o Línea..." 
-                className="pl-10 bg-white shadow-sm border-muted-foreground/20 focus-visible:ring-destructive"
+                className="pl-10 bg-white"
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                  setSelectedIds([]);
-                }}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             
             <div className="flex items-center gap-2 w-full md:w-auto">
               <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-              <Select value={clientFilter} onValueChange={(v) => { setClientFilter(v); setCurrentPage(1); setSelectedIds([]); }}>
-                <SelectTrigger className="w-full md:w-[250px] bg-white shadow-sm border-muted-foreground/20">
+              <Select value={clientFilter} onValueChange={setClientFilter}>
+                <SelectTrigger className="w-full md:w-[250px] bg-white">
                   <SelectValue placeholder={t('Forms.selectClient')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('Table.all')} {t('Sidebar.clients')}</SelectItem>
-                  {sortedClients.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
+                  {clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -383,300 +360,82 @@ export default function ServicesPage() {
           {selectedIds.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-primary text-primary animate-in fade-in zoom-in-95 shrink-0">
+                <Button variant="outline" className="border-primary text-primary">
                   {t('Actions.bulkActions')} ({selectedIds.length})
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setBulkMode('price'); }} className="cursor-pointer">
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  <span>{t('Actions.bulkUpdatePrice')}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setBulkMode('plan'); }} className="cursor-pointer">
-                  <LayoutGrid className="mr-2 h-4 w-4" />
-                  <span>{t('Actions.bulkUpdatePlan')}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setBulkMode('po'); }} className="cursor-pointer">
-                  <Link2 className="mr-2 h-4 w-4" />
-                  <span>{t('Actions.bulkUpdatePo')}</span>
-                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setBulkMode('price')}><DollarSign className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePrice')}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setBulkMode('plan')}><LayoutGrid className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePlan')}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setBulkMode('po')}><Link2 className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePo')}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
         </div>
 
-        <div className="rounded-md border bg-card overflow-hidden shadow-sm">
+        <div className="rounded-md border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-destructive hover:bg-destructive">
-                <TableHead className="w-[50px] bg-destructive">
-                  <Checkbox 
-                    checked={selectedIds.length === paginatedServices.length && paginatedServices.length > 0}
-                    onCheckedChange={(checked) => toggleSelectAll(!!checked)}
-                    className="border-white data-[state=checked]:bg-white data-[state=checked]:text-destructive"
-                  />
-                </TableHead>
-                <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('serviceNickname')} className="flex items-center w-full h-full text-left font-bold">
-                    {t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}
-                  </button>
-                </TableHead>
-                <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('monthlyFee')} className="flex items-center w-full h-full text-left font-bold">
-                    {t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}
-                  </button>
-                </TableHead>
-                <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('servicePlan')} className="flex items-center w-full h-full text-left font-bold">
-                    {t('Forms.servicePlan')} {getSortIcon('servicePlan')}
-                  </button>
-                </TableHead>
-                <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('client')} className="flex items-center w-full h-full text-left font-bold">
-                    {t('Pages.clients')} {getSortIcon('client')}
-                  </button>
-                </TableHead>
-                <TableHead className="text-destructive-foreground">
-                  <button onClick={() => handleSort('poId')} className="flex items-center w-full h-full text-left font-bold">
-                    {t('Forms.poNumber')} {getSortIcon('poId')}
-                  </button>
-                </TableHead>
-                <TableHead className="text-destructive-foreground text-right">{t('Table.actions')}</TableHead>
+                <TableHead className="w-[50px]"><Checkbox checked={selectedIds.length === paginatedServices.length} onCheckedChange={toggleSelectAll} /></TableHead>
+                <TableHead className="text-white"><button onClick={() => handleSort('serviceNickname')} className="flex items-center">{t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}</button></TableHead>
+                <TableHead className="text-white"><button onClick={() => handleSort('monthlyFee')} className="flex items-center">{t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}</button></TableHead>
+                <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
+                <TableHead className="text-white"><button onClick={() => handleSort('client')} className="flex items-center">{t('Pages.clients')} {getSortIcon('client')}</button></TableHead>
+                <TableHead className="text-white">PO</TableHead>
+                <TableHead className="text-right text-white px-4">{t('Table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedServices.length > 0 ? paginatedServices.map((s) => {
+              {paginatedServices.map((s) => {
                 const po = poMap.get(s.poId);
                 const contract = po ? contractMap.get(po.contractId) : null;
                 const client = contract ? clientMap.get(contract.clientId) : null;
 
                 return (
-                  <TableRow key={s.id} className="hover:bg-muted/50 transition-colors">
+                  <TableRow key={s.id}>
+                    <TableCell><Checkbox checked={selectedIds.includes(s.id)} onCheckedChange={(checked) => toggleSelect(s.id, !!checked)} /></TableCell>
                     <TableCell>
-                      <Checkbox 
-                        checked={selectedIds.includes(s.id)}
-                        onCheckedChange={(checked) => toggleSelect(s.id, !!checked)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <button 
-                        onClick={() => router.push(`/services/${s.id}`)}
-                        className="font-bold text-primary hover:underline text-left flex items-center gap-2"
-                      >
-                        <Zap className="h-3 w-3 text-yellow-500" />
-                        {s.serviceNickname}
+                      <button onClick={() => router.push(`/services/${s.id}`)} className="font-bold text-primary hover:underline flex items-center gap-2">
+                        <Zap className="h-3 w-3 text-yellow-500" /> {s.serviceNickname}
                       </button>
-                      <p className="text-[10px] text-muted-foreground font-mono ml-5">{s.serviceLineNumber}</p>
+                      <p className="text-[10px] text-muted-foreground ml-5">{s.serviceLineNumber}</p>
                     </TableCell>
-                    <TableCell>
-                      <InlineFeeEdit service={s} onUpdate={handleInlineUpdate} />
-                    </TableCell>
+                    <TableCell><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} /></TableCell>
                     <TableCell className="text-xs">{s.servicePlan}</TableCell>
-                    <TableCell>
-                      {client ? (
-                        <div className="flex items-center gap-2">
-                          <Building className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium">{client.name}</span>
-                        </div>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-bold text-destructive">
-                          {po?.poNumber || '...'}
-                        </span>
-                        <span className="text-[9px] font-mono text-muted-foreground">({s.poId.substring(0, 5)}...)</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>{client?.name || '-'}</TableCell>
+                    <TableCell><Badge variant="secondary">{po?.poNumber || '...'}</Badge></TableCell>
+                    <TableCell className="text-right px-4">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => router.push(`/services/${s.id}`)} className="cursor-pointer">
-                            <Edit className="mr-2 h-4 w-4" />
-                            {t('Services.edit')}
-                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push(`/services/${s.id}`)}><Edit className="mr-2 h-4 w-4" />{t('Services.edit')}</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive cursor-pointer">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            {t('Table.actions.delete')}
-                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />{t('Table.actions.delete')}</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
-              }) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
-                    {t('Services.noServices')}
-                  </TableCell>
-                </TableRow>
-              )}
+              })}
             </TableBody>
           </Table>
         </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-2">
-            <p className="text-xs text-muted-foreground">
-              {t('Table.pagination.pageInfo', { page: currentPage, totalPages })}
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={currentPage === 1}
-                onClick={() => {
-                  setCurrentPage(p => p - 1);
-                  setSelectedIds([]);
-                }}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                {t('Table.previous')}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={currentPage === totalPages}
-                onClick={() => {
-                  setCurrentPage(p => p + 1);
-                  setSelectedIds([]);
-                }}
-              >
-                {t('Table.next')}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        )}
       </main>
 
-      <Dialog 
-        open={bulkMode !== null} 
-        onOpenChange={(open) => {
-          if (!isBulkUpdating && !open) {
-            setBulkMode(null);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[425px]" onPointerDownOutside={(e) => isBulkUpdating && e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>
-              {bulkMode === 'price' && t('Actions.bulkUpdatePrice')}
-              {bulkMode === 'plan' && t('Actions.bulkUpdatePlan')}
-              {bulkMode === 'po' && t('Actions.bulkUpdatePo')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('Services.bulkUpdateServicesDesc', { count: selectedIds.length })}
-            </DialogDescription>
-          </DialogHeader>
-          
+      <Dialog open={bulkMode !== null} onOpenChange={() => setBulkMode(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t('Actions.bulkActions')}</DialogTitle><DialogDescription>{t('Services.bulkUpdateServicesDesc', { count: selectedIds.length })}</DialogDescription></DialogHeader>
           <div className="grid gap-4 py-4">
-            {bulkMode === 'plan' && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="plan" className="text-right text-sm font-medium">
-                  {t('Forms.servicePlan')}
-                </label>
-                <Input
-                  id="plan"
-                  className="col-span-3"
-                  value={bulkPlan}
-                  onChange={(e) => setBulkPlan(e.target.value)}
-                  placeholder={t('Forms.servicePlan')}
-                  disabled={isBulkUpdating}
-                />
-              </div>
-            )}
-
-            {bulkMode === 'price' && (
-              <>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <label htmlFor="currency" className="text-right text-sm font-medium">
-                    {t('Forms.currency')}
-                  </label>
-                  <div className="col-span-3">
-                    <Select value={bulkCurrency} onValueChange={(v: any) => setBulkCurrency(v)} disabled={isBulkUpdating}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="ARS">ARS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <label htmlFor="fee" className="text-right text-sm font-medium">
-                    {t('Forms.monthlyFee')}
-                  </label>
-                  <Input
-                    id="fee"
-                    type="number"
-                    step="0.01"
-                    className="col-span-3"
-                    value={bulkFee}
-                    onChange={(e) => setBulkFee(e.target.value)}
-                    placeholder="0.00"
-                    disabled={isBulkUpdating}
-                  />
-                </div>
-              </>
-            )}
-
-            {bulkMode === 'po' && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="po" className="text-right text-sm font-medium">
-                  {t('Forms.poNumber')}
-                </label>
-                <div className="col-span-3">
-                  <Select value={bulkPoId} onValueChange={setBulkPoId} disabled={isBulkUpdating}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione PO de destino..." />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
-                      {pos?.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime()).map(po => {
-                        const contract = contractMap.get(po.contractId);
-                        const client = contract ? clientMap.get(contract.clientId) : null;
-                        return (
-                          <SelectItem key={po.id} value={po.id}>
-                            {po.poNumber} - {client?.name || '...'}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
+            {bulkMode === 'plan' && <Input value={bulkPlan} onChange={(e) => setBulkPlan(e.target.value)} placeholder="Nuevo Plan..." />}
+            {bulkMode === 'price' && <div className="flex gap-2"><Input type="number" value={bulkFee} onChange={(e) => setBulkFee(e.target.value)} placeholder="Nuevo Abono..." /><Select value={bulkCurrency} onValueChange={(v:any) => setBulkCurrency(v)}><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="ARS">ARS</SelectItem></SelectContent></Select></div>}
+            {bulkMode === 'po' && <Select value={bulkPoId} onValueChange={setBulkPoId}><SelectTrigger><SelectValue placeholder="PO de destino..." /></SelectTrigger><SelectContent>{pos?.map(po => <SelectItem key={po.id} value={po.id}>{po.poNumber}</SelectItem>)}</SelectContent></Select>}
           </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkMode(null)} disabled={isBulkUpdating}>
-              {t('Auth.cancelLabel')}
-            </Button>
-            <Button onClick={handleBulkUpdate} disabled={isBulkUpdating || (bulkMode === 'price' && !bulkFee) || (bulkMode === 'plan' && !bulkPlan) || (bulkMode === 'po' && !bulkPoId)}>
-              {isBulkUpdating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Zap className="mr-2 h-4 w-4" />}
-              {t('Forms.save')}
-            </Button>
-          </DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setBulkMode(null)}>{t('Auth.cancelLabel')}</Button><Button onClick={handleBulkUpdate} disabled={isBulkUpdating}>{isBulkUpdating && <Loader2 className="animate-spin mr-2 h-4 w-4" />}{t('Forms.save')}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <ServiceImporter 
-        isOpen={isImporterOpen} 
-        onOpenChange={setImporterOpen} 
-        pos={pos || []} 
-      />
+      <ServiceImporter isOpen={isImporterOpen} onOpenChange={setImporterOpen} pos={pos || []} />
     </div>
   );
 }

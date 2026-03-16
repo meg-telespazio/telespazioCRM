@@ -62,19 +62,45 @@ export default function EquipmentPage() {
   });
 
   // Data fetching
-  const eqQuery = useMemo(() => user ? query(collection(firestore, 'equipment'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
+  const eqQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'equipment');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+  
   const { data: equipment, loading: eqLoading } = useCollection<Equipment>(eqQuery);
 
-  const servicesQuery = useMemo(() => user ? query(collection(firestore, 'services'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
+  const servicesQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'services');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: services } = useCollection<Service>(servicesQuery);
 
-  const posQuery = useMemo(() => user ? query(collection(firestore, 'purchaseOrders'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
+  const posQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'purchaseOrders');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: pos } = useCollection<PurchaseOrder>(posQuery);
 
-  const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
+  const contractsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'contracts');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
 
-  const clientsQuery = useMemo(() => user ? query(collection(firestore, 'clients'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
+  const clientsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: clients } = useCollection<Client>(clientsQuery);
 
   // Maps for context lookup
@@ -161,7 +187,7 @@ export default function EquipmentPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Equipment.title')}>
-        <Button onClick={() => router.push('/equipment/new')}>
+        <Button onClick={() => router.push('/equipment/new')} disabled={user?.role === 'ingeniero'}>
           <PlusCircle className="mr-2 h-4 w-4" />
           {t('Equipment.add')}
         </Button>
@@ -275,11 +301,11 @@ export default function EquipmentPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/equipment/${eq.id}`)} className="cursor-pointer">
+                          <DropdownMenuItem onClick={() => router.push(`/equipment/${eq.id}`)} className="cursor-pointer" disabled={user?.role === 'ingeniero'}>
                             <Edit className="mr-2 h-4 w-4" />
                             {t('Actions.editItem')}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(eq.id)} className="text-destructive cursor-pointer">
+                          <DropdownMenuItem onClick={() => handleDelete(eq.id)} className="text-destructive cursor-pointer" disabled={user?.role !== 'admin' && user?.role !== 'gerente'}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             {t('Table.actions.delete')}
                           </DropdownMenuItem>

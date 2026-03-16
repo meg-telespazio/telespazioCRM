@@ -6,11 +6,12 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
   type Firestore,
   writeBatch,
 } from 'firebase/firestore';
-import type { Service } from '@/lib/types';
+import type { Service, PurchaseOrder, Contract } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
@@ -30,14 +31,22 @@ const cleanData = (data: any) => {
 export async function addService(
   firestore: Firestore,
   uid: string,
-  serviceData: Omit<Service, 'id' | 'createdAt' | 'createdBy'>
+  serviceData: Omit<Service, 'id' | 'createdAt' | 'createdBy' | 'management' | 'assignedTo'>
 ) {
+  // Inherit security fields from PO -> Contract
+  const poRef = doc(firestore, 'purchaseOrders', serviceData.poId);
+  const poSnap = await getDoc(poRef);
+  if (!poSnap.exists()) throw new Error('PO not found');
+  const poData = poSnap.data() as PurchaseOrder;
+
   const collectionRef = collection(firestore, SERVICES_COLLECTION);
   const cleaned = cleanData(serviceData);
   const data = {
     ...cleaned,
     createdBy: uid,
     createdAt: serverTimestamp(),
+    management: poData.management,
+    assignedTo: poData.assignedTo,
   };
 
   try {
@@ -61,6 +70,12 @@ export async function importServices(
   services: any[],
   poId: string
 ) {
+  // Inherit security fields from PO
+  const poRef = doc(firestore, 'purchaseOrders', poId);
+  const poSnap = await getDoc(poRef);
+  if (!poSnap.exists()) throw new Error('PO not found');
+  const poData = poSnap.data() as PurchaseOrder;
+
   const batch = writeBatch(firestore);
   
   for (const s of services) {
@@ -76,6 +91,8 @@ export async function importServices(
       currentServiceId: serviceRef.id,
       createdBy: uid,
       createdAt: serverTimestamp(),
+      management: poData.management,
+      assignedTo: poData.assignedTo,
     }, { merge: true });
 
     // Create Service
@@ -85,6 +102,8 @@ export async function importServices(
       poId,
       createdBy: uid,
       createdAt: serverTimestamp(),
+      management: poData.management,
+      assignedTo: poData.assignedTo,
     });
   }
 

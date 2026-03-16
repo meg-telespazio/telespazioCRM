@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -26,20 +27,19 @@ export default function ContactsPage() {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [clientFilter, setClientFilter] = useState('all');
 
-  const baseQuery = useMemo(() => {
-    if (!user) return null;
-    return where('createdBy', '==', user.uid);
-  }, [user]);
-
   const contactsQuery = useMemo(() => {
-    if (!baseQuery) return null;
-    return query(collection(firestore, 'contacts'), baseQuery);
-  }, [firestore, baseQuery]);
+    if (!user) return null;
+    const ref = collection(firestore, 'contacts');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
 
   const clientsQuery = useMemo(() => {
-    if (!baseQuery) return null;
-    return query(collection(firestore, 'clients'), baseQuery);
-  }, [firestore, baseQuery]);
+    if (!user) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, user]);
 
   const { data: contactsData, loading: contactsLoading } =
     useCollection<Contact>(contactsQuery);
@@ -129,12 +129,12 @@ export default function ContactsPage() {
         <Button
           variant="outline"
           onClick={() => setImporterOpen(true)}
-          disabled={clientsLoading}
+          disabled={user?.role === 'ingeniero'}
         >
           <Upload className="mr-2 h-4 w-4" />
           {t('Importer.button')}
         </Button>
-        <Button onClick={handleAddNew} disabled={clientsLoading}>
+        <Button onClick={handleAddNew} disabled={user?.role === 'ingeniero'}>
           <PlusCircle className="mr-2 h-4 w-4" />
           {t('Pages.addContact')}
         </Button>
