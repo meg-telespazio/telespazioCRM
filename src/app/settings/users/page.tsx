@@ -1,14 +1,12 @@
-
-
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useFirestore, useCollection, useFirebaseApp } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { UserProfile, UserRole, ManagementArea } from '@/lib/types';
+import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -20,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Shield, User as UserIcon, PlusCircle, Loader2, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Edit, User as UserIcon, PlusCircle, Loader2, CheckCircle2, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { 
   Dialog, 
@@ -80,11 +78,9 @@ export default function UsersManagementPage() {
     const tempAuth = getAuth(tempApp);
 
     try {
-      // 1. Create Auth User
       const userCredential = await createUserWithEmailAndPassword(tempAuth, values.email, values.password);
       const uid = userCredential.user.uid;
 
-      // 2. Create Firestore Profile
       const profile: UserProfile = {
         uid,
         email: values.email,
@@ -96,7 +92,7 @@ export default function UsersManagementPage() {
         status: 'active',
         position: 'Executive',
         phone: '',
-        mfaEnforced: true, // Default to true for new users
+        mfaEnforced: true,
       };
 
       await setDoc(doc(firestore, 'users', uid), {
@@ -201,45 +197,47 @@ export default function UsersManagementPage() {
             <DialogTitle>{t('Settings.newUserTitle')}</DialogTitle>
             <DialogDescription>{t('Settings.newUserDesc')}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t('Auth.firstNameLabel')}</Label>
-                <Input {...form.register('firstName')} placeholder="John" />
+          <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('Auth.firstNameLabel')}</Label>
+                <Input {...form.register('firstName')} placeholder="John" className="h-9" />
               </div>
-              <div className="space-y-2">
-                <Label>{t('Auth.lastNameLabel')}</Label>
-                <Input {...form.register('lastName')} placeholder="Doe" />
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('Auth.lastNameLabel')}</Label>
+                <Input {...form.register('lastName')} placeholder="Doe" className="h-9" />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>{t('Auth.emailLabel')}</Label>
-              <Input {...form.register('email')} type="email" placeholder="email@telespazio.com" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('Auth.emailLabel')}</Label>
+                <Input {...form.register('email')} type="email" placeholder="email@telespazio.com" className="h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('Auth.passwordLabel')}</Label>
+                <Input {...form.register('password')} type="password" placeholder="••••••••" className="h-9" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>{t('Auth.passwordLabel')}</Label>
-              <Input {...form.register('password')} type="password" placeholder="••••••••" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t('Profile.role')}</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('Profile.role')}</Label>
                 <Select onValueChange={(v: any) => form.setValue('role', v)} defaultValue="ejecutivo">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="gerente">Gerente</SelectItem>
-                    <SelectItem value="ejecutivo">Ejecutivo de Cuentas</SelectItem>
-                    <SelectItem value="ingeniero">Ingeniero de Cuentas</SelectItem>
+                    <SelectItem value="admin">{t('Roles.admin')}</SelectItem>
+                    <SelectItem value="gerente">{t('Roles.gerente')}</SelectItem>
+                    <SelectItem value="ejecutivo">{t('Roles.ejecutivo')}</SelectItem>
+                    <SelectItem value="ingeniero">{t('Roles.ingeniero')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>{t('Profile.management')}</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('Profile.management')}</Label>
                 <Select onValueChange={(v: any) => form.setValue('management', v)} defaultValue="Satellite Communications">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Satellite Communications">SatComs</SelectItem>
-                    <SelectItem value="GeoInformacion">GeoInfo</SelectItem>
+                    <SelectItem value="Satellite Communications">{t('Management.SatelliteCommunications')}</SelectItem>
+                    <SelectItem value="GeoInformacion">{t('Management.GeoInformacion')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
