@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -15,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Save, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditUserPage() {
@@ -82,14 +80,14 @@ export default function EditUserPage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>Email</Label>
-                <div className="p-2 border rounded bg-slate-50 text-sm text-slate-500 font-medium">{userProfile?.email}</div>
+                <div className="p-2 border rounded bg-white text-sm text-slate-500 font-medium">{userProfile?.email}</div>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <Label>{t('Profile.role')}</Label>
                   <Select value={role} onValueChange={(v: UserRole) => setRole(v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">{t('Roles.admin')}</SelectItem>
                       <SelectItem value="gerente">{t('Roles.gerente')}</SelectItem>
@@ -102,7 +100,7 @@ export default function EditUserPage() {
                 <div className="space-y-2">
                   <Label>{t('Profile.management')}</Label>
                   <Select value={management} onValueChange={(v: ManagementArea) => setManagement(v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Satellite Communications">{t('Management.SatelliteCommunications')}</SelectItem>
                       <SelectItem value="GeoInformacion">{t('Management.GeoInformacion')}</SelectItem>
@@ -113,7 +111,7 @@ export default function EditUserPage() {
                 <div className="space-y-2">
                   <Label>{t('Profile.status')}</Label>
                   <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">{t('Status.active')}</SelectItem>
                       <SelectItem value="suspended">{t('Status.suspended')}</SelectItem>

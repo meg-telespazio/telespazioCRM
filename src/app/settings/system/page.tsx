@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -85,7 +84,6 @@ export default function SystemSettingsPage() {
         if (user && data.lastRatesUpdate) {
           const hoursSinceUpdate = (new Date().getTime() - data.lastRatesUpdate.getTime()) / (1000 * 60 * 60);
           if (hoursSinceUpdate > 24) {
-            console.log("Automatic rate update triggered...");
             handleSyncRates();
           }
         } else if (user && !data.lastRatesUpdate) {
@@ -129,7 +127,7 @@ export default function SystemSettingsPage() {
         exchangeRates: updatedRates,
         lastRatesUpdate: new Date()
       }));
-      toast({ variant: 'success', title: 'Cotizaciones actualizadas y registradas en el histórico.' });
+      toast({ variant: 'success', title: 'Cotizaciones actualizadas correctamente.' });
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error al sincronizar cotizaciones', description: e.message });
     } finally {
@@ -197,7 +195,7 @@ export default function SystemSettingsPage() {
 
       <main className="flex-1 p-4 sm:p-6 space-y-6 max-w-5xl mx-auto w-full pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+          <Card className="bg-white">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><Database className="h-4 w-4" />{t('Settings.managementAreas')}</CardTitle>
             </CardHeader>
@@ -211,13 +209,13 @@ export default function SystemSettingsPage() {
                 ))}
               </div>
               <div className="flex gap-2">
-                <Input placeholder={t('Settings.addVariable')} value={newInputs.managementAreas} onChange={(e) => setNewInputs(p => ({ ...p, managementAreas: e.target.value }))} className="h-8 text-xs" />
+                <Input placeholder={t('Settings.addVariable')} value={newInputs.managementAreas} onChange={(e) => setNewInputs(p => ({ ...p, managementAreas: e.target.value }))} className="h-8 text-xs bg-white" />
                 <Button size="sm" className="h-8" onClick={() => addItem('managementAreas')}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><Globe className="h-4 w-4" />{t('Settings.currencies')}</CardTitle>
             </CardHeader>
@@ -231,13 +229,13 @@ export default function SystemSettingsPage() {
                 ))}
               </div>
               <div className="flex gap-2">
-                <Input placeholder={t('Settings.addVariable')} value={newInputs.currencies} onChange={(e) => setNewInputs(p => ({ ...p, currencies: e.target.value }))} className="h-8 text-xs" />
+                <Input placeholder={t('Settings.addVariable')} value={newInputs.currencies} onChange={(e) => setNewInputs(p => ({ ...p, currencies: e.target.value }))} className="h-8 text-xs bg-white" />
                 <Button size="sm" className="h-8" onClick={() => addItem('currencies')}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><Building className="h-4 w-4" />{t('Settings.sectors')}</CardTitle>
             </CardHeader>
@@ -251,13 +249,13 @@ export default function SystemSettingsPage() {
                 ))}
               </div>
               <div className="flex gap-2">
-                <Input placeholder={t('Settings.addVariable')} value={newInputs.sectors} onChange={(e) => setNewInputs(p => ({ ...p, sectors: e.target.value }))} className="h-8 text-xs" />
+                <Input placeholder={t('Settings.addVariable')} value={newInputs.sectors} onChange={(e) => setNewInputs(p => ({ ...p, sectors: e.target.value }))} className="h-8 text-xs bg-white" />
                 <Button size="sm" className="h-8" onClick={() => addItem('sectors')}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2"><Settings2 className="h-4 w-4" />{t('Settings.units')}</CardTitle>
             </CardHeader>
@@ -271,20 +269,20 @@ export default function SystemSettingsPage() {
                 ))}
               </div>
               <div className="flex gap-2">
-                <Input placeholder={t('Settings.addVariable')} value={newInputs.unitsOfMeasure} onChange={(e) => setNewInputs(p => ({ ...p, unitsOfMeasure: e.target.value }))} className="h-8 text-xs" />
+                <Input placeholder={t('Settings.addVariable')} value={newInputs.unitsOfMeasure} onChange={(e) => setNewInputs(p => ({ ...p, unitsOfMeasure: e.target.value }))} className="h-8 text-xs bg-white" />
                 <Button size="sm" className="h-8" onClick={() => addItem('unitsOfMeasure')}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2"><Layers className="h-4 w-4 text-primary" />{t('Settings.subsectors')}</CardTitle>
             <CardDescription>Vincule subsectores específicos a un sector padre.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-slate-50 p-4 rounded-lg border">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-white p-4 rounded-lg border">
               <div className="space-y-2">
                 <Label className="text-xs">{t('Settings.parentSector')}</Label>
                 <Select value={newSubsector.sector} onValueChange={(v) => setNewSubsector(p => ({ ...p, sector: v }))}>
@@ -311,7 +309,7 @@ export default function SystemSettingsPage() {
                       {sectorSubsectors.map((sub, i) => {
                         const originalIndex = config.subsectors.findIndex(s => s.name === sub.name && s.sector === sub.sector);
                         return (
-                          <Badge key={i} variant="outline" className="pl-3 pr-1 py-1 gap-2 bg-slate-50">
+                          <Badge key={i} variant="outline" className="pl-3 pr-1 py-1 gap-2 bg-white">
                             {sub.name}
                             <button onClick={() => removeSubsector(originalIndex)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
                           </Badge>
@@ -325,7 +323,7 @@ export default function SystemSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />{t('Settings.exchangeRates')}</CardTitle>
@@ -348,7 +346,7 @@ export default function SystemSettingsPage() {
           <CardContent>
             <div className="space-y-3">
               {config.exchangeRates.map((rate, i) => (
-                <div key={i} className="flex items-center gap-4 bg-slate-50 p-3 rounded-lg border">
+                <div key={i} className="flex items-center gap-4 bg-white p-3 rounded-lg border">
                   <div className="flex-1 grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                       <Label className="text-[10px] uppercase font-bold w-12">Moneda</Label>
