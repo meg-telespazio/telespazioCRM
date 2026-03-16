@@ -1,5 +1,6 @@
 
 
+
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -104,6 +105,8 @@ export const translations = {
       mfaAppStep1: '1. Scan this QR code with your app (Google Authenticator, Authy, etc.)',
       mfaAppStep2: '2. Enter the 6-digit code shown in the app',
       mfaSecretKey: 'Secret Key (manual entry):',
+      mfaComplianceTitle: 'Security Action Required',
+      mfaComplianceDesc: 'MFA is mandatory for your account. Please set it up now to continue.',
     },
     Dashboard: {
       title: 'Dashboard',
@@ -194,6 +197,11 @@ export const translations = {
       addSubsector: 'Add Subsector',
       parentSector: 'Parent Sector',
       subsectorName: 'Subsector Name',
+      addUser: 'Add New User',
+      newUserTitle: 'Register New Team Member',
+      newUserDesc: 'Create an account and assign roles.',
+      mfaEnforced: 'Enforce MFA (Mandatory)',
+      mfaEnforcedDesc: 'Users will be forced to scan the QR on their next login.',
     },
     Management: {
       SatelliteCommunications: 'Satellite Communications',
@@ -947,6 +955,8 @@ export const translations = {
       mfaAppStep1: '1. Escanea este código QR con tu aplicación (Google Authenticator, Authy, etc.)',
       mfaAppStep2: '2. Ingresa el código de 6 dígitos que muestra la app',
       mfaSecretKey: 'Clave Secreta (ingreso manual):',
+      mfaComplianceTitle: 'Acción de Seguridad Requerida',
+      mfaComplianceDesc: 'El uso de MFA es obligatorio para tu cuenta. Por favor, configúralo ahora para continuar.',
     },
     Dashboard: {
       title: 'Dashboard',
@@ -1037,6 +1047,11 @@ export const translations = {
       addSubsector: 'Agregar Subsector',
       parentSector: 'Sector Padre',
       subsectorName: 'Nombre del Subsector',
+      addUser: 'Agregar Usuario',
+      newUserTitle: 'Registrar Miembro del Equipo',
+      newUserDesc: 'Crea una cuenta y asigna roles.',
+      mfaEnforced: 'MFA Obligatorio',
+      mfaEnforcedDesc: 'El usuario será obligado a escanear el QR en su próximo inicio de sesión.',
     },
     Management: {
       SatelliteCommunications: 'Satellite Communications',
@@ -1174,7 +1189,7 @@ export const translations = {
       addFilter: 'Añadir Filtro',
       appliedFilters: 'Filtros aplicados:',
       noFiltersDesc: 'Sin filtros. Se mostrarán todos los registros.',
-      configSummary: 'Configuración',
+      configSummary: 'Configuration',
       source: 'Fuente:',
       columns: 'Columns:',
       aggregations: 'Agregaciones:',

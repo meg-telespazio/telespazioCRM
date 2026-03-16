@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -12,8 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Save, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditUserPage() {
@@ -31,6 +33,7 @@ export default function EditUserPage() {
   const [role, setRole] = useState<UserRole>('ejecutivo');
   const [management, setManagement] = useState<ManagementArea>('Satellite Communications');
   const [status, setStatus] = useState<'active' | 'suspended'>('active');
+  const [mfaEnforced, setMfaEnforced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export default function EditUserPage() {
       setRole(userProfile.role);
       setManagement(userProfile.management);
       setStatus(userProfile.status);
+      setMfaEnforced(userProfile.mfaEnforced || false);
     }
   }, [userProfile]);
 
@@ -48,6 +52,7 @@ export default function EditUserPage() {
         role,
         management,
         status,
+        mfaEnforced,
         updatedAt: serverTimestamp(),
         updatedBy: currentUser?.uid,
       });
@@ -77,10 +82,10 @@ export default function EditUserPage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>Email</Label>
-                <div className="p-2 border rounded bg-slate-50 text-sm text-slate-500">{userProfile?.email}</div>
+                <div className="p-2 border rounded bg-slate-50 text-sm text-slate-500 font-medium">{userProfile?.email}</div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <Label>{t('Profile.role')}</Label>
                   <Select value={role} onValueChange={(v: UserRole) => setRole(v)}>
@@ -115,11 +120,27 @@ export default function EditUserPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4 bg-primary/5 border-primary/20">
+                  <div className="space-y-0.5">
+                    <Label className="text-base flex items-center gap-2">
+                      <ShieldAlert className="h-4 w-4 text-primary" />
+                      {t('Settings.mfaEnforced')}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('Settings.mfaEnforcedDesc')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mfaEnforced}
+                    onCheckedChange={setMfaEnforced}
+                  />
+                </div>
               </div>
 
               <div className="pt-4">
                 <Button className="w-full" onClick={handleSave} disabled={isSaving}>
-                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
                   {t('Settings.saveUser')}
                 </Button>
               </div>

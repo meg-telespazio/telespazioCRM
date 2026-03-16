@@ -145,6 +145,7 @@ export type UserProfile = {
   country?: string;
   management: ManagementArea;
   tablePreferences?: Record<string, Record<string, boolean>>;
+  mfaEnforced?: boolean;
 };
 
 export type ContractType = 'Acuerdo Marco' | 'Locación de Servicios' | 'Compraventa' | 'Locación de Equipos' | 'Comodato de Equipos';
