@@ -15,52 +15,59 @@ Este documento detalla las funcionalidades operativas implementadas en el sistem
     - **Ejecutivo**: Gestión de sus propios clientes y negocios.
     - **Ingeniero**: Consulta de datos técnicos y clientes de su gerencia (sin acceso a datos financieros sensibles como montos de contratos).
 
-## 2. Gestión Comercial (Ventas)
-- **Directorio de Clientes**: 
-    - Registro con Sector/Subsector, País de Casa Matriz (HQ) y Grupo Económico (Holding).
-    - **Buscador de Logos Inteligente**: Utiliza IA para encontrar el logo de la empresa mediante su URL web.
-    - **Vista 360°**: Resumen financiero, documentos, contactos y servicios activos en una sola pantalla.
+## 2. Gestión Comercial y de Contactos
+- **Directorio de Clientes**: Registro con Sector/Subsector, País de Casa Matriz (HQ) y Grupo Económico (Holding).
+- **Gestión de Contactos**: 
+    - Directorio detallado de personas por empresa.
+    - Clasificación por Cargo (Analyst, CEO, Head, etc.) y Área (IT, Procurement, Sales, etc.).
+    - Múltiples entradas de email y teléfono por contacto.
+- **Buscador de Logos Inteligente**: Utiliza IA para encontrar el logo de la empresa mediante su URL web.
+- **Vista 360°**: Resumen financiero, documentos, contactos y servicios activos en una sola pantalla.
 - **Embudo de Oportunidades**: 
     - Cálculo automático de **FCV (Full Contract Value)** basado en cargos únicos (NRC) y recurrentes (MRC).
     - Gestión de ítems de línea desde un catálogo centralizado.
     - **Generador de Propuestas**: Creación de propuestas comerciales en PDF con diseño institucional de Telespazio.
-    - Seguimiento de competencia y motivos de pérdida/cancelación.
 
 ## 3. Gestión de Contratos y Operaciones
 - **Contratos**: 
     - Clasificación por tipo (Acuerdo Marco, Locación, etc.).
     - Control de renovaciones automáticas y plazos de preaviso.
     - **Historial de Adendas**: Registro de modificaciones firmadas sin alterar el contrato original.
-    - **Lista de Precios Específica**: Definición de precios acordados por contrato para planes de Starlink y otros servicios.
 - **Órdenes de Compra (PO)**: Vinculación directa con contratos para el seguimiento de la ejecución presupuestaria.
 - **Servicios (Base Instalada)**: 
     - Gestión masiva de abonos y líneas.
     - **Edición Rápida**: Actualización de precios directamente desde la tabla.
     - **Acciones Masivas**: Cambio de planes, precios o POs para múltiples servicios a la vez.
 
-## 4. Logística e Inventario Técnico
-- **Inventario de Equipos**: Seguimiento por ID de Terminal (UUID) y Serial.
-- **Estado Físico**: Control de equipos activos, en reparación o retirados.
-- **Geolocalización**: Mapa dinámico (Leaflet) que muestra la ubicación exacta de las terminales y bases operativas de los clientes.
+## 4. Logística, Locaciones e Inventario (Kits)
+- **Gestión de Activos (Kits/Equipos)**: 
+    - Seguimiento por ID de Terminal (UUID) y Serial.
+    - Clasificación por tipo (Antena Standard, HP, Enterprise).
+    - Control de **Estado Físico**: Activa, En reparación o Retirada.
+    - Vinculación automática con servicios activos.
+- **Gestión de Locaciones**:
+    - Registro de sedes, depósitos, oficinas o yacimientos por cliente.
+    - Almacenamiento de direcciones exactas y coordenadas geográficas.
+- **Geolocalización**: Mapa dinámico (Leaflet) que muestra la ubicación exacta de las terminales y bases operativas de los clientes en tiempo real.
 
-## 5. Inteligencia de Negocio y Reportes
+## 5. Gestión de Actividades y Colaboración
+- **Registro de Actividades**: Timeline de interacciones detalladas (llamadas, reuniones, correos, mensajes).
+- **Menciones (@)**: Capacidad de mencionar a miembros del equipo o contactos en los comentarios para generar notificaciones visuales.
+- **Seguimientos (Follow-ups)**: Hilos de conversación dentro de cada actividad registrada para mantener el contexto de la negociación.
+- **Priorización**: Marcado de actividades críticas con estrellas de prioridad.
+
+## 6. Inteligencia de Negocio y Reportes
 - **Dashboard Financiero**: 
     - KPIs en tiempo real (Revenue Total, Tasa de Cierre).
     - Gráfico de proyección de ingresos anual.
     - **Multimoneda Dinámica**: Conversión instantánea de todos los montos del dashboard a USD, EUR o ARS según la selección del usuario.
 - **Constructor de Reportes**: 
-    - Herramienta manual para crear informes personalizados.
-    - Soporte para **Joins automáticos** (ej: ver campos de clientes en un reporte de servicios).
+    - Herramienta manual para crear informes personalizados cruzando cualquier tabla del sistema.
     - Agregaciones (SUM, AVG, COUNT) y agrupamiento por cualquier campo.
-    - Exportación de resultados a CSV para análisis externo.
-
-## 6. Colaboración y Seguimiento
-- **Registro de Actividades**: Timeline de interacciones (llamadas, reuniones, correos).
-- **Menciones (@)**: Capacidad de mencionar a miembros del equipo o contactos en los comentarios.
-- **Seguimientos (Follow-ups)**: Hilos de conversación dentro de cada actividad registrada.
+    - Exportación de resultados a CSV.
 
 ## 7. Configuración del Sistema
 - **Variables Dinámicas**: Gestión de Sectores, Gerencias y Unidades de Medida.
-- **Gestión de Usuarios**: El administrador puede crear nuevos usuarios y asignarles roles/gerencias.
-- **Sincronización de Divisas**: Actualización automática de tipos de cambio (ARS vs USD) mediante integración con API externa.
-- **Gestión de Archivos**: Almacenamiento seguro de contratos y documentos adjuntos en Firebase Storage.
+- **Gestión de Usuarios**: Creación administrativa de cuentas, asignación de roles y forzado de MFA.
+- **Sincronización de Divisas**: Actualización automática de tipos de cambio mediante integración con API externa.
+- **Gestión de Archivos**: Almacenamiento seguro de contratos y documentos adjuntos.
