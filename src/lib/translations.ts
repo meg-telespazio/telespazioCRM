@@ -1,4 +1,5 @@
 
+
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -92,12 +93,17 @@ export const translations = {
       mfaCodeLabel: 'Verification Code',
       verifyMfa: 'Verify and Login',
       mfaEnrollTitle: 'Double Factor Security (MFA)',
-      mfaEnrollDesc: 'Protect your account with SMS verification.',
+      mfaEnrollDesc: 'Protect your account with an extra security layer.',
       mfaPhoneLabel: 'Phone Number (International format)',
       mfaSendCode: 'Send Code',
       mfaVerifyAndEnroll: 'Verify and Enable',
       mfaActive: 'MFA is active on your account',
       mfaDisable: 'Disable MFA',
+      mfaMethodSms: 'SMS Code',
+      mfaMethodApp: 'Authenticator App',
+      mfaAppStep1: '1. Scan this QR code with your app (Google Authenticator, Authy, etc.)',
+      mfaAppStep2: '2. Enter the 6-digit code shown in the app',
+      mfaSecretKey: 'Secret Key (manual entry):',
     },
     Dashboard: {
       title: 'Dashboard',
@@ -926,16 +932,21 @@ export const translations = {
       sessionTimeoutDescription: 'Tu sesión expirará en {countdown}s.',
       stayLoggedInButton: 'Seguir conectado',
       mfaRequired: 'Verificación de Seguridad Requerida',
-      mfaDescription: 'Ingresa el código de verificación enviado a tu teléfono.',
+      mfaDescription: 'Ingresa el código de verificación enviado a tu teléfono o app.',
       mfaCodeLabel: 'Código de Verificación',
       verifyMfa: 'Verificar y Entrar',
       mfaEnrollTitle: 'Seguridad de Doble Factor (MFA)',
-      mfaEnrollDesc: 'Protege tu cuenta con verificación vía SMS.',
+      mfaEnrollDesc: 'Protege tu cuenta con una capa extra de seguridad.',
       mfaPhoneLabel: 'Número de Teléfono (Formato internacional)',
       mfaSendCode: 'Enviar Código',
       mfaVerifyAndEnroll: 'Verificar y Activar',
       mfaActive: 'MFA está activo en tu cuenta',
       mfaDisable: 'Desactivar MFA',
+      mfaMethodSms: 'Código por SMS',
+      mfaMethodApp: 'App de Autenticación',
+      mfaAppStep1: '1. Escanea este código QR con tu aplicación (Google Authenticator, Authy, etc.)',
+      mfaAppStep2: '2. Ingresa el código de 6 dígitos que muestra la app',
+      mfaSecretKey: 'Clave Secreta (ingreso manual):',
     },
     Dashboard: {
       title: 'Dashboard',

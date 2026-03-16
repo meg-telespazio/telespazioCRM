@@ -19,13 +19,14 @@ import {
   signInWithEmailAndPassword, 
   getMultiFactorResolver, 
   PhoneAuthProvider, 
-  PhoneMultiFactorGenerator 
+  PhoneMultiFactorGenerator,
+  TotpMultiFactorGenerator
 } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/firebase/client-provider';
-import { useMemo, useState, useEffect } from 'react';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Eye, EyeOff, Loader2, Smartphone, MessageSquare } from 'lucide-react';
 
 export function LoginForm() {
   const auth = useAuth();
@@ -39,6 +40,7 @@ export function LoginForm() {
   const [mfaResolver, setMfaResolver] = useState<any>(null);
   const [verificationId, setVerificationId] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
+  const [mfaMethod, setMfaMethod] = useState<'sms' | 'totp' | null>(null);
 
   const formSchema = useMemo(
     () =>
@@ -72,16 +74,22 @@ export function LoginForm() {
         const resolver = getMultiFactorResolver(auth, error);
         setMfaResolver(resolver);
         
-        // Start verification with the first available phone factor
-        const phoneInfoOptions = resolver.hints[0];
-        const phoneAuthProvider = new PhoneAuthProvider(auth);
-        
-        // Note: For MFA challenges during login, Recaptcha is handled by Firebase automatically or via invisible element
-        const vId = await phoneAuthProvider.verifyPhoneNumber(
-          { multiFactorHint: phoneInfoOptions, session: resolver.session },
-          (auth as any).recaptchaVerifier
-        );
-        setVerificationId(vId);
+        // Find which hint matches the user's setup
+        const totpHint = resolver.hints.find((h: any) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
+        const phoneHint = resolver.hints.find((h: any) => h.factorId === PhoneAuthProvider.PHONE_SIGN_IN_METHOD);
+
+        if (totpHint) {
+          setMfaMethod('totp');
+        } else if (phoneHint) {
+          setMfaMethod('sms');
+          const phoneAuthProvider = new PhoneAuthProvider(auth);
+          // Invisible reCAPTCHA is handled by Identity Platform internally if initialized
+          const vId = await phoneAuthProvider.verifyPhoneNumber(
+            { multiFactorHint: phoneHint, session: resolver.session },
+            (auth as any).recaptchaVerifier
+          );
+          setVerificationId(vId);
+        }
       } else {
         toast({
           variant: 'destructive',
@@ -95,13 +103,22 @@ export function LoginForm() {
   }
 
   const handleVerifyMfa = async () => {
-    if (!mfaResolver || !verificationId || !mfaCode) return;
+    if (!mfaResolver || !mfaCode) return;
     setIsLoading(true);
     try {
-      const cred = PhoneAuthProvider.credential(verificationId, mfaCode);
-      const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(cred);
-      await mfaResolver.resolveSignIn(multiFactorAssertion);
-      router.push('/dashboard');
+      let assertion;
+      if (mfaMethod === 'totp') {
+        const totpHint = mfaResolver.hints.find((h: any) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
+        assertion = TotpMultiFactorGenerator.assertionForSignIn(totpHint.uid, mfaCode);
+      } else if (mfaMethod === 'sms' && verificationId) {
+        const cred = PhoneAuthProvider.credential(verificationId, mfaCode);
+        assertion = PhoneMultiFactorGenerator.assertion(cred);
+      }
+
+      if (assertion) {
+        await mfaResolver.resolveSignIn(assertion);
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'MFA Error', description: error.message });
     } finally {
@@ -113,10 +130,17 @@ export function LoginForm() {
 
   if (mfaResolver) {
     return (
-      <div className="space-y-4 animate-in fade-in">
+      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
         <div className="space-y-2 text-center">
+          <div className="flex justify-center mb-2">
+            <div className="p-3 bg-primary/10 rounded-full">
+              {mfaMethod === 'totp' ? <Smartphone className="h-6 w-6 text-primary" /> : <MessageSquare className="h-6 w-6 text-primary" />}
+            </div>
+          </div>
           <h3 className="font-bold text-lg">{t('Auth.mfaRequired')}</h3>
-          <p className="text-sm text-muted-foreground">{t('Auth.mfaDescription')}</p>
+          <p className="text-xs text-muted-foreground">
+            {mfaMethod === 'totp' ? t('Auth.mfaMethodApp') : t('Auth.mfaMethodSms')}
+          </p>
         </div>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -125,10 +149,11 @@ export function LoginForm() {
               placeholder="123456" 
               value={mfaCode} 
               onChange={(e) => setMfaCode(e.target.value)}
-              className="text-center tracking-[1em] font-bold text-lg"
+              className="text-center tracking-[0.5em] font-bold text-2xl h-12"
+              maxLength={6}
             />
           </div>
-          <Button className="w-full" onClick={handleVerifyMfa} disabled={isLoading}>
+          <Button className="w-full" onClick={handleVerifyMfa} disabled={isLoading || mfaCode.length !== 6}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('Auth.verifyMfa')}
           </Button>
