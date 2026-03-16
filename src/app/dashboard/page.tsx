@@ -27,9 +27,10 @@ export default function DashboardPage() {
   }, [user]);
 
   const opportunitiesQuery = useMemo(() => {
-    if (!baseQuery) return null;
+    // Ingenieros no tienen permiso de lectura en opportunities según reglas
+    if (!baseQuery || user?.role === 'ingeniero') return null;
     return query(collection(firestore, 'opportunities'), baseQuery);
-  }, [firestore, baseQuery]);
+  }, [firestore, baseQuery, user]);
 
   const clientsQuery = useMemo(() => {
     if (!baseQuery) return null;
@@ -42,7 +43,8 @@ export default function DashboardPage() {
   }, [firestore, baseQuery]);
 
   const activitiesQuery = useMemo(() => {
-    if (!user) return null;
+    // Ingenieros no tienen permiso de lectura en activities según reglas
+    if (!user || user.role === 'ingeniero') return null;
     return query(
       collection(firestore, 'activities'),
       where('createdBy', '==', user.uid)
@@ -73,11 +75,13 @@ export default function DashboardPage() {
   }
 
   const pageIsLoading =
-    opportunitiesLoading ||
+    (opportunitiesLoading && opportunitiesQuery !== null) ||
     clientsLoading ||
     contactsLoading ||
-    activitiesLoading ||
+    (activitiesLoading && activitiesQuery !== null) ||
     !configData;
+
+  const isIngeniero = user?.role === 'ingeniero';
 
   return (
     <div className="flex flex-1 flex-col">
@@ -99,40 +103,48 @@ export default function DashboardPage() {
             displayCurrency={displayCurrency}
           />
         )}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <div className="col-span-4 min-w-0">
-            {pageIsLoading ? (
-              <Skeleton className="h-[425px]" />
-            ) : (
-              <OpportunitiesChart 
-                opportunities={opportunities || []} 
-                clients={clients || []} 
-                exchangeRates={configData?.exchangeRates || []}
-                displayCurrency={displayCurrency}
-              />
-            )}
+        
+        {!isIngeniero && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <div className="col-span-4 min-w-0">
+              {pageIsLoading ? (
+                <Skeleton className="h-[425px]" />
+              ) : (
+                <OpportunitiesChart 
+                  opportunities={opportunities || []} 
+                  clients={clients || []} 
+                  exchangeRates={configData?.exchangeRates || []}
+                  displayCurrency={displayCurrency}
+                />
+              )}
+            </div>
+            <div className="col-span-4 lg:col-span-3 min-w-0">
+              {pageIsLoading ? (
+                <Skeleton className="h-[360px]" />
+              ) : (
+                <RecentOpportunities
+                  opportunities={opportunities || []}
+                  clients={clients || []}
+                  exchangeRates={configData?.exchangeRates || []}
+                  displayCurrency={displayCurrency}
+                />
+              )}
+            </div>
           </div>
-          <div className="col-span-4 lg:col-span-3 min-w-0">
-            {pageIsLoading ? (
-              <Skeleton className="h-[360px]" />
-            ) : (
-              <RecentOpportunities
-                opportunities={opportunities || []}
-                clients={clients || []}
-                exchangeRates={configData?.exchangeRates || []}
-                displayCurrency={displayCurrency}
-              />
-            )}
-          </div>
-        </div>
+        )}
+
         <div className="min-w-0">
           {pageIsLoading ? (
             <Skeleton className="h-[360px]" />
-          ) : (
+          ) : !isIngeniero ? (
             <RecentActivities
               activities={activities || []}
               clients={clients || []}
             />
+          ) : (
+            <div className="p-8 border-2 border-dashed rounded-lg text-center text-muted-foreground">
+              Dashboard simplificado para Ingeniería. Las métricas de ventas y actividades comerciales están restringidas.
+            </div>
           )}
         </div>
       </div>

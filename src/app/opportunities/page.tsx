@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,7 +23,7 @@ export default function OpportunitiesPage() {
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   const oppsQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'opportunities');
     if (user.role === 'admin') return query(ref);
     return query(ref, where('management', '==', user.management));
@@ -73,8 +72,10 @@ export default function OpportunitiesPage() {
         </Button>
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {opportunitiesLoading || clientsLoading || !configData ? (
+        {(opportunitiesLoading && oppsQuery !== null) || clientsLoading || !configData ? (
            <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-96 w-full" /></div>
+        ) : user?.role === 'ingeniero' ? (
+          <div className="text-center py-20 text-muted-foreground">No tienes permisos para ver este módulo.</div>
         ) : (
           <OpportunityTable 
             data={opportunities} 

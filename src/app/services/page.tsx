@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -156,14 +155,14 @@ export default function ServicesPage() {
 
   // Data fetching
   const servicesQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'services');
     if (user.role === 'admin') return query(ref);
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
   const posQuery = useMemo(() => {
-    if (!user) return null;
+    if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'purchaseOrders');
     if (user.role === 'admin') return query(ref);
     return query(ref, where('management', '==', user.management));
@@ -319,108 +318,114 @@ export default function ServicesPage() {
     }
   }
 
-  if (userLoading || servicesLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
+  if (userLoading || (servicesLoading && servicesQuery !== null)) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Services.title')}>
-        <Button variant="outline" onClick={() => setImporterOpen(true)}>
+        <Button variant="outline" onClick={() => setImporterOpen(true)} disabled={user?.role === 'ingeniero'}>
           <Upload className="mr-2 h-4 w-4" />
           {t('Services.import')}
         </Button>
       </AppHeader>
 
       <main className="flex-1 p-4 sm:p-6 space-y-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex flex-1 flex-col md:flex-row items-center gap-4 w-full">
-            <div className="relative w-full md:max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
-              <Input 
-                placeholder="Buscar por Nickname o Línea..." 
-                className="pl-10 bg-white"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        {user?.role === 'ingeniero' ? (
+          <div className="text-center py-20 text-muted-foreground">Acceso restringido para Ingeniería.</div>
+        ) : (
+          <>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex flex-1 flex-col md:flex-row items-center gap-4 w-full">
+                <div className="relative w-full md:max-w-md">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+                  <Input 
+                    placeholder="Buscar por Nickname o Línea..." 
+                    className="pl-10 bg-white"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <Select value={clientFilter} onValueChange={setClientFilter}>
+                    <SelectTrigger className="w-full md:w-[250px] bg-white">
+                      <SelectValue placeholder={t('Forms.selectClient')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('Table.all')} {t('Sidebar.clients')}</SelectItem>
+                      {clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {selectedIds.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="border-primary text-primary">
+                      {t('Actions.bulkActions')} ({selectedIds.length})
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => setBulkMode('price')}><DollarSign className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePrice')}</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setBulkMode('plan')}><LayoutGrid className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePlan')}</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setBulkMode('po')}><Link2 className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePo')}</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
-            
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-              <Select value={clientFilter} onValueChange={setClientFilter}>
-                <SelectTrigger className="w-full md:w-[250px] bg-white">
-                  <SelectValue placeholder={t('Forms.selectClient')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('Table.all')} {t('Sidebar.clients')}</SelectItem>
-                  {clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {selectedIds.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-primary text-primary">
-                  {t('Actions.bulkActions')} ({selectedIds.length})
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setBulkMode('price')}><DollarSign className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePrice')}</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setBulkMode('plan')}><LayoutGrid className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePlan')}</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setBulkMode('po')}><Link2 className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePo')}</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
 
-        <div className="rounded-md border bg-card overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-destructive hover:bg-destructive">
-                <TableHead className="w-[50px]"><Checkbox checked={selectedIds.length === paginatedServices.length} onCheckedChange={toggleSelectAll} /></TableHead>
-                <TableHead className="text-white"><button onClick={() => handleSort('serviceNickname')} className="flex items-center">{t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}</button></TableHead>
-                <TableHead className="text-white"><button onClick={() => handleSort('monthlyFee')} className="flex items-center">{t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}</button></TableHead>
-                <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
-                <TableHead className="text-white"><button onClick={() => handleSort('client')} className="flex items-center">{t('Pages.clients')} {getSortIcon('client')}</button></TableHead>
-                <TableHead className="text-white">PO</TableHead>
-                <TableHead className="text-right text-white px-4">{t('Table.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedServices.map((s) => {
-                const po = poMap.get(s.poId);
-                const contract = po ? contractMap.get(po.contractId) : null;
-                const client = contract ? clientMap.get(contract.clientId) : null;
-
-                return (
-                  <TableRow key={s.id}>
-                    <TableCell><Checkbox checked={selectedIds.includes(s.id)} onCheckedChange={(checked) => toggleSelect(s.id, !!checked)} /></TableCell>
-                    <TableCell>
-                      <button onClick={() => router.push(`/services/${s.id}`)} className="font-bold text-primary hover:underline flex items-center gap-2">
-                        <Zap className="h-3 w-3 text-yellow-500" /> {s.serviceNickname}
-                      </button>
-                      <p className="text-[10px] text-muted-foreground ml-5">{s.serviceLineNumber}</p>
-                    </TableCell>
-                    <TableCell><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} /></TableCell>
-                    <TableCell className="text-xs">{s.servicePlan}</TableCell>
-                    <TableCell>{client?.name || '-'}</TableCell>
-                    <TableCell><Badge variant="secondary">{po?.poNumber || '...'}</Badge></TableCell>
-                    <TableCell className="text-right px-4">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/services/${s.id}`)}><Edit className="mr-2 h-4 w-4" />{t('Services.edit')}</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />{t('Table.actions.delete')}</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            <div className="rounded-md border bg-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-destructive hover:bg-destructive">
+                    <TableHead className="w-[50px]"><Checkbox checked={selectedIds.length === paginatedServices.length} onCheckedChange={toggleSelectAll} /></TableHead>
+                    <TableHead className="text-white"><button onClick={() => handleSort('serviceNickname')} className="flex items-center">{t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}</button></TableHead>
+                    <TableHead className="text-white"><button onClick={() => handleSort('monthlyFee')} className="flex items-center">{t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}</button></TableHead>
+                    <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
+                    <TableHead className="text-white"><button onClick={() => handleSort('client')} className="flex items-center">{t('Pages.clients')} {getSortIcon('client')}</button></TableHead>
+                    <TableHead className="text-white">PO</TableHead>
+                    <TableHead className="text-right text-white px-4">{t('Table.actions')}</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {paginatedServices.map((s) => {
+                    const po = poMap.get(s.poId);
+                    const contract = po ? contractMap.get(po.contractId) : null;
+                    const client = contract ? clientMap.get(contract.clientId) : null;
+
+                    return (
+                      <TableRow key={s.id}>
+                        <TableCell><Checkbox checked={selectedIds.includes(s.id)} onCheckedChange={(checked) => toggleSelect(s.id, !!checked)} /></TableCell>
+                        <TableCell>
+                          <button onClick={() => router.push(`/services/${s.id}`)} className="font-bold text-primary hover:underline flex items-center gap-2">
+                            <Zap className="h-3 w-3 text-yellow-500" /> {s.serviceNickname}
+                          </button>
+                          <p className="text-[10px] text-muted-foreground ml-5">{s.serviceLineNumber}</p>
+                        </TableCell>
+                        <TableCell><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} /></TableCell>
+                        <TableCell className="text-xs">{s.servicePlan}</TableCell>
+                        <TableCell>{client?.name || '-'}</TableCell>
+                        <TableCell><Badge variant="secondary">{po?.poNumber || '...'}</Badge></TableCell>
+                        <TableCell className="text-right px-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/services/${s.id}`)}><Edit className="mr-2 h-4 w-4" />{t('Services.edit')}</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />{t('Table.actions.delete')}</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </main>
 
       <Dialog open={bulkMode !== null} onOpenChange={() => setBulkMode(null)}>
