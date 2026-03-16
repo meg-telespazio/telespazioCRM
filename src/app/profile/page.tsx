@@ -1,9 +1,11 @@
+
 'use client';
 import { useEffect } from 'react';
 import { useUser } from '@/firebase';
 import { redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { ProfileForm } from '@/components/profile/profile-form';
+import { MfaEnrollment } from '@/components/profile/mfa-enrollment';
 import { useI18n } from '@/firebase/client-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -28,8 +30,8 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Pages.profile')} />
-      <main className="flex-1 p-4 sm:p-6">
-        <div className="mx-auto max-w-2xl">
+      <main className="flex-1 p-4 sm:p-6 pb-24">
+        <div className="mx-auto max-w-2xl space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>{t('Profile.title')}</CardTitle>
@@ -38,6 +40,8 @@ export default function ProfilePage() {
               <ProfileForm />
             </CardContent>
           </Card>
+
+          <MfaEnrollment />
         </div>
       </main>
     </div>
