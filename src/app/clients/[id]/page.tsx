@@ -74,6 +74,7 @@ const getFormSchema = (t: (key: string) => string) =>
     management: z.string().min(1, t('Validation.fieldRequired')),
     assignedTo: z.string().min(1, t('Validation.fieldRequired')),
     notes: z.string().optional(),
+    countryHQ: z.string().optional(),
   });
 
 type ClientFormData = z.infer<ReturnType<typeof getFormSchema>>;
@@ -137,6 +138,7 @@ export default function ClientFormPage() {
       management: user?.management || 'Satellite Communications',
       assignedTo: user?.uid || '',
       notes: '',
+      countryHQ: '',
     },
   });
 
@@ -172,6 +174,7 @@ export default function ClientFormPage() {
         management: clientData.management || 'Satellite Communications',
         sector: clientData.sector || '',
         subsector: clientData.subsector || '',
+        countryHQ: clientData.countryHQ || '',
       });
       setCroppedImage(clientData.logoURL || null);
     }
@@ -242,6 +245,16 @@ export default function ClientFormPage() {
   const sectorOptions = (configData?.sectors || []).sort();
   const managementOptions = configData?.managementAreas || ['Satellite Communications', 'GeoInformacion'];
 
+  const countryOptions = [
+    'Argentina', 'Bolivia', 'Brazil', 'Chile', 'Colombia', 'CostaRica', 'Cuba', 
+    'DominicanRepublic', 'Ecuador', 'ElSalvador', 'Guatemala', 'Honduras', 
+    'Jamaica', 'Mexico', 'Nicaragua', 'Panama', 'Paraguay', 'Peru', 'PuertoRico', 
+    'Uruguay', 'Venezuela', 'USA', 'Canada', 'Bahamas', 'Barbados', 'Belize', 
+    'Guyana', 'Suriname', 'TrinidadAndTobago', 'Spain', 'UK', 'Germany', 
+    'France', 'Italy', 'Switzerland', 'Netherlands', 'SouthAfrica', 'Nigeria', 
+    'Egypt', 'China', 'Japan', 'India', 'SouthKorea', 'UAE'
+  ].sort((a, b) => t(`Countries.${a}`).localeCompare(t(`Countries.${b}`)));
+
   if (userLoading || (clientLoading && !isNew)) {
     return <div className="p-6"><Skeleton className="h-[70vh] w-full" /></div>;
   }
@@ -301,12 +314,25 @@ export default function ClientFormPage() {
                       )} />
                     </div>
 
-                    <FormField control={form.control} name="name" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.clientName')}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl><FormMessage />
-                      </FormItem>
-                    )} />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.clientName')}</FormLabel>
+                          <FormControl><Input {...field} /></FormControl><FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="countryHQ" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.countryHQ')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {countryOptions.map(c => <SelectItem key={c} value={c}>{t(`Countries.${c}`)}</SelectItem>)}
+                            </SelectContent>
+                          </Select><FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
                     
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="website" render={({ field }) => (

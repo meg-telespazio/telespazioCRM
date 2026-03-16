@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users, ShieldCheck, User, Paperclip, Eye, Download, Tag } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, Flag } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -136,10 +136,17 @@ export default function ClientSummaryPage() {
                   {t(`Status.${client.status}`)}
                 </Badge>
               </div>
-              <CardDescription className="text-base flex items-center gap-2">
+              <CardDescription className="text-base flex items-center gap-2 flex-wrap">
                 <Tag className="h-3.5 w-3.5" />
                 {client.sector} 
                 {client.subsector && <span className="text-muted-foreground">• {client.subsector}</span>}
+                {client.countryHQ && (
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    • 
+                    <Flag className="h-3.5 w-3.5" />
+                    {t(`Countries.${client.countryHQ}`)}
+                  </span>
+                )}
                 {client.holding && (
                   <span className="text-muted-foreground flex items-center gap-1.5">
                     • 
@@ -193,16 +200,10 @@ export default function ClientSummaryPage() {
               </div>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Forms.holding')}</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Forms.countryHQ')}</span>
               <div className="flex items-center gap-2 text-foreground font-medium">
-                <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                {client.holding ? (
-                  <Link href={`/holdings/${encodeURIComponent(client.holding)}`} className="text-primary hover:underline font-bold">
-                    {client.holding}
-                  </Link>
-                ) : (
-                  <span>-</span>
-                )}
+                <Flag className="h-4 w-4 text-muted-foreground" />
+                <span>{client.countryHQ ? t(`Countries.${client.countryHQ}`) : '-'}</span>
               </div>
             </div>
           </CardContent>

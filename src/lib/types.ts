@@ -23,6 +23,7 @@ export type Client = {
   logoURL?: string | null;
   management: ManagementArea;
   assignedTo: string; // UID of Ejecutivo
+  countryHQ?: string;
 };
 
 export type Holding = {
