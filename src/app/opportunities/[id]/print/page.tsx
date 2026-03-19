@@ -117,26 +117,46 @@ export default function PrintOpportunityPage() {
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
+        compress: true, // Habilitar compresión nativa
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      const canvas1 = await html2canvas(page1, { scale: 3, useCORS: true });
-      const imgData1 = canvas1.toDataURL('image/png');
-      pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // Captura Página 1 con escala optimizada (2x es suficiente para A4 nítido)
+      const canvas1 = await html2canvas(page1, { 
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      // Convertir a JPEG con compresión del 75% para reducir peso drásticamente
+      const imgData1 = canvas1.toDataURL('image/jpeg', 0.75);
+      pdf.addImage(imgData1, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
 
-      const canvas2 = await html2canvas(page2, { scale: 3, useCORS: true });
+      // Captura Página 2
+      const canvas2 = await html2canvas(page2, { 
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
       pdf.addPage();
-      const imgData2 = canvas2.toDataURL('image/png');
-      pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const imgData2 = canvas2.toDataURL('image/jpeg', 0.75);
+      pdf.addImage(imgData2, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
 
-      pdf.save(`proposal-${opportunity?.publicId || 'download'}.pdf`);
+      pdf.save(`propuesta-${opportunity?.publicId || 'telespazio'}.pdf`);
+      
+      toast({
+        variant: 'success',
+        title: 'PDF Generado',
+        description: 'La oferta se ha descargado con éxito.',
+      });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
         variant: 'destructive',
-        title: t('Auth.registerFailedTitle'),
+        title: 'Error',
         description: t('Proposal.generate_pdf_error'),
       });
     } finally {
@@ -184,7 +204,9 @@ export default function PrintOpportunityPage() {
             const nrc =
               item.quantity * item.oneTimeCharge * (1 - item.discount / 100);
             const mrc =
-              item.quantity * item.recurringCharge * (1 - item.discount / 100);
+              item.quantity *
+              item.recurringCharge *
+              (1 - item.discount / 100);
             acc.nrc += nrc;
             acc.mrc += mrc;
             return acc;
@@ -472,7 +494,9 @@ export default function PrintOpportunityPage() {
           </div>
           <div className="font-bold text-red-700">
             <span>{t('Proposal.total_contract_value')}: </span>
-            <span>{`${opportunity.currency || 'USD'} ${finalFcv.toFixed(2)}`}</span>
+            <span>{`${
+              opportunity.currency || 'USD'
+            } ${finalFcv.toFixed(2)}`}</span>
           </div>
           <div className="border-2 border-red-700 p-2 space-y-2 text-[7pt]">
             <p>
@@ -481,7 +505,9 @@ export default function PrintOpportunityPage() {
               {customNote && (
                 <>
                   <br />
-                  <span className="font-bold">{t('Forms.notes').toUpperCase()}: </span>
+                  <span className="font-bold">
+                    {t('Forms.notes').toUpperCase()}:{' '}
+                  </span>
                   {customNote}
                 </>
               )}
