@@ -1,21 +1,21 @@
 rules_version = '2';
 
-// REGLAS DE SEGURIDAD PARA STORAGE (Sync) - FORZAR REDESPLIEGUE: 2024-05-21_15-15
-// Permite acceso completo de lectura y escritura a cualquier usuario autenticado en todo el bucket.
-// Se añaden reglas explícitas para carpetas críticas para asegurar la correcta propagación de permisos.
+// REGLAS DE SEGURIDAD PARA STORAGE (Sync) - ACTUALIZACIÓN PARA OPORTUNIDADES
+// Permite acceso de lectura y escritura a usuarios autenticados en carpetas críticas.
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Regla explícita para la carpeta de oportunidades
-    match /opportunities/{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
     
-    // Regla explícita para la carpeta de contratos
-    match /contracts/{allPaths=**} {
+    // Regla para Contratos
+    match /contracts/{contractId}/{allPaths=**} {
       allow read, write: if request.auth != null;
     }
 
+    // Regla para Oportunidades (Soluciona el error de permisos)
+    match /opportunities/{opportunityId}/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
     // Regla global de respaldo para usuarios autenticados
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
