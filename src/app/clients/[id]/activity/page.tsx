@@ -73,9 +73,14 @@ export default function ClientActivityPage() {
 
   const activitiesQuery = useMemo(() => {
     if (!user || !firestore) return null;
+    const ref = collection(firestore, 'activities');
+    if (user.role === 'admin') {
+      return query(ref, where('clientId', '==', clientId));
+    }
     return query(
-      collection(firestore, 'activities'),
-      where('clientId', '==', clientId)
+      ref,
+      where('clientId', '==', clientId),
+      where('management', '==', user.management)
     );
   }, [firestore, clientId, user]);
   

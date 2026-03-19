@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -49,25 +48,60 @@ export default function ClientSummaryPage() {
   const clientDocRef = useMemo(() => firestore ? doc(firestore, 'clients', clientId) : null, [firestore, clientId]);
   const { data: client, loading: clientLoading } = useDoc<Client>(clientDocRef);
 
-  const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
+  const contractsQuery = useMemo(() => {
+    if (!user || !clientId) return null;
+    const ref = collection(firestore, 'contracts');
+    if (user.role === 'admin') return query(ref, where('clientId', '==', clientId));
+    return query(ref, where('clientId', '==', clientId), where('management', '==', user.management));
+  }, [user, clientId, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
 
-  const opportunitiesQuery = useMemo(() => user ? query(collection(firestore, 'opportunities'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
+  const opportunitiesQuery = useMemo(() => {
+    if (!user || !clientId || user.role === 'ingeniero') return null;
+    const ref = collection(firestore, 'opportunities');
+    if (user.role === 'admin') return query(ref, where('clientId', '==', clientId));
+    return query(ref, where('clientId', '==', clientId), where('management', '==', user.management));
+  }, [user, clientId, firestore]);
   const { data: opportunities } = useCollection<Opportunity>(opportunitiesQuery);
 
-  const posQuery = useMemo(() => user ? query(collection(firestore, 'purchaseOrders')) : null, [user, firestore]);
+  const posQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'purchaseOrders');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: allPos } = useCollection<PurchaseOrder>(posQuery);
 
-  const servicesQuery = useMemo(() => user ? query(collection(firestore, 'services')) : null, [user, firestore]);
+  const servicesQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'services');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: allServices } = useCollection<Service>(servicesQuery);
 
-  const equipQuery = useMemo(() => user ? query(collection(firestore, 'equipment')) : null, [user, firestore]);
+  const equipQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'equipment');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: allEquip } = useCollection<Equipment>(equipQuery);
 
-  const contactsQuery = useMemo(() => user ? query(collection(firestore, 'contacts'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
+  const contactsQuery = useMemo(() => {
+    if (!user || !clientId) return null;
+    const ref = collection(firestore, 'contacts');
+    if (user.role === 'admin') return query(ref, where('clientId', '==', clientId));
+    return query(ref, where('clientId', '==', clientId), where('management', '==', user.management));
+  }, [user, clientId, firestore]);
   const { data: contacts } = useCollection<Contact>(contactsQuery);
 
-  const activitiesQuery = useMemo(() => user ? query(collection(firestore, 'activities'), where('clientId', '==', clientId)) : null, [user, clientId, firestore]);
+  const activitiesQuery = useMemo(() => {
+    if (!user || !clientId || user.role === 'ingeniero') return null;
+    const ref = collection(firestore, 'activities');
+    if (user.role === 'admin') return query(ref, where('clientId', '==', clientId));
+    return query(ref, where('clientId', '==', clientId), where('management', '==', user.management));
+  }, [user, clientId, firestore]);
   const { data: activities } = useCollection<Activity>(activitiesQuery);
 
   // Calculations for MRR and Services

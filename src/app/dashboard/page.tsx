@@ -21,34 +21,32 @@ export default function DashboardPage() {
   const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
-  const baseQuery = useMemo(() => {
-    if (!user) return null;
-    return where('createdBy', '==', user.uid);
-  }, [user]);
-
   const opportunitiesQuery = useMemo(() => {
-    // Ingenieros no tienen permiso de lectura en opportunities según reglas
-    if (!baseQuery || user?.role === 'ingeniero') return null;
-    return query(collection(firestore, 'opportunities'), baseQuery);
-  }, [firestore, baseQuery, user]);
+    if (!user || user.role === 'ingeniero') return null;
+    const ref = collection(firestore, 'opportunities');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, user]);
 
   const clientsQuery = useMemo(() => {
-    if (!baseQuery) return null;
-    return query(collection(firestore, 'clients'), baseQuery);
-  }, [firestore, baseQuery]);
+    if (!user) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, user]);
 
   const contactsQuery = useMemo(() => {
-    if (!baseQuery) return null;
-    return query(collection(firestore, 'contacts'), baseQuery);
-  }, [firestore, baseQuery]);
+    if (!user) return null;
+    const ref = collection(firestore, 'contacts');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, user]);
 
   const activitiesQuery = useMemo(() => {
-    // Ingenieros no tienen permiso de lectura en activities según reglas
     if (!user || user.role === 'ingeniero') return null;
-    return query(
-      collection(firestore, 'activities'),
-      where('createdBy', '==', user.uid)
-    );
+    const ref = collection(firestore, 'activities');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
   }, [firestore, user]);
 
   const { data: opportunities, loading: opportunitiesLoading } =

@@ -1,13 +1,12 @@
 rules_version = '2';
 
-// REGLAS PÚBLICAS TOTALES - ÚLTIMA ACTUALIZACIÓN: 1773210000000
-// Esta configuración permite que CUALQUIER PERSONA suba y lea archivos.
-// Se usa exclusivamente para diagnosticar por qué falla la subida en tu entorno.
+// REGLAS DE SEGURIDAD PARA STORAGE
+// Permite acceso completo a usuarios autenticados para asegurar el funcionamiento de los adjuntos.
 
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
   }
 }
