@@ -208,23 +208,23 @@ export default function OpportunityFormPage() {
 
   const baseClientQuery = useMemo(() => {
     if (!user) return null;
-    return where('createdBy', '==', user.uid);
+    return where('management', '==', user.management);
   }, [user]);
 
   const clientsQuery = useMemo(() => {
-    if (!baseClientQuery) return null;
+    if (!baseClientQuery || !firestore) return null;
     return query(collection(firestore, 'clients'), baseClientQuery);
   }, [firestore, baseClientQuery]);
 
   const contactsQuery = useMemo(() => {
-    if (!baseClientQuery) return null;
+    if (!baseClientQuery || !firestore) return null;
     return query(collection(firestore, 'contacts'), baseClientQuery);
   }, [firestore, baseClientQuery]);
 
   const productsAndServicesQuery = useMemo(() => {
-    if (!baseClientQuery) return null;
-    return query(collection(firestore, 'productsAndServices'), baseClientQuery);
-  }, [firestore, baseClientQuery]);
+    if (!firestore) return null;
+    return query(collection(firestore, 'productsAndServices'));
+  }, [firestore]);
 
   const { data: clientsData, loading: clientsLoading } =
     useCollection<Client>(clientsQuery);
@@ -630,9 +630,7 @@ export default function OpportunityFormPage() {
                           </FormControl>
                           <SelectContent>
                             {clients.map((client) => (
-                              <SelectItem key={client.id} value={client.id}>
-                                {client.name}
-                              </SelectItem>
+                              <SelectItem key={`client-${client.id}`} value={client.id}>{client.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -660,9 +658,7 @@ export default function OpportunityFormPage() {
                           </FormControl>
                           <SelectContent>
                             {filteredContacts.map((contact) => (
-                              <SelectItem key={contact.id} value={contact.id}>
-                                {contact.name}
-                              </SelectItem>
+                              <SelectItem key={`contact-${contact.id}`} value={contact.id}>{contact.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -716,9 +712,7 @@ export default function OpportunityFormPage() {
                           </FormControl>
                           <SelectContent>
                             {currencyOptions.map((currency) => (
-                              <SelectItem key={currency} value={currency}>
-                                {t(`Currencies.${currency}`)}
-                              </SelectItem>
+                              <SelectItem key={`currency-${currency}`} value={currency}>{t(`Currencies.${currency}`)}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -746,9 +740,7 @@ export default function OpportunityFormPage() {
                           </FormControl>
                           <SelectContent>
                             {contractMonthsOptions.map((months) => (
-                              <SelectItem key={months} value={String(months)}>
-                                {months} {t('Months').toLowerCase()}
-                              </SelectItem>
+                              <SelectItem key={`months-${months}`} value={String(months)}>{months} {t('Months').toLowerCase()}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -950,9 +942,7 @@ export default function OpportunityFormPage() {
                           </FormControl>
                           <SelectContent>
                             {stages.map((stage) => (
-                              <SelectItem key={stage} value={stage}>
-                                {t(`Stages.${stage}`)}
-                              </SelectItem>
+                              <SelectItem key={`stage-${stage}`} value={stage}>{t(`Stages.${stage}`)}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1051,9 +1041,7 @@ export default function OpportunityFormPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {catalogItems.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
-                              {item.name}
-                            </SelectItem>
+                            <SelectItem key={`cat-item-${item.id}`} value={item.id}>{item.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -1128,11 +1116,11 @@ export default function OpportunityFormPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="0">0%</SelectItem>
-                          {selectedCatalogItem?.availableDiscounts?.map((d) => (
-                            <SelectItem key={d} value={String(d)}>
-                              {d}%
-                            </SelectItem>
-                          ))}
+                          {(selectedCatalogItem?.availableDiscounts || [])
+                            .filter(d => d !== 0)
+                            .map((d) => (
+                              <SelectItem key={`item-disc-${d}`} value={String(d)}>{`${d}%`}</SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -1325,9 +1313,7 @@ export default function OpportunityFormPage() {
                           </FormControl>
                           <SelectContent>
                             {discountOptions.map((d) => (
-                              <SelectItem key={d} value={String(d)}>
-                                {d}%
-                              </SelectItem>
+                              <SelectItem key={`gen-disc-${d}`} value={String(d)}>{`${d}%`}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
