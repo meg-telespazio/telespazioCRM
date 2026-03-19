@@ -1,22 +1,23 @@
 rules_version = '2';
 
-// REGLAS DE SEGURIDAD PARA STORAGE - ACTUALIZACIÓN PARA OPORTUNIDADES
-// Permite acceso de lectura y escritura a usuarios autenticados en carpetas críticas.
+// REGLAS DE SEGURIDAD PARA STORAGE - TELESPAZIO CRM
+// Permite acceso a usuarios autenticados en carpetas críticas.
+// Trigger de despliegue: 2025-03-20T10:30:00Z
 
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Regla para Contratos
+    // Regla para Contratos (incluye subcarpetas)
     match /contracts/{contractId}/{allPaths=**} {
       allow read, write: if request.auth != null;
     }
 
-    // Regla para Oportunidades (Soluciona el error de permisos)
+    // Regla para Oportunidades (incluye subcarpetas)
     match /opportunities/{opportunityId}/{allPaths=**} {
       allow read, write: if request.auth != null;
     }
     
-    // Regla global de respaldo para usuarios autenticados (opcional, para mayor seguridad se usan las de arriba)
+    // Regla global de respaldo: cualquier usuario logueado puede leer/escribir
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
