@@ -10,14 +10,16 @@ import { OpportunityTable } from '@/components/opportunities/opportunity-table';
 import type { Opportunity, Client, SystemConfig } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
-import { deleteOpportunity } from '@/lib/firestore/opportunities';
+import { deleteOpportunity, duplicateOpportunity } from '@/lib/firestore/opportunities';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function OpportunitiesPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
   const { t, currency: displayCurrency } = useI18n();
+  const { toast } = useToast();
 
   const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
@@ -61,6 +63,24 @@ export default function OpportunitiesPage() {
     }
   };
 
+  const handleDuplicateOpportunity = async (opportunity: Opportunity) => {
+    if (!user) return;
+    try {
+      await duplicateOpportunity(firestore, user.uid, opportunity);
+      toast({
+        variant: 'success',
+        title: 'Negocio duplicado',
+        description: `Se ha creado una copia de "${opportunity.title}" con éxito.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error al duplicar',
+        description: error.message,
+      });
+    }
+  };
+
   if (userLoading) return <div className="p-12 text-center">{t('App.loading')}</div>;
 
   return (
@@ -82,6 +102,7 @@ export default function OpportunitiesPage() {
             clients={clients} 
             onEdit={handleEditOpportunity} 
             onDelete={handleDeleteOpportunity}
+            onDuplicate={handleDuplicateOpportunity}
             exchangeRates={configData.exchangeRates || []}
             displayCurrency={displayCurrency}
           />

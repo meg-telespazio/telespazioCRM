@@ -45,6 +45,7 @@ type OpportunityTableProps = {
   clients: Client[];
   onEdit: (opportunity: Opportunity) => void;
   onDelete: (opportunityId: string) => void;
+  onDuplicate: (opportunity: Opportunity) => void;
   exchangeRates: ExchangeRate[];
   displayCurrency: string;
 };
@@ -54,6 +55,7 @@ export function OpportunityTable({
   clients,
   onEdit,
   onDelete,
+  onDuplicate,
   exchangeRates,
   displayCurrency,
 }: OpportunityTableProps) {
@@ -90,8 +92,8 @@ export function OpportunityTable({
   };
 
   const tableColumns = React.useMemo(
-    () => columns(t, clients, onEdit, onDelete, exchangeRates, displayCurrency),
-    [t, clients, onEdit, onDelete, exchangeRates, displayCurrency]
+    () => columns(t, clients, onEdit, onDelete, onDuplicate, exchangeRates, displayCurrency),
+    [t, clients, onEdit, onDelete, onDuplicate, exchangeRates, displayCurrency]
   );
 
   const table = useReactTable({
@@ -152,10 +154,10 @@ export function OpportunityTable({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
-            placeholder={t('Table.filterByTitle')}
-            value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
+            placeholder="Buscar por proyecto o cliente..."
+            value={(table.getColumn('clientId')?.getFilterValue() as string) ?? ''}
             onChange={(event) =>
-              table.getColumn('title')?.setFilterValue(event.target.value)
+              table.getColumn('clientId')?.setFilterValue(event.target.value)
             }
             className="pl-10 h-10 bg-white border-slate-200 rounded-lg focus-visible:ring-primary focus-visible:ring-offset-0 text-xs"
           />

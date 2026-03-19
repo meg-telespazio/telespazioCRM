@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -13,6 +12,7 @@ import {
 import type { Opportunity, Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { addDays } from 'date-fns';
 
 const OPPORTUNITIES_COLLECTION = 'opportunities';
 
@@ -68,6 +68,27 @@ export async function addOpportunity(
     console.error("Opportunity creation failed: ", error);
     throw error;
   }
+}
+
+export async function duplicateOpportunity(
+  firestore: Firestore,
+  uid: string,
+  originalOpportunity: Opportunity
+) {
+  // Prepare duplication data
+  const { id, publicId, createdAt, createdBy, management, assignedTo, ...originalData } = originalOpportunity;
+  
+  const duplicatedData: OpportunityData = {
+    ...originalData,
+    title: `${originalOpportunity.title} COPY`,
+    stage: 'Prospecting', // Reset to initial stage
+    probability: 10,
+    closeDate: addDays(new Date(), 30), // Default to 30 days from now
+    requestDate: new Date(),
+    offerSentDate: undefined,
+  };
+
+  return addOpportunity(firestore, uid, duplicatedData);
 }
 
 export function updateOpportunity(

@@ -4,6 +4,9 @@ import type { ColumnDef } from '@tanstack/react-table';
 import {
   ArrowUpDown,
   MoreHorizontal,
+  Copy,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,6 +42,7 @@ export const columns = (
   clients: Client[],
   onEdit: (opportunity: Opportunity) => void,
   onDelete: (opportunityId: string) => void,
+  onDuplicate: (opportunity: Opportunity) => void,
   exchangeRates: ExchangeRate[],
   displayCurrency: string
 ): ColumnDef<Opportunity>[] => {
@@ -142,7 +146,16 @@ export const columns = (
           <ArrowUpDown className="ml-2 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => <span className="text-slate-600 text-[11px] truncate block max-w-[150px]">{getClientName(row.original.clientId, clients)}</span>,
+      cell: ({ row }) => {
+        const clientName = getClientName(row.original.clientId, clients);
+        return <span className="text-slate-600 text-[11px] truncate block max-w-[150px]">{clientName}</span>;
+      },
+      filterFn: (row, columnId, filterValue) => {
+        const clientName = getClientName(row.original.clientId, clients).toLowerCase();
+        const projectTitle = row.original.title.toLowerCase();
+        const search = filterValue.toLowerCase();
+        return clientName.includes(search) || projectTitle.includes(search);
+      },
     },
     {
       accessorKey: 'value',
@@ -218,14 +231,19 @@ export const columns = (
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
                 <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(opportunity)}>
-                  <MoreHorizontal className="mr-2 h-3.5 w-3.5" />
+                  <Edit className="mr-2 h-3.5 w-3.5" />
                   <span>{t('Actions.editOpportunity')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-[11px]" onClick={() => onDuplicate(opportunity)}>
+                  <Copy className="mr-2 h-3.5 w-3.5" />
+                  <span>Duplicar Negocio</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive text-[11px]"
                   onClick={() => onDelete(opportunity.id)}
                 >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" />
                   {t('Actions.deleteOpportunity')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
