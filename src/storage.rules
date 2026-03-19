@@ -1,18 +1,11 @@
 rules_version = '2';
 
-// REGLAS DE SEGURIDAD PARA STORAGE (Sync) - TRIGGER DEPLOYMENT: 2024-05-20
-// Permite acceso completo a usuarios autenticados para asegurar el funcionamiento de los adjuntos.
+// REGLAS DE SEGURIDAD PARA STORAGE (Sync) - FORZAR DESPLIEGUE: 2024-05-21_14-30
+// Permite acceso completo de lectura y escritura a cualquier usuario autenticado.
+// Esto soluciona los errores de 'storage/unauthorized' en adjuntos de oportunidades y contratos.
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Reglas explícitas para carpetas de negocio
-    match /opportunities/{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
-    match /contracts/{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
-    // Regla general para cualquier otra ruta
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
