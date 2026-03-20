@@ -12,24 +12,15 @@ Sistema integral de gestión de relaciones con clientes (CRM) diseñado específ
 - **Ciclo de Ventas Completo**: Oportunidades, Contratos, POs y Servicios.
 - **Logística e Inventario**: Gestión de Kits (Equipos) y Locaciones mapeadas.
 
-## 🛠️ Despliegue en Vercel
-
-Este proyecto está optimizado para funcionar en Vercel. Sigue estos pasos:
-
-1.  **Vincular GitHub**: Conecta tu repositorio `meg-telespazio/telespazioCRM` a un nuevo proyecto en Vercel.
-2.  **Variables de Entorno**: En la configuración del proyecto en Vercel, agrega las variables definidas en el archivo `.env.example`.
-3.  **Build Settings**: Vercel detectará automáticamente Next.js. No es necesario cambiar los comandos predeterminados.
-4.  **Genkit AI**: Asegúrate de incluir `GOOGLE_GENAI_API_KEY` para que las funciones de inteligencia artificial (como el buscador de logos o el generador de reportes IA) funcionen.
-
 ## 📦 Instrucciones para subir a GitHub
 
-Para subir el código a tu repositorio, abre la terminal y ejecuta:
+Para subir este código a tu repositorio, abre la terminal en la raíz del proyecto y ejecuta:
 
 ```bash
 # 1. Inicializar el repositorio local
 git init
 
-# 2. Agregar los archivos
+# 2. Agregar los archivos (el archivo .gitignore filtrará lo innecesario)
 git add .
 
 # 3. Crear el primer commit
@@ -38,10 +29,19 @@ git commit -m "Initial commit: Sistema CRM T-Track completo"
 # 4. Vincular con el repositorio remoto
 git remote add origin https://github.com/meg-telespazio/telespazioCRM.git
 
-# 5. Subir el código
+# 5. Renombrar rama principal y subir
 git branch -M main
 git push -u origin main
 ```
+
+## 🛠️ Despliegue en Vercel
+
+Este proyecto está optimizado para funcionar en Vercel. Sigue estos pasos:
+
+1.  **Vincular GitHub**: Conecta tu repositorio `meg-telespazio/telespazioCRM` a un nuevo proyecto en Vercel.
+2.  **Variables de Env**: En la configuración del proyecto en Vercel, agrega las variables definidas en el archivo `.env.example`.
+3.  **Build Settings**: Vercel detectará automáticamente Next.js. No es necesario cambiar los comandos predeterminados.
+4.  **Genkit AI**: Asegúrate de incluir `GOOGLE_GENAI_API_KEY` para que las funciones de IA (buscador de logos, reportes IA) funcionen.
 
 ---
 Desarrollado para **Telespazio Argentina**.
