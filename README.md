@@ -47,6 +47,16 @@ git remote -v
 git push -u origin main
 ```
 
+### ⚠️ Solución al Error 403 (Permission Denied)
+Si recibes el error `remote: Permission denied to Maexgon`, sigue estos pasos:
+
+1. **Permisos en GitHub**: El administrador del repo en la organización `meg-telespazio` debe ir a **Settings > Collaborators** y añadir a `Maexgon` con permiso de **Write**.
+2. **Token de Acceso (PAT)**: Si usas HTTPS, asegúrate de que tu Personal Access Token tenga activado el scope `repo`.
+3. **SSH (Recomendado)**: Si los problemas persisten, usa SSH:
+   ```bash
+   git remote set-url origin git@github.com:meg-telespazio/telespazioCRM.git
+   ```
+
 ## 🛠️ Despliegue en Vercel
 
 Este proyecto está optimizado para funcionar en Vercel. Sigue estos pasos:
