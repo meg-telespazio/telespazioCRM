@@ -12,15 +12,16 @@ Sistema integral de gestión de relaciones con clientes (CRM) diseñado específ
 - **Ciclo de Ventas Completo**: Oportunidades, Contratos, POs y Servicios.
 - **Logística e Inventario**: Gestión de Kits (Equipos) y Locaciones mapeadas.
 
-## 📦 Instrucciones para subir a GitHub
+## 📦 Instrucciones para GitHub
 
-Para subir este código a tu repositorio, abre la terminal en la raíz del proyecto y ejecuta:
+Para vincular este proyecto con el repositorio de Telespazio, abre una terminal en la carpeta del proyecto y ejecuta:
 
+### Opción A: Si es la primera vez que subes el código
 ```bash
 # 1. Inicializar el repositorio local
 git init
 
-# 2. Agregar los archivos (el archivo .gitignore filtrará lo innecesario)
+# 2. Agregar los archivos
 git add .
 
 # 3. Crear el primer commit
@@ -29,8 +30,20 @@ git commit -m "Initial commit: Sistema CRM T-Track completo"
 # 4. Vincular con el repositorio remoto
 git remote add origin https://github.com/meg-telespazio/telespazioCRM.git
 
-# 5. Renombrar rama principal y subir
+# 5. Subir a la rama principal
 git branch -M main
+git push -u origin main
+```
+
+### Opción B: Si ya tenías otro repositorio y quieres cambiarlo a este
+```bash
+# Cambiar la URL del remoto "origin"
+git remote set-url origin https://github.com/meg-telespazio/telespazioCRM.git
+
+# Verificar el cambio
+git remote -v
+
+# Subir los cambios
 git push -u origin main
 ```
 
