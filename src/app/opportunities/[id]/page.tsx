@@ -166,7 +166,7 @@ export default function OpportunityFormPage() {
   const searchParams = useSearchParams();
   const { t, locale } = useI18n();
   const { toast } = useToast();
-  const datePickerLocale = locale === 'es' ? es : enUS;
+  const dateLocale = locale === 'es' ? es : enUS;
   const isFormLoaded = useRef(false);
 
   const [isRequestDatePickerOpen, setRequestDatePickerOpen] = useState(false);
@@ -726,7 +726,7 @@ export default function OpportunityFormPage() {
                     name="contractMonths"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Forms.contractMonths')}</FormLabel>
+                        <FormLabel>{t('Months')}</FormLabel>
                         <Select
                           onValueChange={(value) =>
                             field.onChange(Number(value))
@@ -796,7 +796,7 @@ export default function OpportunityFormPage() {
                               onAccept={() => setRequestDatePickerOpen(false)}
                               onCancel={() => setRequestDatePickerOpen(false)}
                               initialFocus
-                              locale={datePickerLocale}
+                              locale={dateLocale}
                               formatters={{ formatWeekdayName }}
                               disabled={isLocked}
                               captionLayout="dropdown"
@@ -850,7 +850,7 @@ export default function OpportunityFormPage() {
                               onAccept={() => setOfferDatePickerOpen(false)}
                               onCancel={() => setOfferDatePickerOpen(false)}
                               initialFocus
-                              locale={datePickerLocale}
+                              locale={dateLocale}
                               formatters={{ formatWeekdayName }}
                               disabled={isLocked}
                               captionLayout="dropdown"
@@ -904,7 +904,7 @@ export default function OpportunityFormPage() {
                               onAccept={() => setCloseDatePickerOpen(false)}
                               onCancel={() => setCloseDatePickerOpen(false)}
                               initialFocus
-                              locale={datePickerLocale}
+                              locale={dateLocale}
                               formatters={{ formatWeekdayName }}
                               disabled={isLocked}
                               captionLayout="dropdown"
