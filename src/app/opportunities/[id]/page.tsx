@@ -223,7 +223,7 @@ export default function OpportunityFormPage() {
 
   // Form for new opportunity
   const form = useForm<OpportunityFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(getFormSchema(t)),
     defaultValues: {
       title: '',
       clientId: clientIdFromQuery || '',
@@ -250,6 +250,7 @@ export default function OpportunityFormPage() {
 
   const watchedClientId = form.watch('clientId');
 
+  // Consulta dinámica de contactos basada en el cliente seleccionado
   const contactsQuery = useMemo(() => {
     if (!user || !firestore || !watchedClientId) return null;
     const ref = collection(firestore, 'contacts');
@@ -986,7 +987,7 @@ export default function OpportunityFormPage() {
                         </FormControl>
                         <FormLabel className="font-normal">
                           {t('Forms.isTender')}
-                        </Label>
+                        </FormLabel>
                       </FormItem>
                     )}
                   />
