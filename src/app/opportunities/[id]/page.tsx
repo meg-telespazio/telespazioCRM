@@ -206,54 +206,22 @@ export default function OpportunityFormPage() {
   const { data: opportunityData, loading: opportunityLoading } =
     useDoc<Opportunity>(opportunityDocRef);
 
-  const baseClientQuery = useMemo(() => {
-    if (!user) return null;
-    return where('management', '==', user.management);
-  }, [user]);
-
   const clientsQuery = useMemo(() => {
-    if (!baseClientQuery || !firestore) return null;
-    return query(collection(firestore, 'clients'), baseClientQuery);
-  }, [firestore, baseClientQuery]);
-
-  const contactsQuery = useMemo(() => {
-    if (!baseClientQuery || !firestore) return null;
-    return query(collection(firestore, 'contacts'), baseClientQuery);
-  }, [firestore, baseClientQuery]);
-
-  const productsAndServicesQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'productsAndServices'));
-  }, [firestore]);
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
 
   const { data: clientsData, loading: clientsLoading } =
     useCollection<Client>(clientsQuery);
-
-  const { data: allContactsData, loading: contactsLoading } =
-    useCollection<Contact>(contactsQuery);
-
-  const {
-    data: allProductsAndServices,
-    loading: productsAndServicesLoading,
-  } = useCollection<ProductOrService>(productsAndServicesQuery);
-
-  const productsAndServices = useMemo(() => {
-    if (!allProductsAndServices) return [];
-    return allProductsAndServices.filter((item) => item.status === 'active');
-  }, [allProductsAndServices]);
 
   const clients = useMemo(() => {
     if (!clientsData) return [];
     return [...clientsData].sort((a, b) => a.name.localeCompare(b.name));
   }, [clientsData]);
 
-  const catalogItems = useMemo(() => {
-    if (!productsAndServices) return [];
-    return [...productsAndServices].sort((a, b) => a.name.localeCompare(b.name));
-  }, [productsAndServices]);
-
-  const formSchema = useMemo(() => getFormSchema(t), [t]);
-
+  // Form for new opportunity
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -280,6 +248,45 @@ export default function OpportunityFormPage() {
     },
   });
 
+  const watchedClientId = form.watch('clientId');
+
+  const contactsQuery = useMemo(() => {
+    if (!user || !firestore || !watchedClientId) return null;
+    const ref = collection(firestore, 'contacts');
+    const baseQuery = query(ref, where('clientId', '==', watchedClientId));
+    if (user.role === 'admin') return baseQuery;
+    return query(baseQuery, where('management', '==', user.management));
+  }, [user, firestore, watchedClientId]);
+
+  const { data: contactsData, loading: contactsLoading } =
+    useCollection<Contact>(contactsQuery);
+
+  const contacts = useMemo(() => {
+    return contactsData || [];
+  }, [contactsData]);
+
+  const productsAndServicesQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'productsAndServices'));
+  }, [firestore]);
+
+  const {
+    data: allProductsAndServices,
+    loading: productsAndServicesLoading,
+  } = useCollection<ProductOrService>(productsAndServicesQuery);
+
+  const productsAndServices = useMemo(() => {
+    if (!allProductsAndServices) return [];
+    return allProductsAndServices.filter((item) => item.status === 'active');
+  }, [allProductsAndServices]);
+
+  const catalogItems = useMemo(() => {
+    if (!productsAndServices) return [];
+    return [...productsAndServices].sort((a, b) => a.name.localeCompare(b.name));
+  }, [productsAndServices]);
+
+  const formSchema = useMemo(() => getFormSchema(t), [t]);
+
   const {
     fields: lineItemFields,
     append,
@@ -290,7 +297,6 @@ export default function OpportunityFormPage() {
   });
 
   const watchedStage = form.watch('stage');
-  const watchedClientId = form.watch('clientId');
   const watchedLineItems = form.watch('lineItems', []);
   const watchedContractMonths = form.watch('contractMonths');
   const watchedGeneralDiscount = form.watch('generalDiscountPercentage', 0);
@@ -434,13 +440,6 @@ export default function OpportunityFormPage() {
       recurringCharge: 0,
     });
   };
-
-  const filteredContacts = useMemo(() => {
-    if (!allContactsData || !watchedClientId) return [];
-    return allContactsData.filter(
-      (contact) => contact.clientId === watchedClientId
-    );
-  }, [allContactsData, watchedClientId]);
 
   // Cargar datos en el formulario solo una vez
   useEffect(() => {
@@ -657,9 +656,10 @@ export default function OpportunityFormPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {filteredContacts.map((contact) => (
+                            {contacts.map((contact) => (
                               <SelectItem key={`contact-${contact.id}`} value={contact.id}>{contact.name}</SelectItem>
                             ))}
+                            {contacts.length === 0 && <SelectItem value="none" disabled>No contacts found</SelectItem>}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -775,7 +775,7 @@ export default function OpportunityFormPage() {
                               >
                                 {field.value ? (
                                   format(field.value, 'PPP', {
-                                    locale: datePickerLocale,
+                                    locale: dateLocale,
                                   })
                                 ) : (
                                   <span>{t('Forms.pickDate')}</span>
@@ -829,7 +829,7 @@ export default function OpportunityFormPage() {
                               >
                                 {field.value ? (
                                   format(field.value, 'PPP', {
-                                    locale: datePickerLocale,
+                                    locale: dateLocale,
                                   })
                                 ) : (
                                   <span>{t('Forms.pickDate')}</span>
@@ -883,7 +883,7 @@ export default function OpportunityFormPage() {
                               >
                                 {field.value ? (
                                   format(field.value, 'PPP', {
-                                    locale: datePickerLocale,
+                                    locale: dateLocale,
                                   })
                                 ) : (
                                   <span>{t('Forms.pickDate')}</span>
@@ -986,7 +986,7 @@ export default function OpportunityFormPage() {
                         </FormControl>
                         <FormLabel className="font-normal">
                           {t('Forms.isTender')}
-                        </FormLabel>
+                        </Label>
                       </FormItem>
                     )}
                   />
