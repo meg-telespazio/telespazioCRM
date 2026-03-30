@@ -321,6 +321,23 @@ export default function ClientFormPage() {
                           <FormControl><Input {...field} /></FormControl><FormMessage />
                         </FormItem>
                       )} />
+                      <FormField control={form.control} name="holding" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.holding')}</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input {...field} list="holdings-list" placeholder={t('Forms.holdingPlaceholder')} />
+                              <datalist id="holdings-list">
+                                {holdings.map(h => <option key={h} value={h} />)}
+                              </datalist>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="countryHQ" render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t('Forms.countryHQ')}</FormLabel>
@@ -332,9 +349,6 @@ export default function ClientFormPage() {
                           </Select><FormMessage />
                         </FormItem>
                       )} />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="website" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.website')}</FormLabel>
                           <FormControl>
@@ -345,25 +359,27 @@ export default function ClientFormPage() {
                           </FormControl><FormMessage />
                         </FormItem>
                       )} />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="linkedinPage" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.linkedinPage')}</FormLabel>
                           <FormControl><Input {...field} /></FormControl><FormMessage />
                         </FormItem>
                       )} />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="email" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.clientEmail')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="phone" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.clientPhone')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
+                      <FormField control={form.control} name="cuit" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.cuit')}</FormLabel><FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
+                      )} />
                     </div>
-
-                    <FormField control={form.control} name="cuit" render={({ field }) => (
-                      <FormItem><FormLabel>{t('Forms.cuit')}</FormLabel><FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
-                    )} />
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <FormField control={form.control} name="status" render={({ field }) => (
