@@ -1,6 +1,4 @@
 
-
-
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -594,6 +592,19 @@ export const translations = {
       yourAnswer: 'Your answer...',
       chargePlaceholder: '0.00',
       selectItem: 'Select item...',
+      // New fields
+      risk: 'Risk Level',
+      isPlanned: 'Is Planned',
+      opportunityType: 'Opportunity Type',
+      projectManagerEmail: 'PM Email',
+      contractReference: 'Contract Reference',
+      grossMarginPercentage: 'Gross Margin (%)',
+      grossMarginAmount: 'Gross Margin Amount',
+      generalData: 'General Data',
+      commercialData: 'Commercial Data',
+      clientRelation: 'Client Relationship',
+      scheduleStatus: 'Schedule & Status',
+      additionalInfo: 'Attachments & Competition',
     },
     Table: {
       actions: 'Actions',
@@ -1444,6 +1455,19 @@ export const translations = {
       yourAnswer: 'Tu respuesta...',
       chargePlaceholder: '0.00',
       selectItem: 'Seleccione ítem...',
+      // Nuevos campos
+      risk: 'Nivel de Riesgo',
+      isPlanned: 'Es Planeada',
+      opportunityType: 'Tipo de Oportunidad',
+      projectManagerEmail: 'Email del PM',
+      contractReference: 'Referencia de Contrato',
+      grossMarginPercentage: 'Margen Bruto (%)',
+      grossMarginAmount: 'Monto Margen Bruto',
+      generalData: 'Datos Generales',
+      commercialData: 'Datos Comerciales',
+      clientRelation: 'Relación con el Cliente',
+      scheduleStatus: 'Cronograma y Estado',
+      additionalInfo: 'Adjuntos y Competencia',
     },
     Table: {
       actions: 'Acciones',
@@ -1456,7 +1480,7 @@ export const translations = {
       contractId: 'ID Contrato',
       opportunityId: 'ID Negocio',
       itemId: 'SKU',
-      type: 'Tipo',
+      type: 'Type',
       currency: 'Moneda',
       nrc: 'OTC',
       mrc: 'MRC',

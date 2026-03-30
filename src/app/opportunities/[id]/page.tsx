@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -15,6 +16,9 @@ import type {
   Contact,
   ProductOrService,
   SystemConfig,
+  Contract,
+  OpportunityRisk,
+  OpportunityType,
 } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -27,7 +31,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer, Info, ShieldCheck, Briefcase, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -71,6 +75,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { AttachmentsManager } from '@/components/opportunities/attachments-manager';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
 
 const getFormSchema = (t: (key: string) => string) => {
   const lineItemSchema = z.object({
@@ -123,6 +128,14 @@ const getFormSchema = (t: (key: string) => string) => {
       applyDiscountToMrc: z.boolean().optional().default(false),
       reason: z.string().optional(),
       competition: z.string().optional(),
+      // New Fields
+      risk: z.enum(['C-Low', 'B-Medium', 'A-High']),
+      isPlanned: z.boolean().default(false),
+      opportunityType: z.enum(['New Logo', 'New Business', 'Ampliacion', 'Renegociacion']),
+      projectManagerEmail: z.string().email().optional().or(z.literal('')),
+      contractReferenceId: z.string().optional().or(z.literal('')),
+      grossMarginPercentage: z.coerce.number().min(0).max(100),
+      grossMarginAmount: z.coerce.number().min(0),
     })
     .superRefine((data, ctx) => {
       if (
@@ -189,11 +202,9 @@ export default function OpportunityFormPage() {
   const isNew = opportunityId === 'new';
   const clientIdFromQuery = searchParams.get('clientId');
 
-  // Fetch system config for exchange rates
   const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
-  // Resetear el flag de carga cuando cambia el ID
   useEffect(() => {
     isFormLoaded.current = false;
   }, [opportunityId]);
@@ -221,7 +232,6 @@ export default function OpportunityFormPage() {
     return [...clientsData].sort((a, b) => a.name.localeCompare(b.name));
   }, [clientsData]);
 
-  // Form for new opportunity
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(getFormSchema(t)),
     defaultValues: {
@@ -245,18 +255,22 @@ export default function OpportunityFormPage() {
       applyDiscountToMrc: false,
       reason: '',
       competition: '',
+      risk: 'C-Low',
+      isPlanned: false,
+      opportunityType: 'New Business',
+      projectManagerEmail: '',
+      contractReferenceId: '',
+      grossMarginPercentage: 0,
+      grossMarginAmount: 0,
     },
   });
 
   const watchedClientId = form.watch('clientId');
 
-  // Consulta dinámica de contactos basada en el cliente seleccionado
   const contactsQuery = useMemo(() => {
     if (!user || !firestore || !watchedClientId) return null;
     const ref = collection(firestore, 'contacts');
-    const baseQuery = query(ref, where('clientId', '==', watchedClientId));
-    if (user.role === 'admin') return baseQuery;
-    return query(baseQuery, where('management', '==', user.management));
+    return query(ref, where('clientId', '==', watchedClientId));
   }, [user, firestore, watchedClientId]);
 
   const { data: contactsData, loading: contactsLoading } =
@@ -265,6 +279,15 @@ export default function OpportunityFormPage() {
   const contacts = useMemo(() => {
     return contactsData || [];
   }, [contactsData]);
+
+  // Dynamic contracts for the selected client
+  const contractsQuery = useMemo(() => {
+    if (!user || !firestore || !watchedClientId) return null;
+    const ref = collection(firestore, 'contracts');
+    return query(ref, where('clientId', '==', watchedClientId), where('status', '==', 'activo'));
+  }, [user, firestore, watchedClientId]);
+
+  const { data: clientContracts } = useCollection<Contract>(contractsQuery);
 
   const productsAndServicesQuery = useMemo(() => {
     if (!firestore) return null;
@@ -285,8 +308,6 @@ export default function OpportunityFormPage() {
     if (!productsAndServices) return [];
     return [...productsAndServices].sort((a, b) => a.name.localeCompare(b.name));
   }, [productsAndServices]);
-
-  const formSchema = useMemo(() => getFormSchema(t), [t]);
 
   const {
     fields: lineItemFields,
@@ -328,7 +349,7 @@ export default function OpportunityFormPage() {
     }
   }, [selectedCatalogItem]);
 
-  const { lineItemTotalNrc, lineItemTotalMrc, totalNrc, totalMrc, totalFcv } =
+  const { totalFcv } =
     useMemo(() => {
       const lineTotals = (watchedLineItems || []).reduce(
         (acc, item) => {
@@ -355,10 +376,6 @@ export default function OpportunityFormPage() {
       const fcv = finalNrc + finalMrc * watchedContractMonths;
 
       return {
-        lineItemTotalNrc: lineTotals.nrc,
-        lineItemTotalMrc: lineTotals.mrc,
-        totalNrc: finalNrc,
-        totalMrc: finalMrc,
         totalFcv: fcv,
       };
     }, [
@@ -442,7 +459,6 @@ export default function OpportunityFormPage() {
     });
   };
 
-  // Cargar datos en el formulario solo una vez
   useEffect(() => {
     if (opportunityData && !isFormLoaded.current) {
       form.reset({
@@ -462,6 +478,13 @@ export default function OpportunityFormPage() {
         applyDiscountToMrc: opportunityData.applyDiscountToMrc || false,
         reason: opportunityData.reason || '',
         competition: opportunityData.competition?.join(', ') || '',
+        risk: opportunityData.risk || 'C-Low',
+        isPlanned: opportunityData.isPlanned || false,
+        opportunityType: opportunityData.opportunityType || 'New Business',
+        projectManagerEmail: opportunityData.projectManagerEmail || '',
+        contractReferenceId: opportunityData.contractReferenceId || '',
+        grossMarginPercentage: opportunityData.grossMarginPercentage || 0,
+        grossMarginAmount: opportunityData.grossMarginAmount || 0,
       });
       isFormLoaded.current = true;
     }
@@ -496,18 +519,11 @@ export default function OpportunityFormPage() {
     }
   }
 
-  const stages = [
-    'Prospecting',
-    'Proposal',
-    'Negotiation',
-    'Won',
-    'Lost',
-    'Canceled',
-    'Suspended',
-  ];
+  const riskOptions: OpportunityRisk[] = ['C-Low', 'B-Medium', 'A-High'];
+  const typeOptions: OpportunityType[] = ['New Logo', 'New Business', 'Ampliacion', 'Renegociacion'];
+  const stages = ['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost', 'Canceled', 'Suspended'];
   const contractMonthsOptions = [12, 24, 36];
   const currencyOptions: Opportunity['currency'][] = ['USD', 'EUR', 'ARS'];
-  const discountOptions = [0, 5, 10, 15, 20, 25, 30];
 
   const pageIsLoading =
     userLoading ||
@@ -517,890 +533,432 @@ export default function OpportunityFormPage() {
     (opportunityLoading && !isNew);
 
   if (pageIsLoading) {
-    return (
-      <div className="flex flex-1 flex-col">
-        <AppHeader
-          title={isNew ? t('Forms.addOpportunity') : t('Forms.editOpportunity')}
-        />
-        <main className="flex-1 p-4 sm:p-6">
-          <div className="mx-auto max-w-4xl space-y-6">
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </main>
-      </div>
-    );
+    return <div className="flex flex-1 flex-col"><AppHeader title={t('App.loading')} /><main className="p-6"><Skeleton className="h-[70vh] w-full" /></main></div>;
   }
 
-  const calendarRange = {
-    startMonth: new Date(2000, 0),
-    endMonth: new Date(2050, 11),
-  };
+  const calendarRange = { startMonth: new Date(2000, 0), endMonth: new Date(2050, 11) };
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader
-        title={isNew ? t('Forms.addOpportunity') : t('Forms.editOpportunity')}
-      >
+      <AppHeader title={isNew ? t('Forms.addOpportunity') : t('Forms.editOpportunity')}>
         <Button variant="outline" onClick={() => router.push('/opportunities')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('Actions.backToOpportunityList')}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push(`/opportunities/${opportunityId}/print`)}
-          disabled={isNew}
-        >
+        <Button type="button" variant="outline" onClick={() => router.push(`/opportunities/${opportunityId}/print`)} disabled={isNew}>
           <Printer className="mr-2 h-4 w-4" />
           {t('Forms.printOffer')}
         </Button>
       </AppHeader>
+      
       <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="mx-auto max-w-4xl">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              
+              {/* SECCIÓN 1: DATOS GENERALES */}
               <Card>
+                <CardHeader className="bg-muted/30 border-b">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                    <Info className="h-4 w-4 text-primary" /> {t('Forms.generalData')}
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-6 p-6">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase">{t('Profile.management')}</Label>
+                      <div className="flex items-center gap-2 p-2 border rounded bg-muted/10 text-sm font-medium">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        {user?.management}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground uppercase">{t('Roles.ejecutivo')}</Label>
+                      <div className="flex items-center gap-2 p-2 border rounded bg-muted/10 text-sm font-medium">
+                        <Briefcase className="h-4 w-4 text-primary" />
+                        {user?.displayName}
+                      </div>
+                    </div>
+                  </div>
+
+                  <FormField control={form.control} name="title" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Dashboard.recentOpportunities.opportunityHeader')}</FormLabel>
+                      <FormControl><Input placeholder={t('Forms.opportunityTitlePlaceholder')} {...field} disabled={isLocked} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="risk" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          {t('Dashboard.recentOpportunities.opportunityHeader')}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t('Forms.opportunityTitlePlaceholder')}
-                            {...field}
-                            disabled={isLocked}
-                          />
-                        </FormControl>
+                        <FormLabel>{t('Forms.risk')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {riskOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                          </SelectContent>
+                        </Select><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="opportunityType" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.opportunityType')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {typeOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                          </SelectContent>
+                        </Select><FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="projectManagerEmail" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.projectManagerEmail')}</FormLabel>
+                        <FormControl><Input type="email" placeholder="pm@telespazio.com" {...field} disabled={isLocked} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.description')}</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder={t('Forms.descriptionPlaceholder')}
-                            {...field}
-                            className="h-24"
-                            disabled={isLocked}
-                          />
-                        </FormControl>
-                        <FormMessage />
+                    )} />
+                    <FormField control={form.control} name="isPlanned" render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-muted/5">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">{t('Forms.isPlanned')}</FormLabel>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
                       </FormItem>
-                    )}
-                  />
+                    )} />
+                  </div>
+
+                  <FormField control={form.control} name="description" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.description')}</FormLabel>
+                      <FormControl><Textarea placeholder={t('Forms.descriptionPlaceholder')} {...field} className="h-24" disabled={isLocked} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </CardContent>
               </Card>
 
+              {/* SECCIÓN 2: RELACIÓN CON EL CLIENTE */}
               <Card>
-                <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="clientId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t('Dashboard.recentOpportunities.clientHeader')}
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={!isNew || isLocked || !!clientIdFromQuery}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={t('Forms.selectClient')}
-                              />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {clients.map((client) => (
-                              <SelectItem key={`client-${client.id}`} value={client.id}>{client.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contactId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.referenceContact')}</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={!watchedClientId || isLocked}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={t('Forms.selectContact')}
-                              />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {contacts.map((contact) => (
-                              <SelectItem key={`contact-${contact.id}`} value={contact.id}>{contact.name}</SelectItem>
-                            ))}
-                            {contacts.length === 0 && <SelectItem value="none" disabled>No contacts found</SelectItem>}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <CardHeader className="bg-muted/30 border-b">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-primary" /> {t('Forms.clientRelation')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                  <FormField control={form.control} name="clientId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Dashboard.recentOpportunities.clientHeader')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!isNew || isLocked || !!clientIdFromQuery}>
+                        <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl>
+                        <SelectContent>{clients.map((client) => <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>)}</SelectContent>
+                      </Select><FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="contactId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.referenceContact')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!watchedClientId || isLocked}>
+                        <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectContact')} /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          {contacts.map((contact) => <SelectItem key={contact.id} value={contact.id}>{contact.name}</SelectItem>)}
+                          {contacts.length === 0 && <SelectItem value="none" disabled>Sin contactos registrados</SelectItem>}
+                        </SelectContent>
+                      </Select><FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="contractReferenceId" render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>{t('Forms.contractReference')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={!watchedClientId || isLocked}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar contrato vigente (opcional)" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">-- Sin referencia --</SelectItem>
+                          {clientContracts?.map((contract) => <SelectItem key={contract.id} value={contract.id}>{contract.publicId} ({contract.type})</SelectItem>)}
+                        </SelectContent>
+                      </Select><FormMessage />
+                    </FormItem>
+                  )} />
                 </CardContent>
               </Card>
 
+              {/* SECCIÓN 3: CRONOGRAMA Y ESTADO */}
               <Card>
-                <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-3">
-                  <FormField
-                    control={form.control}
-                    name="value"
-                    render={({ field }) => (
+                <CardHeader className="bg-muted/30 border-b">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-primary" /> {t('Forms.scheduleStatus')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <FormField control={form.control} name="requestDate" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t('Forms.requestDate')}</FormLabel>
+                        <Popover open={isRequestDatePickerOpen} onOpenChange={setRequestDatePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>
+                              {field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button></FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setRequestDatePickerOpen(false)} onCancel={() => setRequestDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} />
+                          </PopoverContent>
+                        </Popover><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="offerSentDate" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t('Forms.offerSentDate')}</FormLabel>
+                        <Popover open={isOfferDatePickerOpen} onOpenChange={setOfferDatePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>
+                              {field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button></FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setOfferDatePickerOpen(false)} onCancel={() => setOfferDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} />
+                          </PopoverContent>
+                        </Popover><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="closeDate" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t('Forms.estCloseDate')}</FormLabel>
+                        <Popover open={isCloseDatePickerOpen} onOpenChange={setCloseDatePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>
+                              {field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button></FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setCloseDatePickerOpen(false)} onCancel={() => setCloseDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} />
+                          </PopoverContent>
+                        </Popover><FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                    <FormField control={form.control} name="stage" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Dashboard.recentOpportunities.stageHeader')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
+                          <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectStage')} /></SelectTrigger></FormControl>
+                          <SelectContent>{stages.map((stage) => <SelectItem key={stage} value={stage}>{t(`Stages.${stage}`)}</SelectItem>)}</SelectContent>
+                        </Select><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="probability" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.probability')} ({field.value}%)</FormLabel>
+                        <FormControl><Slider min={0} max={100} step={5} value={[field.value]} onValueChange={(value) => field.onChange(value[0])} disabled={isLocked} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="isTender" render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-x-3 space-y-0 pt-8">
+                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
+                        <FormLabel className="font-normal">{t('Forms.isTender')}</FormLabel>
+                      </FormItem>
+                    )} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* SECCIÓN 4: DATOS COMERCIALES */}
+              <Card>
+                <CardHeader className="bg-muted/30 border-b">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" /> {t('Forms.commercialData')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField control={form.control} name="value" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.fcv')} ({form.watch('currency')})</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder={t('Forms.chargePlaceholder')}
-                            {...field}
-                            readOnly
-                            className="font-bold"
-                          />
-                        </FormControl>
+                        <FormControl><Input type="number" {...field} readOnly className="font-bold bg-muted/20" /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="currency"
-                    render={({ field }) => (
+                    )} />
+                    <FormField control={form.control} name="currency" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Table.currency')}</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            const oldCurrency = field.value;
-                            field.onChange(value);
-                            convertCurrency(oldCurrency, value);
-                          }}
-                          value={field.value}
-                          disabled={isLocked}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {currencyOptions.map((currency) => (
-                              <SelectItem key={`currency-${currency}`} value={currency}>{t(`Currencies.${currency}`)}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
+                        <Select onValueChange={(value) => { const oldCurrency = field.value; field.onChange(value); convertCurrency(oldCurrency, value); }} value={field.value} disabled={isLocked}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>{currencyOptions.map((currency) => <SelectItem key={currency} value={currency}>{t(`Currencies.${currency}`)}</SelectItem>)}</SelectContent>
+                        </Select><FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contractMonths"
-                    render={({ field }) => (
+                    )} />
+                    <FormField control={form.control} name="contractMonths" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Months')}</FormLabel>
-                        <Select
-                          onValueChange={(value) =>
-                            field.onChange(Number(value))
-                          }
-                          value={String(field.value)}
-                          disabled={isLocked}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {contractMonthsOptions.map((months) => (
-                              <SelectItem key={`months-${months}`} value={String(months)}>{months} {t('Months').toLowerCase()}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
+                        <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)} disabled={isLocked}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>{contractMonthsOptions.map((months) => <SelectItem key={months} value={String(months)}>{months} {t('Months').toLowerCase()}</SelectItem>)}</SelectContent>
+                        </Select><FormMessage />
                       </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+                    )} />
+                  </div>
 
-              <Card>
-                <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
-                  <FormField
-                    control={form.control}
-                    name="requestDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col pt-2">
-                        <FormLabel>{t('Forms.requestDate')}</FormLabel>
-                        <Popover
-                          open={isRequestDatePickerOpen}
-                          onOpenChange={setRequestDatePickerOpen}
-                        >
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={'outline'}
-                                className={cn(
-                                  'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground'
-                                )}
-                                disabled={isLocked}
-                              >
-                                {field.value ? (
-                                  format(field.value, 'PPP', {
-                                    locale: dateLocale,
-                                  })
-                                ) : (
-                                  <span>{t('Forms.pickDate')}</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-auto p-0"
-                            align="start"
-                          >
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              onAccept={() => setRequestDatePickerOpen(false)}
-                              onCancel={() => setRequestDatePickerOpen(false)}
-                              initialFocus
-                              locale={dateLocale}
-                              formatters={{ formatWeekdayName }}
-                              disabled={isLocked}
-                              captionLayout="dropdown"
-                              {...calendarRange}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="offerSentDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col pt-2">
-                        <FormLabel>{t('Forms.offerSentDate')}</FormLabel>
-                        <Popover
-                          open={isOfferDatePickerOpen}
-                          onOpenChange={setOfferDatePickerOpen}
-                        >
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={'outline'}
-                                className={cn(
-                                  'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground'
-                                )}
-                                disabled={isLocked}
-                              >
-                                {field.value ? (
-                                  format(field.value, 'PPP', {
-                                    locale: dateLocale,
-                                  })
-                                ) : (
-                                  <span>{t('Forms.pickDate')}</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-auto p-0"
-                            align="start"
-                          >
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              onAccept={() => setOfferDatePickerOpen(false)}
-                              onCancel={() => setOfferDatePickerOpen(false)}
-                              initialFocus
-                              locale={dateLocale}
-                              formatters={{ formatWeekdayName }}
-                              disabled={isLocked}
-                              captionLayout="dropdown"
-                              {...calendarRange}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="closeDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col pt-2">
-                        <FormLabel>{t('Forms.estCloseDate')}</FormLabel>
-                        <Popover
-                          open={isCloseDatePickerOpen}
-                          onOpenChange={setCloseDatePickerOpen}
-                        >
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={'outline'}
-                                className={cn(
-                                  'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground'
-                                )}
-                                disabled={isLocked}
-                              >
-                                {field.value ? (
-                                  format(field.value, 'PPP', {
-                                    locale: dateLocale,
-                                  })
-                                ) : (
-                                  <span>{t('Forms.pickDate')}</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-auto p-0"
-                            align="start"
-                          >
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              onAccept={() => setCloseDatePickerOpen(false)}
-                              onCancel={() => setCloseDatePickerOpen(false)}
-                              initialFocus
-                              locale={dateLocale}
-                              formatters={{ formatWeekdayName }}
-                              disabled={isLocked}
-                              captionLayout="dropdown"
-                              {...calendarRange}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="grid grid-cols-1 gap-6 p-6 md:grid-cols-3">
-                  <FormField
-                    control={form.control}
-                    name="stage"
-                    render={({ field }) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-dashed">
+                    <FormField control={form.control} name="grossMarginPercentage" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          {t('Dashboard.recentOpportunities.stageHeader')}
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={isLocked}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={t('Forms.selectStage')}
-                              />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {stages.map((stage) => (
-                              <SelectItem key={`stage-${stage}`} value={stage}>{t(`Stages.${stage}`)}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>{t('Forms.grossMarginPercentage')}</FormLabel>
+                        <FormControl><Input type="number" step="0.01" {...field} disabled={isLocked} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="probability"
-                    render={({ field }) => (
+                    )} />
+                    <FormField control={form.control} name="grossMarginAmount" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          {t('Forms.probability')} ({field.value}%)
-                        </FormLabel>
-                        <FormControl>
-                          <Slider
-                            min={0}
-                            max={100}
-                            step={5}
-                            value={[field.value]}
-                            onValueChange={(value) => field.onChange(value[0])}
-                            disabled={isLocked}
-                          />
-                        </FormControl>
+                        <FormLabel>{t('Forms.grossMarginAmount')} ({form.watch('currency')})</FormLabel>
+                        <FormControl><Input type="number" step="0.01" {...field} disabled={isLocked} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="isTender"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center gap-x-3 space-y-0 pt-8">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isLocked}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {t('Forms.isTender')}
-                        </FormLabel>
-                      </FormItem>
-                    )}
-                  />
+                    )} />
+                  </div>
                 </CardContent>
               </Card>
 
-              {['Lost', 'Canceled', 'Suspended'].includes(watchedStage) && (
-                <Card>
-                  <CardContent className="p-6">
-                    <FormField
-                      control={form.control}
-                      name="reason"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.reason')}</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder={t('Forms.reasonPlaceholder')}
-                              {...field}
-                              className="h-24"
-                              disabled={isLocked}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-              
+              {/* SECCIÓN 5: ÍTEMS DE LA OFERTA */}
               <Card>
-                <CardHeader>
-                  <CardTitle>{t('Forms.lineItems')}</CardTitle>
+                <CardHeader className="bg-muted/30 border-b">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider">{t('Forms.lineItems')}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6" id="line-item-adder">
+                <CardContent className="space-y-6 p-6">
                   <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-7">
                     <div className="md:col-span-2">
-                      <Label htmlFor="line-item-catalog-item" className="text-xs">{t('PS.itemName')}</Label>
-                      <Select
-                        value={adderState.selectedCatalogItemId}
-                        onValueChange={(id) =>
-                          setAdderState((prev) => ({
-                            ...prev,
-                            selectedCatalogItemId: id,
-                          }))
-                        }
-                        disabled={isLocked}
-                      >
-                        <SelectTrigger id="line-item-catalog-item" className="h-9">
-                          <SelectValue placeholder={t('Forms.selectItem')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {catalogItems.map((item) => (
-                            <SelectItem key={`cat-item-${item.id}`} value={item.id}>{item.name}</SelectItem>
-                          ))}
-                        </SelectContent>
+                      <Label className="text-xs">{t('PS.itemName')}</Label>
+                      <Select value={adderState.selectedCatalogItemId} onValueChange={(id) => setAdderState((prev) => ({ ...prev, selectedCatalogItemId: id }))} disabled={isLocked}>
+                        <SelectTrigger className="h-9"><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger>
+                        <SelectContent>{catalogItems.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="line-item-quantity" className="text-xs">{t('Forms.quantity')}</Label>
-                      <Input
-                        id="line-item-quantity"
-                        className="h-9"
-                        type="number"
-                        value={adderState.quantity}
-                        onChange={(e) =>
-                          setAdderState((prev) => ({
-                            ...prev,
-                            quantity: Number(e.target.value),
-                          }))
-                        }
-                        min={1}
-                        disabled={isLocked}
-                      />
+                      <Label className="text-xs">{t('Forms.quantity')}</Label>
+                      <Input className="h-9" type="number" value={adderState.quantity} onChange={(e) => setAdderState((prev) => ({ ...prev, quantity: Number(e.target.value) }))} min={1} disabled={isLocked} />
                     </div>
                     <div>
-                      <Label htmlFor="line-item-nrc" className="text-xs">{t('Table.nrc')}</Label>
-                      <Input
-                        id="line-item-nrc"
-                        className="h-9"
-                        type="number"
-                        value={adderState.oneTimeCharge}
-                        onChange={(e) =>
-                          setAdderState((prev) => ({
-                            ...prev,
-                            oneTimeCharge: Number(e.target.value),
-                          }))
-                        }
-                        disabled={!selectedCatalogItem?.isEditable || isLocked}
-                      />
+                      <Label className="text-xs">{t('Table.nrc')}</Label>
+                      <Input className="h-9" type="number" value={adderState.oneTimeCharge} onChange={(e) => setAdderState((prev) => ({ ...prev, oneTimeCharge: Number(e.target.value) }))} disabled={!selectedCatalogItem?.isEditable || isLocked} />
                     </div>
                     <div>
-                      <Label htmlFor="line-item-mrc" className="text-xs">{t('Table.mrc')}</Label>
-                      <Input
-                        id="line-item-mrc"
-                        className="h-9"
-                        type="number"
-                        value={adderState.recurringCharge}
-                        onChange={(e) =>
-                          setAdderState((prev) => ({
-                            ...prev,
-                            recurringCharge: Number(e.target.value),
-                          }))
-                        }
-                        disabled={!selectedCatalogItem?.isEditable || isLocked}
-                      />
+                      <Label className="text-xs">{t('Table.mrc')}</Label>
+                      <Input className="h-9" type="number" value={adderState.recurringCharge} onChange={(e) => setAdderState((prev) => ({ ...prev, recurringCharge: Number(e.target.value) }))} disabled={!selectedCatalogItem?.isEditable || isLocked} />
                     </div>
                     <div>
-                      <Label htmlFor="line-item-discount" className="text-xs">{t('Forms.discount')}</Label>
-                      <Select
-                        value={String(adderState.discount)}
-                        onValueChange={(val) =>
-                          setAdderState((prev) => ({
-                            ...prev,
-                            discount: Number(val),
-                          }))
-                        }
-                        disabled={
-                          !selectedCatalogItem ||
-                          !selectedCatalogItem.availableDiscounts?.length ||
-                          isLocked
-                        }
-                      >
-                        <SelectTrigger id="line-item-discount" className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
+                      <Label className="text-xs">{t('Forms.discount')}</Label>
+                      <Select value={String(adderState.discount)} onValueChange={(val) => setAdderState((prev) => ({ ...prev, discount: Number(val) }))} disabled={ !selectedCatalogItem || !selectedCatalogItem.availableDiscounts?.length || isLocked }>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="0">0%</SelectItem>
-                          {(selectedCatalogItem?.availableDiscounts || [])
-                            .filter(d => d !== 0)
-                            .map((d) => (
-                              <SelectItem key={`item-disc-${d}`} value={String(d)}>{`${d}%`}</SelectItem>
-                            ))}
+                          {(selectedCatalogItem?.availableDiscounts || []).filter(d => d !== 0).map((d) => <SelectItem key={d} value={String(d)}>{`${d}%`}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button
-                      type="button"
-                      size="icon"
-                      onClick={handleAddLineItem}
-                      disabled={!selectedCatalogItem || isLocked}
-                      className="self-end"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span className="sr-only">{t('Forms.addItem')}</span>
-                    </Button>
+                    <Button type="button" size="icon" onClick={handleAddLineItem} disabled={!selectedCatalogItem || isLocked} className="self-end"><Plus className="h-4 w-4" /></Button>
                   </div>
 
                   <Separator />
 
-                  <div className="w-full overflow-x-auto">
+                  <div className="w-full overflow-x-auto rounded-md border bg-card">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="bg-muted/50">
                         <TableRow>
                           <TableHead>{t('PS.itemName')}</TableHead>
-                          <TableHead className="text-right">
-                            {t('Forms.quantity')}
-                          </TableHead>
-                          <TableHead className="text-right">
-                            {t('Table.nrc')}
-                          </TableHead>
-                          <TableHead className="text-right">
-                            {t('Table.mrc')}
-                          </TableHead>
-                          <TableHead className="text-right">
-                            {t('Forms.discount')}
-                          </TableHead>
-                          <TableHead className="text-right">
-                            {t('Table.totalNrc')}
-                          </TableHead>
-                          <TableHead className="text-right">
-                            {t('Table.totalMrc')}
-                          </TableHead>
-                          <TableHead>{t('Table.actions')}</TableHead>
+                          <TableHead className="text-right">{t('Forms.quantity')}</TableHead>
+                          <TableHead className="text-right">{t('Table.nrc')}</TableHead>
+                          <TableHead className="text-right">{t('Table.mrc')}</TableHead>
+                          <TableHead className="text-right">{t('Forms.discount')}</TableHead>
+                          <TableHead className="text-right">{t('Table.totalNrc')}</TableHead>
+                          <TableHead className="text-right">{t('Table.totalMrc')}</TableHead>
+                          <TableHead className="text-right px-4">{t('Table.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {lineItemFields.map((item, index) => {
-                          const subtotalNrc = item.quantity * item.oneTimeCharge;
-                          const subtotalMrc = item.quantity * item.recurringCharge;
-                          const totalNrc =
-                            subtotalNrc * (1 - item.discount / 100);
-                          const totalMrc =
-                            subtotalMrc * (1 - item.discount / 100);
+                          const totalNrc = item.quantity * item.oneTimeCharge * (1 - item.discount / 100);
+                          const totalMrc = item.quantity * item.recurringCharge * (1 - item.discount / 100);
                           return (
                             <TableRow key={item.id}>
-                              <TableCell>{item.name}</TableCell>
-                              <TableCell className="text-right">
-                                {item.quantity}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                ${item.oneTimeCharge.toFixed(2)}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                ${item.recurringCharge.toFixed(2)}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {item.discount}%
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                ${totalNrc.toFixed(2)}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                ${totalMrc.toFixed(2)}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => remove(index)}
-                                  disabled={isLocked}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </TableCell>
+                              <TableCell className="font-medium">{item.name}</TableCell>
+                              <TableCell className="text-right">{item.quantity}</TableCell>
+                              <TableCell className="text-right">${item.oneTimeCharge.toFixed(2)}</TableCell>
+                              <TableCell className="text-right">${item.recurringCharge.toFixed(2)}</TableCell>
+                              <TableCell className="text-right">{item.discount}%</TableCell>
+                              <TableCell className="text-right font-bold text-primary">${totalNrc.toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-bold text-primary">${totalMrc.toFixed(2)}</TableCell>
+                              <TableCell className="text-right px-4"><Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={isLocked}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                             </TableRow>
                           );
                         })}
-                        {lineItemFields.length === 0 && (
-                          <TableRow>
-                            <TableCell
-                              colSpan={8}
-                              className="text-center text-muted-foreground"
-                            >
-                              {t('Forms.noItems')}
-                            </TableCell>
-                          </TableRow>
-                        )}
+                        {lineItemFields.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground italic">{t('Forms.noItems')}</TableCell></TableRow>}
                       </TableBody>
                     </Table>
                   </div>
-
-                  <Separator />
-
-                  <div className="flex justify-end">
-                    <div className="w-full max-sm:w-full max-w-sm space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          {t('Table.subtotal')} {t('Table.nrc')}
-                        </span>
-                        <span className="font-medium">
-                          ${lineItemTotalNrc.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          {t('Table.subtotal')} {t('Table.mrc')}
-                        </span>
-                        <span className="font-medium">
-                          ${lineItemTotalMrc.toFixed(2)}
-                        </span>
-                      </div>
-
-                      {watchedGeneralDiscount > 0 &&
-                        (watchedApplyToNrc || watchedApplyToMrc) && (
-                          <Separator />
-                        )}
-
-                      {watchedApplyToNrc && watchedGeneralDiscount > 0 && (
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>
-                            {t('Forms.generalDiscount')} (
-                            {watchedGeneralDiscount}%) {t('Table.nrc')}
-                          </span>
-                          <span>
-                            - ${(lineItemTotalNrc - totalNrc).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                      {watchedApplyToMrc && watchedGeneralDiscount > 0 && (
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>
-                            {t('Forms.generalDiscount')} (
-                            {watchedGeneralDiscount}%) {t('Table.mrc')}
-                          </span>
-                          <span>
-                            - ${(lineItemTotalMrc - totalMrc).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-
-                      <Separator />
-                      <div className="flex justify-between font-medium">
-                        <span>{t('Table.totalNrc')}</span>
-                        <span>${totalNrc.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between font-medium">
-                        <span>{t('Table.totalMrc')}</span>
-                        <span>${totalMrc.toFixed(2)}</span>
-                      </div>
-
-                      <Separator />
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>{t('Forms.fcv')}</span>
-                        <span>${totalFcv.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
 
+              {/* SECCIÓN 6: DESCUENTOS Y OTROS */}
               <Card>
-                <CardHeader>
-                  <CardTitle>{t('Forms.generalDiscount')}</CardTitle>
+                <CardHeader className="bg-muted/30 border-b">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider">{t('Forms.generalDiscount')}</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="generalDiscountPercentage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.discount')}</FormLabel>
-                        <Select
-                          onValueChange={(value) => field.onChange(Number(value))}
-                          value={String(field.value || 0)}
-                          disabled={isLocked}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {discountOptions.map((d) => (
-                              <SelectItem key={`gen-disc-${d}`} value={String(d)}>{`${d}%`}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                  <FormField control={form.control} name="generalDiscountPercentage" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.discount')}</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value || 0)} disabled={isLocked}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>{[0, 5, 10, 15, 20, 25, 30].map((d) => <SelectItem key={d} value={String(d)}>{`${d}%`}</SelectItem>)}</SelectContent>
+                      </Select><FormMessage />
+                    </FormItem>
+                  )} />
                   <div className="space-y-4 pt-8">
-                    <FormField
-                      control={form.control}
-                      name="applyDiscountToNrc"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center gap-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              disabled={isLocked}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {t('Forms.applyToNrc')}
-                          </FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="applyDiscountToMrc"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center gap-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              disabled={isLocked}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {t('Forms.applyToMrc')}
-                          </FormLabel>
-                        </FormItem>
-                      )}
-                    />
+                    <FormField control={form.control} name="applyDiscountToNrc" render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-x-3 space-y-0">
+                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
+                        <FormLabel className="font-normal">{t('Forms.applyToNrc')}</FormLabel>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="applyDiscountToMrc" render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-x-3 space-y-0">
+                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
+                        <FormLabel className="font-normal">{t('Forms.applyToMrc')}</FormLabel>
+                      </FormItem>
+                    )} />
                   </div>
                 </CardContent>
               </Card>
-              
-              <AttachmentsManager opportunityId={opportunityId} disabled={isLocked} />
 
+              {/* SECCIÓN 7: ADJUNTOS Y COMPETENCIA */}
               <Card>
-                <CardContent className="p-6">
-                  <FormField
-                    control={form.control}
-                    name="competition"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.competition')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t('Forms.competitionPlaceholder')}
-                            {...field}
-                            disabled={isLocked}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t('Forms.competitionDescription')}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <CardHeader className="bg-muted/30 border-b">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider">{t('Forms.additionalInfo')}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <AttachmentsManager opportunityId={opportunityId} disabled={isLocked} />
+                  <FormField control={form.control} name="competition" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Forms.competition')}</FormLabel>
+                      <FormControl><Input placeholder={t('Forms.competitionPlaceholder')} {...field} disabled={isLocked} /></FormControl>
+                      <FormDescription>{t('Forms.competitionDescription')}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </CardContent>
               </Card>
 
               <div className="flex items-center justify-end gap-4 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                >
-                  {t('Auth.cancelLabel')}
-                </Button>
-                <Button type="submit" disabled={isLocked}>
-                  {t('Forms.saveOpportunity')}
-                </Button>
+                <Button type="button" variant="outline" onClick={() => router.back()}>{t('Auth.cancelLabel')}</Button>
+                <Button type="submit" disabled={isLocked}>{t('Forms.saveOpportunity')}</Button>
               </div>
             </form>
           </Form>

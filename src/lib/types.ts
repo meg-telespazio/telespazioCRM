@@ -81,6 +81,9 @@ export type OpportunityAttachment = {
   path: string;
 };
 
+export type OpportunityRisk = 'C-Low' | 'B-Medium' | 'A-High';
+export type OpportunityType = 'New Logo' | 'New Business' | 'Ampliacion' | 'Renegociacion';
+
 export type Opportunity = {
   id: string;
   publicId: string;
@@ -108,6 +111,14 @@ export type Opportunity = {
   applyDiscountToMrc?: boolean;
   management: ManagementArea;
   assignedTo: string;
+  // New Fields
+  risk: OpportunityRisk;
+  isPlanned: boolean;
+  opportunityType: OpportunityType;
+  projectManagerEmail?: string;
+  contractReferenceId?: string;
+  grossMarginPercentage: number;
+  grossMarginAmount: number;
 };
 
 export type ProductOrService = {
