@@ -4,6 +4,11 @@ import type { FieldValue } from "firebase/firestore";
 export type UserRole = 'admin' | 'gerente' | 'ejecutivo' | 'ingeniero';
 export type ManagementArea = 'Satellite Communications' | 'GeoInformacion';
 
+export type CostCenter = {
+  id: string; // format xx-yy
+  name: string;
+};
+
 export type Client = {
   id: string;
   publicId: string;
@@ -24,6 +29,7 @@ export type Client = {
   management: ManagementArea;
   assignedTo: string; // UID of Ejecutivo
   countryHQ?: string;
+  costCenterId?: string;
 };
 
 export type Holding = {
@@ -196,6 +202,7 @@ export type Contract = {
   createdAt: Date;
   management: ManagementArea;
   assignedTo: string;
+  costCenterId: string;
 };
 
 export type AddendumType = 'Extension' | 'Price Change' | 'Clause Modification' | 'Service Change' | 'Other';
@@ -366,6 +373,7 @@ export type SystemConfig = {
   currencies: string[];
   unitsOfMeasure: string[];
   exchangeRates: ExchangeRate[];
+  costCenters: CostCenter[];
   lastRatesUpdate?: Date;
   updatedAt?: Date;
   updatedBy?: string;

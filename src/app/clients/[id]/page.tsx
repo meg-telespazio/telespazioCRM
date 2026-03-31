@@ -75,6 +75,7 @@ const getFormSchema = (t: (key: string) => string) =>
     assignedTo: z.string().min(1, t('Validation.fieldRequired')),
     notes: z.string().optional(),
     countryHQ: z.string().optional(),
+    costCenterId: z.string().optional(),
   });
 
 type ClientFormData = z.infer<ReturnType<typeof getFormSchema>>;
@@ -91,7 +92,7 @@ export default function ClientFormPage() {
   const isNew = clientId === 'new';
 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [croppedImage, setCroppedAvatar] = useState<string | null>(null);
   const [isFindingLogo, setIsFindingLogo] = useState(false);
 
   // Fetch system config for dynamic dropdowns
@@ -139,6 +140,7 @@ export default function ClientFormPage() {
       assignedTo: user?.uid || '',
       notes: '',
       countryHQ: '',
+      costCenterId: '',
     },
   });
 
@@ -175,8 +177,9 @@ export default function ClientFormPage() {
         sector: clientData.sector || '',
         subsector: clientData.subsector || '',
         countryHQ: clientData.countryHQ || '',
+        costCenterId: clientData.costCenterId || '',
       });
-      setCroppedImage(clientData.logoURL || null);
+      setCroppedAvatar(clientData.logoURL || null);
     }
   }, [clientData, form]);
 
@@ -197,7 +200,7 @@ export default function ClientFormPage() {
   };
 
   const handleCropComplete = (croppedImageUrl: string) => {
-    setCroppedImage(croppedImageUrl);
+    setCroppedAvatar(croppedImageUrl);
     setImageToCrop(null);
   };
 
@@ -211,7 +214,7 @@ export default function ClientFormPage() {
     try {
       const result = await findAndFetchLogo({ websiteUrl });
       if (result.dataUri) {
-        setCroppedImage(result.dataUri);
+        setCroppedAvatar(result.dataUri);
         toast({ variant: 'success', title: t('Importer.logoFound') });
       }
     } finally {
@@ -244,6 +247,7 @@ export default function ClientFormPage() {
   // Dynamic options from config
   const sectorOptions = (configData?.sectors || []).sort();
   const managementOptions = configData?.managementAreas || ['Satellite Communications', 'GeoInformacion'];
+  const costCenterOptions = configData?.costCenters || [];
 
   const countryOptions = [
     'Argentina', 'Bolivia', 'Brazil', 'Chile', 'Colombia', 'CostaRica', 'Cuba', 
@@ -349,6 +353,24 @@ export default function ClientFormPage() {
                           </Select><FormMessage />
                         </FormItem>
                       )} />
+                      <FormField control={form.control} name="costCenterId" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.costCenter')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {costCenterOptions.map(cc => (
+                                <SelectItem key={cc.id} value={cc.id}>{cc.name} ({cc.id})</SelectItem>
+                              ))}
+                              {costCenterOptions.length === 0 && <SelectItem value="none" disabled>No hay centros de costo configurados</SelectItem>}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="website" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.website')}</FormLabel>
                           <FormControl>
@@ -359,29 +381,26 @@ export default function ClientFormPage() {
                           </FormControl><FormMessage />
                         </FormItem>
                       )} />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="linkedinPage" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.linkedinPage')}</FormLabel>
                           <FormControl><Input {...field} /></FormControl><FormMessage />
                         </FormItem>
                       )} />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="email" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.clientEmail')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="phone" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.clientPhone')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="cuit" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.cuit')}</FormLabel><FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <FormField control={form.control} name="cuit" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.cuit')}</FormLabel><FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
+                      )} />
                       <FormField control={form.control} name="status" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.status')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
@@ -401,6 +420,9 @@ export default function ClientFormPage() {
                           </Select><FormMessage />
                         </FormItem>
                       )} />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="subsector" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.subsector')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={!watchedSector}>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -17,7 +18,7 @@ import type {
   ContractStatus,
   ContractRenewalTerm,
   ProductOrService,
-  PriceListItem,
+  SystemConfig,
 } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -27,7 +28,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addMonths, isValid } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -81,6 +82,7 @@ const getFormSchema = (t: (key: string) => string) => {
       hasSpecialClauses: z.boolean().default(false),
       specialClauses: z.string().optional(),
       notes: z.string().optional(),
+      costCenterId: z.string().min(1, t('Validation.fieldRequired')),
       attachments: z.array(z.object({
         name: z.string(),
         url: z.string(),
@@ -134,6 +136,10 @@ export default function ContractFormPage() {
 
   const { data: contractData, loading: contractLoading } = useDoc<Contract>(contractDocRef);
 
+  // Fetch system config for cost centers
+  const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
+  const { data: configData } = useDoc<SystemConfig>(configDocRef);
+
   const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
   
   const clientsQuery = useMemo(() => baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null, [firestore, baseQuery]);
@@ -175,6 +181,7 @@ export default function ContractFormPage() {
       hasSpecialClauses: false,
       specialClauses: '',
       notes: '',
+      costCenterId: '',
       attachments: [],
       priceList: [],
       topUp50GbPrice: 0,
@@ -192,6 +199,16 @@ export default function ContractFormPage() {
   const watchedDuration = form.watch('durationMonths');
   const watchedAutoRenews = form.watch('autoRenews');
   const watchedHasSpecialClauses = form.watch('hasSpecialClauses');
+
+  // Auto-set cost center if client has one (only for new contracts)
+  useEffect(() => {
+    if (isNew && watchedClientId && clientsData && configData?.costCenters) {
+      const selectedClient = clientsData.find(c => c.id === watchedClientId);
+      if (selectedClient?.costCenterId) {
+        form.setValue('costCenterId', selectedClient.costCenterId);
+      }
+    }
+  }, [isNew, watchedClientId, clientsData, configData, form]);
 
   const [newPriceItem, setNewPriceItem] = useState<{planName: string, price: number}>({ planName: '', price: 0 });
 
@@ -220,6 +237,7 @@ export default function ContractFormPage() {
         topUp50GbPrice: contractData.topUp50GbPrice || 0,
         topUp500GbPrice: contractData.topUp500GbPrice || 0,
         attachments: contractData.attachments || [],
+        costCenterId: contractData.costCenterId || '',
       });
       isFormLoaded.current = true;
     }
@@ -247,7 +265,7 @@ export default function ContractFormPage() {
     setNewPriceItem({ planName: '', price: 0 });
   };
 
-  const pageIsLoading = !mounted || userLoading || clientsLoading || contactsLoading || catalogLoading || (contractLoading && !isNew);
+  const pageIsLoading = !mounted || userLoading || clientsLoading || contactsLoading || catalogLoading || (contractLoading && !isNew) || !configData;
   if (pageIsLoading) {
     return (
       <div className="flex flex-1 flex-col">
@@ -261,6 +279,7 @@ export default function ContractFormPage() {
   const contractStatuses: ContractStatus[] = ['activo', 'vencido', 'renovado', 'renovado automatico'];
   const currencyOptions: Contract['currency'][] = ['USD', 'EUR', 'ARS'];
   const renewalTerms: ContractRenewalTerm[] = ['1 month', '2 months'];
+  const costCenterOptions = configData.costCenters || [];
 
   const calendarRange = {
     startMonth: new Date(2000, 0),
@@ -304,6 +323,24 @@ export default function ContractFormPage() {
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder={t('Contracts.selectType')} /></SelectTrigger></FormControl>
                       <SelectContent>{contractTypes.map(type => <SelectItem key={type} value={type}>{t(`ContractTypes.${type}`)}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="costCenterId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-primary" />
+                      {t('Forms.costCenter')}
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {costCenterOptions.map(cc => (
+                          <SelectItem key={cc.id} value={cc.id}>{cc.name} ({cc.id})</SelectItem>
+                        ))}
+                        {costCenterOptions.length === 0 && <SelectItem value="none" disabled>Configure centros de costo primero</SelectItem>}
+                      </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>

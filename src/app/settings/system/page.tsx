@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { getSystemConfig, updateSystemConfig, syncExchangeRates } from '@/lib/firestore/system';
-import type { SystemConfig, ExchangeRate, SubsectorConfig } from '@/lib/types';
+import type { SystemConfig, ExchangeRate, SubsectorConfig, CostCenter } from '@/lib/types';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -25,6 +26,7 @@ import {
   Layers,
   RefreshCw,
   Clock,
+  Briefcase,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -54,7 +56,8 @@ export default function SystemSettingsPage() {
     subsectors: [],
     currencies: [],
     unitsOfMeasure: [],
-    exchangeRates: []
+    exchangeRates: [],
+    costCenters: []
   });
 
   const [newInputs, setNewInputs] = useState<Record<string, string>>({
@@ -65,6 +68,7 @@ export default function SystemSettingsPage() {
   });
 
   const [newSubsector, setNewSubsector] = useState<SubsectorConfig>({ name: '', sector: '' });
+  const [newCostCenter, setNewCostCenter] = useState<CostCenter>({ id: '', name: '' });
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -77,7 +81,8 @@ export default function SystemSettingsPage() {
           managementAreas: data.managementAreas || [],
           currencies: data.currencies || [],
           unitsOfMeasure: data.unitsOfMeasure || [],
-          exchangeRates: data.exchangeRates || []
+          exchangeRates: data.exchangeRates || [],
+          costCenters: data.costCenters || []
         });
 
         // Automation logic: Check if update is needed (once a day)
@@ -135,14 +140,14 @@ export default function SystemSettingsPage() {
     }
   };
 
-  const addItem = (key: keyof Omit<SystemConfig, 'subsectors' | 'exchangeRates' | 'updatedAt' | 'updatedBy' | 'lastRatesUpdate'>) => {
+  const addItem = (key: keyof Omit<SystemConfig, 'subsectors' | 'exchangeRates' | 'costCenters' | 'updatedAt' | 'updatedBy' | 'lastRatesUpdate'>) => {
     const val = newInputs[key];
     if (!val) return;
     setConfig(prev => ({ ...prev, [key]: [...(prev[key] as string[]), val] }));
     setNewInputs(prev => ({ ...prev, [key]: '' }));
   };
 
-  const removeItem = (key: keyof Omit<SystemConfig, 'subsectors' | 'exchangeRates' | 'updatedAt' | 'updatedBy' | 'lastRatesUpdate'>, index: number) => {
+  const removeItem = (key: keyof Omit<SystemConfig, 'subsectors' | 'exchangeRates' | 'costCenters' | 'updatedAt' | 'updatedBy' | 'lastRatesUpdate'>, index: number) => {
     setConfig(prev => ({ ...prev, [key]: (prev[key] as string[]).filter((_, i) => i !== index) }));
   };
 
@@ -154,6 +159,21 @@ export default function SystemSettingsPage() {
 
   const removeSubsector = (index: number) => {
     setConfig(prev => ({ ...prev, subsectors: prev.subsectors.filter((_, i) => i !== index) }));
+  };
+
+  const addCostCenter = () => {
+    if (!newCostCenter.id || !newCostCenter.name) return;
+    // Check for duplicate IDs
+    if (config.costCenters.some(c => c.id === newCostCenter.id)) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Este ID de Centro de Costos ya existe.' });
+      return;
+    }
+    setConfig(prev => ({ ...prev, costCenters: [...prev.costCenters, { ...newCostCenter }] }));
+    setNewCostCenter({ id: '', name: '' });
+  };
+
+  const removeCostCenter = (index: number) => {
+    setConfig(prev => ({ ...prev, costCenters: prev.costCenters.filter((_, i) => i !== index) }));
   };
 
   const addRate = () => {
@@ -319,6 +339,40 @@ export default function SystemSettingsPage() {
                   </div>
                 );
               })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" />{t('Settings.costCenters')}</CardTitle>
+            <CardDescription>Gestione los Centros de Costos autorizados (ID: xx-yy).</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-white p-4 rounded-lg border">
+              <div className="space-y-2">
+                <Label className="text-xs">{t('Settings.costCenterId')}</Label>
+                <Input value={newCostCenter.id} onChange={(e) => setNewCostCenter(p => ({ ...p, id: e.target.value }))} placeholder="13-83" className="h-8 bg-white text-xs" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">{t('Settings.costCenterName')}</Label>
+                <Input value={newCostCenter.name} onChange={(e) => setNewCostCenter(p => ({ ...p, name: e.target.value }))} placeholder="STARLINK OIL & GAS" className="h-8 bg-white text-xs" />
+              </div>
+              <Button size="sm" className="h-8" onClick={addCostCenter} disabled={!newCostCenter.id || !newCostCenter.name}><Plus className="h-4 w-4 mr-2" />{t('Settings.addCostCenter')}</Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {config.costCenters.map((cc, i) => (
+                <div key={cc.id} className="flex items-center justify-between p-3 border rounded-lg bg-slate-50">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-primary">{cc.id}</span>
+                    <span className="text-sm font-medium uppercase truncate max-w-[200px]">{cc.name}</span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeCostCenter(i)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {config.costCenters.length === 0 && <p className="col-span-full text-center py-8 text-sm text-muted-foreground italic">No hay centros de costo configurados.</p>}
             </div>
           </CardContent>
         </Card>
