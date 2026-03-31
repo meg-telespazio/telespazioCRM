@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -339,10 +340,6 @@ export default function PrintOpportunityPage() {
               { label: 'quote_id', value: opportunity.publicId },
               { label: 'valid_until', value: validationDate },
               { label: 'client', value: client?.name || '' },
-              {
-                label: 'framework_agreement',
-                value: `CM-${new Date().getFullYear()}-000001`,
-              },
               {
                 label: 'contract_duration',
                 value: `${opportunity.contractMonths} meses`,
