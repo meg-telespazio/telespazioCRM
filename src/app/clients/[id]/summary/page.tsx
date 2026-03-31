@@ -3,32 +3,32 @@
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
-import type { Client, Contact, Location, Opportunity, Activity, Contract, PurchaseOrder, Service, Equipment } from '@/lib/types';
+import type { Client, Contact, Opportunity, Activity, Contract, PurchaseOrder, Service, Equipment } from '@/lib/types';
 
 import { AppHeader } from '@/components/layout/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, MapPin, Activity as ActivityIcon, Linkedin, FileText, ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, Flag } from 'lucide-react';
+import { 
+  ArrowLeft, Building, Mail, Phone, Globe, Edit, PlusCircle, 
+  MapPin, Activity as ActivityIcon, Linkedin, FileText, 
+  ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, 
+  Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
+  Flag, Briefcase, TrendingUp 
+} from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FilePreviewModal } from '@/components/ui/file-preview-modal';
-
-const LocationsMap = dynamic(() => import('@/components/locations/locations-map'), {
-  ssr: false,
-  loading: () => <Skeleton className="h-[250px] w-full rounded-lg" />,
-});
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function ClientSummaryPage() {
   const { t, locale } = useI18n();
@@ -121,10 +121,10 @@ export default function ClientSummaryPage() {
   const allDocuments = useMemo(() => {
     const docs: any[] = [];
     contracts?.forEach(c => {
-      c.attachments?.forEach(a => docs.push({ ...a, source: 'Contract', sourceId: c.publicId }));
+      c.attachments?.forEach(a => docs.push({ ...a, source: 'Contrato', sourceId: c.publicId }));
     });
     opportunities?.forEach(o => {
-      o.attachments?.forEach(a => docs.push({ ...a, source: 'Opportunity', sourceId: o.publicId }));
+      o.attachments?.forEach(a => docs.push({ ...a, source: 'Oportunidad', sourceId: o.publicId }));
     });
     return docs.sort((a, b) => a.name.localeCompare(b.name));
   }, [contracts, opportunities]);
@@ -244,7 +244,7 @@ export default function ClientSummaryPage() {
         </Card>
 
         {/* Financial Summary Strip */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="bg-primary/5 border-primary/20 shadow-none">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -274,11 +274,24 @@ export default function ClientSummaryPage() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="bg-amber-50 border-amber-200 shadow-none">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-full">
+                <Briefcase className="h-5 w-5 text-amber-700" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-amber-700 uppercase tracking-tight">Negocios Abiertos</p>
+                <p className="text-2xl font-bold text-amber-900">{opportunities?.filter(o => !['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage)).length || 0}</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="operations" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 md:w-[600px]">
             <TabsTrigger value="operations">Operaciones</TabsTrigger>
+            <TabsTrigger value="opportunities">Negocios</TabsTrigger>
             <TabsTrigger value="documents">Documentos ({allDocuments.length})</TabsTrigger>
             <TabsTrigger value="activities">Actividad</TabsTrigger>
           </TabsList>
@@ -390,6 +403,65 @@ export default function ClientSummaryPage() {
                     <Button variant="link" className="mt-2" onClick={() => router.push(`/contracts/new?clientId=${clientId}`)}>Crear primer contrato</Button>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Opportunities Tab */}
+          <TabsContent value="opportunities" className="mt-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-lg"><Briefcase className="h-5 w-5 text-primary" /> Negocios & Oportunidades</CardTitle>
+                  <CardDescription>Pipeline de ventas relacionado a este cliente.</CardDescription>
+                </div>
+                <Button size="sm" onClick={() => router.push(`/opportunities/new?clientId=${clientId}`)}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Nueva Oportunidad
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead>Negocio</TableHead>
+                      <TableHead>Etapa</TableHead>
+                      <TableHead>Probabilidad</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead className="text-right">Cierre Est.</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {opportunities && opportunities.length > 0 ? opportunities.map(opp => (
+                      <TableRow key={opp.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/opportunities/${opp.id}`)}>
+                        <TableCell className="font-bold">{opp.title}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px] uppercase">{opp.stage}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div className="h-full bg-primary" style={{ width: `${opp.probability}%` }} />
+                            </div>
+                            <span className="text-xs font-mono">{opp.probability}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-primary">
+                          {opp.currency} {opp.value.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">
+                          {format(opp.closeDate, 'P')}
+                        </TableCell>
+                      </TableRow>
+                    )) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-12 text-center text-muted-foreground italic">
+                          No hay oportunidades registradas para este cliente.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
