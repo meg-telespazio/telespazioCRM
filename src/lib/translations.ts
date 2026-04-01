@@ -615,7 +615,10 @@ export const translations = {
       comodatoFee: 'Comodato Fee (USD)',
     },
     Table: {
-      actions: 'Actions',
+      actions: {
+        title: 'Actions',
+        delete: 'Delete',
+      },
       noResults: 'No results.',
       status: 'Status',
       createdDate: 'Created Date',
@@ -1429,7 +1432,7 @@ export const translations = {
       editContact: 'Editar Contacto',
       contactName: 'Nombre del Contacto',
       contactNamePlaceholder: 'Juan Pérez',
-      contactEmailPlaceholder: 'juan.perez@ejemplo.com',
+      contactEmailPlaceholder: 'bug.perez@ejemplo.com',
       position: 'Cargo',
       selectPosition: 'Seleccione cargo...',
       area: 'Departamento / Área',
@@ -1488,7 +1491,10 @@ export const translations = {
       comodatoFee: 'Abono Comodato (USD)',
     },
     Table: {
-      actions: 'Acciones',
+      actions: {
+        title: 'Acciones',
+        delete: 'Eliminar',
+      },
       noResults: 'Sin resultados.',
       status: 'Estado',
       createdDate: 'F. Creación',

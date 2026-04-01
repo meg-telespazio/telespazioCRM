@@ -23,8 +23,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
-import { CalendarIcon, Save, ArrowLeft, ShieldCheck, User } from 'lucide-react';
+import { CalendarIcon, Save, ArrowLeft, ShieldCheck, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
   id: z.string().min(1, t('Validation.fieldRequired')),
@@ -42,6 +43,7 @@ export default function EquipmentFormPage() {
   const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const id = params.id as string;
   const isNew = id === 'new';
 
@@ -49,6 +51,7 @@ export default function EquipmentFormPage() {
   const firestore = useFirestore();
 
   const [isInstallationDateOpen, setInstallationDateOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const docRef = useMemo(() => isNew ? null : doc(firestore, 'equipment', id), [firestore, id, isNew]);
   const { data: eqData, loading: eqLoading } = useDoc<Equipment>(docRef);
@@ -85,15 +88,28 @@ export default function EquipmentFormPage() {
 
   const onSubmit = async (values: z.infer<ReturnType<typeof getFormSchema>>) => {
     if (!user) return;
+    setIsSaving(true);
     try {
       if (isNew) {
         await addEquipment(firestore, user.uid, values as any);
       } else {
         await updateEquipment(firestore, id, values as any);
       }
+      toast({
+        variant: 'success',
+        title: t('Actions.saveSuccess'),
+        description: 'Equipo guardado correctamente en el inventario.',
+      });
       router.back();
     } catch (error: any) {
       console.error("Error saving equipment:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al guardar',
+        description: error.message || 'Ocurrió un error inesperado.',
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -140,6 +156,7 @@ export default function EquipmentFormPage() {
                               onCheckedChange={field.onChange}
                             />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -168,19 +185,19 @@ export default function EquipmentFormPage() {
                     <FormField control={form.control} name="type" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.type')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                      <SelectContent><SelectItem value="Antena Standard">Antena Standard</SelectItem><SelectItem value="Antena HP">Antena HP</SelectItem><SelectItem value="KIT Enterprise">KIT Enterprise</SelectItem></SelectContent></Select></FormItem>
+                      <SelectContent><SelectItem value="Antena Standard">Antena Standard</SelectItem><SelectItem value="Antena HP">Antena HP</SelectItem><SelectItem value="KIT Enterprise">KIT Enterprise</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="physicalStatus" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.physicalStatus')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                      <SelectContent><SelectItem value="Activa">Activa</SelectItem><SelectItem value="En reparación">En reparación</SelectItem><SelectItem value="Retirada">Retirada</SelectItem></SelectContent></Select></FormItem>
+                      <SelectContent><SelectItem value="Activa">Activa</SelectItem><SelectItem value="En reparación">En reparación</SelectItem><SelectItem value="Retirada">Retirada</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                     )} />
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="installationDate" render={({ field }) => (
                       <FormItem className="flex flex-col"><FormLabel>{t('Forms.installationDate')}</FormLabel>
                       <Popover open={isInstallationDateOpen} onOpenChange={setInstallationDateOpen}><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'P') : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
-                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setInstallationDateOpen(false)} onCancel={() => setInstallationDateOpen(false)} initialFocus captionLayout="dropdown" startMonth={new Date(2000, 0)} endMonth={new Date(2050, 11)} /></PopoverContent></Popover></FormItem>
+                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setInstallationDateOpen(false)} onCancel={() => setInstallationDateOpen(false)} initialFocus captionLayout="dropdown" startMonth={new Date(2000, 0)} endMonth={new Date(2050, 11)} /></PopoverContent></Popover><FormMessage /></FormItem>
                     )} />
                   </div>
                   <div className="grid grid-cols-2 gap-4 border-t pt-4">
@@ -196,7 +213,10 @@ export default function EquipmentFormPage() {
                 </CardContent>
               </Card>
               <div className="flex justify-end">
-                <Button type="submit"><Save className="mr-2 h-4 w-4"/>{t('Forms.save')}</Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4"/>}
+                  {t('Forms.save')}
+                </Button>
               </div>
             </form>
           </Form>

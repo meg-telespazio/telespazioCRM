@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -387,7 +388,7 @@ export default function ServicesPage() {
                     <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
                     <TableHead className="text-white"><button onClick={() => handleSort('client')} className="flex items-center">{t('Pages.clients')} {getSortIcon('client')}</button></TableHead>
                     <TableHead className="text-white">PO</TableHead>
-                    <TableHead className="text-right text-white px-4">{t('Table.actions')}</TableHead>
+                    <TableHead className="text-right text-white px-4">{t('Table.actions.title')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
