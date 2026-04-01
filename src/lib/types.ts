@@ -270,6 +270,8 @@ export type Equipment = {
   currentServiceId?: string;
   createdBy: string;
   createdAt: Date;
+  isClientOwned: boolean;
+  comodatoFee?: number;
 };
 
 export type ActivityType = 'call' | 'meeting' | 'email' | 'message';

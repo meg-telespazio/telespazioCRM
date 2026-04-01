@@ -1,3 +1,4 @@
+
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -610,6 +611,8 @@ export const translations = {
       scheduleStatus: 'Schedule & Status',
       additionalInfo: 'Attachments & Competition',
       costCenter: 'Cost Center',
+      isClientOwned: 'Client Owned Equipment',
+      comodatoFee: 'Comodato Fee (USD)',
     },
     Table: {
       actions: 'Actions',
@@ -1023,7 +1026,7 @@ export const translations = {
       contracts: 'Contratos',
       addContract: 'Añadir Contrato',
       activities: 'Actividades',
-      pos: 'Órdenes de Compra',
+      pos: 'Derechos de Compra',
       services: 'Servicios',
       equipment: 'Equipos',
       locations: 'Locaciones',
@@ -1481,6 +1484,8 @@ export const translations = {
       scheduleStatus: 'Cronograma y Estado',
       additionalInfo: 'Adjuntos y Competencia',
       costCenter: 'Centro de Costo',
+      isClientOwned: 'Equipo del Cliente',
+      comodatoFee: 'Abono Comodato (USD)',
     },
     Table: {
       actions: 'Acciones',

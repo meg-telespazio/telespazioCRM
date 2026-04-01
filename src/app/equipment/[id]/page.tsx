@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -15,13 +16,14 @@ import { AppHeader } from '@/components/layout/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
-import { CalendarIcon, Save, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, Save, ArrowLeft, ShieldCheck, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
@@ -32,6 +34,8 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   installationDate: z.date().optional(),
   latitude: z.coerce.number().optional(),
   longitude: z.coerce.number().optional(),
+  isClientOwned: z.boolean().default(true),
+  comodatoFee: z.coerce.number().min(0).optional(),
 });
 
 export default function EquipmentFormPage() {
@@ -59,8 +63,12 @@ export default function EquipmentFormPage() {
       installationDate: undefined,
       latitude: undefined,
       longitude: undefined,
+      isClientOwned: true,
+      comodatoFee: 0,
     },
   });
+
+  const watchedIsClientOwned = form.watch('isClientOwned');
 
   useEffect(() => {
     if (eqData) {
@@ -69,6 +77,8 @@ export default function EquipmentFormPage() {
         installationDate: eqData.installationDate ? new Date(eqData.installationDate) : undefined,
         latitude: eqData.latitude,
         longitude: eqData.longitude,
+        isClientOwned: eqData.isClientOwned !== undefined ? eqData.isClientOwned : true,
+        comodatoFee: eqData.comodatoFee || 0,
       });
     }
   }, [eqData, form]);
@@ -94,7 +104,7 @@ export default function EquipmentFormPage() {
       <AppHeader title={isNew ? t('Equipment.add') : t('Equipment.edit')}>
         <Button variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4"/>{t('Actions.back')}</Button>
       </AppHeader>
-      <main className="flex-1 p-4 sm:p-6">
+      <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="mx-auto max-w-2xl">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -108,7 +118,53 @@ export default function EquipmentFormPage() {
                     <FormItem><FormLabel>{t('Forms.userTerminal')}</FormLabel>
                     <FormControl><Input {...field} placeholder="Serial o Nickname..." /></FormControl><FormMessage /></FormItem>
                   )} />
-                  <div className="grid grid-cols-2 gap-4">
+                  
+                  <div className="grid grid-cols-1 gap-4 border-t pt-4">
+                    <FormField
+                      control={form.control}
+                      name="isClientOwned"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/10">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base flex items-center gap-2">
+                              {field.value ? <User className="h-4 w-4 text-primary" /> : <ShieldCheck className="h-4 w-4 text-primary" />}
+                              {t('Forms.isClientOwned')}
+                            </FormLabel>
+                            <FormDescription>
+                              {field.value ? 'El equipo pertenece al cliente.' : 'Equipo propiedad de Telespazio en comodato.'}
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {!watchedIsClientOwned && (
+                      <FormField
+                        control={form.control}
+                        name="comodatoFee"
+                        render={({ field }) => (
+                          <FormItem className="animate-in fade-in slide-in-from-top-2 duration-200">
+                            <FormLabel>{t('Forms.comodatoFee')}</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">USD</span>
+                                <Input type="number" step="0.01" {...field} className="pl-12" placeholder="0.00" />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 border-t pt-4">
                     <FormField control={form.control} name="type" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.type')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
