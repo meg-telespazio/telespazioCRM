@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -110,8 +109,22 @@ export const columns = (
             {contact.name}
           </span>
           <div className="flex flex-col md:hidden text-[9px] text-muted-foreground leading-tight italic">
-            {email && <span className="truncate max-w-[140px]">{email}</span>}
-            {phone && <span>{phone}</span>}
+            {email && (
+              <a 
+                href={`mailto:${email}`} 
+                className="text-primary hover:underline truncate max-w-[140px]"
+              >
+                {email}
+              </a>
+            )}
+            {phone && (
+              <a 
+                href={`tel:${phone}`} 
+                className="text-slate-600 hover:text-primary transition-colors"
+              >
+                {phone}
+              </a>
+            )}
           </div>
         </div>
       );
@@ -171,7 +184,15 @@ export const columns = (
         <ArrowUpDown className="ml-2 h-3 w-3" />
       </Button>
     ),
-    cell: ({ row }) => <span className="text-[11px]">{row.original.phones?.[0]?.number || '-'}</span>,
+    cell: ({ row }) => {
+      const phone = row.original.phones?.[0]?.number;
+      if (!phone) return '-';
+      return (
+        <a href={`tel:${phone}`} className="hover:text-primary transition-colors text-[11px]">
+          {phone}
+        </a>
+      );
+    },
   },
   {
     id: 'actions',
