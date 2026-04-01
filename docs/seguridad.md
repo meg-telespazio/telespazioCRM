@@ -24,6 +24,10 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 *   **Protección MIME (nosniff)**: Implementación de `X-Content-Type-Options: nosniff` para prevenir que el navegador ejecute scripts camuflados en otros tipos de archivos.
 *   **Permissions Policy**: Restricción de acceso a hardware y APIs del navegador (cámara, micrófono, geolocalización) para reducir la superficie de ataque y proteger la privacidad.
 *   **CORS Policy**: Configuración estricta de cabeceras `Access-Control` para gestionar el intercambio de recursos entre orígenes de forma segura.
+*   **Anti-CSRF Strategy**:
+    *   **Stateless Auth**: El uso del SDK de Firebase evita la dependencia de cookies de sesión ambientales, utilizando ID Tokens que no se adjuntan automáticamente en ataques CSRF.
+    *   **Server Actions Guard**: Las funciones de servidor de Next.js validan los encabezados de origen por defecto.
+    *   **Integrity Check**: Desafío matemático dinámico en formularios públicos para prevenir automatización y falsificación de peticiones.
 
 ---
 
@@ -37,6 +41,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 | **MIME-sniffing** | Bajo | El navegador podría interpretar archivos de datos como scripts ejecutables. | **MITIGADO**: Header `nosniff` configurado globalmente. |
 | **Acceso a Hardware** | Bajo | Acceso no autorizado a cámara o micrófono del usuario. | **MITIGADO**: Permissions-Policy desactiva estas funciones. |
 | **CORS Misconfiguration** | Medio | Permisos excesivos para que otros sitios lean datos de la app. | **MITIGADO**: Cabeceras ACAC, ACAH, ACAO, ACAEH y ACAMA configuradas. |
+| **CSRF** | Medio | Falsificación de peticiones en nombre del usuario. | **MITIGADO**: Arquitectura basada en tokens y protección de Server Actions. |
 | **Storage Permisivo** | Alto | La regla catch-all permitía acceso total. | **MITIGADO**: Ahora requiere validación de gerencia vía Firestore. |
 | **Manipulación de Contadores** | Medio | Escritura global permitía resetear IDs. | **MITIGADO**: Restringido a Admin y operaciones de incremento controladas. |
 | **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. | **MITIGADO**: Infraestructura de App Check inicializada en el código. |
@@ -74,4 +79,4 @@ Para evitar sorpresas en la facturación de Google Cloud/Firebase, sigue estos p
 8.  **Notificaciones**: Asegúrate de que tu correo esté seleccionado para recibir los emails.
 
 ---
-**Estado Actual: Sistema de auditoría activo, protección contra clickjacking, MIME-sniffing y CORS habilitada. El CRM cumple con estándares de seguridad de nivel corporativo.**
+**Estado Actual: Sistema de auditoría activo, protección contra clickjacking, MIME-sniffing, CORS y CSRF habilitada. El CRM cumple con estándares de seguridad de nivel corporativo.**

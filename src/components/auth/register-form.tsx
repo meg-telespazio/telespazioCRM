@@ -123,7 +123,6 @@ export function RegisterForm() {
         description: t('Auth.registerSuccessDescription'),
       });
       
-      // Redirect to login after a short delay
       setTimeout(() => {
         router.push('/login');
       }, 3000);
