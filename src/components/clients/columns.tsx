@@ -74,6 +74,7 @@ export const columns = (
     },
     {
       accessorKey: 'publicId',
+      meta: { className: "hidden sm:table-cell" },
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -124,7 +125,7 @@ export const columns = (
       cell: ({ row }) => (
         <Link 
           href={`/clients/${row.original.id}/summary`} 
-          className="font-bold text-slate-700 hover:text-primary transition-colors truncate block max-w-[300px] text-[11px]"
+          className="font-bold text-slate-700 hover:text-primary transition-colors truncate block max-w-[180px] sm:max-w-[300px] text-[11px]"
         >
           {row.original.name}
         </Link>
@@ -132,6 +133,7 @@ export const columns = (
     },
     {
       accessorKey: 'cuit',
+      meta: { className: "hidden lg:table-cell" },
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -146,6 +148,7 @@ export const columns = (
     },
     {
       accessorKey: 'sector',
+      meta: { className: "hidden md:table-cell" },
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -160,6 +163,7 @@ export const columns = (
     },
     {
       accessorKey: 'assignedTo',
+      meta: { className: "hidden md:table-cell" },
       header: ({ column }) => (
         <Button
           variant="ghost"

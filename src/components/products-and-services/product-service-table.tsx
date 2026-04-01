@@ -39,6 +39,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
 import { useToast } from '@/hooks/use-toast';
 import { updateProductOrService } from '@/lib/firestore/products-and-services';
+import { cn } from '@/lib/utils';
 
 type ProductServiceTableProps = {
   data: ProductOrService[];
@@ -207,7 +208,7 @@ export function ProductServiceTable({ data, onEdit, onDelete }: ProductServiceTa
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className={cn("bg-destructive h-10", (header.column.columnDef as any).meta?.className)}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -228,7 +229,7 @@ export function ProductServiceTable({ data, onEdit, onDelete }: ProductServiceTa
                   data-state={row.getIsSelected() && 'selected'}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className={cn("py-1", (cell.column.columnDef as any).meta?.className)}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

@@ -65,6 +65,7 @@ export const columns = (
   },
   {
     id: 'photo',
+    meta: { className: "hidden sm:table-cell" },
     header: () => null,
     cell: ({ row }) => {
       const item = row.original;
@@ -82,6 +83,7 @@ export const columns = (
   },
   {
     accessorKey: 'publicId',
+    meta: { className: "hidden md:table-cell" },
     header: ({ column }) => {
       const isSorted = column.getIsSorted();
       return (
@@ -132,7 +134,7 @@ export const columns = (
       return (
         <span
           onClick={() => onEdit(item)}
-          className="font-medium hover:underline cursor-pointer"
+          className="font-medium hover:underline cursor-pointer truncate block max-w-[150px]"
         >
           {item.name}
         </span>
@@ -198,6 +200,7 @@ export const columns = (
   },
   {
     accessorKey: 'oneTimeCharge',
+    meta: { className: "hidden sm:table-cell" },
     header: ({ column }) => {
       const isSorted = column.getIsSorted();
       return (
@@ -226,6 +229,7 @@ export const columns = (
   },
   {
     accessorKey: 'recurringCharge',
+    meta: { className: "hidden sm:table-cell" },
     header: ({ column }) => {
       const isSorted = column.getIsSorted();
       return (
@@ -254,6 +258,7 @@ export const columns = (
   },
   {
     accessorKey: 'createdAt',
+    meta: { className: "hidden lg:table-cell" },
     header: ({ column }) => {
       const isSorted = column.getIsSorted();
       return (

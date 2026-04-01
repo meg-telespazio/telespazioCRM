@@ -109,10 +109,11 @@ export const columns = (
         <ArrowUpDown className="ml-2 h-3 w-3" />
       </Button>
     ),
-    cell: ({ row }) => <span className="text-slate-700 font-bold text-[11px] truncate block max-w-[200px]">{getClientName(row.original.clientId, clients)}</span>,
+    cell: ({ row }) => <span className="text-slate-700 font-bold text-[11px] truncate block max-w-[150px] sm:max-w-[200px]">{getClientName(row.original.clientId, clients)}</span>,
   },
   {
     accessorKey: 'type',
+    meta: { className: "hidden lg:table-cell" },
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -166,6 +167,7 @@ export const columns = (
   },
   {
     accessorKey: 'startDate',
+    meta: { className: "hidden md:table-cell" },
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -192,6 +194,7 @@ export const columns = (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-slate-100">
+                <span className="sr-only">Open menu</span>
                 <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
               </Button>
             </DropdownMenuTrigger>

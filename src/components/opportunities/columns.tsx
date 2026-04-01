@@ -89,6 +89,7 @@ export const columns = (
     },
     {
       accessorKey: 'publicId',
+      meta: { className: "hidden md:table-cell" },
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -129,13 +130,14 @@ export const columns = (
         </Button>
       ),
       cell: ({ row }) => (
-        <span className="font-bold text-slate-700 text-[11px] truncate block max-w-[200px]">
+        <span className="font-bold text-slate-700 text-[11px] truncate block max-w-[150px] sm:max-w-[200px]">
           {row.original.title}
         </span>
       )
     },
     {
       accessorKey: 'clientId',
+      meta: { className: "hidden sm:table-cell" },
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -184,7 +186,7 @@ export const columns = (
           <div className="flex flex-col">
             <div className="font-bold text-slate-700 text-[11px]">{formatted}</div>
             {originalCurrency !== displayCurrency && (
-              <div className="text-[9px] text-muted-foreground italic">
+              <div className="text-[9px] text-muted-foreground italic hidden sm:block">
                 {originalAmount.toLocaleString()} {originalCurrency}
               </div>
             )}

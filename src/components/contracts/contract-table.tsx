@@ -40,6 +40,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { DataTablePagination } from '../ui/data-table-pagination';
 import { useRouter } from 'next/navigation';
 import { Search, ListFilter, Download } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type ContractTableProps = {
   data: Contract[];
@@ -199,7 +200,7 @@ export function ContractTable({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="bg-destructive h-10">
+                  <TableHead key={header.id} className={cn("bg-destructive h-10", (header.column.columnDef as any).meta?.className)}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -220,7 +221,7 @@ export function ContractTable({
                   className="h-10 border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-1">
+                    <TableCell key={cell.id} className={cn("py-1", (cell.column.columnDef as any).meta?.className)}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

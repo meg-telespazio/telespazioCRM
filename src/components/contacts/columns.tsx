@@ -59,6 +59,7 @@ export const columns = (
   },
   {
     accessorKey: 'publicId',
+    meta: { className: "hidden md:table-cell" },
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -116,10 +117,11 @@ export const columns = (
         <ArrowUpDown className="ml-2 h-3 w-3" />
       </Button>
     ),
-    cell: ({ row }) => <span className="text-slate-600 text-[11px]">{getClientName(row.original.clientId, clients)}</span>,
+    cell: ({ row }) => <span className="text-slate-600 text-[11px] truncate block max-w-[150px]">{getClientName(row.original.clientId, clients)}</span>,
   },
   {
     id: 'email',
+    meta: { className: "hidden sm:table-cell" },
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -142,6 +144,7 @@ export const columns = (
   },
   {
     id: 'phone',
+    meta: { className: "hidden lg:table-cell" },
     header: ({ column }) => (
       <Button
         variant="ghost"
