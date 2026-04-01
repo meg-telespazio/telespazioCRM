@@ -28,6 +28,9 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
     *   **Stateless Auth**: El uso del SDK de Firebase evita la dependencia de cookies de sesión ambientales, utilizando ID Tokens que no se adjuntan automáticamente en ataques CSRF.
     *   **Server Actions Guard**: Las funciones de servidor de Next.js validan los encabezados de origen por defecto.
     *   **Integrity Check**: Desafío matemático dinámico en formularios públicos para prevenir automatización y falsificación de peticiones.
+*   **Origin Isolation (COOP & CORP)**: 
+    *   **COOP (same-origin)**: Aísla el contexto de navegación para prevenir ataques de canal lateral.
+    *   **CORP (same-origin)**: Asegura que los recursos del sitio no sean incrustados por terceros maliciosos.
 
 ---
 
@@ -42,11 +45,10 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 | **Acceso a Hardware** | Bajo | Acceso no autorizado a cámara o micrófono del usuario. | **MITIGADO**: Permissions-Policy desactiva estas funciones. |
 | **CORS Misconfiguration** | Medio | Permisos excesivos para que otros sitios lean datos de la app. | **MITIGADO**: Cabeceras ACAC, ACAH, ACAO, ACAEH y ACAMA configuradas. |
 | **CSRF** | Medio | Falsificación de peticiones en nombre del usuario. | **MITIGADO**: Arquitectura basada en tokens y protección de Server Actions. |
+| **Aislamiento de Origen** | Bajo | Fuga de información a través de ventanas abiertas o recursos compartidos. | **MITIGADO**: COOP y CORP configurados como `same-origin`. |
 | **Storage Permisivo** | Alto | La regla catch-all permitía acceso total. | **MITIGADO**: Ahora requiere validación de gerencia vía Firestore. |
-| **Manipulación de Contadores** | Medio | Escritura global permitía resetear IDs. | **MITIGADO**: Restringido a Admin y operaciones de incremento controladas. |
 | **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. | **MITIGADO**: Infraestructura de App Check inicializada en el código. |
 | **Logs de Auditoría** | Bajo | No existe un registro histórico de quién cambió qué valor. | **MITIGADO**: Implementado sistema de registro inmutable en `/auditLogs`. |
-| **Bypass Administrador** | Crítico | Asegurar que el bypass total esté restringido por email. | **MITIGADO**: Diferenciación entre SuperAdmin (Email) y Admin (Rol). |
 
 ---
 
@@ -59,24 +61,14 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 5. [x] **Activar protección contra MIME-sniffing (nosniff)**.
 6. [x] **Configurar Permissions-Policy** para desactivar hardware no necesario.
 7. [x] **Establecer cabeceras CORS** (ACAO debe ser el dominio final, no `*`).
-8. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
-9. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
-10. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
+8. [x] **Activar Aislamiento de Origen (COOP y CORP)**.
+9. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
+10. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
 
 ---
 
-## 4. Guía de Configuración: Alertas de Presupuesto (Billing)
-
-Para evitar sorpresas en la facturación de Google Cloud/Firebase, sigue estos pasos:
-
-1.  Accede a la [Consola de Facturación de Google Cloud](https://console.cloud.google.com/billing).
-2.  En el menú lateral, selecciona **Presupuestos y alertas**.
-3.  Haz clic en **Crear presupuesto**.
-4.  **Nombre**: "Alerta CRM Telespazio".
-5.  **Alcance**: Selecciona tu proyecto actual.
-6.  **Importe**: Elige "Especificado" y pon un valor mensual (ej: 10 USD).
-7.  **Acciones**: Configura umbrales al 50%, 90% y 100%.
-8.  **Notificaciones**: Asegúrate de que tu correo esté seleccionado para recibir los emails.
+## 4. Notas Técnicas sobre COEP
+Se ha decidido **no activar** `Cross-Origin-Embedder-Policy: require-corp` por el momento. Dado que la aplicación consume recursos externos como mapas (OpenStreetMap) e imágenes de terceros que no siempre proporcionan cabeceras CORP, activar esta política bloquearía dichas funcionalidades. Se prioriza la disponibilidad del servicio manteniendo otras capas de seguridad robustas (CSP y COOP).
 
 ---
-**Estado Actual: Sistema de auditoría activo, protección contra clickjacking, MIME-sniffing, CORS y CSRF habilitada. El CRM cumple con estándares de seguridad de nivel corporativo.**
+**Estado Actual: Sistema de auditoría activo, protección contra clickjacking, MIME-sniffing, CORS, CSRF y aislamiento de origen habilitada. El CRM cumple con estándares de seguridad de nivel corporativo.**

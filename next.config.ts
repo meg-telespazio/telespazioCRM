@@ -86,7 +86,16 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=(), browsing-topics=()',
           },
-          // Cabeceras CORS solicitadas para cumplimiento de seguridad
+          // Cabeceras de Aislamiento de Origen (COOP, CORP)
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
+          },
+          // Cabeceras CORS solicitadas
           {
             key: 'Access-Control-Allow-Credentials',
             value: 'true',
