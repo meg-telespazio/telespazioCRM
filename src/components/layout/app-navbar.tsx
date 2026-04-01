@@ -183,6 +183,7 @@ export function AppNavbar() {
               alt="T-Track Logo"
               width={32}
               height={32}
+              style={{ height: 'auto' }}
             />
             <h1 className="hidden text-xl font-bold sm:inline-block">
               {t('App.appName')}
@@ -316,6 +317,7 @@ export function AppNavbar() {
                         alt="T-Track Logo"
                         width={32}
                         height={32}
+                        style={{ height: 'auto' }}
                       />
                       <h1 className="text-xl font-bold">{t('App.appName')}</h1>
                     </Link>
