@@ -19,9 +19,10 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 *   **Encriptación SSL/TLS**: Todo el tráfico entre el cliente y Firebase viaja cifrado.
 *   **Firestore**: Los datos se almacenan cifrados en los servidores de Google.
 *   **CSP (Content Security Policy)**: Implementada en headers de servidor para mitigar ataques XSS y controlar orígenes de datos externos.
+*   **Trusted Types**: Implementado vía CSP para prevenir ataques XSS basados en DOM mediante la validación de escrituras en el DOM.
 *   **Frame Protection**: Implementación de `frame-ancestors 'none'` y `X-Frame-Options: DENY` para prevenir ataques de Clickjacking.
 *   **Protección MIME (nosniff)**: Implementación de `X-Content-Type-Options: nosniff` para prevenir que el navegador ejecute scripts camuflados en otros tipos de archivos.
-*   **Permissions Policy**: Restricción de acceso a hardware y APIs del navegador (cámara, micrófono, geolocalización) para reducir la superficie de ataque.
+*   **Permissions Policy**: Restricción de acceso a hardware y APIs del navegador (cámara, micrófono, geolocalización) para reducir la superficie de ataque y proteger la privacidad.
 
 ---
 
@@ -31,6 +32,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 | :--- | :--- | :--- | :--- |
 | **Clickjacking** | Medio | Posibilidad de incrustar la app en un iframe malicioso. | **MITIGADO**: Política de frames restrictiva aplicada. |
 | **Inyección XSS** | Medio | Posibilidad de ejecutar scripts maliciosos vía inputs. | **MITIGADO**: Política CSP estricta aplicada en `next.config.ts`. |
+| **XSS basado en DOM** | Medio | Ejecución de scripts mediante manipulación de sinks del DOM. | **MITIGADO**: Trusted Types aplicado en la cabecera CSP. |
 | **MIME-sniffing** | Bajo | El navegador podría interpretar archivos de datos como scripts ejecutables. | **MITIGADO**: Header `nosniff` configurado globalmente. |
 | **Acceso a Hardware** | Bajo | Acceso no autorizado a cámara o micrófono del usuario. | **MITIGADO**: Permissions-Policy desactiva estas funciones. |
 | **Storage Permisivo** | Alto | La regla catch-all permitía acceso total. | **MITIGADO**: Ahora requiere validación de gerencia vía Firestore. |
@@ -46,11 +48,12 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 1. [x] **Habilitar Firebase App Check** (Recaptcha Enterprise) en la consola de Firebase.
 2. [ ] **Restringir API Keys** en la consola de Google Cloud (solo para el dominio de la app).
 3. [x] **Configurar Política CSP y Frames** en el servidor de producción.
-4. [x] **Activar protección contra MIME-sniffing (nosniff)**.
-5. [x] **Configurar Permissions-Policy** para desactivar hardware no necesario.
-6. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
-7. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
-8. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
+4. [x] **Habilitar Trusted Types** en la política CSP.
+5. [x] **Activar protección contra MIME-sniffing (nosniff)**.
+6. [x] **Configurar Permissions-Policy** para desactivar hardware no necesario.
+7. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
+8. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
+9. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
 
 ---
 
@@ -68,4 +71,4 @@ Para evitar sorpresas en la facturación de Google Cloud/Firebase, sigue estos p
 8.  **Notificaciones**: Asegúrate de que tu correo esté seleccionado para recibir los emails.
 
 ---
-**Estado Actual: Sistema de auditoría activo, protección contra clickjacking y MIME-sniffing habilitada, y política de CSP y Permisos estricta en funcionamiento. El CRM cumple con estándares de seguridad de nivel corporativo.**
+**Estado Actual: Sistema de auditoría activo, protección contra clickjacking y MIME-sniffing habilitada, y política de CSP, Trusted Types y Permisos estricta en funcionamiento. El CRM cumple con estándares de seguridad de nivel corporativo.**

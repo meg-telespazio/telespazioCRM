@@ -19,6 +19,7 @@ const cspHeader = `
     frame-src 'self' https://*.firebaseapp.com https://*.google.com;
     connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://dolarapi.com;
     upgrade-insecure-requests;
+    require-trusted-types-for 'script';
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig: NextConfig = {
