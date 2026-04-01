@@ -70,6 +70,7 @@ export const columns = (
   },
   {
     accessorKey: 'publicId',
+    meta: { className: "hidden md:table-cell" },
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -103,13 +104,26 @@ export const columns = (
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8 w-full justify-start"
       >
         CLIENTE
         <ArrowUpDown className="ml-2 h-3 w-3" />
       </Button>
     ),
-    cell: ({ row }) => <span className="text-slate-700 font-bold text-[11px] truncate block max-w-[150px] sm:max-w-[200px]">{getClientName(row.original.clientId, clients)}</span>,
+    cell: ({ row }) => {
+      const contract = row.original;
+      const clientName = getClientName(contract.clientId, clients);
+      return (
+        <div className="flex flex-col py-1">
+          <span className="text-slate-700 font-bold text-[11px] truncate block max-w-[120px] sm:max-w-[200px]">
+            {clientName}
+          </span>
+          <span className="text-[9px] font-mono text-muted-foreground md:hidden truncate">
+            {contract.publicId}
+          </span>
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'type',
