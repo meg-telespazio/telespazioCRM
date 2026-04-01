@@ -23,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
 import { CalendarIcon, Save, ArrowLeft, ShieldCheck, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +32,9 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   id: z.string().min(1, t('Validation.fieldRequired')),
   userTerminal: z.string().min(1, t('Validation.fieldRequired')),
   type: z.string().min(1, t('Validation.fieldRequired')),
-  physicalStatus: z.enum(['Activa', 'En reparación', 'Retirada']),
+  physicalStatus: z.enum(['Activa', 'En reparación', 'Retirada'], {
+    required_error: t('Validation.fieldRequired'),
+  }),
   installationDate: z.date().optional(),
   latitude: z.coerce.number().optional(),
   longitude: z.coerce.number().optional(),
@@ -40,7 +43,8 @@ const getFormSchema = (t: (key: string) => string) => z.object({
 });
 
 export default function EquipmentFormPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'es' ? es : enUS;
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -77,6 +81,8 @@ export default function EquipmentFormPage() {
     if (eqData) {
       form.reset({
         ...eqData,
+        type: eqData.type || 'Antena Standard',
+        physicalStatus: eqData.physicalStatus || 'Activa',
         installationDate: eqData.installationDate ? new Date(eqData.installationDate) : undefined,
         latitude: eqData.latitude,
         longitude: eqData.longitude,
@@ -127,12 +133,18 @@ export default function EquipmentFormPage() {
               <Card>
                 <CardContent className="grid gap-6 p-6">
                   <FormField control={form.control} name="id" render={({ field }) => (
-                    <FormItem><FormLabel>{t('Forms.userTerminalId')}</FormLabel>
-                    <FormControl><Input {...field} placeholder="UUID..." /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                      <FormLabel>{t('Forms.userTerminalId')}</FormLabel>
+                      <FormControl><Input {...field} placeholder="UUID..." /></FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )} />
                   <FormField control={form.control} name="userTerminal" render={({ field }) => (
-                    <FormItem><FormLabel>{t('Forms.userTerminal')}</FormLabel>
-                    <FormControl><Input {...field} placeholder="Serial o Nickname..." /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                      <FormLabel>{t('Forms.userTerminal')}</FormLabel>
+                      <FormControl><Input {...field} placeholder="Serial o Nickname..." /></FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )} />
                   
                   <div className="grid grid-cols-1 gap-4 border-t pt-4">
@@ -181,33 +193,92 @@ export default function EquipmentFormPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 border-t pt-4">
                     <FormField control={form.control} name="type" render={({ field }) => (
-                      <FormItem><FormLabel>{t('Forms.type')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                      <SelectContent><SelectItem value="Antena Standard">Antena Standard</SelectItem><SelectItem value="Antena HP">Antena HP</SelectItem><SelectItem value="KIT Enterprise">KIT Enterprise</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                      <FormItem>
+                        <FormLabel>{t('Forms.type')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('Forms.selectItem')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Antena Standard">Antena Standard</SelectItem>
+                            <SelectItem value="Antena HP">Antena HP</SelectItem>
+                            <SelectItem value="KIT Enterprise">KIT Enterprise</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                     <FormField control={form.control} name="physicalStatus" render={({ field }) => (
-                      <FormItem><FormLabel>{t('Forms.physicalStatus')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                      <SelectContent><SelectItem value="Activa">Activa</SelectItem><SelectItem value="En reparación">En reparación</SelectItem><SelectItem value="Retirada">Retirada</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                      <FormItem>
+                        <FormLabel>{t('Forms.physicalStatus')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('Forms.selectStatus')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Activa">Activa</SelectItem>
+                            <SelectItem value="En reparación">En reparación</SelectItem>
+                            <SelectItem value="Retirada">Retirada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                   </div>
+                  
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="installationDate" render={({ field }) => (
-                      <FormItem className="flex flex-col"><FormLabel>{t('Forms.installationDate')}</FormLabel>
-                      <Popover open={isInstallationDateOpen} onOpenChange={setInstallationDateOpen}><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, 'P') : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
-                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setInstallationDateOpen(false)} onCancel={() => setInstallationDateOpen(false)} initialFocus captionLayout="dropdown" startMonth={new Date(2000, 0)} endMonth={new Date(2050, 11)} /></PopoverContent></Popover><FormMessage /></FormItem>
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t('Forms.installationDate')}</FormLabel>
+                        <Popover open={isInstallationDateOpen} onOpenChange={setInstallationDateOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                {field.value ? format(field.value, 'P', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar 
+                              mode="single" 
+                              selected={field.value} 
+                              onSelect={field.onChange} 
+                              onAccept={() => setInstallationDateOpen(false)} 
+                              onCancel={() => setInstallationDateOpen(false)} 
+                              initialFocus 
+                              captionLayout="dropdown" 
+                              startMonth={new Date(2000, 0)} 
+                              endMonth={new Date(2050, 11)} 
+                              locale={dateLocale}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                   </div>
+
                   <div className="grid grid-cols-2 gap-4 border-t pt-4">
                     <FormField control={form.control} name="latitude" render={({ field }) => (
-                      <FormItem><FormLabel>{t('Locations.latitude')}</FormLabel>
-                      <FormControl><Input type="number" step="any" {...field} placeholder="-34.6037" /></FormControl><FormMessage /></FormItem>
+                      <FormItem>
+                        <FormLabel>{t('Locations.latitude')}</FormLabel>
+                        <FormControl><Input type="number" step="any" {...field} placeholder="-34.6037" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                     <FormField control={form.control} name="longitude" render={({ field }) => (
-                      <FormItem><FormLabel>{t('Locations.longitude')}</FormLabel>
-                      <FormControl><Input type="number" step="any" {...field} placeholder="-58.3816" /></FormControl><FormMessage /></FormItem>
+                      <FormItem>
+                        <FormLabel>{t('Locations.longitude')}</FormLabel>
+                        <FormControl><Input type="number" step="any" {...field} placeholder="-58.3816" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                   </div>
                 </CardContent>
