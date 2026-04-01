@@ -613,6 +613,7 @@ export const translations = {
       costCenter: 'Cost Center',
       isClientOwned: 'Client Owned Equipment',
       comodatoFee: 'Comodato Fee (USD)',
+      statusUpdateDate: 'Status Change Date',
     },
     Table: {
       actions: {
@@ -656,6 +657,7 @@ export const translations = {
       approved: 'Approved',
       received: 'Received',
       inactive: 'Inactive',
+      paused: 'Paused',
     },
     Stages: {
       Prospecting: 'Prospecting',
@@ -1489,6 +1491,7 @@ export const translations = {
       costCenter: 'Centro de Costo',
       isClientOwned: 'Equipo del Cliente',
       comodatoFee: 'Abono Comodato (USD)',
+      statusUpdateDate: 'Fecha de Cambio de Estado',
     },
     Table: {
       actions: {
@@ -1532,6 +1535,7 @@ export const translations = {
       approved: 'Aprobado',
       received: 'Recibido',
       inactive: 'Inactivo',
+      paused: 'Pausa',
     },
     Stages: {
       Prospecting: 'Prospección',

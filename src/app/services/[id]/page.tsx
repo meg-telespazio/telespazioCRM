@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -8,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { doc, collection, query, where } from 'firebase/firestore';
-import type { Service, ProductOrService } from '@/lib/types';
+import type { Service, ProductOrService, ServiceStatus } from '@/lib/types';
 import { updateService } from '@/lib/firestore/services';
 
 import { AppHeader } from '@/components/layout/app-header';
@@ -19,9 +20,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, ArrowLeft, Zap, Loader2 } from 'lucide-react';
+import { Save, ArrowLeft, Zap, Loader2, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
   serviceNickname: z.string().min(1, t('Validation.fieldRequired')),
@@ -35,12 +41,15 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   currency: z.enum(['USD', 'EUR', 'ARS']).optional(),
   monthlyFee: z.coerce.number().min(0).optional(),
   isTelespazioOwned: z.boolean().default(true),
+  status: z.enum(['active', 'paused', 'canceled']),
+  statusUpdateDate: z.date().optional(),
 });
 
 type ServiceFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
 export default function ServiceEditPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'es' ? es : enUS;
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -48,6 +57,8 @@ export default function ServiceEditPage() {
 
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+
+  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
 
   const serviceDocRef = useMemo(() => {
     if (!firestore || !serviceId) return null;
@@ -70,7 +81,6 @@ export default function ServiceEditPage() {
 
   const servicePlans = useMemo(() => {
     if (!catalogItems) return [];
-    // We include 'service' and 'bundle' types as valid plans
     return catalogItems
       .filter(item => item.type === 'service' || item.type === 'bundle')
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -90,8 +100,24 @@ export default function ServiceEditPage() {
       currency: 'USD',
       monthlyFee: 0,
       isTelespazioOwned: true,
+      status: 'active',
+      statusUpdateDate: undefined,
     },
   });
+
+  const watchedStatus = form.watch('status');
+
+  // Logic: Auto-update statusUpdateDate when status changes from active
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'status' && value.status !== 'active') {
+        form.setValue('statusUpdateDate', new Date());
+      } else if (name === 'status' && value.status === 'active') {
+        form.setValue('statusUpdateDate', undefined);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   useEffect(() => {
     if (service) {
@@ -107,6 +133,8 @@ export default function ServiceEditPage() {
         currency: (service.currency as any) || 'USD',
         monthlyFee: service.monthlyFee || 0,
         isTelespazioOwned: service.isTelespazioOwned !== undefined ? service.isTelespazioOwned : true,
+        status: service.status || 'active',
+        statusUpdateDate: service.statusUpdateDate ? new Date(service.statusUpdateDate) : undefined,
       });
     }
   }, [service, form]);
@@ -144,14 +172,7 @@ export default function ServiceEditPage() {
     );
   }
 
-  if (!service) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center p-12">
-        <p className="text-muted-foreground">Service not found.</p>
-        <Button variant="link" onClick={() => router.back()}>{t('Actions.back')}</Button>
-      </div>
-    );
-  }
+  const statusOptions: ServiceStatus[] = ['active', 'paused', 'canceled'];
 
   return (
     <div className="flex flex-1 flex-col">
@@ -170,10 +191,70 @@ export default function ServiceEditPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Zap className="h-5 w-5 text-yellow-500" />
-                    {service.serviceNickname}
+                    {service?.serviceNickname}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-6">
+                  {/* Status Section */}
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 bg-muted/30 p-4 rounded-lg border border-dashed">
+                    <FormField control={form.control} name="status" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Table.status')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {statusOptions.map(opt => (
+                              <SelectItem key={opt} value={opt}>{t(`Status.${opt}`)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="statusUpdateDate" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t('Forms.statusUpdateDate')}</FormLabel>
+                        <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                                disabled={watchedStatus === 'active'}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", { locale: dateLocale })
+                                ) : (
+                                  <span>{t('Forms.pickDate')}</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              onAccept={() => setDatePickerOpen(false)}
+                              onCancel={() => setDatePickerOpen(false)}
+                              initialFocus
+                              locale={dateLocale}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="serviceNickname" render={({ field }) => (
                       <FormItem>
@@ -195,7 +276,7 @@ export default function ServiceEditPage() {
                     <FormField control={form.control} name="servicePlan" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.servicePlan')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder={t('PS.selectUnit')} />
@@ -229,7 +310,7 @@ export default function ServiceEditPage() {
                     <FormField control={form.control} name="currency" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.currency')}</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger><SelectValue placeholder={t('Forms.currency')} /></SelectTrigger>
                           </FormControl>

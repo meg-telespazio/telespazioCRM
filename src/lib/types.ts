@@ -236,6 +236,8 @@ export type PurchaseOrder = {
   assignedTo: string;
 };
 
+export type ServiceStatus = 'active' | 'paused' | 'canceled';
+
 export type Service = {
   id: string;
   serviceNickname: string;
@@ -251,6 +253,8 @@ export type Service = {
   currency?: 'USD' | 'EUR' | 'ARS';
   monthlyFee?: number;
   isTelespazioOwned: boolean;
+  status: ServiceStatus;
+  statusUpdateDate?: Date;
   createdBy: string;
   createdAt: Date;
   management: ManagementArea;

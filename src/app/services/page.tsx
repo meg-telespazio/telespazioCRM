@@ -26,7 +26,7 @@ import {
   DollarSign,
   Link2,
 } from 'lucide-react';
-import type { Service, PurchaseOrder, Contract, Client } from '@/lib/types';
+import type { Service, PurchaseOrder, Contract, Client, ServiceStatus } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -77,6 +77,12 @@ type SortConfig = {
 };
 
 type BulkMode = 'price' | 'plan' | 'po' | null;
+
+const statusClasses: Record<ServiceStatus, string> = {
+  active: 'bg-green-100 text-green-700 border-none font-bold text-[9px]',
+  paused: 'bg-amber-100 text-amber-700 border-none font-bold text-[9px]',
+  canceled: 'bg-slate-100 text-slate-700 border-none font-bold text-[9px]',
+};
 
 function InlineFeeEdit({ 
   service, 
@@ -387,7 +393,7 @@ export default function ServicesPage() {
                     <TableHead className="text-white"><button onClick={() => handleSort('monthlyFee')} className="flex items-center">{t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}</button></TableHead>
                     <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
                     <TableHead className="text-white"><button onClick={() => handleSort('client')} className="flex items-center">{t('Pages.clients')} {getSortIcon('client')}</button></TableHead>
-                    <TableHead className="text-white">PO</TableHead>
+                    <TableHead className="text-white">Estado</TableHead>
                     <TableHead className="text-right text-white px-4">{t('Table.actions.title')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -409,7 +415,11 @@ export default function ServicesPage() {
                         <TableCell><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} /></TableCell>
                         <TableCell className="text-xs">{s.servicePlan}</TableCell>
                         <TableCell>{client?.name || '-'}</TableCell>
-                        <TableCell><Badge variant="secondary">{po?.poNumber || '...'}</Badge></TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn("rounded-full", statusClasses[s.status || 'active'])}>
+                            {t(`Status.${s.status || 'active'}`)}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right px-4">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
