@@ -37,7 +37,7 @@ const formatCurrency = (amount: number, currency: string) => {
 };
 
 export const columns = (
-  t: (key: string) => void,
+  t: (key: string, params?: any) => string,
   onEdit: (item: ProductOrService) => void,
   onDelete: (itemId: string) => void
 ): ColumnDef<ProductOrService>[] => [
@@ -221,7 +221,7 @@ export const columns = (
     },
     cell: ({ row }) => {
       const { oneTimeCharge, currency } = row.original;
-      return oneTimeCharge ? formatCurrency(oneTimeCharge, currency) : '-';
+      return oneTimeCharge ? formatCurrency(oneTimeCharge, currency || 'USD') : '-';
     },
   },
   {
@@ -249,7 +249,7 @@ export const columns = (
     },
     cell: ({ row }) => {
       const { recurringCharge, currency } = row.original;
-      return recurringCharge ? formatCurrency(recurringCharge, currency) : '-';
+      return recurringCharge ? formatCurrency(recurringCharge, currency || 'USD') : '-';
     },
   },
   {

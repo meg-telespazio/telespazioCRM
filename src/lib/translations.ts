@@ -1,4 +1,3 @@
-
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -627,6 +626,8 @@ export const translations = {
       currency: 'Currency',
       nrc: 'OTC',
       mrc: 'MRC',
+      oneTimeCharge: 'One-time Charge',
+      recurringCharge: 'Recurring Charge',
       totalNrc: 'Total OTC',
       totalMrc: 'Total MRC',
       subtotal: 'Subtotal',
@@ -1474,7 +1475,7 @@ export const translations = {
       contractReference: 'Referencia de Contrato',
       grossMarginPercentage: 'Margen Bruto (%)',
       grossMarginAmount: 'Monto Margen Bruto',
-      generalData: 'Datos Generales',
+      generalData: 'General Data',
       commercialData: 'Datos Comerciales',
       clientRelation: 'Relación con el Cliente',
       scheduleStatus: 'Cronograma y Estado',
@@ -1492,10 +1493,12 @@ export const translations = {
       contractId: 'ID Contrato',
       opportunityId: 'ID Negocio',
       itemId: 'SKU',
-      type: 'Type',
+      type: 'Tipo',
       currency: 'Moneda',
       nrc: 'OTC',
       mrc: 'MRC',
+      oneTimeCharge: 'Cargo Único',
+      recurringCharge: 'Cargo Recurrente',
       totalNrc: 'Total OTC',
       totalMrc: 'Total MRC',
       subtotal: 'Subtotal',
