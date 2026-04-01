@@ -6,6 +6,7 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === 'development',
 });
 
+// Ajustamos frame-ancestors para permitir la vista previa en Firebase Studio/Cloud Workstations
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com;
@@ -15,7 +16,7 @@ const cspHeader = `
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'none';
+    frame-ancestors 'self' https://*.cloudworkstations.dev https://*.firebaseapp.com;
     frame-src 'self' https://*.firebaseapp.com https://*.google.com;
     connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://dolarapi.com;
     upgrade-insecure-requests;
@@ -72,7 +73,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'SAMEORIGIN',
           },
           {
             key: 'X-Content-Type-Options',
@@ -86,7 +87,6 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=(), browsing-topics=()',
           },
-          // Cabeceras de Aislamiento de Origen (COOP, CORP)
           {
             key: 'Cross-Origin-Opener-Policy',
             value: 'same-origin',
@@ -95,14 +95,13 @@ const nextConfig: NextConfig = {
             key: 'Cross-Origin-Resource-Policy',
             value: 'same-origin',
           },
-          // Cabeceras CORS solicitadas
           {
             key: 'Access-Control-Allow-Credentials',
             value: 'true',
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: '*', // Nota: Restringir a dominios específicos en producción
+            value: '*',
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -120,7 +119,6 @@ const nextConfig: NextConfig = {
             key: 'Access-Control-Max-Age',
             value: '86400',
           },
-          // Cabecera Vary para gestión segura de caché con CORS
           {
             key: 'Vary',
             value: 'Origin',
