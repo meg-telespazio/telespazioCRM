@@ -92,7 +92,7 @@ export default function OpportunitiesPage() {
         </Button>
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {(opportunitiesLoading && oppsQuery !== null) || clientsLoading || !configData ? (
+        {(opportunitiesLoading && oppsQuery !== null) || clientsLoading ? (
            <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-96 w-full" /></div>
         ) : user?.role === 'ingeniero' ? (
           <div className="text-center py-20 text-muted-foreground">No tienes permisos para ver este módulo.</div>
@@ -103,7 +103,7 @@ export default function OpportunitiesPage() {
             onEdit={handleEditOpportunity} 
             onDelete={handleDeleteOpportunity}
             onDuplicate={handleDuplicateOpportunity}
-            exchangeRates={configData.exchangeRates || []}
+            exchangeRates={configData?.exchangeRates || []}
             displayCurrency={displayCurrency}
           />
         )}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -7,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Activity, Client, UserProfile, ActivityType } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, orderBy, where } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { differenceInDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,21 +35,17 @@ export default function AllActivitiesPage() {
     if (!user) return null;
     const ref = collection(firestore, 'activities');
     
-    // Filter by management, and exclude engineers from reading financial-linked activities (if needed)
-    // Here we respect the rule: admin sees all, others see their management.
     if (user.role === 'admin') {
-      return query(ref, orderBy('updatedAt', 'desc'));
+      return query(ref);
     }
     
-    // Ingenieros can't see activities according to prompt requirements
     if (user.role === 'ingeniero') {
       return null;
     }
 
     return query(
       ref,
-      where('management', '==', user.management),
-      orderBy('updatedAt', 'desc')
+      where('management', '==', user.management)
     );
   }, [user, firestore]);
 
@@ -66,10 +61,19 @@ export default function AllActivitiesPage() {
     return collection(firestore, 'users');
   }, [user, firestore]);
 
-  const { data: activities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
+  const { data: activitiesData, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
   const { data: clients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
   const { data: users, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
   
+  const activities = useMemo(() => {
+    if (!activitiesData) return [];
+    return [...activitiesData].sort((a, b) => {
+      const dateA = a.updatedAt || a.createdAt;
+      const dateB = b.updatedAt || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [activitiesData]);
+
   const clientMap = useMemo(() => {
     const map = new Map<string, string>();
     clients?.forEach(client => map.set(client.id, client.name));
@@ -108,7 +112,7 @@ export default function AllActivitiesPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-56" />)}
           </div>
-        ) : activities && activities.length > 0 ? (
+        ) : activities.length > 0 ? (
           <>
             {viewMode === 'card' ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -116,7 +120,7 @@ export default function AllActivitiesPage() {
                     const Icon = activityIcons[activity.type] || MessageSquare;
                     const clientName = clientMap.get(activity.clientId) || 'Unknown Client';
                     const updateDate = activity.updatedAt || activity.createdAt;
-                    const daysSinceUpdate = differenceInDays(new Date(), updateDate);
+                    const daysSinceUpdate = updateDate ? differenceInDays(new Date(), updateDate) : 0;
                     const lastUpdateAuthorId = activity.latestFollowUpBy || activity.createdBy;
                     const lastUpdateAuthor = userMap.get(lastUpdateAuthorId);
                     const lastUpdateContent = activity.latestFollowUpContent || activity.description;

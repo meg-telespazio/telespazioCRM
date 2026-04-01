@@ -15,30 +15,31 @@ service cloud.firestore {
 
     // El Admin tiene permisos de gestión sobre cualquier gerencia, pero sujeto a auditoría.
     function isAdmin() {
-      return isSuperAdmin() || (isAuthenticated() && getUserData().role == 'admin');
+      return isSuperAdmin() || (isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin');
     }
 
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(path) ? get(path).data : {};
     }
 
     // --- Helpers de Permisos por Rol ---
 
     function isGerente() {
-      return getUserData().role == 'gerente';
+      return getUserData().get('role', 'ejecutivo') == 'gerente';
     }
 
     function isEjecutivo() {
-      return getUserData().role == 'ejecutivo';
+      return getUserData().get('role', 'ejecutivo') == 'ejecutivo';
     }
 
     function isIngeniero() {
-      return getUserData().role == 'ingeniero';
+      return getUserData().get('role', 'ejecutivo') == 'ingeniero';
     }
 
     // Comprueba si el documento pertenece a la gerencia del usuario
     function isSameManagement(data) {
-      return data.management == getUserData().management;
+      return data.management == getUserData().get('management', '');
     }
 
     // Comprueba si el usuario es el responsable asignado
