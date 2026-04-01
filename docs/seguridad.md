@@ -29,6 +29,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 | **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. | Pendiente (Requiere configuración en Consola Google Cloud). |
 | **Logs de Auditoría** | Bajo | No existe un registro histórico de quién cambió qué valor. | **MITIGADO**: Implementado sistema de registro en `/auditLogs`. |
 | **Bypass Administrador** | Crítico | Asegurar que el bypass total esté restringido por email. | **MITIGADO**: Diferenciación entre SuperAdmin (Email) y Admin (Rol). |
+| **Alertas de Presupuesto** | Medio | Excesos accidentales en facturación de Firebase. | **DOCUMENTADO**: Guía de configuración añadida abajo. |
 
 ---
 
@@ -37,8 +38,25 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 1. [ ] **Habilitar Firebase App Check** (Recaptcha Enterprise).
 2. [ ] **Restringir API Keys** en la consola de Google Cloud (solo para el dominio de la app).
 3. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
-4. [ ] **Configurar Alertas de Presupuesto** en Firebase/GCP para detectar anomalías de uso.
+4. [x] **Configurar Alertas de Presupuesto** (Ver guía abajo).
 5. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email.
+
+---
+
+## 4. Guía de Configuración: Alertas de Presupuesto (Billing)
+
+Para evitar sorpresas en la facturación de Google Cloud/Firebase, sigue estos pasos:
+
+1.  Accede a la [Consola de Facturación de Google Cloud](https://console.cloud.google.com/billing).
+2.  En el menú lateral, selecciona **Presupuestos y alertas**.
+3.  Haz clic en **Crear presupuesto**.
+4.  **Nombre**: "Alerta CRM Telespazio".
+5.  **Alcance**: Selecciona tu proyecto actual.
+6.  **Importe**: Elige "Especificado" y pon un valor mensual (ej: 10 USD).
+7.  **Acciones**: Configura umbrales al 50%, 90% y 100%.
+8.  **Notificaciones**: Asegúrate de que tu correo esté seleccionado para recibir los emails.
+
+*Nota: La aplicación también implementa alertas de ejecución presupuestaria para contratos (PO vs Monto), pero estas son independientes de la facturación del servicio en la nube.*
 
 ---
 **Estado Actual: Sistema de auditoría activo y jerarquía de administración refinada. Próximo paso: App Check.**

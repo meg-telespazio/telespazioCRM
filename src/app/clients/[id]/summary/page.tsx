@@ -22,13 +22,14 @@ import {
   MapPin, Activity as ActivityIcon, Linkedin, FileText, 
   ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, 
   Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
-  Flag, Briefcase, TrendingUp 
+  Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle 
 } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FilePreviewModal } from '@/components/ui/file-preview-modal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 
 export default function ClientSummaryPage() {
   const { t, locale } = useI18n();
@@ -116,6 +117,23 @@ export default function ClientSummaryPage() {
     
     return { clientServices: filteredServices, totalMRR: mrr };
   }, [contracts, allPos, allServices]);
+
+  // Budget Execution Logic
+  const contractExecutionStats = useMemo(() => {
+    const stats = new Map<string, { consumed: number, percentage: number }>();
+    if (!contracts || !allPos) return stats;
+
+    contracts.forEach(contract => {
+      const consumed = allPos
+        .filter(po => po.contractId === contract.id && po.status !== 'canceled')
+        .reduce((sum, po) => sum + (po.amount || 0), 0);
+      
+      const percentage = contract.amount > 0 ? (consumed / contract.amount) * 100 : 0;
+      stats.set(contract.id, { consumed, percentage });
+    });
+
+    return stats;
+  }, [contracts, allPos]);
 
   // Aggregate all documents
   const allDocuments = useMemo(() => {
@@ -311,18 +329,55 @@ export default function ClientSummaryPage() {
                   <Accordion type="single" collapsible className="w-full">
                     {contracts.map(contract => {
                       const contractPos = allPos?.filter(p => p.contractId === contract.id) || [];
+                      const execution = contractExecutionStats.get(contract.id) || { consumed: 0, percentage: 0 };
+                      const isOverLimit = execution.percentage > 100;
+                      const isWarning = execution.percentage > 80 && !isOverLimit;
+
                       return (
                         <AccordionItem key={contract.id} value={contract.id} className="border-b last:border-0 px-6">
                           <AccordionTrigger className="hover:no-underline py-4">
-                            <div className="flex items-center gap-4 text-left">
-                              <Badge variant="outline" className="font-mono">{contract.publicId}</Badge>
-                              <span className="font-bold text-base">{contract.type}</span>
-                              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded italic">
-                                {format(contract.startDate, 'P')} - {format(contract.endDate, 'P')}
-                              </span>
+                            <div className="flex flex-col md:flex-row md:items-center gap-4 text-left w-full">
+                              <div className="flex items-center gap-4 min-w-[250px]">
+                                <Badge variant="outline" className="font-mono">{contract.publicId}</Badge>
+                                <span className="font-bold text-base">{contract.type}</span>
+                              </div>
+                              
+                              <div className="flex-1 max-w-xs space-y-1">
+                                <div className="flex justify-between text-[10px] font-bold uppercase">
+                                  <span className="text-muted-foreground">Ejecución Presupuestaria</span>
+                                  <span className={cn(isOverLimit ? "text-destructive" : isWarning ? "text-amber-600" : "text-primary")}>
+                                    {execution.percentage.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <Progress 
+                                  value={Math.min(execution.percentage, 100)} 
+                                  className={cn("h-1.5", isOverLimit ? "bg-destructive/20" : "")} 
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-3 ml-auto pr-4">
+                                {isOverLimit && <AlertCircle className="h-4 w-4 text-destructive animate-pulse" />}
+                                {isWarning && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded italic">
+                                  {format(contract.startDate, 'P')} - {format(contract.endDate, 'P')}
+                                </span>
+                              </div>
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="pb-6 space-y-4">
+                            <div className="grid md:grid-cols-2 gap-4 mb-4">
+                              <div className="p-3 bg-muted/20 rounded border space-y-1">
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase">Monto Total Contrato</p>
+                                <p className="text-lg font-bold">{contract.currency} {contract.amount.toLocaleString()}</p>
+                              </div>
+                              <div className={cn("p-3 rounded border space-y-1", isOverLimit ? "bg-destructive/5 border-destructive/20" : "bg-muted/20")}>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase">Monto Ejecutado (POs)</p>
+                                <p className={cn("text-lg font-bold", isOverLimit ? "text-destructive" : "")}>
+                                  {contract.currency} {execution.consumed.toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+
                             <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md">
                               <span className="text-xs font-bold text-muted-foreground uppercase">{t('Sidebar.pos')}</span>
                               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}><PlusCircle className="h-3 w-3 mr-1"/>Nueva PO</Button>
