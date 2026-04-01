@@ -1,25 +1,50 @@
+
 rules_version = '2';
 
 // REGLAS DE SEGURIDAD PARA STORAGE - TELESPAZIO CRM
-// Permite acceso a usuarios autenticados en carpetas críticas.
-// Trigger de despliegue: 2025-03-20T10:30:00Z
+// Implementa aislamiento por gerencia y protección de documentos críticos.
 
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Regla para Contratos (incluye subcarpetas)
-    match /contracts/{contractId}/{allPaths=**} {
-      allow read, write: if request.auth != null;
+    // Helper: Obtener datos del usuario desde Firestore
+    function getUserData() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Regla para Oportunidades (incluye subcarpetas)
+    // Helper: Verificar si es Administrador
+    function isAdmin() {
+      return request.auth != null && (request.auth.token.email == 'mariano.gonzalez@telespazio.com' || getUserData().role == 'admin');
+    }
+
+    // Helper: Verificar si el usuario pertenece a la misma gerencia que un documento de Firestore
+    function hasManagementAccess(targetManagement) {
+      return getUserData().management == targetManagement;
+    }
+
+    // --- Reglas por Carpeta ---
+
+    // Contratos: Solo Admin o personal de la misma gerencia del contrato
+    match /contracts/{contractId}/{allPaths=**} {
+      allow read, write: if isAdmin() || 
+        (request.auth != null && hasManagementAccess(firestore.get(/databases/(default)/documents/contracts/$(contractId)).data.management));
+    }
+
+    // Oportunidades: Solo Admin o personal de la misma gerencia de la oportunidad
     match /opportunities/{opportunityId}/{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAdmin() || 
+        (request.auth != null && hasManagementAccess(firestore.get(/databases/(default)/documents/opportunities/$(opportunityId)).data.management));
+    }
+
+    // Logos de Clientes y Avatares: Lectura pública (o autenticada), escritura por dueños/admin
+    match /users/{userId}/avatar {
+      allow read: if request.auth != null;
+      allow write: if isAdmin() || request.auth.uid == userId;
     }
     
-    // Regla global de respaldo: cualquier usuario logueado puede leer/escribir
+    // Regla de respaldo: Cualquier otro acceso requiere ser Admin
     match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAdmin();
     }
   }
 }

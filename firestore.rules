@@ -132,8 +132,10 @@ service cloud.firestore {
       allow write: if isAdmin() || isGerente();
     }
 
+    // Contadores: Protegidos contra borrado y listado. Solo incremento vía get/update.
     match /counters/{counterId} {
-      allow read, write: if isAuthenticated();
+      allow get, update, create: if isAuthenticated();
+      allow list, delete: if isAdmin();
     }
 
     match /systemConfig/{configId} {

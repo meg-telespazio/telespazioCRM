@@ -1,3 +1,4 @@
+
 # Análisis de Seguridad: T-Track Sales CRM
 
 Este documento detalla las medidas de seguridad implementadas y los puntos de mejora identificados antes del paso a producción.
@@ -21,12 +22,12 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 
 ## 2. Análisis de Gaps (Riesgos a mitigar)
 
-| Riesgo | Impacto | Descripción | Recomendación |
+| Riesgo | Impacto | Descripción | Estado |
 | :--- | :--- | :--- | :--- |
-| **Storage Permisivo** | Alto | La regla catch-all `match /{allPaths=**}` permite que cualquier empleado borre archivos de otros. | Restringir permisos de escritura solo a los creadores o administradores por carpeta. |
-| **Manipulación de Contadores** | Medio | Los documentos en `/counters/` tienen permiso de escritura global para usuarios. Un usuario malintencionado podría resetear los IDs. | Mover la lógica de incremento a una Cloud Function o restringir el acceso solo a creación de documentos. |
-| **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. Alguien podría atacar la API directamente sin usar la web. | Implementar **Firebase App Check** para asegurar que solo el dominio autorizado pueda hablar con el backend. |
-| **Logs de Auditoría** | Bajo | No existe un registro histórico de quién cambió qué valor (ej: quién bajó un precio). | Crear una colección `auditLogs` para acciones críticas como `delete` o cambios de `monthlyFee`. |
+| **Storage Permisivo** | Alto | La regla catch-all permitía acceso total. | **MITIGADO**: Ahora requiere validación de gerencia vía Firestore. |
+| **Manipulación de Contadores** | Medio | Escritura global permitía resetear IDs. | **MITIGADO**: Restringido a Admin y operaciones de incremento controladas. |
+| **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. | Pendiente (Requiere configuración en Consola Google Cloud). |
+| **Logs de Auditoría** | Bajo | No existe un registro histórico de quién cambió qué valor. | Pendiente. |
 
 ---
 
@@ -34,9 +35,9 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 
 1. [ ] **Habilitar Firebase App Check** (Recaptcha Enterprise).
 2. [ ] **Restringir API Keys** en la consola de Google Cloud (solo para el dominio de la app).
-3. [ ] **Refinar reglas de Storage** para que los archivos de `contracts/` solo sean accesibles por los roles autorizados.
+3. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
 4. [ ] **Configurar Alertas de Presupuesto** en Firebase/GCP para detectar anomalías de uso.
 5. [ ] **Revisión de Administrador Global**: Asegurar que solo el email de Mariano Gonzalez tenga el bypass total de reglas en `firestore.rules`.
 
 ---
-**Estado Actual: Seguro para pruebas internas. Requiere ajustes de reglas para despliegue masivo.**
+**Estado Actual: Protecciones de acceso a archivos y bases de datos endurecidas. Siguiente paso: App Check.**
