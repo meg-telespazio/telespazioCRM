@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -187,9 +186,9 @@ export default function EquipmentPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Equipment.title')}>
-        <Button onClick={() => router.push('/equipment/new')} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {t('Equipment.add')}
+        <Button size="sm" onClick={() => router.push('/equipment/new')} disabled={user?.role === 'ingeniero'}>
+          <PlusCircle className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('Equipment.add')}</span>
         </Button>
       </AppHeader>
 

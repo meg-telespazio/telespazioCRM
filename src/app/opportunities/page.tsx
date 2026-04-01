@@ -43,7 +43,7 @@ export default function OpportunitiesPage() {
 
   const opportunities = useMemo(() => {
     if (!opportunitiesData) return [];
-    return [...opportunitiesData].sort((a, b) => (b.publicId || '').localeCompare(a.publicId || ''));
+    return [...opportunitiesData].sort((a, b) => (a.publicId || '').localeCompare(a.publicId || ''));
   }, [opportunitiesData]);
 
   const clients = useMemo(() => clientsData || [], [clientsData]);
@@ -86,9 +86,9 @@ export default function OpportunitiesPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.opportunities')}>
-        <Button onClick={() => router.push('/opportunities/new')} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {t('Pages.addOpportunity')}
+        <Button size="sm" onClick={() => router.push('/opportunities/new')} disabled={user?.role === 'ingeniero'}>
+          <PlusCircle className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('Pages.addOpportunity')}</span>
         </Button>
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">

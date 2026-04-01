@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -60,9 +59,9 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Pages.reports')}>
-        <Button onClick={() => router.push('/reports/builder/new')}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {t('Reports.createNew')}
+        <Button size="sm" onClick={() => router.push('/reports/builder/new')}>
+          <PlusCircle className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('Reports.createNew')}</span>
         </Button>
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -106,7 +105,7 @@ export default function ContactsPage() {
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.contacts')}>
         <Select value={clientFilter} onValueChange={setClientFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="hidden sm:flex w-[180px] h-8 text-xs">
                 <SelectValue placeholder={t('Forms.selectClient')} />
             </SelectTrigger>
             <SelectContent>
@@ -117,26 +116,27 @@ export default function ContactsPage() {
             </SelectContent>
         </Select>
 
-        <div className="flex items-center rounded-md bg-muted p-1">
-            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="sm" className="h-8 px-3" onClick={() => setViewMode('table')}>
-                <List className="h-4 w-4" />
+        <div className="hidden sm:flex items-center rounded-md bg-muted p-1">
+            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2" onClick={() => setViewMode('table')}>
+                <List className="h-3.5 w-3.5" />
             </Button>
-            <Button variant={viewMode === 'card' ? 'secondary' : 'ghost'} size="sm" className="h-8 px-3" onClick={() => setViewMode('card')}>
-                <LayoutGrid className="h-4 w-4" />
+            <Button variant={viewMode === 'card' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2" onClick={() => setViewMode('card')}>
+                <LayoutGrid className="h-3.5 w-3.5" />
             </Button>
         </div>
         
         <Button
           variant="outline"
+          size="sm"
           onClick={() => setImporterOpen(true)}
           disabled={user?.role === 'ingeniero'}
         >
-          <Upload className="mr-2 h-4 w-4" />
-          {t('Importer.button')}
+          <Upload className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('Importer.button')}</span>
         </Button>
-        <Button onClick={handleAddNew} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {t('Pages.addContact')}
+        <Button size="sm" onClick={handleAddNew} disabled={user?.role === 'ingeniero'}>
+          <PlusCircle className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('Pages.addContact')}</span>
         </Button>
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">

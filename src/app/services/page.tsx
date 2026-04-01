@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -331,13 +330,13 @@ export default function ServicesPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Services.title')}>
-        <Button variant="outline" onClick={() => router.push('/services/new')} disabled={user?.role === 'ingeniero'} className="mr-2 border-primary text-primary">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Carga Manual
+        <Button variant="outline" size="sm" onClick={() => router.push('/services/new')} disabled={user?.role === 'ingeniero'} className="mr-2 border-primary text-primary">
+          <PlusCircle className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Carga Manual</span>
         </Button>
-        <Button variant="outline" onClick={() => setImporterOpen(true)} disabled={user?.role === 'ingeniero'}>
-          <Upload className="mr-2 h-4 w-4" />
-          {t('Services.import')}
+        <Button variant="outline" size="sm" onClick={() => setImporterOpen(true)} disabled={user?.role === 'ingeniero'}>
+          <Upload className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('Services.import')}</span>
         </Button>
       </AppHeader>
 

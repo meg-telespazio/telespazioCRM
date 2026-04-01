@@ -58,9 +58,9 @@ export default function PurchaseOrdersPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('PO.title')}>
-        <Button onClick={() => router.push('/purchase-orders/new')} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {t('PO.add')}
+        <Button size="sm" onClick={() => router.push('/purchase-orders/new')} disabled={user?.role === 'ingeniero'}>
+          <PlusCircle className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">{t('PO.add')}</span>
         </Button>
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">
