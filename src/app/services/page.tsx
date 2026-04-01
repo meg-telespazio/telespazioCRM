@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -25,6 +24,7 @@ import {
   LayoutGrid,
   DollarSign,
   Link2,
+  PlusCircle,
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client, ServiceStatus } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -331,6 +331,10 @@ export default function ServicesPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Services.title')}>
+        <Button variant="outline" onClick={() => router.push('/services/new')} disabled={user?.role === 'ingeniero'} className="mr-2 border-primary text-primary">
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Carga Manual
+        </Button>
         <Button variant="outline" onClick={() => setImporterOpen(true)} disabled={user?.role === 'ingeniero'}>
           <Upload className="mr-2 h-4 w-4" />
           {t('Services.import')}

@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -11,7 +10,7 @@ import {
   type Firestore,
   writeBatch,
 } from 'firebase/firestore';
-import type { Service, PurchaseOrder, Contract } from '@/lib/types';
+import type { Service, PurchaseOrder, Contract, Equipment } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
@@ -59,6 +58,56 @@ export async function addService(
         requestResourceData: data,
       } satisfies SecurityRuleContext);
       errorEmitter.emit('permission-error', permissionError);
+    }
+    throw serverError;
+  }
+}
+
+/**
+ * Adds a service and its associated equipment in a single batch operation.
+ */
+export async function addServiceWithEquipment(
+  firestore: Firestore,
+  uid: string,
+  serviceData: any,
+  equipmentData: any
+) {
+  const poRef = doc(firestore, 'purchaseOrders', serviceData.poId);
+  const poSnap = await getDoc(poRef);
+  if (!poSnap.exists()) throw new Error('PO not found');
+  const poData = poSnap.data() as PurchaseOrder;
+
+  const batch = writeBatch(firestore);
+  const serviceRef = doc(collection(firestore, SERVICES_COLLECTION));
+  const equipmentRef = doc(firestore, EQUIPMENT_COLLECTION, equipmentData.id);
+
+  const cleanedEquipment = cleanData({
+    ...equipmentData,
+    currentServiceId: serviceRef.id,
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+    management: poData.management,
+    assignedTo: poData.assignedTo,
+  });
+
+  const cleanedService = cleanData({
+    ...serviceData,
+    equipmentId: equipmentData.id,
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+    management: poData.management,
+    assignedTo: poData.assignedTo,
+  });
+
+  batch.set(equipmentRef, cleanedEquipment, { merge: true });
+  batch.set(serviceRef, cleanedService);
+
+  try {
+    await batch.commit();
+    return serviceRef.id;
+  } catch (serverError: any) {
+    if (serverError.code === 'permission-denied') {
+      errorEmitter.emit('permission-error', new Error('Batch creation failed: Permission Denied'));
     }
     throw serverError;
   }
