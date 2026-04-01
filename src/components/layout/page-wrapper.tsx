@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -34,8 +33,11 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       const mfaUser = multiFactor(auth.currentUser!);
       const hasMfa = mfaUser.enrolledFactors.length > 0;
       
+      // Bypass MFA enforcement for specific user Roxana Patrese due to email verification issues
+      const isBypassed = user.email === 'roxana.patrese@telespazio.com';
+
       // If MFA is enforced by admin but not enrolled by user
-      if (user.mfaEnforced && !hasMfa) {
+      if (user.mfaEnforced && !hasMfa && !isBypassed) {
         setIsMfaModalOpen(true);
         if (pathname !== '/profile') {
           router.push('/profile');

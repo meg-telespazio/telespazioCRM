@@ -1,11 +1,10 @@
-
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -30,10 +29,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useI18n } from '@/firebase/client-provider';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { AvatarCropper } from './avatar-cropper';
-import { Camera, ShieldAlert } from 'lucide-react';
+import { Camera, ShieldAlert, MailCheck, Loader2 } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import type { UserProfile } from '@/lib/types';
+import { Badge } from '../ui/badge';
 
 const userAvatarPlaceholder = PlaceHolderImages.find(
   (img) => img.id === 'user-avatar'
@@ -63,6 +63,7 @@ export function ProfileForm() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedAvatar, setCroppedAvatar] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
 
   const profileFormSchema = useMemo(() => getProfileFormSchema(t), [t]);
 
@@ -114,6 +115,27 @@ export function ProfileForm() {
   const handleCropComplete = (croppedImageUrl: string) => {
     setCroppedAvatar(croppedImageUrl);
     setImageToCrop(null);
+  };
+
+  const handleSendVerification = async () => {
+    if (!auth.currentUser) return;
+    setIsSendingVerification(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      toast({
+        variant: 'success',
+        title: 'Correo Enviado',
+        description: 'Se ha enviado un enlace de verificación a tu bandeja de entrada.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+    } finally {
+      setIsSendingVerification(false);
+    }
   };
 
   async function onSubmit(values: z.infer<typeof profileFormSchema>) {
@@ -208,7 +230,6 @@ export function ProfileForm() {
     'GeoInformacion'
   ];
 
-  // Solo el email de administrador global o un usuario con rol admin puede cambiar roles y gerencias
   const isGlobalAdmin = user?.email === 'mariano.gonzalez@telespazio.com';
   const canEditPermissions = isGlobalAdmin;
 
@@ -279,7 +300,23 @@ export function ProfileForm() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormItem>
-              <FormLabel>{t('Auth.emailLabel')}</FormLabel>
+              <FormLabel className="flex items-center justify-between">
+                {t('Auth.emailLabel')}
+                {user?.emailVerified ? (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 text-[9px] h-4">Verificado</Badge>
+                ) : (
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    className="h-auto p-0 text-[10px] text-destructive font-bold uppercase"
+                    onClick={handleSendVerification}
+                    disabled={isSendingVerification}
+                  >
+                    {isSendingVerification ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <MailCheck className="h-3 w-3 mr-1" />}
+                    Validar Email
+                  </Button>
+                )}
+              </FormLabel>
               <FormControl>
                 <Input value={user?.email || ''} readOnly disabled />
               </FormControl>

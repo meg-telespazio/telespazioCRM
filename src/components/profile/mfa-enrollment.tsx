@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,19 +9,21 @@ import {
   TotpSecret,
   RecaptchaVerifier 
 } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, QrCode, Phone, Smartphone } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, QrCode, Phone, Smartphone, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 export function MfaEnrollment() {
   const auth = useAuth();
+  const { user } = useUser();
   const { t } = useI18n();
   const { toast } = useToast();
   
@@ -87,6 +88,17 @@ export function MfaEnrollment() {
 
   const handleInitiateTotp = async () => {
     if (!auth.currentUser) return;
+    
+    // Hard requirement for Identity Platform: Email must be verified
+    if (!auth.currentUser.emailVerified) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Verificación Requerida', 
+        description: 'Debes verificar tu correo electrónico antes de activar el Autenticador.' 
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const mfaSession = await multiFactor(auth.currentUser).getSession();
@@ -164,6 +176,16 @@ export function MfaEnrollment() {
         <CardDescription>{t('Auth.mfaEnrollDesc')}</CardDescription>
       </CardHeader>
       <CardContent>
+        {!auth.currentUser?.emailVerified && (
+          <Alert variant="destructive" className="mb-6 bg-red-50 border-red-200">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertTitle className="text-red-800 font-bold uppercase text-[10px]">Verificación de Email Requerida</AlertTitle>
+            <AlertDescription className="text-red-700 text-xs">
+              Para habilitar la aplicación de autenticación, Firebase requiere que tu email esté verificado. Usa el botón "Validar Email" en la sección superior antes de continuar.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="sms" className="gap-2"><Phone className="h-4 w-4" /> SMS</TabsTrigger>
@@ -219,7 +241,7 @@ export function MfaEnrollment() {
               <div className="py-4 text-center">
                 <Smartphone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-sm text-muted-foreground mb-6">Usa aplicaciones como Google Authenticator o Authy para generar códigos de seguridad.</p>
-                <Button onClick={handleInitiateTotp} disabled={isLoading}>
+                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Configurar Autenticador
                 </Button>
