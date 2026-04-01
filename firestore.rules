@@ -9,8 +9,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // El Super Admin tiene bypass total. Solo Mariano Gonzalez.
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
+    }
+
+    // El Admin tiene permisos de gestión sobre cualquier gerencia, pero sujeto a auditoría.
     function isAdmin() {
-      return isAuthenticated() && (request.auth.token.email == 'mariano.gonzalez@telespazio.com' || getUserData().role == 'admin');
+      return isSuperAdmin() || (isAuthenticated() && getUserData().role == 'admin');
     }
 
     function getUserData() {
@@ -54,6 +60,13 @@ service cloud.firestore {
       }
     }
     
+    // Auditoría: Solo admins pueden leer los logs. Nadie puede borrarlos.
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated(); // El sistema debe poder escribir logs
+      allow update, delete: if false; // Inmutabilidad de los logs
+    }
+
     // Clientes, Contactos, Locaciones: Visibles por todos en la gerencia, editables por Gerente o Ejecutivo asignado
     match /clients/{clientId} {
       allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
@@ -132,10 +145,10 @@ service cloud.firestore {
       allow write: if isAdmin() || isGerente();
     }
 
-    // Contadores: Protegidos contra borrado y listado. Solo incremento vía get/update.
+    // Contadores: Protegidos contra borrado masivo.
     match /counters/{counterId} {
       allow get, update, create: if isAuthenticated();
-      allow list, delete: if isAdmin();
+      allow list, delete: if isSuperAdmin();
     }
 
     match /systemConfig/{configId} {

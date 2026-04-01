@@ -16,6 +16,7 @@ import {
 import type { Client, ManagementArea } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { logAuditAction } from './audit';
 
 const CLIENTS_COLLECTION = 'clients';
 
@@ -69,6 +70,14 @@ export async function addClient(
 
       transaction.set(newClientRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
+      
+      // Log auditoría
+      logAuditAction(firestore, {
+        action: 'create',
+        collection: CLIENTS_COLLECTION,
+        docId: newClientRef.id,
+        details: `Nuevo cliente: ${clientData.name}`
+      });
     });
   } catch (error) {
     console.error("Client creation transaction failed: ", error);
@@ -107,6 +116,12 @@ export async function updateClient(
   const data = cleanData(clientData);
   try {
     await updateDoc(clientRef, data);
+    logAuditAction(firestore, {
+      action: 'update',
+      collection: CLIENTS_COLLECTION,
+      docId: clientId,
+      details: `Campos actualizados: ${Object.keys(data).join(', ')}`
+    });
   } catch(serverError) {
     const permissionError = new FirestorePermissionError({
       path: clientRef.path,
@@ -120,7 +135,13 @@ export async function updateClient(
 
 export function deleteClient(firestore: Firestore, clientId: string) {
   const clientRef = doc(firestore, CLIENTS_COLLECTION, clientId);
-  deleteDoc(clientRef).catch((serverError) => {
+  deleteDoc(clientRef).then(() => {
+    logAuditAction(firestore, {
+      action: 'delete',
+      collection: CLIENTS_COLLECTION,
+      docId: clientId
+    });
+  }).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: clientRef.path,
       operation: 'delete',

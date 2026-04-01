@@ -13,6 +13,7 @@ import {
 import type { Contract, Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { logAuditAction } from './audit';
 
 const CONTRACTS_COLLECTION = 'contracts';
 
@@ -62,6 +63,13 @@ export async function addContract(
 
       transaction.set(newContractRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
+      
+      logAuditAction(firestore, {
+        action: 'create',
+        collection: CONTRACTS_COLLECTION,
+        docId: newContractRef.id,
+        details: `Nuevo contrato: ${publicId} para ${clientData.name}`
+      });
     });
   } catch (error: any) {
     console.error("Contract creation failed: ", error);
@@ -77,7 +85,14 @@ export function updateContract(
   const contractRef = doc(firestore, CONTRACTS_COLLECTION, contractId);
   const data = cleanData(contractData);
   
-  return updateDoc(contractRef, data).catch(async (serverError) => {
+  return updateDoc(contractRef, data).then(() => {
+    logAuditAction(firestore, {
+      action: 'update',
+      collection: CONTRACTS_COLLECTION,
+      docId: contractId,
+      details: `Campos actualizados: ${Object.keys(data).join(', ')}`
+    });
+  }).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: contractRef.path,
       operation: 'update',
@@ -90,7 +105,13 @@ export function updateContract(
 
 export function deleteContract(firestore: Firestore, contractId: string) {
   const contractRef = doc(firestore, CONTRACTS_COLLECTION, contractId);
-  deleteDoc(contractRef).catch(async (serverError) => {
+  deleteDoc(contractRef).then(() => {
+    logAuditAction(firestore, {
+      action: 'delete',
+      collection: CONTRACTS_COLLECTION,
+      docId: contractId
+    });
+  }).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: contractRef.path,
       operation: 'delete',

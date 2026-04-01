@@ -1,3 +1,4 @@
+
 'use client';
 import {
   collection,
@@ -13,6 +14,7 @@ import type { Opportunity, Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { addDays } from 'date-fns';
+import { logAuditAction } from './audit';
 
 const OPPORTUNITIES_COLLECTION = 'opportunities';
 
@@ -63,6 +65,13 @@ export async function addOpportunity(
 
       transaction.set(newOppRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
+      
+      logAuditAction(firestore, {
+        action: 'create',
+        collection: OPPORTUNITIES_COLLECTION,
+        docId: newOppRef.id,
+        details: `Nuevo negocio: ${opportunityData.title} para ${clientData.name}`
+      });
     });
   } catch (error) {
     console.error("Opportunity creation failed: ", error);
@@ -100,7 +109,14 @@ export function updateOpportunity(
   const cleaned = cleanData(opportunityData);
   delete (cleaned as any).publicId;
 
-  return updateDoc(opportunityRef, cleaned).catch((serverError) => {
+  return updateDoc(opportunityRef, cleaned).then(() => {
+    logAuditAction(firestore, {
+      action: 'update',
+      collection: OPPORTUNITIES_COLLECTION,
+      docId: opportunityId,
+      details: `Campos actualizados: ${Object.keys(cleaned).join(', ')}`
+    });
+  }).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: opportunityRef.path,
       operation: 'update',
@@ -113,7 +129,13 @@ export function updateOpportunity(
 
 export function deleteOpportunity(firestore: Firestore, opportunityId: string) {
   const opportunityRef = doc(firestore, OPPORTUNITIES_COLLECTION, opportunityId);
-  deleteDoc(opportunityRef).catch((serverError) => {
+  deleteDoc(opportunityRef).then(() => {
+    logAuditAction(firestore, {
+      action: 'delete',
+      collection: OPPORTUNITIES_COLLECTION,
+      docId: opportunityId
+    });
+  }).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: opportunityRef.path,
       operation: 'delete',
