@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -63,7 +62,8 @@ service cloud.firestore {
     // Auditoría: Solo admins pueden leer los logs. Nadie puede borrarlos.
     match /auditLogs/{logId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated(); // El sistema debe poder escribir logs
+      // Validamos que el log sea creado por el usuario autenticado para evitar spoofing
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid; 
       allow update, delete: if false; // Inmutabilidad de los logs
     }
 
@@ -71,7 +71,8 @@ service cloud.firestore {
     match /clients/{clientId} {
       allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente()); // Solo gerentes borran
     }
 
     match /contacts/{contactId} {
@@ -90,26 +91,30 @@ service cloud.firestore {
     match /opportunities/{opportunityId} {
       allow read: if isAuthenticated() && (isAdmin() || (isSameManagement(resource.data) && !isIngeniero()));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
     }
 
     match /purchaseOrders/{poId} {
       allow read: if isAuthenticated() && (isAdmin() || (isSameManagement(resource.data) && !isIngeniero()));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
     }
 
     match /services/{serviceId} {
       allow read: if isAuthenticated() && (isAdmin() || (isSameManagement(resource.data) && !isIngeniero()));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
     }
 
     // Contratos: Ingenieros pueden verlos
     match /contracts/{contractId} {
       allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
       
       match /addendums/{addendumId} {
         allow read: if isAuthenticated() && (isAdmin() || isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data));

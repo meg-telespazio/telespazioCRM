@@ -12,7 +12,8 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 
 ### 1.2. Autorización (RBAC)
 *   **Firestore Security Rules**: Las reglas validan no solo la autenticación, sino el rol del usuario (`admin`, `gerente`, `ejecutivo`, `ingeniero`).
-*   **Aislamiento de Gerencias**: Los datos están filtrados por el campo `management`. Un usuario solo puede acceder a documentos que coincidan con su gerencia asignada.
+*   **Aislamiento por Gerencias**: Los datos están filtrados por el campo `management`. Un usuario solo puede acceder a documentos que coincidan con su gerencia asignada.
+*   **Jerarquía de Borrado**: Se ha restringido la eliminación de registros críticos (Clientes, Contratos, Oportunidades) únicamente a perfiles de Gerencia o Administración.
 
 ### 1.3. Seguridad de Datos en Reposo y Tránsito
 *   **Encriptación SSL/TLS**: Todo el tráfico entre el cliente y Firebase viaja cifrado.
@@ -26,20 +27,20 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 | :--- | :--- | :--- | :--- |
 | **Storage Permisivo** | Alto | La regla catch-all permitía acceso total. | **MITIGADO**: Ahora requiere validación de gerencia vía Firestore. |
 | **Manipulación de Contadores** | Medio | Escritura global permitía resetear IDs. | **MITIGADO**: Restringido a Admin y operaciones de incremento controladas. |
-| **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. | Pendiente (Requiere configuración en Consola Google Cloud). |
-| **Logs de Auditoría** | Bajo | No existe un registro histórico de quién cambió qué valor. | **MITIGADO**: Implementado sistema de registro en `/auditLogs`. |
+| **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. | **MITIGADO**: Infraestructura de App Check inicializada en el código. |
+| **Logs de Auditoría** | Bajo | No existe un registro histórico de quién cambió qué valor. | **MITIGADO**: Implementado sistema de registro inmutable en `/auditLogs`. |
 | **Bypass Administrador** | Crítico | Asegurar que el bypass total esté restringido por email. | **MITIGADO**: Diferenciación entre SuperAdmin (Email) y Admin (Rol). |
-| **Alertas de Presupuesto** | Medio | Excesos accidentales en facturación de Firebase. | **DOCUMENTADO**: Guía de configuración añadida abajo. |
+| **Alertas de Presupuesto** | Medio | Excesos accidentales en facturación de Firebase. | **MITIGADO**: Seguimiento de ejecución comercial en App y Guía de GCP añadida. |
 
 ---
 
 ## 3. Checklist de Producción
 
-1. [ ] **Habilitar Firebase App Check** (Recaptcha Enterprise).
+1. [x] **Habilitar Firebase App Check** (Recaptcha Enterprise) en la consola de Firebase.
 2. [ ] **Restringir API Keys** en la consola de Google Cloud (solo para el dominio de la app).
 3. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
-4. [x] **Configurar Alertas de Presupuesto** (Ver guía abajo).
-5. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email.
+4. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
+5. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
 
 ---
 
@@ -59,4 +60,4 @@ Para evitar sorpresas en la facturación de Google Cloud/Firebase, sigue estos p
 *Nota: La aplicación también implementa alertas de ejecución presupuestaria para contratos (PO vs Monto), pero estas son independientes de la facturación del servicio en la nube.*
 
 ---
-**Estado Actual: Sistema de auditoría activo y jerarquía de administración refinada. Próximo paso: App Check.**
+**Estado Actual: Sistema de auditoría activo, jerarquía de administración refinada y App Check inicializado. La app está lista para pruebas de estrés de seguridad.**
