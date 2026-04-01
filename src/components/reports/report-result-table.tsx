@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -38,30 +37,34 @@ const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
 
   const getNestedValue = (obj: any, path: string) => {
     if (!path) return undefined;
+    // Check for flat keys first (useful for aggregated fields like "services.monthlyFee_sum")
+    if (obj.hasOwnProperty(path)) return obj[path];
+    // Fallback to nested resolution
     return path.split('.').reduce((p, c) => (p && p[c]), obj);
   };
 
   const formatCellForDisplay = (value: any): string => {
+      if (value === undefined || value === null) return '-';
       if (value instanceof Date) {
           return format(value, 'P');
       }
       if (Array.isArray(value)) {
           if (value.length === 0) return '-';
           if(typeof value[0] === 'object' && value[0] !== null) {
-               return value.map(item => item.address || item.number || JSON.stringify(item)).join(', ');
+               return value.map(item => item.address || item.number || item.name || JSON.stringify(item)).join(', ');
           }
           return value.join(', ');
       }
       if (typeof value === 'object' && value !== null) {
-          return value.name || value.displayName || value.publicId || JSON.stringify(value);
+          return value.name || value.displayName || value.publicId || value.poNumber || JSON.stringify(value);
       }
       if(typeof value === 'boolean') {
           return value ? t('Yes') : t('No');
       }
       if (typeof value === 'number') {
-          return value.toLocaleString();
+          return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
-      return String(value ?? '-');
+      return String(value);
   }
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -85,13 +88,14 @@ const ReportResultTable = ({ columns, data }: ReportResultTableProps) => {
   });
 
   const formatCellForExport = (value: any): string => {
+    if (value === undefined || value === null) return '';
     if (value instanceof Date) return format(value, 'yyyy-MM-dd');
     if (Array.isArray(value)) {
       if (value.length === 0) return '';
-      return value.map((item) => item.address || item.number || JSON.stringify(item)).join('; ');
+      return value.map((item) => item.address || item.number || item.name || JSON.stringify(item)).join('; ');
     }
-    if (typeof value === 'object' && value !== null) return value.name || value.displayName || JSON.stringify(value);
-    return String(value ?? '');
+    if (typeof value === 'object' && value !== null) return value.name || value.displayName || value.publicId || value.poNumber || JSON.stringify(value);
+    return String(value);
   };
 
   const handleDownload = () => {

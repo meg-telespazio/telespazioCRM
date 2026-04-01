@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
@@ -77,7 +76,7 @@ const SCHEMA = {
   contacts: ['name', 'position', 'area'],
   opportunities: ['title', 'stage', 'value', 'currency', 'probability', 'closeDate'],
   contracts: ['publicId', 'type', 'status', 'amount', 'currency', 'startDate', 'endDate'],
-  purchaseOrders: ['id', 'amount', 'currency', 'status', 'emissionDate'],
+  purchaseOrders: ['poNumber', 'amount', 'currency', 'status', 'emissionDate'],
   services: ['serviceNickname', 'serviceLineNumber', 'servicePlan', 'monthlyFee', 'currency', 'serviceAllocationGb'],
   equipment: ['userTerminal', 'id', 'type', 'physicalStatus'],
   activities: ['type', 'description', 'isPriority'],
@@ -240,7 +239,8 @@ export default function ReportManualBuilderPage() {
       const [groupSource, groupField] = reportConfig.groupBy.split('.');
 
       filtered.forEach((row: any) => {
-        const groupKey = String(row[groupSource]?.[groupField] || 'N/A');
+        const groupValue = row[groupSource]?.[groupField];
+        const groupKey = groupValue !== undefined && groupValue !== null ? String(groupValue) : 'N/A';
         if (!groups.has(groupKey)) {
           groups.set(groupKey, { _key: groupKey, _records: [] });
         }
@@ -249,17 +249,23 @@ export default function ReportManualBuilderPage() {
 
       finalData = Array.from(groups.values()).map(group => {
         const aggregatedRow: any = {};
-        setNestedValue(aggregatedRow, reportConfig.groupBy!, group._key);
+        // Store the group label in the row
+        aggregatedRow[reportConfig.groupBy!] = group._key;
 
         reportConfig.aggregations!.forEach(agg => {
           const [aggSource, aggField] = agg.field.split('.');
-          const values = group._records.map((r: any) => Number(r[aggSource]?.[aggField] || 0));
+          // Extract numeric values for the calculation
+          const numericValues = group._records
+            .map((r: any) => r[aggSource]?.[aggField])
+            .filter((v: any) => v !== undefined && v !== null && !isNaN(Number(v)))
+            .map((v: any) => Number(v));
           
           let result = 0;
-          if (agg.type === 'sum') result = values.reduce((a: number, b: number) => a + b, 0);
-          else if (agg.type === 'avg') result = values.length ? values.reduce((a: number, b: number) => a + b, 0) / values.length : 0;
+          if (agg.type === 'sum') result = numericValues.reduce((a: number, b: number) => a + b, 0);
+          else if (agg.type === 'avg') result = numericValues.length ? numericValues.reduce((a: number, b: number) => a + b, 0) / numericValues.length : 0;
           else if (agg.type === 'count') result = group._records.length;
 
+          // Aggregated values use a composite key that the table can handle
           aggregatedRow[`${agg.field}_${agg.type}`] = result;
         });
         return aggregatedRow;
