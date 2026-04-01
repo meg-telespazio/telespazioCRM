@@ -18,6 +18,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 ### 1.3. Seguridad de Datos en Reposo y Tránsito
 *   **Encriptación SSL/TLS**: Todo el tráfico entre el cliente y Firebase viaja cifrado.
 *   **Firestore**: Los datos se almacenan cifrados en los servidores de Google.
+*   **CSP (Content Security Policy)**: Implementada en headers de servidor para mitigar ataques XSS y controlar orígenes de datos externos.
 
 ---
 
@@ -31,6 +32,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 | **Logs de Auditoría** | Bajo | No existe un registro histórico de quién cambió qué valor. | **MITIGADO**: Implementado sistema de registro inmutable en `/auditLogs`. |
 | **Bypass Administrador** | Crítico | Asegurar que el bypass total esté restringido por email. | **MITIGADO**: Diferenciación entre SuperAdmin (Email) y Admin (Rol). |
 | **Alertas de Presupuesto** | Medio | Excesos accidentales en facturación de Firebase. | **MITIGADO**: Seguimiento de ejecución comercial en App y Guía de GCP añadida. |
+| **Inyección XSS** | Medio | Posibilidad de ejecutar scripts maliciosos vía inputs. | **MITIGADO**: Política CSP estricta aplicada en `next.config.ts`. |
 
 ---
 
@@ -41,6 +43,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 3. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
 4. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
 5. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
+6. [x] **Validación de Política CSP**: Asegurar que todos los orígenes externos estén declarados.
 
 ---
 
@@ -60,4 +63,4 @@ Para evitar sorpresas en la facturación de Google Cloud/Firebase, sigue estos p
 *Nota: La aplicación también implementa alertas de ejecución presupuestaria para contratos (PO vs Monto), pero estas son independientes de la facturación del servicio en la nube.*
 
 ---
-**Estado Actual: Sistema de auditoría activo, jerarquía de administración refinada y App Check inicializado. La app está lista para pruebas de estrés de seguridad.**
+**Estado Actual: Sistema de auditoría activo, jerarquía de administración refinada, App Check inicializado y CSP activa. La app está lista para pruebas de estrés de seguridad.**
