@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo } from 'react';
@@ -25,28 +26,32 @@ export default function DashboardPage() {
     if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'opportunities');
     if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
+    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
   }, [firestore, user]);
 
   const clientsQuery = useMemo(() => {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
+    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
   }, [firestore, user]);
 
   const contactsQuery = useMemo(() => {
     if (!user) return null;
     const ref = collection(firestore, 'contacts');
     if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
+    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
   }, [firestore, user]);
 
   const activitiesQuery = useMemo(() => {
     if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'activities');
     if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
+    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
   }, [firestore, user]);
 
   const { data: opportunities, loading: opportunitiesLoading } =

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -11,8 +12,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Search,
-  Building,
-  ShoppingCart,
   Loader2,
   ArrowUpDown,
   ArrowUp,
@@ -21,7 +20,6 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
-  LayoutGrid,
   DollarSign,
   Link2,
   PlusCircle,
@@ -161,7 +159,7 @@ export default function ServicesPage() {
     if (user?.role === 'ingeniero') redirect('/dashboard');
   }, [user, userLoading]);
 
-  // Data fetching
+  // Data fetching - Services filtered by management
   const servicesQuery = useMemo(() => {
     if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'services');
@@ -183,11 +181,13 @@ export default function ServicesPage() {
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
+  // Client filtering by role for selection
   const clientsQuery = useMemo(() => {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
+    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
   }, [user, firestore]);
 
   const { data: services, loading: servicesLoading } = useCollection<Service>(servicesQuery);
@@ -366,7 +366,7 @@ export default function ServicesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">{t('Table.all')} {t('Sidebar.clients')}</SelectItem>
-                      {clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      {clients?.sort((a,b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -392,7 +392,7 @@ export default function ServicesPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-destructive hover:bg-destructive">
-                    <TableHead className="w-[50px]"><Checkbox checked={selectedIds.length === paginatedServices.length} onCheckedChange={toggleSelectAll} /></TableHead>
+                    <TableHead className="w-[50px]"><Checkbox checked={selectedIds.length === paginatedServices.length && paginatedServices.length > 0} onCheckedChange={toggleSelectAll} /></TableHead>
                     <TableHead className="text-white"><button onClick={() => handleSort('serviceNickname')} className="flex items-center">{t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}</button></TableHead>
                     <TableHead className="text-white"><button onClick={() => handleSort('monthlyFee')} className="flex items-center">{t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}</button></TableHead>
                     <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
@@ -437,9 +437,45 @@ export default function ServicesPage() {
                       </TableRow>
                     );
                   })}
+                  {paginatedServices.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
+                        {t('Services.noServices')}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-2 py-4">
+                <p className="text-xs text-muted-foreground">
+                  {t('Table.pagination.pageInfo', { page: currentPage, totalPages })}
+                </p>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    {t('Table.previous')}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => p + 1)}
+                  >
+                    {t('Table.next')}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -86,10 +87,17 @@ export default function ContactFormPage() {
     }, [firestore, contactId, isNew]);
     const { data: contactData, loading: contactLoading } = useDoc<Contact>(contactDocRef);
 
-    // Fetch clients for dropdown
-    const baseClientQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
-    const clientsQuery = useMemo(() => baseClientQuery ? query(collection(firestore, 'clients'), baseClientQuery) : null, [firestore, baseClientQuery]);
+    // Filtered clients by permission for selection
+    const clientsQuery = useMemo(() => {
+      if (!user || !firestore) return null;
+      const ref = collection(firestore, 'clients');
+      if (user.role === 'admin') return query(ref);
+      if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }, [firestore, user]);
+
     const { data: clientsData, loading: clientsLoading } = useCollection<Client>(clientsQuery);
+    
     const clients = useMemo(() => {
         if (!clientsData) return [];
         return [...clientsData].sort((a, b) => a.name.localeCompare(b.name));

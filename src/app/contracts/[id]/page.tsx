@@ -124,7 +124,7 @@ export default function ContractFormPage() {
   const isNew = contractId === 'new';
   const clientIdFromQuery = searchParams.get('clientId');
 
-  // Resetear el flag de carga cuando cambia el ID
+  // Reset flag when ID changes
   useEffect(() => {
     isFormLoaded.current = false;
   }, [contractId]);
@@ -140,11 +140,27 @@ export default function ContractFormPage() {
   const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
-  const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
-  
-  const clientsQuery = useMemo(() => baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null, [firestore, baseQuery]);
-  const contactsQuery = useMemo(() => baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null, [firestore, baseQuery]);
-  const psQuery = useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery, where('status', '==', 'active')) : null, [firestore, baseQuery]);
+  // Filtered clients by permission for selection
+  const clientsQuery = useMemo(() => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+  }, [user, firestore]);
+
+  const contactsQuery = useMemo(() => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'contacts');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
+  const psQuery = useMemo(() => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'productsAndServices');
+    return query(ref, where('status', '==', 'active'));
+  }, [user, firestore]);
 
   const { data: clientsData, loading: clientsLoading } = useCollection<Client>(clientsQuery);
   const { data: allContactsData, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
@@ -225,7 +241,7 @@ export default function ContractFormPage() {
     return allContactsData.filter((contact) => contact.clientId === watchedClientId);
   }, [allContactsData, watchedClientId]);
 
-  // Cargar datos del contrato en el formulario solo una vez al recibir los datos
+  // Load contract data once
   useEffect(() => {
     if (contractData && !isFormLoaded.current) {
       form.reset({

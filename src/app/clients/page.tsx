@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -22,16 +23,13 @@ export default function ClientsPage() {
 
   const [isImporterOpen, setImporterOpen] = useState(false);
 
+  // Filter clients by permission
   const clientsQuery = useMemo(() => {
     if (!user) return null;
-    
-    const clientsRef = collection(firestore, 'clients');
-    
-    if (user.role === 'admin') {
-      return query(clientsRef);
-    }
-    
-    return query(clientsRef, where('management', '==', user.management));
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
   }, [user, firestore]);
 
   const { data: clientsData, loading: clientsLoading } =

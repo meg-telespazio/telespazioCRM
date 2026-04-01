@@ -217,11 +217,13 @@ export default function OpportunityFormPage() {
   const { data: opportunityData, loading: opportunityLoading } =
     useDoc<Opportunity>(opportunityDocRef);
 
+  // Filtered clients by permission for selection
   const clientsQuery = useMemo(() => {
     if (!user || !firestore) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
+    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
   }, [user, firestore]);
 
   const { data: clientsData, loading: clientsLoading } =
@@ -280,7 +282,6 @@ export default function OpportunityFormPage() {
     return contactsData || [];
   }, [contactsData]);
 
-  // Dynamic contracts for the selected client
   const contractsQuery = useMemo(() => {
     if (!user || !firestore || !watchedClientId) return null;
     const ref = collection(firestore, 'contracts');

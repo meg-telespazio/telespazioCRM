@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -34,19 +35,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import dynamic from 'next/dynamic';
-
-// Importación dinámica del mapa sin SSR
-const LocationsMap = dynamic(
-  () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="h-full w-full flex items-center justify-center bg-muted rounded-lg">
-        <p className="text-sm text-muted-foreground">Cargando mapa...</p>
-      </div>
-    )
-  }
-);
 
 const locationTypes: LocationType[] = ['branch', 'headquarters', 'warehouse', 'office', 'property', 'field'];
 const statusOptions: LocationStatus[] = ['active', 'suspended'];
@@ -90,8 +78,15 @@ export default function LocationFormPage() {
     }, [firestore, locationId, isNew]);
     const { data: locationData, loading: locationLoading } = useDoc<Location>(locationDocRef);
 
-    // Fetch clients for dropdown
-    const clientsQuery = useMemo(() => (user ? query(collection(firestore, 'clients'), where('createdBy', '==', user.uid)) : null), [firestore, user]);
+    // Filtered clients by permission for selection
+    const clientsQuery = useMemo(() => {
+      if (!user || !firestore) return null;
+      const ref = collection(firestore, 'clients');
+      if (user.role === 'admin') return query(ref);
+      if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }, [firestore, user]);
+
     const { data: clients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
 
     const formSchema = useMemo(() => getFormSchema(t), [t]);
@@ -193,7 +188,7 @@ export default function LocationFormPage() {
                                             <Select onValueChange={field.onChange} value={field.value} disabled={!!clientIdFromQuery}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl>
                                                 <SelectContent>
-                                                    {clients?.map((client) => (
+                                                    {clients?.sort((a,b) => a.name.localeCompare(b.name)).map((client) => (
                                                         <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
