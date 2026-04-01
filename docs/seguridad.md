@@ -21,6 +21,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 *   **CSP (Content Security Policy)**: Implementada en headers de servidor para mitigar ataques XSS y controlar orígenes de datos externos.
 *   **Frame Protection**: Implementación de `frame-ancestors 'none'` y `X-Frame-Options: DENY` para prevenir ataques de Clickjacking.
 *   **Protección MIME (nosniff)**: Implementación de `X-Content-Type-Options: nosniff` para prevenir que el navegador ejecute scripts camuflados en otros tipos de archivos.
+*   **Permissions Policy**: Restricción de acceso a hardware y APIs del navegador (cámara, micrófono, geolocalización) para reducir la superficie de ataque.
 
 ---
 
@@ -31,6 +32,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 | **Clickjacking** | Medio | Posibilidad de incrustar la app en un iframe malicioso. | **MITIGADO**: Política de frames restrictiva aplicada. |
 | **Inyección XSS** | Medio | Posibilidad de ejecutar scripts maliciosos vía inputs. | **MITIGADO**: Política CSP estricta aplicada en `next.config.ts`. |
 | **MIME-sniffing** | Bajo | El navegador podría interpretar archivos de datos como scripts ejecutables. | **MITIGADO**: Header `nosniff` configurado globalmente. |
+| **Acceso a Hardware** | Bajo | Acceso no autorizado a cámara o micrófono del usuario. | **MITIGADO**: Permissions-Policy desactiva estas funciones. |
 | **Storage Permisivo** | Alto | La regla catch-all permitía acceso total. | **MITIGADO**: Ahora requiere validación de gerencia vía Firestore. |
 | **Manipulación de Contadores** | Medio | Escritura global permitía resetear IDs. | **MITIGADO**: Restringido a Admin y operaciones de incremento controladas. |
 | **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. | **MITIGADO**: Infraestructura de App Check inicializada en el código. |
@@ -45,9 +47,10 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 2. [ ] **Restringir API Keys** en la consola de Google Cloud (solo para el dominio de la app).
 3. [x] **Configurar Política CSP y Frames** en el servidor de producción.
 4. [x] **Activar protección contra MIME-sniffing (nosniff)**.
-5. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
-6. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
-7. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
+5. [x] **Configurar Permissions-Policy** para desactivar hardware no necesario.
+6. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
+7. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
+8. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
 
 ---
 
@@ -65,4 +68,4 @@ Para evitar sorpresas en la facturación de Google Cloud/Firebase, sigue estos p
 8.  **Notificaciones**: Asegúrate de que tu correo esté seleccionado para recibir los emails.
 
 ---
-**Estado Actual: Sistema de auditoría activo, protección contra clickjacking y MIME-sniffing habilitada, y política de CSP estricta en funcionamiento. El CRM cumple con estándares modernos de seguridad web.**
+**Estado Actual: Sistema de auditoría activo, protección contra clickjacking y MIME-sniffing habilitada, y política de CSP y Permisos estricta en funcionamiento. El CRM cumple con estándares de seguridad de nivel corporativo.**
