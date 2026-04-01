@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 import withPWAInit from '@ducanh2912/next-pwa';
 
@@ -6,7 +7,7 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === 'development',
 });
 
-// Ajustamos frame-ancestors para permitir la vista previa en Firebase Studio/Cloud Workstations
+// Ajustamos CSP para permitir que el IDE de Firebase Studio nos incruste en su vista previa
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com;
@@ -24,7 +25,6 @@ const cspHeader = `
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -71,10 +71,8 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: cspHeader,
           },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
+          // Eliminamos X-Frame-Options para que no entre en conflicto con frame-ancestors de la CSP
+          // que es lo que el IDE necesita para la vista previa.
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
