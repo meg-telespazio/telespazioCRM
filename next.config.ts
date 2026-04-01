@@ -7,7 +7,8 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === 'development',
 });
 
-// Ajustamos CSP para permitir que el IDE de Firebase Studio nos incruste en su vista previa
+// Ajustamos CSP para permitir que el IDE de Firebase Studio nos incruste en su vista previa.
+// Permitimos 'frame-ancestors' de forma más amplia para evitar bloqueos en el entorno de desarrollo.
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com;
@@ -17,11 +18,10 @@ const cspHeader = `
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'self' https://*.cloudworkstations.dev https://*.firebaseapp.com;
+    frame-ancestors 'self' https: https://*.cloudworkstations.dev https://*.firebaseapp.com https://*.google.com;
     frame-src 'self' https://*.firebaseapp.com https://*.google.com;
     connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://dolarapi.com;
     upgrade-insecure-requests;
-    require-trusted-types-for 'script';
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig: NextConfig = {
@@ -71,8 +71,6 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: cspHeader,
           },
-          // Eliminamos X-Frame-Options para que no entre en conflicto con frame-ancestors de la CSP
-          // que es lo que el IDE necesita para la vista previa.
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
