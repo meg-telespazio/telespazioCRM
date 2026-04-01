@@ -42,7 +42,7 @@ service cloud.firestore {
       return data.management == getUserData().get('management', '');
     }
 
-    // Comprueba si el usuario es el responsable asignado
+    // Comprueba si el usuario es the responsable asignado
     function isAssignedTo(data) {
       return data.assignedTo == request.auth.uid;
     }
@@ -58,6 +58,13 @@ service cloud.firestore {
       match /reports/{reportId} {
         allow read, write: if isAuthenticated() && request.auth.uid == userId;
       }
+    }
+    
+    // Solicitudes de acceso: cualquiera puede crear, solo admin leer
+    match /accessRequests/{requestId} {
+      allow create: if true;
+      allow read: if isAdmin();
+      allow delete: if isAdmin();
     }
     
     // Auditoría: Solo admins pueden leer los logs. Nadie puede borrarlos.

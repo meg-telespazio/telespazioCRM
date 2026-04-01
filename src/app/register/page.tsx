@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AuthFormCard } from '@/components/auth/auth-form-card';

@@ -14,44 +14,30 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useAuth, useFirestore } from '@/firebase';
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-} from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { useState, useEffect, useMemo } from 'react';
 import { useI18n } from '@/firebase/client-provider';
-import { Check, X, Eye, EyeOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-const passwordValidation =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 const getFormSchema = (t: (key: string) => string) =>
-  z
-    .object({
-      firstName: z.string().min(2, t('Validation.firstNameMin')),
-      lastName: z.string().min(2, t('Validation.lastNameMin')),
-      email: z.string().email(t('Validation.invalidEmail')),
-      password: z
-        .string()
-        .min(8, t('Validation.passwordMin'))
-        .regex(passwordValidation, t('Validation.passwordPattern')),
-      confirmPassword: z.string(),
-      humanCheck: z.string().min(1, t('Validation.humanCheck')),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-      message: t('Validation.passwordsDontMatch'),
-      path: ['confirmPassword'],
-    });
+  z.object({
+    firstName: z.string().min(2, t('Validation.firstNameMin')),
+    lastName: z.string().min(2, t('Validation.lastNameMin')),
+    email: z.string().email(t('Validation.invalidEmail')),
+    phone: z.string().min(10, t('Validation.phoneMin')),
+    management: z.enum(['Satellite Communications', 'GeoInformacion'], {
+      required_error: t('Validation.fieldRequired'),
+    }),
+    notes: z.string().optional(),
+    humanCheck: z.string().min(1, t('Validation.humanCheck')),
+  });
 
 export function RegisterForm() {
-  const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -61,8 +47,7 @@ export function RegisterForm() {
   const [num2, setNum2] = useState(0);
   const [operation, setOperation] = useState('+');
   const [answer, setAnswer] = useState(0);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const generateHumanCheck = () => {
     const n1 = Math.floor(Math.random() * 90) + 10;
@@ -100,34 +85,12 @@ export function RegisterForm() {
       firstName: '',
       lastName: '',
       email: '',
-      password: '',
-      confirmPassword: '',
+      phone: '',
+      management: undefined,
+      notes: '',
       humanCheck: '',
     },
   });
-
-  const password = form.watch('password', '');
-
-  const passwordChecks = useMemo(() => {
-    return [
-      { labelKey: 'Validation.passwordLength', met: password.length >= 8 },
-      { labelKey: 'Validation.passwordUppercase', met: /[A-Z]/.test(password) },
-      { labelKey: 'Validation.passwordLowercase', met: /[a-z]/.test(password) },
-      { labelKey: 'Validation.passwordNumber', met: /\d/.test(password) },
-      { labelKey: 'Validation.passwordSpecial', met: /[@$!%*?&]/.test(password) },
-    ];
-  }, [password]);
-
-  const getAuthErrorMessage = (code: string) => {
-    switch (code) {
-      case 'auth/email-already-in-use':
-        return t('Auth.emailAlreadyInUse');
-      case 'auth/network-request-failed':
-        return t('Errors.login.networkError');
-      default:
-        return t('Errors.login.generic');
-    }
-  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (parseInt(values.humanCheck) !== answer) {
@@ -139,99 +102,91 @@ export function RegisterForm() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-      const user = userCredential.user;
-      const displayName = `${values.firstName} ${values.lastName}`;
-
-      await updateProfile(user, { displayName });
-
-      const userProfileData = {
-        uid: user.uid,
-        email: user.email,
+      const requestsRef = collection(firestore, 'accessRequests');
+      await addDoc(requestsRef, {
         firstName: values.firstName,
         lastName: values.lastName,
-        displayName: displayName,
-      };
-
-      const userDocRef = doc(firestore, 'users', user.uid);
-
-      await setDoc(userDocRef, userProfileData, { merge: true });
+        email: values.email,
+        phone: values.phone,
+        management: values.management,
+        notes: values.notes || '',
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        adminToNotify: 'mariano.gonzalez@telespazio.com'
+      });
 
       toast({
         variant: 'success',
         title: t('Auth.registerSuccessTitle'),
         description: t('Auth.registerSuccessDescription'),
       });
-      router.push('/login');
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        router.push('/login');
+      }, 3000);
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: t('Auth.registerFailedTitle'),
-        description: getAuthErrorMessage(error.code),
+        description: error.message || 'Error sending request.',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
-
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
-  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <FormField control={form.control} name="firstName" render={({ field }) => (
-            <FormItem><FormLabel>{t('Auth.firstNameLabel')}</FormLabel><FormControl><Input placeholder="John" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t('Auth.firstNameLabel')}</FormLabel><FormControl><Input placeholder="John" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
           )} />
           <FormField control={form.control} name="lastName" render={({ field }) => (
-            <FormItem><FormLabel>{t('Auth.lastNameLabel')}</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t('Auth.lastNameLabel')}</FormLabel><FormControl><Input placeholder="Doe" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
           )} />
         </div>
-        <FormField control={form.control} name="email" render={({ field }) => (
-          <FormItem><FormLabel>{t('Auth.emailLabel')}</FormLabel><FormControl><Input placeholder="m@example.com" {...field} /></FormControl><FormMessage /></FormItem>
-        )} />
-        <FormField control={form.control} name="password" render={({ field }) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField control={form.control} name="email" render={({ field }) => (
+            <FormItem><FormLabel>{t('Auth.emailLabel')}</FormLabel><FormControl><Input placeholder="m@example.com" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={form.control} name="phone" render={({ field }) => (
+            <FormItem><FormLabel>{t('Auth.phoneLabel')}</FormLabel><FormControl><Input placeholder="+54..." {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
+          )} />
+        </div>
+        
+        <FormField control={form.control} name="management" render={({ field }) => (
           <FormItem>
-            <FormLabel>{t('Auth.passwordLabel')}</FormLabel>
-            <div className="relative">
-              <FormControl><Input type={showPassword ? 'text' : 'password'} {...field} className="pr-10" /></FormControl>
-              <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={togglePasswordVisibility}>
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
+            <FormLabel>{t('Profile.management')}</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+              <FormControl><SelectTrigger><SelectValue placeholder={t('Profile.management')} /></SelectTrigger></FormControl>
+              <SelectContent>
+                <SelectItem value="Satellite Communications">{t('Management.SatelliteCommunications')}</SelectItem>
+                <SelectItem value="GeoInformacion">{t('Management.GeoInformacion')}</SelectItem>
+              </SelectContent>
+            </Select><FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="notes" render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t('Forms.notes')}</FormLabel>
+            <FormControl><Textarea placeholder={t('Forms.notesPlaceholder')} {...field} disabled={isSubmitting} className="resize-none" rows={2} /></FormControl>
             <FormMessage />
           </FormItem>
         )} />
-        {password && (
-          <div className="space-y-1">
-            {passwordChecks.map((check) => (
-              <p key={check.labelKey} className={cn('flex items-center text-sm', check.met ? 'text-green-600' : 'text-muted-foreground')}>
-                {check.met ? <Check className="mr-2 h-4 w-4" /> : <X className="mr-2 h-4 w-4" />}
-                {t(check.labelKey)}
-              </p>
-            ))}
-          </div>
-        )}
-        <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-          <FormItem>
-            <FormLabel>{t('Auth.confirmPasswordLabel')}</FormLabel>
-            <div className="relative">
-              <FormControl><Input type={showConfirmPassword ? 'text' : 'password'} {...field} className="pr-10" /></FormControl>
-              <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={toggleConfirmPasswordVisibility}>
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-            <FormMessage />
-          </FormItem>
-        )} />
+
         <FormField control={form.control} name="humanCheck" render={({ field }) => (
-          <FormItem><FormLabel>{t('Auth.humanCheckLabel', { num1, operation, num2 })}</FormLabel><FormControl><Input placeholder={t('Forms.yourAnswer')} {...field} /></FormControl><FormMessage /></FormItem>
+          <FormItem><FormLabel>{t('Auth.humanCheckLabel', { num1, operation, num2 })}</FormLabel><FormControl><Input placeholder={t('Forms.yourAnswer')} {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem>
         )} />
-        <Button type="submit" className="w-full">{t('Auth.createAccountButton')}</Button>
+        
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+          {t('Auth.createAccountButton')}
+        </Button>
       </form>
     </Form>
   );
