@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useI18n } from '@/firebase/client-provider';
+import { cn } from '@/lib/utils';
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
@@ -27,7 +28,7 @@ export function DataTablePagination<TData>({
   const pageIndex = table.getState().pagination.pageIndex;
 
   const pageNumbers = React.useMemo(() => {
-    if (pageCount <= 7) {
+    if (pageCount <= 5) {
       return Array.from({ length: pageCount }, (_, i) => i);
     }
 
@@ -57,32 +58,44 @@ export function DataTablePagination<TData>({
   }, [pageCount, pageIndex]);
 
   return (
-    <div className="flex items-center justify-between p-4">
-      <div className="flex items-center space-x-2">
-        <p className="text-sm font-medium">
-          {t('Table.pagination.rowsPerPage')}
-        </p>
-        <Select
-          value={`${table.getState().pagination.pageSize}`}
-          onValueChange={(value) => {
-            table.setPageSize(Number(value));
-          }}
-        >
-          <SelectTrigger className="h-8 w-[70px]">
-            <SelectValue
-              placeholder={table.getState().pagination.pageSize}
-            />
-          </SelectTrigger>
-          <SelectContent side="top">
-            {[10, 20, 30, 40, 50].map((pageSize) => (
-              <SelectItem key={pageSize} value={`${pageSize}`}>
-                {pageSize}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="flex flex-col items-center justify-between gap-3 px-2 py-3 sm:flex-row sm:px-4 sm:py-4">
+      {/* Selector de filas por página e info en mobile */}
+      <div className="flex w-full items-center justify-between sm:w-auto sm:justify-start sm:space-x-2">
+        <div className="flex items-center space-x-2">
+          <p className="hidden text-xs font-medium sm:block sm:text-sm">
+            {t('Table.pagination.rowsPerPage')}
+          </p>
+          <Select
+            value={`${table.getState().pagination.pageSize}`}
+            onValueChange={(value) => {
+              table.setPageSize(Number(value));
+            }}
+          >
+            <SelectTrigger className="h-8 w-[65px]">
+              <SelectValue
+                placeholder={table.getState().pagination.pageSize}
+              />
+            </SelectTrigger>
+            <SelectContent side="top">
+              {[10, 20, 30, 40, 50].map((pageSize) => (
+                <SelectItem key={pageSize} value={`${pageSize}`}>
+                  {pageSize}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter sm:hidden">
+          {t('Table.pagination.pageInfo', {
+            page: pageCount > 0 ? pageIndex + 1 : 0,
+            totalPages: pageCount,
+          })}
+        </div>
       </div>
-      <div className="flex items-center space-x-2">
+
+      {/* Botones de navegación */}
+      <div className="flex items-center space-x-1 sm:space-x-2">
         <Button
           variant="outline"
           className="h-8 w-8 p-0"
@@ -92,22 +105,28 @@ export function DataTablePagination<TData>({
           <span className="sr-only">{t('Table.previous')}</span>
           <ChevronLeft className="h-4 w-4" />
         </Button>
+        
         {pageNumbers.map((page, index) =>
           page === '...' ? (
-            <span key={index} className="px-1 text-sm">
+            <span key={index} className="hidden px-1 text-xs sm:inline sm:text-sm">
               ...
             </span>
           ) : (
             <Button
               key={index}
               variant={pageIndex === page ? 'default' : 'outline'}
-              className="h-8 w-8 p-0"
+              className={cn(
+                "h-8 w-8 p-0 text-xs sm:text-sm",
+                // En móviles mostramos solo la actual, primera y última si hay muchas para ahorrar espacio
+                page !== pageIndex && page !== 0 && page !== pageCount - 1 ? "hidden sm:flex" : ""
+              )}
               onClick={() => table.setPageIndex(page as number)}
             >
               {(page as number) + 1}
             </Button>
           )
         )}
+        
         <Button
           variant="outline"
           className="h-8 w-8 p-0"
@@ -118,7 +137,9 @@ export function DataTablePagination<TData>({
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
-      <div className="text-sm text-muted-foreground">
+
+      {/* Info de página en desktop */}
+      <div className="hidden text-sm text-muted-foreground sm:block">
         {t('Table.pagination.pageInfo', {
           page: pageCount > 0 ? pageIndex + 1 : 0,
           totalPages: pageCount,
