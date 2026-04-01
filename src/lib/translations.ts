@@ -5,6 +5,19 @@ export const translations = {
     Yes: 'Yes',
     No: 'No',
     Months: 'Months',
+    Errors: {
+      login: {
+        invalidCredentials: 'Access error, incorrect credentials.',
+        userNotFound: 'User not found.',
+        tooManyRequests: 'Account temporarily blocked due to too many failed attempts.',
+        networkError: 'Network error. Please check your connection.',
+        generic: 'An unexpected error occurred during login.',
+      },
+      firestore: {
+        permissionDenied: 'Permission denied. You are not authorized for this action.',
+        generic: 'An error occurred while processing the database request.',
+      }
+    },
     Validation: {
       nameMin: 'Name must be at least 2 characters.',
       firstNameMin: 'First name must be at least 2 characters.',
@@ -883,6 +896,19 @@ export const translations = {
     Yes: 'Sí',
     No: 'No',
     Months: 'Meses',
+    Errors: {
+      login: {
+        invalidCredentials: 'Error de acceso, credenciales incorrectas.',
+        userNotFound: 'Usuario no encontrado.',
+        tooManyRequests: 'Cuenta bloqueada temporalmente por demasiados intentos fallidos.',
+        networkError: 'Error de red. Verifique su conexión.',
+        generic: 'Error inesperado al iniciar sesión.',
+      },
+      firestore: {
+        permissionDenied: 'Permiso denegado. No tiene autorización para realizar esta operación.',
+        generic: 'Error al procesar la solicitud en la base de datos.',
+      }
+    },
     Validation: {
       nameMin: 'El nombre debe tener al menos 2 caracteres.',
       firstNameMin: 'El nombre debe tener al menos 2 caracteres.',

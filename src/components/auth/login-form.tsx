@@ -59,6 +59,22 @@ export function LoginForm() {
     },
   });
 
+  const getAuthErrorMessage = (code: string) => {
+    switch (code) {
+      case 'auth/invalid-email':
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return t('Errors.login.invalidCredentials');
+      case 'auth/too-many-requests':
+        return t('Errors.login.tooManyRequests');
+      case 'auth/network-request-failed':
+        return t('Errors.login.networkError');
+      default:
+        return t('Errors.login.generic');
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
@@ -74,7 +90,6 @@ export function LoginForm() {
         const resolver = getMultiFactorResolver(auth, error);
         setMfaResolver(resolver);
         
-        // Find which hint matches the user's setup
         const totpHint = resolver.hints.find((h: any) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
         const phoneHint = resolver.hints.find((h: any) => h.factorId === PhoneAuthProvider.PHONE_SIGN_IN_METHOD);
 
@@ -83,7 +98,6 @@ export function LoginForm() {
         } else if (phoneHint) {
           setMfaMethod('sms');
           const phoneAuthProvider = new PhoneAuthProvider(auth);
-          // Invisible reCAPTCHA is handled by Identity Platform internally if initialized
           const vId = await phoneAuthProvider.verifyPhoneNumber(
             { multiFactorHint: phoneHint, session: resolver.session },
             (auth as any).recaptchaVerifier
@@ -94,7 +108,7 @@ export function LoginForm() {
         toast({
           variant: 'destructive',
           title: t('Auth.loginFailedTitle'),
-          description: error.message,
+          description: getAuthErrorMessage(error.code),
         });
       }
     } finally {
@@ -120,7 +134,7 @@ export function LoginForm() {
         router.push('/dashboard');
       }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'MFA Error', description: error.message });
+      toast({ variant: 'destructive', title: 'MFA Error', description: getAuthErrorMessage(error.code) });
     } finally {
       setIsLoading(false);
     }
