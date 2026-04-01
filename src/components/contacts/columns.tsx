@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -93,17 +94,28 @@ export const columns = (
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8 w-full justify-start"
       >
-        NOMBRE COMPLETO
+        CONTACTO
         <ArrowUpDown className="ml-2 h-3 w-3" />
       </Button>
     ),
-    cell: ({ row }) => (
-      <span className="font-bold text-slate-700 text-[11px]">
-        {row.original.name}
-      </span>
-    )
+    cell: ({ row }) => {
+      const contact = row.original;
+      const email = contact.emails?.[0]?.address;
+      const phone = contact.phones?.[0]?.number;
+      return (
+        <div className="flex flex-col gap-0.5 py-1">
+          <span className="font-bold text-slate-700 text-[11px]">
+            {contact.name}
+          </span>
+          <div className="flex flex-col md:hidden text-[9px] text-muted-foreground leading-tight italic">
+            {email && <span className="truncate max-w-[140px]">{email}</span>}
+            {phone && <span>{phone}</span>}
+          </div>
+        </div>
+      );
+    }
   },
   {
     accessorKey: 'clientId',
@@ -111,17 +123,21 @@ export const columns = (
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8 w-full justify-start"
       >
         CLIENTE
         <ArrowUpDown className="ml-2 h-3 w-3" />
       </Button>
     ),
-    cell: ({ row }) => <span className="text-slate-600 text-[11px] truncate block max-w-[150px]">{getClientName(row.original.clientId, clients)}</span>,
+    cell: ({ row }) => (
+      <span className="text-slate-600 text-[11px] truncate block max-w-[100px] sm:max-w-[150px]">
+        {getClientName(row.original.clientId, clients)}
+      </span>
+    ),
   },
   {
     id: 'email',
-    meta: { className: "hidden sm:table-cell" },
+    meta: { className: "hidden md:table-cell" },
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -144,7 +160,7 @@ export const columns = (
   },
   {
     id: 'phone',
-    meta: { className: "hidden lg:table-cell" },
+    meta: { className: "hidden md:table-cell" },
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -171,6 +187,7 @@ export const columns = (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-slate-100">
+                <span className="sr-only">Open menu</span>
                 <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
               </Button>
             </DropdownMenuTrigger>
