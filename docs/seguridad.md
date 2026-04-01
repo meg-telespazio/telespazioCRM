@@ -23,6 +23,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 *   **Frame Protection**: Implementación de `frame-ancestors 'none'` y `X-Frame-Options: DENY` para prevenir ataques de Clickjacking.
 *   **Protección MIME (nosniff)**: Implementación de `X-Content-Type-Options: nosniff` para prevenir que el navegador ejecute scripts camuflados en otros tipos de archivos.
 *   **Permissions Policy**: Restricción de acceso a hardware y APIs del navegador (cámara, micrófono, geolocalización) para reducir la superficie de ataque y proteger la privacidad.
+*   **CORS Policy**: Configuración estricta de cabeceras `Access-Control` para gestionar el intercambio de recursos entre orígenes de forma segura.
 
 ---
 
@@ -35,6 +36,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 | **XSS basado en DOM** | Medio | Ejecución de scripts mediante manipulación de sinks del DOM. | **MITIGADO**: Trusted Types aplicado en la cabecera CSP. |
 | **MIME-sniffing** | Bajo | El navegador podría interpretar archivos de datos como scripts ejecutables. | **MITIGADO**: Header `nosniff` configurado globalmente. |
 | **Acceso a Hardware** | Bajo | Acceso no autorizado a cámara o micrófono del usuario. | **MITIGADO**: Permissions-Policy desactiva estas funciones. |
+| **CORS Misconfiguration** | Medio | Permisos excesivos para que otros sitios lean datos de la app. | **MITIGADO**: Cabeceras ACAC, ACAH, ACAO, ACAEH y ACAMA configuradas. |
 | **Storage Permisivo** | Alto | La regla catch-all permitía acceso total. | **MITIGADO**: Ahora requiere validación de gerencia vía Firestore. |
 | **Manipulación de Contadores** | Medio | Escritura global permitía resetear IDs. | **MITIGADO**: Restringido a Admin y operaciones de incremento controladas. |
 | **Falta de App Check** | Medio | Las claves de Firebase son públicas en el cliente. | **MITIGADO**: Infraestructura de App Check inicializada en el código. |
@@ -51,9 +53,10 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 4. [x] **Habilitar Trusted Types** en la política CSP.
 5. [x] **Activar protección contra MIME-sniffing (nosniff)**.
 6. [x] **Configurar Permissions-Policy** para desactivar hardware no necesario.
-7. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
-8. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
-9. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
+7. [x] **Establecer cabeceras CORS** (ACAO debe ser el dominio final, no `*`).
+8. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
+9. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
+10. [x] **Revisión de Administrador Global**: Bypass total de reglas restringido por email específico.
 
 ---
 
@@ -71,4 +74,4 @@ Para evitar sorpresas en la facturación de Google Cloud/Firebase, sigue estos p
 8.  **Notificaciones**: Asegúrate de que tu correo esté seleccionado para recibir los emails.
 
 ---
-**Estado Actual: Sistema de auditoría activo, protección contra clickjacking y MIME-sniffing habilitada, y política de CSP, Trusted Types y Permisos estricta en funcionamiento. El CRM cumple con estándares de seguridad de nivel corporativo.**
+**Estado Actual: Sistema de auditoría activo, protección contra clickjacking, MIME-sniffing y CORS habilitada. El CRM cumple con estándares de seguridad de nivel corporativo.**

@@ -86,6 +86,31 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=(), browsing-topics=()',
           },
+          // Cabeceras CORS solicitadas para cumplimiento de seguridad
+          {
+            key: 'Access-Control-Allow-Credentials',
+            value: 'true',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*', // Nota: Restringir a dominios específicos en producción
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,DELETE,PATCH,POST,PUT,OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
+          },
+          {
+            key: 'Access-Control-Expose-Headers',
+            value: 'Content-Length, X-Kuma-Revision',
+          },
+          {
+            key: 'Access-Control-Max-Age',
+            value: '86400',
+          },
         ],
       },
     ];
