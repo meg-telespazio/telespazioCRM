@@ -32,15 +32,12 @@ import { useToast } from '@/hooks/use-toast';
 import { ReportResultTable } from '@/components/reports/report-result-table';
 import { 
   Loader2, 
-  CheckCircle2, 
   Database, 
   Columns, 
   Sigma, 
   Filter as FilterIcon, 
-  ArrowUpDown,
   Plus,
   Trash2,
-  ChevronRight,
   Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -58,19 +55,6 @@ const getFormSchema = (t: (key: string) => string) =>
 
 type ReportFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
-// Helper to set nested property in an object
-const setNestedValue = (obj: any, path: string, value: any) => {
-  const keys = path.split('.');
-  let current = obj;
-  for (let i = 0; i < keys.length - 1; i++) {
-    const key = keys[i];
-    if (!current[key]) current[key] = {};
-    current = current[key];
-  }
-  current[keys[keys.length - 1]] = value;
-};
-
-// Available Fields Schema for the Builder
 const SCHEMA = {
   clients: ['name', 'cuit', 'sector', 'subsector', 'status', 'email', 'phone', 'holding'],
   contacts: ['name', 'position', 'area'],
@@ -88,7 +72,6 @@ export default function ReportManualBuilderPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
   const { t } = useI18n();
   const { toast } = useToast();
 
@@ -100,8 +83,8 @@ export default function ReportManualBuilderPage() {
   const [activeTab, setActiveTab] = useState('source');
   
   const [config, setConfig] = useState<ReportConfig>({
-    primaryDataSource: 'services',
-    fields: ['services.serviceNickname', 'clients.name', 'services.monthlyFee'],
+    primaryDataSource: 'contracts',
+    fields: ['contracts.publicId', 'clients.name', 'contracts.amount'],
     filters: [],
     sorting: [],
     aggregations: []
@@ -118,18 +101,24 @@ export default function ReportManualBuilderPage() {
 
   const { data: existingReport, loading: reportLoading } = useDoc<Report>(reportDocRef);
 
-  // Data Collections for processing
-  const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
-  const { data: clients } = useCollection<Client>(useMemo(() => baseQuery ? query(collection(firestore, 'clients'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: contacts } = useCollection<Contact>(useMemo(() => baseQuery ? query(collection(firestore, 'contacts'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: opportunities } = useCollection<Opportunity>(useMemo(() => baseQuery ? query(collection(firestore, 'opportunities'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: ps } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: contracts } = useCollection<Contract>(useMemo(() => baseQuery ? query(collection(firestore, 'contracts'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: pos } = useCollection<PurchaseOrder>(useMemo(() => baseQuery ? query(collection(firestore, 'purchaseOrders'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: services } = useCollection<Service>(useMemo(() => baseQuery ? query(collection(firestore, 'services'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: equipment } = useCollection<Equipment>(useMemo(() => baseQuery ? query(collection(firestore, 'equipment'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: activities } = useCollection<Activity>(useMemo(() => baseQuery ? query(collection(firestore, 'activities'), baseQuery) : null, [firestore, baseQuery]));
-  const { data: locations } = useCollection<Location>(useMemo(() => baseQuery ? query(collection(firestore, 'locations'), baseQuery) : null, [firestore, baseQuery]));
+  // Helper to create management-aware queries
+  const getCollectionQuery = useCallback((collName: string) => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, collName);
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
+  const { data: clients } = useCollection<Client>(useMemo(() => getCollectionQuery('clients'), [getCollectionQuery]));
+  const { data: contacts } = useCollection<Contact>(useMemo(() => getCollectionQuery('contacts'), [getCollectionQuery]));
+  const { data: opportunities } = useCollection<Opportunity>(useMemo(() => getCollectionQuery('opportunities'), [getCollectionQuery]));
+  const { data: ps } = useCollection<ProductOrService>(useMemo(() => getCollectionQuery('productsAndServices'), [getCollectionQuery]));
+  const { data: contracts } = useCollection<Contract>(useMemo(() => getCollectionQuery('contracts'), [getCollectionQuery]));
+  const { data: pos } = useCollection<PurchaseOrder>(useMemo(() => getCollectionQuery('purchaseOrders'), [getCollectionQuery]));
+  const { data: services } = useCollection<Service>(useMemo(() => getCollectionQuery('services'), [getCollectionQuery]));
+  const { data: equipment } = useCollection<Equipment>(useMemo(() => getCollectionQuery('equipment'), [getCollectionQuery]));
+  const { data: activities } = useCollection<Activity>(useMemo(() => getCollectionQuery('activities'), [getCollectionQuery]));
+  const { data: locations } = useCollection<Location>(useMemo(() => getCollectionQuery('locations'), [getCollectionQuery]));
 
   const collectionsMap = useMemo(() => ({
     clients, contacts, opportunities, productsAndServices: ps, contracts, purchaseOrders: pos, services, equipment, activities, locations
@@ -156,30 +145,24 @@ export default function ReportManualBuilderPage() {
     const sourceData = (collectionsMap as any)[reportConfig.primaryDataSource];
     if (!sourceData) return;
 
-    // 1. Join Logic - Handle multi-level relationships
     const processed = sourceData.map((item: any) => {
       const row: any = { [reportConfig.primaryDataSource]: item };
       
-      // Auto-join Client if exists directly
+      // JOIN LOGIC
+      // 1. All direct clientId links
       if (item.clientId && collectionsMap.clients) {
         row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
       }
 
-      // Chain for services: Services -> PO -> Contract -> Client
+      // 2. Chain for services: Services -> PO -> Contract -> Client
       if (reportConfig.primaryDataSource === 'services') {
-        if (collectionsMap.purchaseOrders) {
-          const po = collectionsMap.purchaseOrders.find(p => p.id === item.poId);
-          if (po) {
-            row.purchaseOrders = po;
-            if (collectionsMap.contracts) {
-              const contract = collectionsMap.contracts.find(c => c.id === po.contractId);
-              if (contract) {
-                row.contracts = contract;
-                if (collectionsMap.clients) {
-                  row.clients = collectionsMap.clients.find(c => c.id === contract.clientId);
-                }
-              }
-            }
+        const po = collectionsMap.purchaseOrders?.find(p => p.id === item.poId);
+        if (po) {
+          row.purchaseOrders = po;
+          const contract = collectionsMap.contracts?.find(c => c.id === po.contractId);
+          if (contract) {
+            row.contracts = contract;
+            if (!row.clients) row.clients = collectionsMap.clients?.find(c => c.id === contract.clientId);
           }
         }
         if (collectionsMap.equipment) {
@@ -187,21 +170,18 @@ export default function ReportManualBuilderPage() {
         }
       }
 
-      // Chain for POs: PO -> Contract -> Client
-      if (reportConfig.primaryDataSource === 'purchaseOrders' && collectionsMap.contracts) {
-        const contract = collectionsMap.contracts.find(c => c.id === item.contractId);
+      // 3. Chain for POs: PO -> Contract -> Client
+      if (reportConfig.primaryDataSource === 'purchaseOrders') {
+        const contract = collectionsMap.contracts?.find(c => c.id === item.contractId);
         if (contract) {
           row.contracts = contract;
-          if (collectionsMap.clients) {
-            row.clients = collectionsMap.clients.find(c => c.id === contract.clientId);
-          }
+          if (!row.clients) row.clients = collectionsMap.clients?.find(c => c.id === contract.clientId);
         }
       }
 
       return row;
     });
 
-    // 2. Filter Logic
     let filtered = processed;
     if (reportConfig.filters?.length) {
       filtered = processed.filter((item: any) => {
@@ -227,7 +207,6 @@ export default function ReportManualBuilderPage() {
       });
     }
 
-    // 3. Aggregation & Grouping Logic
     let finalData = filtered;
     let finalColumns = reportConfig.fields.map(fKey => {
       const [source, field] = fKey.split('.');
@@ -249,12 +228,10 @@ export default function ReportManualBuilderPage() {
 
       finalData = Array.from(groups.values()).map(group => {
         const aggregatedRow: any = {};
-        // Store the group label in the row
         aggregatedRow[reportConfig.groupBy!] = group._key;
 
         reportConfig.aggregations!.forEach(agg => {
           const [aggSource, aggField] = agg.field.split('.');
-          // Extract numeric values for the calculation
           const numericValues = group._records
             .map((r: any) => r[aggSource]?.[aggField])
             .filter((v: any) => v !== undefined && v !== null && !isNaN(Number(v)))
@@ -265,7 +242,6 @@ export default function ReportManualBuilderPage() {
           else if (agg.type === 'avg') result = numericValues.length ? numericValues.reduce((a: number, b: number) => a + b, 0) / numericValues.length : 0;
           else if (agg.type === 'count') result = group._records.length;
 
-          // Aggregated values use a composite key that the table can handle
           aggregatedRow[`${agg.field}_${agg.type}`] = result;
         });
         return aggregatedRow;
@@ -294,9 +270,8 @@ export default function ReportManualBuilderPage() {
     setReportResult({ data: finalData, columns: finalColumns });
   }, [collectionsMap, t]);
 
-  // Run report when config is set or changed
   useEffect(() => {
-    if (config && mounted) {
+    if (config && mounted && collectionsMap.clients && collectionsMap.contracts) {
       runReport(config);
     }
   }, [config, collectionsMap, mounted, runReport]);
@@ -431,7 +406,6 @@ export default function ReportManualBuilderPage() {
                     </CardHeader>
                     
                     <CardContent className="p-6">
-                      {/* STEP 2: SOURCE */}
                       <TabsContent value="source" className="mt-0 space-y-4">
                         <div className="space-y-4">
                           <FormLabel>{t('Reports.selectDataSource')}</FormLabel>
@@ -453,10 +427,8 @@ export default function ReportManualBuilderPage() {
                         </div>
                       </TabsContent>
 
-                      {/* STEP 3: FIELDS */}
                       <TabsContent value="fields" className="mt-0 space-y-6">
                         <div className="space-y-6">
-                          {/* Campos de la Tabla Principal */}
                           <div>
                             <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
                               <Badge variant="outline">{t(`Reports.dataSources.${config.primaryDataSource}`)}</Badge>
@@ -481,7 +453,6 @@ export default function ReportManualBuilderPage() {
 
                           <Separator />
 
-                          {/* Campos de Tablas Relacionadas (Joins) */}
                           <div>
                             <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
                               <Badge variant="secondary">{t('Reports.relatedTables')}</Badge>
@@ -512,7 +483,6 @@ export default function ReportManualBuilderPage() {
                         </div>
                       </TabsContent>
 
-                      {/* STEP 4: AGGREGATION */}
                       <TabsContent value="aggregation" className="mt-0 space-y-6">
                         <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex gap-3">
                           <Info className="h-5 w-5 text-amber-600" />
@@ -596,7 +566,6 @@ export default function ReportManualBuilderPage() {
                         </div>
                       </TabsContent>
 
-                      {/* STEP 5: FILTERS */}
                       <TabsContent value="filters" className="mt-0 space-y-4">
                         <div className="flex items-center justify-between">
                           <FormLabel>{t('Reports.appliedFilters')}</FormLabel>
@@ -673,7 +642,6 @@ export default function ReportManualBuilderPage() {
                 </Card>
               </div>
 
-              {/* BARRA LATERAL: RESUMEN Y CONFIG */}
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -718,7 +686,6 @@ export default function ReportManualBuilderPage() {
             </form>
           </Form>
 
-          {/* VISTA PREVIA DE RESULTADOS */}
           {reportResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 py-8">
               <div className="flex items-center justify-between border-b pb-2">
