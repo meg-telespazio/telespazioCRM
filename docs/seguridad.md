@@ -1,4 +1,3 @@
-
 # Análisis de Seguridad: T-Track Sales CRM
 
 Este documento detalla las medidas de seguridad implementadas y los puntos de mejora identificados antes del paso a producción.
@@ -24,6 +23,7 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 *   **Protección MIME (nosniff)**: Implementación de `X-Content-Type-Options: nosniff` para prevenir que el navegador ejecute scripts camuflados en otros tipos de archivos.
 *   **Permissions Policy**: Restricción de acceso a hardware y APIs del navegador (cámara, micrófono, geolocalización) para reducir la superficie de ataque y proteger la privacidad.
 *   **CORS Policy**: Configuración estricta de cabeceras `Access-Control` para gestionar el intercambio de recursos entre orígenes de forma segura.
+*   **Cache Safety (Vary Header)**: Implementación de `Vary: Origin` para asegurar que las cachés intermedias no mezclen respuestas CORS de diferentes orígenes.
 *   **Anti-CSRF Strategy**:
     *   **Stateless Auth**: El uso del SDK de Firebase evita la dependencia de cookies de sesión ambientales, utilizando ID Tokens que no se adjuntan automáticamente en ataques CSRF.
     *   **Server Actions Guard**: Las funciones de servidor de Next.js validan los encabezados de origen por defecto.
@@ -61,9 +61,10 @@ Este documento detalla las medidas de seguridad implementadas y los puntos de me
 5. [x] **Activar protección contra MIME-sniffing (nosniff)**.
 6. [x] **Configurar Permissions-Policy** para desactivar hardware no necesario.
 7. [x] **Establecer cabeceras CORS** (ACAO debe ser el dominio final, no `*`).
-8. [x] **Activar Aislamiento de Origen (COOP y CORP)**.
-9. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
-10. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
+8. [x] **Configurar Vary: Origin** para integridad de caché.
+9. [x] **Activar Aislamiento de Origen (COOP y CORP)**.
+10. [x] **Refinar reglas de Storage** para que los archivos solo sean accesibles por los roles autorizados.
+11. [x] **Configurar Alertas de Presupuesto** en la consola de Facturación de Google Cloud.
 
 ---
 

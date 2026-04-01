@@ -120,6 +120,11 @@ const nextConfig: NextConfig = {
             key: 'Access-Control-Max-Age',
             value: '86400',
           },
+          // Cabecera Vary para gestión segura de caché con CORS
+          {
+            key: 'Vary',
+            value: 'Origin',
+          },
         ],
       },
     ];
