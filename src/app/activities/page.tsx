@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
-import type { Activity, Client, UserProfile, ActivityType } from '@/lib/types';
+import type { Activity, Client, UserProfile, ActivityType, Contact } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where } from 'firebase/firestore';
 import { differenceInDays } from 'date-fns';
@@ -61,9 +61,17 @@ export default function AllActivitiesPage() {
     return collection(firestore, 'users');
   }, [user, firestore]);
 
+  const contactsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'contacts');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
   const { data: activitiesData, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
   const { data: clients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
   const { data: users, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
+  const { data: contacts, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
   
   const activities = useMemo(() => {
     if (!activitiesData) return [];
@@ -86,7 +94,7 @@ export default function AllActivitiesPage() {
     return map;
   }, [users]);
 
-  const isLoading = userLoading || (activitiesLoading && activitiesQuery !== null) || clientsLoading || usersLoading;
+  const isLoading = userLoading || (activitiesLoading && activitiesQuery !== null) || clientsLoading || usersLoading || contactsLoading;
   
   const getDaysText = (days: number | null) => {
     if (days === null) return t('App.loading');
@@ -94,6 +102,9 @@ export default function AllActivitiesPage() {
     if (days === 1) return t('Activity.updated1DayAgo');
     return t('Activity.updatedDaysAgo', { days });
   }
+
+  const allUsersList = useMemo(() => users || [], [users]);
+  const allContactsList = useMemo(() => contacts || [], [contacts]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -146,7 +157,7 @@ export default function AllActivitiesPage() {
                           onClick={() => router.push(`/clients/${activity.clientId}/activity`)}
                         >
                           <div className="text-sm text-muted-foreground line-clamp-4">
-                             <RenderWithMentions text={lastUpdateContent} />
+                             <RenderWithMentions text={lastUpdateContent} users={allUsersList} contacts={allContactsList} />
                           </div>
                         </CardContent>
                         <CardFooter>
@@ -160,7 +171,7 @@ export default function AllActivitiesPage() {
                   })}
               </div>
             ) : (
-              <ActivityTable activities={activities} clientMap={clientMap} userMap={userMap} />
+              <ActivityTable activities={activities} clientMap={clientMap} userMap={userMap} users={allUsersList} contacts={allContactsList} />
             )}
           </>
         ) : (

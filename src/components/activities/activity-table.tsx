@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { columns } from './columns';
-import type { Activity, Client, UserProfile } from '@/lib/types';
+import type { Activity, Client, UserProfile, Contact } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { DataTablePagination } from '../ui/data-table-pagination';
 import { useRouter } from 'next/navigation';
@@ -31,9 +31,11 @@ type ActivityTableProps = {
   activities: Activity[];
   clientMap: Map<string, string>;
   userMap: Map<string, UserProfile>;
+  users?: UserProfile[];
+  contacts?: Contact[];
 };
 
-export function ActivityTable({ activities, clientMap, userMap }: ActivityTableProps) {
+export function ActivityTable({ activities, clientMap, userMap, users = [], contacts = [] }: ActivityTableProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([
@@ -42,8 +44,8 @@ export function ActivityTable({ activities, clientMap, userMap }: ActivityTableP
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   const tableColumns = React.useMemo(
-    () => columns(t, locale, clientMap, userMap, router),
-    [t, locale, clientMap, userMap, router]
+    () => columns(t, locale, clientMap, userMap, router, users, contacts),
+    [t, locale, clientMap, userMap, router, users, contacts]
   );
 
   const table = useReactTable({
