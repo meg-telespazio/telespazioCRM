@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -24,7 +23,7 @@ import {
   ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, 
   Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
   Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle,
-  FileSpreadsheet
+  FileSpreadsheet, ChevronRight
 } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
@@ -167,7 +166,13 @@ export default function ClientSummaryPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={client.name}>
+      <AppHeader title={
+        <div className="flex items-center gap-2">
+          <Link href="/clients" className="text-muted-foreground hover:text-primary transition-colors">{t('Pages.clients')}</Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span>{client.name}</span>
+        </div>
+      }>
         <Button variant="outline" onClick={() => router.push('/clients')}><ArrowLeft className="mr-2 h-4 w-4" />{t('Actions.back')}</Button>
         <Button variant="outline" className="hidden sm:flex border-primary text-primary" onClick={() => setIsPreBillingOpen(true)}>
           <FileSpreadsheet className="mr-2 h-4 w-4" />

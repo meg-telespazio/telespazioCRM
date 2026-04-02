@@ -1,8 +1,8 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { CalendarIcon, Save, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, Save, ArrowLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -125,7 +125,13 @@ export default function POFormPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={isNew ? t('PO.add') : t('PO.edit')}>
+      <AppHeader title={
+        <div className="flex items-center gap-2">
+          <Link href="/purchase-orders" className="text-muted-foreground hover:text-primary transition-colors">{t('Sidebar.pos')}</Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span>{isNew ? t('PO.add') : (poData?.poNumber || t('PO.edit'))}</span>
+        </div>
+      }>
         <Button variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4"/>{t('Actions.back')}</Button>
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">

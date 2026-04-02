@@ -1,8 +1,8 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,7 +24,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { CalendarIcon, Save, ArrowLeft, ShieldCheck, User, Loader2 } from 'lucide-react';
+import { CalendarIcon, Save, ArrowLeft, ShieldCheck, User, Loader2, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -123,7 +123,13 @@ export default function EquipmentFormPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={isNew ? t('Equipment.add') : t('Equipment.edit')}>
+      <AppHeader title={
+        <div className="flex items-center gap-2">
+          <Link href="/equipment" className="text-muted-foreground hover:text-primary transition-colors">{t('Sidebar.equipment')}</Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span>{isNew ? t('Equipment.add') : (eqData?.userTerminal || t('Equipment.edit'))}</span>
+        </div>
+      }>
         <Button variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4"/>{t('Actions.back')}</Button>
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6 pb-24">
@@ -175,7 +181,7 @@ export default function EquipmentFormPage() {
 
                     {!watchedIsClientOwned && (
                       <FormField
-                        control={form.control}
+                                                control={form.control}
                         name="comodatoFee"
                         render={({ field }) => (
                           <FormItem className="animate-in fade-in slide-in-from-top-2 duration-200">

@@ -1,9 +1,9 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Client, UserProfile, SystemConfig } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -36,7 +36,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert } from 'lucide-react';
+import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
 import { cn } from '@/lib/utils';
 
@@ -270,7 +270,13 @@ export default function ClientFormPage() {
   return (
     <>
       <div className="flex flex-1 flex-col">
-        <AppHeader title={isNew ? t('Forms.addClient') : t('Forms.editClient')} />
+        <AppHeader title={
+          <div className="flex items-center gap-2">
+            <Link href="/clients" className="text-muted-foreground hover:text-primary transition-colors">{t('Pages.clients')}</Link>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <span>{isNew ? t('Forms.addClient') : (clientData?.name || t('Forms.editClient'))}</span>
+          </div>
+        } />
         <main className="flex-1 p-4 sm:p-6 pb-24">
           <div className="mx-auto max-w-2xl">
             <Form {...form}>

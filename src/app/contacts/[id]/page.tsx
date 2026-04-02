@@ -1,9 +1,9 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Contact, Client, EmailEntry, PhoneEntry, ContactPosition, ContactArea } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -33,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, ArrowLeft } from 'lucide-react';
+import { Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 
@@ -186,7 +186,13 @@ export default function ContactFormPage() {
 
     return (
         <div className="flex flex-1 flex-col">
-            <AppHeader title={isNew ? t('Forms.addContact') : t('Forms.editContact')} />
+            <AppHeader title={
+              <div className="flex items-center gap-2">
+                <Link href="/contacts" className="text-muted-foreground hover:text-primary transition-colors">{t('Pages.contacts')}</Link>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <span>{isNew ? t('Forms.addContact') : (contactData?.name || t('Forms.editContact'))}</span>
+              </div>
+            } />
             <main className="flex-1 p-4 sm:p-6">
                 <div className="mx-auto max-w-2xl">
                     <Form {...form}>

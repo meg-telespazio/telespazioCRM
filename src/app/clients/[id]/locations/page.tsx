@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   useUser,
   useFirestore,
@@ -23,6 +24,7 @@ import {
   PlusCircle,
   Loader2,
   Upload,
+  ChevronRight,
 } from 'lucide-react';
 import { LocationsTable } from '@/components/locations/locations-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,7 +83,17 @@ export default function ClientLocationsPage() {
   return (
     <>
       <div className="flex flex-1 flex-col">
-        <AppHeader title={isLoading || !client ? t('App.loading') : t('Locations.title', { clientName: client.name })}>
+        <AppHeader title={
+          isLoading || !client ? t('App.loading') : (
+            <div className="flex items-center gap-2">
+              <Link href="/clients" className="text-muted-foreground hover:text-primary transition-colors">{t('Pages.clients')}</Link>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <Link href={`/clients/${client.id}/summary`} className="text-muted-foreground hover:text-primary transition-colors">{client.name}</Link>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <span>{t('Pages.locations')}</span>
+            </div>
+          )
+        }>
             <Button variant="outline" onClick={() => router.push('/clients')}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('Actions.backToClientList')}

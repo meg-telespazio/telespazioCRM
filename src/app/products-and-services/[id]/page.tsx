@@ -1,9 +1,9 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { AppHeader } from '@/components/layout/app-header';
 import type { ProductOrService } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -39,7 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Package, Plus, Trash2 } from 'lucide-react';
+import { Camera, Package, Plus, Trash2, ChevronRight } from 'lucide-react';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -244,7 +244,13 @@ export default function ProductServiceFormPage() {
   return (
     <>
       <div className="flex flex-1 flex-col">
-        <AppHeader title={isNew ? t('PS.addItem') : t('PS.editItem')} />
+        <AppHeader title={
+          <div className="flex items-center gap-2">
+            <Link href="/products-and-services" className="text-muted-foreground hover:text-primary transition-colors">{t('Sidebar.ps')}</Link>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <span>{isNew ? t('PS.addItem') : (itemData?.name || t('PS.editItem'))}</span>
+          </div>
+        } />
         <main className="flex-1 p-4 sm:p-6">
           <div className="mx-auto max-w-4xl">
             <Form {...form}>

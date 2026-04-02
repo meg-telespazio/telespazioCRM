@@ -2,6 +2,7 @@
 
 import { useMemo, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useFirestore, useDoc, useUser } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, ShieldCheck, ShieldAlert, Loader2, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditUserPage() {
@@ -63,11 +64,17 @@ export default function EditUserPage() {
     }
   };
 
-  if (loading) return <div className="p-6"><Skeleton className="h-96" /></div>;
+  if (loading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={userProfile?.displayName || 'User'}>
+      <AppHeader title={
+        <div className="flex items-center gap-2">
+          <Link href="/settings/users" className="text-muted-foreground hover:text-primary transition-colors">{t('Settings.users')}</Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span>{userProfile?.displayName || 'User'}</span>
+        </div>
+      }>
         <Button variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" />{t('Actions.back')}</Button>
       </AppHeader>
 

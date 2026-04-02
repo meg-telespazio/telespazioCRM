@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -9,6 +8,7 @@ import {
   useCollection,
 } from '@/firebase';
 import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { AppHeader } from '@/components/layout/app-header';
 import type {
   Opportunity,
@@ -31,7 +31,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer, Info, ShieldCheck, Briefcase, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer, Info, ShieldCheck, Briefcase, TrendingUp, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -357,7 +357,9 @@ export default function OpportunityFormPage() {
           const nrc =
             item.quantity * item.oneTimeCharge * (1 - item.discount / 100);
           const mrc =
-            item.quantity * item.recurringCharge * (1 - item.discount / 100);
+            item.quantity *
+            item.recurringCharge *
+            (1 - item.discount / 100);
           acc.nrc += nrc;
           acc.mrc += mrc;
           return acc;
@@ -541,7 +543,13 @@ export default function OpportunityFormPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={isNew ? t('Forms.addOpportunity') : t('Forms.editOpportunity')}>
+      <AppHeader title={
+        <div className="flex items-center gap-2">
+          <Link href="/opportunities" className="text-muted-foreground hover:text-primary transition-colors">{t('Sidebar.opportunities')}</Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span>{isNew ? t('Forms.addOpportunity') : (opportunityData?.publicId || t('Forms.editOpportunity'))}</span>
+        </div>
+      }>
         <Button variant="outline" onClick={() => router.push('/opportunities')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('Actions.backToOpportunityList')}

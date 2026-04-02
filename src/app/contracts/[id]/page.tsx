@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -9,6 +8,7 @@ import {
   useCollection,
 } from '@/firebase';
 import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { AppHeader } from '@/components/layout/app-header';
 import type {
   Contract,
@@ -28,7 +28,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addMonths, isValid } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign, Briefcase } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign, Briefcase, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -175,8 +175,6 @@ export default function ContractFormPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [catalogData]);
 
-  const formSchema = useMemo(() => getFormSchema(t), [t]);
-
   const form = useForm<ContractFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -304,7 +302,13 @@ export default function ContractFormPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={isNew ? t('Pages.addContract') : t('Contracts.edit')} />
+      <AppHeader title={
+        <div className="flex items-center gap-2">
+          <Link href="/contracts" className="text-muted-foreground hover:text-primary transition-colors">{t('Sidebar.contracts')}</Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span>{isNew ? t('Pages.addContract') : (contractData?.publicId || t('Contracts.edit'))}</span>
+        </div>
+      } />
       <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="mx-auto max-w-4xl space-y-6">
           <Form {...form}>

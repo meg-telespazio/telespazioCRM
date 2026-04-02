@@ -1,8 +1,8 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   useUser,
   useFirestore,
@@ -46,6 +46,7 @@ import {
   ListFilter,
   ArrowLeft,
   Clock,
+  ChevronRight,
 } from 'lucide-react';
 import { ActivityCard } from '@/components/activity/activity-card';
 import { MentionTextarea } from '@/components/activity/mention-textarea';
@@ -178,7 +179,15 @@ export default function ClientActivityPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={client.name}>
+      <AppHeader title={
+        <div className="flex items-center gap-2">
+          <Link href="/clients" className="text-muted-foreground hover:text-primary transition-colors">{t('Pages.clients')}</Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <Link href={`/clients/${client.id}/summary`} className="text-muted-foreground hover:text-primary transition-colors">{client.name}</Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span>{t('Dashboard.recentActivities.title')}</span>
+        </div>
+      }>
           <Button variant="outline" onClick={() => router.push('/clients')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               {t('Actions.backToClientList')}
