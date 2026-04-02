@@ -34,7 +34,7 @@ export function AlertsSection({ opportunities, contracts, activities }: AlertsSe
 
   const alerts = useMemo(() => {
     const today = startOfDay(new Date());
-    const soonThreshold = addDays(today, 60); // Aumentado a 60 días
+    const soonThreshold = addDays(today, 60);
     const list: any[] = [];
 
     // Oportunidades Vencidas

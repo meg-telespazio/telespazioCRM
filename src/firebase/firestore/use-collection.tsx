@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,19 +17,10 @@ type UseCollectionReturn<T> = {
   error: FirestoreError | null;
 };
 
-// Optimized conversion: Avoid deep recursion on every single render if possible
 const convertTimestamps = (data: any): any => {
   if (!data || typeof data !== 'object') return data;
-  
-  if (data?.toDate && typeof data.toDate === 'function') {
-    return data.toDate();
-  }
-  
-  if (Array.isArray(data)) {
-    return data.map(convertTimestamps);
-  }
-  
-  // Only recurse into plain objects
+  if (data?.toDate && typeof data.toDate === 'function') return data.toDate();
+  if (Array.isArray(data)) return data.map(convertTimestamps);
   if (Object.prototype.toString.call(data) === '[object Object]') {
     const res: { [key: string]: any } = {};
     for (const key in data) {
@@ -38,7 +30,6 @@ const convertTimestamps = (data: any): any => {
     }
     return res;
   }
-  
   return data;
 };
 
@@ -73,16 +64,10 @@ export function useCollection<T>(
         setError(null);
       },
       (err: FirestoreError) => {
-        const path = (memoizedQuery as any)._query
-          ?.path?.segments?.join('/');
+        const path = (memoizedQuery as any)._query?.path?.segments?.join('/');
         if (path) {
-          const permissionError = new FirestorePermissionError({
-            path,
-            operation: 'list',
-          });
-          errorEmitter.emit('permission-error', permissionError);
+          errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation: 'list' }));
         }
-
         setError(err);
         setData(null);
         setLoading(false);

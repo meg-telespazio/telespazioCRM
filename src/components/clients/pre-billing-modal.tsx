@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -71,7 +72,6 @@ export function PreBillingModal({
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      // DYNAMIC IMPORT: Load XLSX only when needed
       const XLSX = await import('xlsx');
       
       const data = billingData.map(item => ({

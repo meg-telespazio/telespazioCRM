@@ -161,7 +161,7 @@ export function AppNavbar() {
   const alertsCount = useMemo(() => {
     if (!opportunities || !contracts || !activities) return 0;
     const today = startOfDay(new Date());
-    const soonThreshold = addDays(today, 60); // Aumentado a 60 días según pedido
+    const soonThreshold = addDays(today, 60);
 
     const overdueOpps = opportunities.filter(o => 
       !['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage) && 
@@ -306,7 +306,7 @@ export function AppNavbar() {
               >
                 <Bell className="h-5 w-5" />
                 {alertsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-destructive shadow-sm animate-in zoom-in">
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-destructive shadow-sm">
                     {alertsCount}
                   </span>
                 )}

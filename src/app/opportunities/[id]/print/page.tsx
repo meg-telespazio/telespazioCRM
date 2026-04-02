@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -39,7 +40,6 @@ type EnrichedLineItem = OpportunityLineItem & {
   type: ProductOrService['type'];
 };
 
-// Stateless Sub-components moved outside to optimize performance
 const ProposalHeader = ({ t, publicId }: { t: any, publicId: string }) => (
   <header className="flex items-start justify-between border-b-2 border-red-700 pb-2">
     <div className="relative h-8 w-32">
@@ -103,7 +103,6 @@ export default function PrintOpportunityPage() {
   const [customNote, setCustomNote] = useState('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  // Data fetching
   const opportunityRef = useMemo(
     () => (firestore ? doc(firestore, 'opportunities', opportunityId) : null),
     [firestore, opportunityId]
@@ -157,7 +156,6 @@ export default function PrintOpportunityPage() {
     }
 
     try {
-      // DYNAMIC IMPORTS: Load heavy libraries only when button is clicked
       const { jsPDF } = await import('jspdf');
       const html2canvas = (await import('html2canvas')).default;
 
@@ -171,41 +169,19 @@ export default function PrintOpportunityPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // Capture Page 1
-      const canvas1 = await html2canvas(page1, { 
-        scale: 2, 
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-      const imgData1 = canvas1.toDataURL('image/jpeg', 0.75);
-      pdf.addImage(imgData1, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      const canvas1 = await html2canvas(page1, { scale: 2, useCORS: true });
+      pdf.addImage(canvas1.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
 
-      // Capture Page 2
-      const canvas2 = await html2canvas(page2, { 
-        scale: 2, 
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
       pdf.addPage();
-      const imgData2 = canvas2.toDataURL('image/jpeg', 0.75);
-      pdf.addImage(imgData2, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      const canvas2 = await html2canvas(page2, { scale: 2, useCORS: true });
+      pdf.addImage(canvas2.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
 
       pdf.save(`propuesta-${opportunity?.publicId || 'telespazio'}.pdf`);
       
-      toast({
-        variant: 'success',
-        title: 'PDF Generado',
-        description: 'La oferta se ha descargado con éxito.',
-      });
+      toast({ variant: 'success', title: 'PDF Generado' });
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: t('Proposal.generate_pdf_error'),
-      });
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Error' });
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -289,12 +265,7 @@ export default function PrintOpportunityPage() {
   ) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-100">
-        <div className="w-full max-w-4xl bg-white p-8 shadow-lg">
-          <Skeleton className="h-16 w-1/3" />
-          <Skeleton className="mt-8 h-8 w-1/4" />
-          <Skeleton className="mt-4 h-24 w-full" />
-          <Skeleton className="mt-8 h-48 w-full" />
-        </div>
+        <Skeleton className="h-[297mm] w-[210mm]" />
       </div>
     );
   }

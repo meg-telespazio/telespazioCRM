@@ -1,3 +1,4 @@
+
 'use client';
 import {
   getApps,
@@ -42,9 +43,6 @@ function initializeFirebase(config: FirebaseOptions) {
 
     // Initialize App Check only in browser
     if (typeof window !== 'undefined') {
-      // Note: ReCaptcha Enterprise is recommended for production.
-      // You must enable it in the Firebase Console and provide the site key.
-      // For local development, you might want to use a debug token.
       initializeAppCheck(firebaseApp, {
         provider: new ReCaptchaEnterpriseProvider(
           process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6Lc_dummy_site_key'

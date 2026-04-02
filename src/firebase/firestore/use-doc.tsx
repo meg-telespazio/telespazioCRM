@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,18 +17,10 @@ type UseDocReturn<T> = {
   error: FirestoreError | null;
 };
 
-// Optimized conversion
 const convertTimestamps = (data: any): any => {
   if (!data || typeof data !== 'object') return data;
-  
-  if (data?.toDate && typeof data.toDate === 'function') {
-    return data.toDate();
-  }
-  
-  if (Array.isArray(data)) {
-    return data.map(convertTimestamps);
-  }
-  
+  if (data?.toDate && typeof data.toDate === 'function') return data.toDate();
+  if (Array.isArray(data)) return data.map(convertTimestamps);
   if (Object.prototype.toString.call(data) === '[object Object]') {
     const res: { [key: string]: any } = {};
     for (const key in data) {
@@ -37,7 +30,6 @@ const convertTimestamps = (data: any): any => {
     }
     return res;
   }
-  
   return data;
 };
 
@@ -71,12 +63,7 @@ export function useDoc<T>(
         setError(null);
       },
       (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: memoizedRef.path,
-          operation: 'get',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: memoizedRef.path, operation: 'get' }));
         setError(err);
         setData(null);
         setLoading(false);

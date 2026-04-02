@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
@@ -144,7 +145,6 @@ export default function ReportManualBuilderPage() {
     
     setIsCalculating(true);
 
-    // Give the UI a chance to show the loader by wrapping the heavy calculation in a small timeout
     setTimeout(() => {
       const sourceData = (collectionsMap as any)[reportConfig.primaryDataSource];
       if (!sourceData) {
@@ -152,7 +152,6 @@ export default function ReportManualBuilderPage() {
         return;
       }
 
-      // Pre-create Maps for O(1) lookups during joins
       const clientMap = new Map(collectionsMap.clients?.map(c => [c.id, c]));
       const poMap = new Map(collectionsMap.purchaseOrders?.map(p => [p.id, p]));
       const contractMap = new Map(collectionsMap.contracts?.map(c => [c.id, c]));
@@ -161,7 +160,6 @@ export default function ReportManualBuilderPage() {
       const processed = sourceData.map((item: any) => {
         const row: any = { [reportConfig.primaryDataSource]: item };
         
-        // Handle Joins
         if (item.clientId) {
           row.clients = clientMap.get(item.clientId);
         }
@@ -192,7 +190,6 @@ export default function ReportManualBuilderPage() {
         return row;
       });
 
-      // Apply Filters
       let filtered = processed;
       if (reportConfig.filters?.length) {
         filtered = processed.filter((item: any) => {
@@ -229,7 +226,6 @@ export default function ReportManualBuilderPage() {
         return { accessorKey: fKey, header: `${source}.${field}` };
       });
 
-      // Apply Aggregations
       if (reportConfig.aggregations?.length && reportConfig.groupBy && reportConfig.groupBy !== 'none') {
         const groups = new Map<string, any>();
         const [groupSource, groupField] = reportConfig.groupBy.split('.');
@@ -289,12 +285,11 @@ export default function ReportManualBuilderPage() {
     }, 10);
   }, [collectionsMap, t]);
 
-  // Use a debounced effect to prevent the app from freezing on every change
   useEffect(() => {
     if (mounted && collectionsMap.clients && collectionsMap.contracts) {
       const handler = setTimeout(() => {
         runReport(config);
-      }, 800); // 800ms debounce
+      }, 800);
       return () => clearTimeout(handler);
     }
   }, [config, collectionsMap, mounted, runReport]);

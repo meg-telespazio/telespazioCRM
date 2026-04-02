@@ -7,8 +7,6 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === 'development',
 });
 
-// Ajustamos CSP para permitir que el IDE de Firebase Studio nos incruste en su vista previa.
-// Añadimos dominios de Firebase Storage a frame-src para permitir previsualización de archivos.
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com;

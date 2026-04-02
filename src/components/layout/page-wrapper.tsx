@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -31,14 +32,10 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
   // Lógica para forzar limpieza de caché al abrir la aplicación (una vez por sesión)
   useEffect(() => {
     const clearCacheOnNewSession = async () => {
-      // Usamos sessionStorage porque se borra al cerrar la pestaña
       const hasCleared = sessionStorage.getItem('app_init_cleanup');
       
       if (!hasCleared) {
-        console.log('Iniciando limpieza de caché y service workers...');
-        
         try {
-          // 1. Eliminar Service Workers antiguos
           if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
@@ -46,7 +43,6 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // 2. Limpiar todos los buckets de CacheStorage
           if ('caches' in window) {
             const cacheKeys = await caches.keys();
             for (const key of cacheKeys) {
@@ -54,7 +50,6 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // Marcar como limpio y recargar la página para obtener todo fresco de Vercel
           sessionStorage.setItem('app_init_cleanup', 'true');
           window.location.reload();
         } catch (e) {
@@ -71,10 +66,8 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       const mfaUser = multiFactor(auth.currentUser!);
       const hasMfa = mfaUser.enrolledFactors.length > 0;
       
-      // Bypass MFA enforcement for specific user Roxana Patrese due to email verification issues
       const isBypassed = user.email === 'roxana.patrese@telespazio.com';
 
-      // If MFA is enforced by admin but not enrolled by user
       if (user.mfaEnforced && !hasMfa && !isBypassed) {
         setIsMfaModalOpen(true);
         if (pathname !== '/profile') {

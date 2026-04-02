@@ -1,3 +1,4 @@
+
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -6,7 +7,7 @@ import { PageWrapper } from '@/components/layout/page-wrapper';
 
 export const metadata: Metadata = {
   title: 'T-Track Sales',
-  description: 'A simple CRM for tracking sales opportunities.',
+  description: 'Sistema Integral de Gestión Comercial - Telespazio Argentina',
   manifest: '/manifest.json',
   applicationName: 'T-Track Sales',
   appleWebApp: {
@@ -33,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/img/logoLarge.png"></link>
