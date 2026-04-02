@@ -19,7 +19,7 @@ export default function RegisterPage() {
           height={150}
           priority
           className="mx-auto mb-4"
-          style={{ height: 'auto' }}
+          style={{ height: 'auto', objectFit: 'contain' }}
         />
         <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">
           {t('App.appName')}
