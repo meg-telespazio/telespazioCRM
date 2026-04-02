@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
@@ -34,13 +33,58 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 
 type EnrichedLineItem = OpportunityLineItem & {
   type: ProductOrService['type'];
 };
+
+// Stateless Sub-components moved outside to optimize performance
+const ProposalHeader = ({ t, publicId }: { t: any, publicId: string }) => (
+  <header className="flex items-start justify-between border-b-2 border-red-700 pb-2">
+    <div className="relative h-8 w-32">
+      <Image
+        src="/img/logoRojoLargo.png"
+        alt="Telespazio Logo"
+        fill
+        style={{ objectFit: 'contain' }}
+        priority
+      />
+    </div>
+    <div className="text-right">
+      <h1 className="text-md font-bold">{t('Proposal.title')}</h1>
+      <p className="text-[10px] font-bold text-red-700">{publicId}</p>
+    </div>
+  </header>
+);
+
+const Signature = ({ user, t }: { user: any, t: any }) => (
+  <div className="pt-2 mb-1 text-right text-[8px]">
+    <p className="font-bold">{user?.displayName?.toUpperCase()}</p>
+    <p>{t('Proposal.signature_company')}</p>
+    <p>{t('Proposal.signature_title')}</p>
+    <p>{user?.email}</p>
+  </div>
+);
+
+const ProposalFooter = ({
+  page,
+  totalPages,
+  t
+}: {
+  page: number;
+  totalPages: number;
+  t: any
+}) => (
+  <footer className="mt-auto border-t-2 border-red-700 pt-2">
+    <div className="flex items-center justify-between text-[9px]">
+      <p className="font-bold">{t('Proposal.confidential')}</p>
+      <p>
+        {t('Proposal.page')} {page} de {totalPages}
+      </p>
+    </div>
+  </footer>
+);
 
 export default function PrintOpportunityPage() {
   const { t, locale } = useI18n();
@@ -90,7 +134,7 @@ export default function PrintOpportunityPage() {
     if (!user) return null;
     return query(
       collection(firestore, 'productsAndServices'),
-      where('createdBy', '==', user.uid)
+      where('status', '==', 'active')
     );
   }, [user, firestore]);
   const { data: psData, loading: psLoading } =
@@ -103,10 +147,9 @@ export default function PrintOpportunityPage() {
     const page2 = document.getElementById('print-page-2');
 
     if (!page1 || !page2) {
-      console.error('Preview pages not found');
       toast({
         variant: 'destructive',
-        title: t('Auth.registerFailedTitle'),
+        title: 'Error',
         description: t('Proposal.generate_pdf_error'),
       });
       setIsGeneratingPdf(false);
@@ -114,28 +157,31 @@ export default function PrintOpportunityPage() {
     }
 
     try {
+      // DYNAMIC IMPORTS: Load heavy libraries only when button is clicked
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
-        compress: true, // Habilitar compresión nativa
+        compress: true,
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // Captura Página 1 con escala optimizada (2x es suficiente para A4 nítido)
+      // Capture Page 1
       const canvas1 = await html2canvas(page1, { 
         scale: 2, 
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff'
       });
-      // Convertir a JPEG con compresión del 75% para reducir peso drásticamente
       const imgData1 = canvas1.toDataURL('image/jpeg', 0.75);
       pdf.addImage(imgData1, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
 
-      // Captura Página 2
+      // Capture Page 2
       const canvas2 = await html2canvas(page2, { 
         scale: 2, 
         useCORS: true,
@@ -165,16 +211,7 @@ export default function PrintOpportunityPage() {
     }
   };
 
-  const {
-    enrichedLineItems,
-    productSubtotalNrc,
-    productSubtotalMrc,
-    serviceSubtotalNrc,
-    serviceSubtotalMrc,
-    totalNrc,
-    totalMrc,
-    finalFcv,
-  } = useMemo(() => {
+  const totals = useMemo(() => {
     if (!opportunity?.lineItems || !psData) {
       return {
         enrichedLineItems: [],
@@ -269,359 +306,301 @@ export default function PrintOpportunityPage() {
     { locale: dateLocale }
   );
 
-  const ProposalHeader = () => (
-    <header className="flex items-start justify-between border-b-2 border-red-700 pb-2">
-      <div className="relative h-8 w-32">
-        <Image
-          src="/img/logoRojoLargo.png"
-          alt="Telespazio Logo"
-          fill
-          style={{ objectFit: 'contain' }}
-          priority
-        />
-      </div>
-      <div className="text-right">
-        <h1 className="text-md font-bold">{t('Proposal.title')}</h1>
-        <p className="text-[10px] font-bold text-red-700">{opportunity.publicId}</p>
-      </div>
-    </header>
-  );
-
-  const Signature = () => (
-    <div className="pt-2 mb-1 text-right text-[8px]">
-      <p className="font-bold">{user?.displayName?.toUpperCase()}</p>
-      <p>{t('Proposal.signature_company')}</p>
-      <p>{t('Proposal.signature_title')}</p>
-      <p>{user?.email}</p>
-    </div>
-  );
-
-  const ProposalFooter = ({
-    page,
-    totalPages,
-  }: {
-    page: number;
-    totalPages: number;
-  }) => (
-    <footer className="mt-auto border-t-2 border-red-700 pt-2">
-      <div className="flex items-center justify-between text-[9px]">
-        <p className="font-bold">{t('Proposal.confidential')}</p>
-        <p>
-          {t('Proposal.page')} {page} de {totalPages}
-        </p>
-      </div>
-    </footer>
-  );
-
-  const Page1Content = () => (
-    <>
-      <ProposalHeader />
-      <p className="mt-6 text-right">
-        {t('Proposal.date_location', {
-          city: 'Ciudad Autónoma de Buenos Aires',
-          date: format(new Date(), 'PPPP', {
-            locale: dateLocale,
-          }),
-        })}
-      </p>
-      <div className="mt-4 space-y-1">
-        <p>
-          <span className="font-bold">{t('Proposal.to')} </span>
-          {recipientName.toUpperCase()}
-        </p>
-      </div>
-      <section className="mt-4">
-        <h2 className="text-lg font-bold uppercase text-red-700">
-          {t('Proposal.proposalData')}
-        </h2>
-        <table className="mt-2 w-2/3">
-          <tbody>
-            {[
-              { label: 'quote_id', value: opportunity.publicId },
-              { label: 'valid_until', value: validationDate },
-              { label: 'client', value: client?.name || '' },
-              {
-                label: 'contract_duration',
-                value: `${opportunity.contractMonths} meses`,
-              },
-            ].map(({ label, value }) => (
-              <tr key={label}>
-                <td className="w-1/3 py-0.5 font-semibold">
-                  {t(`Proposal.${label}`)}
-                </td>
-                <td className="border-b border-dotted border-gray-400 py-0.5">
-                  {value}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-      <section className="mt-4 flex-grow">
-        <h2 className="text-lg font-bold uppercase text-red-700">
-          {t('Proposal.products_services')}
-        </h2>
-        <table className="mt-2 w-full border-collapse text-[10px]">
-          <thead>
-            <tr className="bg-red-700 text-white">
-              <th className="w-[5%] border border-red-700 p-0.5 text-center">
-                {t('Proposal.item')}
-              </th>
-              <th className="w-[10%] border border-red-700 p-0.5 text-left">
-                {t('Proposal.type')}
-              </th>
-              <th className="border border-red-700 p-0.5 text-left">
-                {t('Proposal.description')}
-              </th>
-              <th className="w-[5%] border border-red-700 p-0.5 text-center">
-                {t('Proposal.qty')}
-              </th>
-              <th className="w-[5%] border border-red-700 p-0.5 text-center">
-                {t('Proposal.disc')}
-              </th>
-              <th
-                className="w-[20%] border border-red-700 p-0.5 text-center"
-                colSpan={2}
-              >
-                {t('Proposal.unit_price')}
-              </th>
-              <th
-                className="w-[20%] border border-red-700 p-0.5 text-center"
-                colSpan={2}
-              >
-                {t('Proposal.subtotals')}
-              </th>
-            </tr>
-            <tr className="bg-red-700 text-white">
-              <th colSpan={5}></th>
-              <th className="border border-red-700 p-0.5 text-center font-normal">
-                {t('Proposal.otc')}
-              </th>
-              <th className="border border-red-700 p-0.5 text-center font-normal">
-                {t('Proposal.mrc')}
-              </th>
-              <th className="border border-red-700 p-0.5 text-center font-normal">
-                {t('Proposal.otc')}
-              </th>
-              <th className="border border-red-700 p-0.5 text-center font-normal">
-                {t('Proposal.mrc')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {enrichedLineItems.map((line, index) => {
-              const subtotalNrc =
-                line.quantity * line.oneTimeCharge * (1 - line.discount / 100);
-              const subtotalMrc =
-                line.quantity *
-                line.recurringCharge *
-                (1 - line.discount / 100);
-              return (
-                <tr key={line.itemId} className="even:bg-gray-50">
-                  <td className="border p-0.5 text-center">{index + 1}</td>
-                  <td className="border p-0.5">{t(`PS.${line.type}`)}</td>
-                  <td className="border p-0.5">{line.name}</td>
-                  <td className="border p-0.5 text-center">{line.quantity}</td>
-                  <td className="border p-0.5 text-center">{line.discount}%</td>
-                  <td className="border p-0.5 text-right">
-                    {line.oneTimeCharge.toFixed(2)}
-                  </td>
-                  <td className="border p-0.5 text-right">
-                    {line.recurringCharge.toFixed(2)}
-                  </td>
-                  <td className="border p-0.5 text-right">
-                    {subtotalNrc.toFixed(2)}
-                  </td>
-                  <td className="border p-0.5 text-right">
-                    {subtotalMrc.toFixed(2)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <table className="mt-4 w-full border-collapse text-[10px]">
-          <tbody>
-            <tr className="bg-gray-200 font-bold">
-              <td colSpan={7} className="border p-0.5 text-right">
-                {t('Proposal.subtotal_products')}
-              </td>
-              <td className="border p-0.5 text-right">
-                {productSubtotalNrc.toFixed(2)}
-              </td>
-              <td className="border p-0.5 text-right">
-                {productSubtotalMrc.toFixed(2)}
-              </td>
-            </tr>
-            <tr className="bg-gray-200 font-bold">
-              <td colSpan={7} className="border p-0.5 text-right">
-                {t('Proposal.subtotal_services')}
-              </td>
-              <td className="border p-0.5 text-right">
-                {serviceSubtotalNrc.toFixed(2)}
-              </td>
-              <td className="border p-0.5 text-right">
-                {serviceSubtotalMrc.toFixed(2)}
-              </td>
-            </tr>
-            <tr className="bg-gray-300 font-bold">
-              <td colSpan={7} className="border p-0.5 text-right">
-                {t('Proposal.totals')}
-              </td>
-              <td className="border p-0.5 text-right">{totalNrc.toFixed(2)}</td>
-              <td className="border p-0.5 text-right">{totalMrc.toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-      <ProposalFooter page={1} totalPages={2} />
-    </>
-  );
-
-  const Page2Content = () => (
-    <>
-      <ProposalHeader />
-      <section className="mt-6 flex-grow">
-        <div className="space-y-4">
-          <div>
-            <span className="font-bold text-red-700">
-              {t('Proposal.delivery_time')}:{' '}
-            </span>
-            <span>{deliveryTime}</span>
-          </div>
-          <div className="font-bold text-red-700">
-            <span>{t('Proposal.total_contract_value')}: </span>
-            <span>{`${
-              opportunity.currency || 'USD'
-            } ${finalFcv.toFixed(2)}`}</span>
-          </div>
-          <div className="border-2 border-red-700 p-2 space-y-2 text-[7pt]">
-            <p>
-              <span className="font-bold">{t('Proposal.notes_title')}: </span>
-              {t('Proposal.notes_text')}
-              {customNote && (
-                <>
-                  <br />
-                  <span className="font-bold">
-                    {t('Forms.notes').toUpperCase()}:{' '}
-                  </span>
-                  {customNote}
-                </>
-              )}
-            </p>
-          </div>
-          <div>
-            <p className="font-bold">{t('Proposal.legal_title')}</p>
-            <p className="text-justify text-[7pt]">
-              {t('Proposal.legal_text')}
-            </p>
-          </div>
-        </div>
-      </section>
-      <Signature />
-      <ProposalFooter page={2} totalPages={2} />
-    </>
-  );
-
   return (
-    <>
-      <div className="min-h-screen bg-gray-100">
-        <div className="container mx-auto max-w-7xl p-4 sm:p-8">
-          <div className="mb-6 flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={() => router.push(`/opportunities/${opportunityId}`)}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {t('Actions.backToOpportunityList')}
-            </Button>
-            <Button onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
-              {isGeneratingPdf ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Printer className="mr-2 h-4 w-4" />
-              )}
-              {isGeneratingPdf
-                ? t('Proposal.generating_pdf')
-                : t('Proposal.generate_pdf')}
-            </Button>
+    <div className="min-h-screen bg-gray-100">
+      <div className="container mx-auto max-w-7xl p-4 sm:p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/opportunities/${opportunityId}`)}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('Actions.backToOpportunityList')}
+          </Button>
+          <Button onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
+            {isGeneratingPdf ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Printer className="mr-2 h-4 w-4" />
+            )}
+            {isGeneratingPdf
+              ? t('Proposal.generating_pdf')
+              : t('Proposal.generate_pdf')}
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
+          <div className="group flex justify-center md:col-span-8 lg:col-span-9">
+            <Carousel className="w-full max-w-[210mm]">
+              <CarouselContent>
+                <CarouselItem>
+                  <div className="p-1 md:p-2">
+                    <div
+                      id="print-page-1"
+                      className="font-sans flex aspect-[210/297] flex-col bg-white p-8 text-[8pt] shadow-lg transition-shadow group-hover:shadow-xl"
+                    >
+                      <ProposalHeader t={t} publicId={opportunity.publicId} />
+                      <p className="mt-6 text-right">
+                        {t('Proposal.date_location', {
+                          city: 'Ciudad Autónoma de Buenos Aires',
+                          date: format(new Date(), 'PPPP', {
+                            locale: dateLocale,
+                          }),
+                        })}
+                      </p>
+                      <div className="mt-4 space-y-1">
+                        <p>
+                          <span className="font-bold">{t('Proposal.to')} </span>
+                          {recipientName.toUpperCase()}
+                        </p>
+                      </div>
+                      <section className="mt-4">
+                        <h2 className="text-lg font-bold uppercase text-red-700">
+                          {t('Proposal.proposalData')}
+                        </h2>
+                        <table className="mt-2 w-2/3">
+                          <tbody>
+                            {[
+                              { label: 'quote_id', value: opportunity.publicId },
+                              { label: 'valid_until', value: validationDate },
+                              { label: 'client', value: client?.name || '' },
+                              {
+                                label: 'contract_duration',
+                                value: `${opportunity.contractMonths} meses`,
+                              },
+                            ].map(({ label, value }) => (
+                              <tr key={label}>
+                                <td className="w-1/3 py-0.5 font-semibold">
+                                  {t(`Proposal.${label}`)}
+                                </td>
+                                <td className="border-b border-dotted border-gray-400 py-0.5">
+                                  {value}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </section>
+                      <section className="mt-4 flex-grow">
+                        <h2 className="text-lg font-bold uppercase text-red-700">
+                          {t('Proposal.products_services')}
+                        </h2>
+                        <table className="mt-2 w-full border-collapse text-[10px]">
+                          <thead>
+                            <tr className="bg-red-700 text-white">
+                              <th className="w-[5%] border border-red-700 p-0.5 text-center">
+                                {t('Proposal.item')}
+                              </th>
+                              <th className="w-[10%] border border-red-700 p-0.5 text-left">
+                                {t('Proposal.type')}
+                              </th>
+                              <th className="border border-red-700 p-0.5 text-left">
+                                {t('Proposal.description')}
+                              </th>
+                              <th className="w-[5%] border border-red-700 p-0.5 text-center">
+                                {t('Proposal.qty')}
+                              </th>
+                              <th className="w-[5%] border border-red-700 p-0.5 text-center">
+                                {t('Proposal.disc')}
+                              </th>
+                              <th
+                                className="w-[20%] border border-red-700 p-0.5 text-center"
+                                colSpan={2}
+                              >
+                                {t('Proposal.unit_price')}
+                              </th>
+                              <th
+                                className="w-[20%] border border-red-700 p-0.5 text-center"
+                                colSpan={2}
+                              >
+                                {t('Proposal.subtotals')}
+                              </th>
+                            </tr>
+                            <tr className="bg-red-700 text-white">
+                              <th colSpan={5}></th>
+                              <th className="border border-red-700 p-0.5 text-center font-normal">
+                                {t('Proposal.otc')}
+                              </th>
+                              <th className="border border-red-700 p-0.5 text-center font-normal">
+                                {t('Proposal.mrc')}
+                              </th>
+                              <th className="border border-red-700 p-0.5 text-center font-normal">
+                                {t('Proposal.otc')}
+                              </th>
+                              <th className="border border-red-700 p-0.5 text-center font-normal">
+                                {t('Proposal.mrc')}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {totals.enrichedLineItems.map((line, index) => {
+                              const subtotalNrc =
+                                line.quantity * line.oneTimeCharge * (1 - line.discount / 100);
+                              const subtotalMrc =
+                                line.quantity *
+                                line.recurringCharge *
+                                (1 - line.discount / 100);
+                              return (
+                                <tr key={line.itemId} className="even:bg-gray-50">
+                                  <td className="border p-0.5 text-center">{index + 1}</td>
+                                  <td className="border p-0.5">{t(`PS.${line.type}`)}</td>
+                                  <td className="border p-0.5">{line.name}</td>
+                                  <td className="border p-0.5 text-center">{line.quantity}</td>
+                                  <td className="border p-0.5 text-center">{line.discount}%</td>
+                                  <td className="border p-0.5 text-right">
+                                    {line.oneTimeCharge.toFixed(2)}
+                                  </td>
+                                  <td className="border p-0.5 text-right">
+                                    {line.recurringCharge.toFixed(2)}
+                                  </td>
+                                  <td className="border p-0.5 text-right">
+                                    {subtotalNrc.toFixed(2)}
+                                  </td>
+                                  <td className="border p-0.5 text-right">
+                                    {subtotalMrc.toFixed(2)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        <table className="mt-4 w-full border-collapse text-[10px]">
+                          <tbody>
+                            <tr className="bg-gray-200 font-bold">
+                              <td colSpan={7} className="border p-0.5 text-right">
+                                {t('Proposal.subtotal_products')}
+                              </td>
+                              <td className="border p-0.5 text-right">
+                                {totals.productSubtotalNrc.toFixed(2)}
+                              </td>
+                              <td className="border p-0.5 text-right">
+                                {totals.productSubtotalMrc.toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr className="bg-gray-200 font-bold">
+                              <td colSpan={7} className="border p-0.5 text-right">
+                                {t('Proposal.subtotal_services')}
+                              </td>
+                              <td className="border p-0.5 text-right">
+                                {totals.serviceSubtotalNrc.toFixed(2)}
+                              </td>
+                              <td className="border p-0.5 text-right">
+                                {totals.serviceSubtotalMrc.toFixed(2)}
+                              </td>
+                            </tr>
+                            <tr className="bg-gray-300 font-bold">
+                              <td colSpan={7} className="border p-0.5 text-right">
+                                {t('Proposal.totals')}
+                              </td>
+                              <td className="border p-0.5 text-right">{totals.totalNrc.toFixed(2)}</td>
+                              <td className="border p-0.5 text-right">{totals.totalMrc.toFixed(2)}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </section>
+                      <ProposalFooter page={1} totalPages={2} t={t} />
+                    </div>
+                  </div>
+                </CarouselItem>
+                <CarouselItem>
+                  <div className="p-1 md:p-2">
+                    <div
+                      id="print-page-2"
+                      className="font-sans flex aspect-[210/297] flex-col bg-white p-8 text-[8pt] shadow-lg transition-shadow group-hover:shadow-xl"
+                    >
+                      <ProposalHeader t={t} publicId={opportunity.publicId} />
+                      <section className="mt-6 flex-grow">
+                        <div className="space-y-4">
+                          <div>
+                            <span className="font-bold text-red-700">
+                              {t('Proposal.delivery_time')}:{' '}
+                            </span>
+                            <span>{deliveryTime}</span>
+                          </div>
+                          <div className="font-bold text-red-700">
+                            <span>{t('Proposal.total_contract_value')}: </span>
+                            <span>{`${
+                              opportunity.currency || 'USD'
+                            } ${totals.finalFcv.toFixed(2)}`}</span>
+                          </div>
+                          <div className="border-2 border-red-700 p-2 space-y-2 text-[7pt]">
+                            <p>
+                              <span className="font-bold">{t('Proposal.notes_title')}: </span>
+                              {t('Proposal.notes_text')}
+                              {customNote && (
+                                <>
+                                  <br />
+                                  <span className="font-bold">
+                                    {t('Forms.notes').toUpperCase()}:{' '}
+                                  </span>
+                                  {customNote}
+                                </>
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-bold">{t('Proposal.legal_title')}</p>
+                            <p className="text-justify text-[7pt]">
+                              {t('Proposal.legal_text')}
+                            </p>
+                          </div>
+                        </div>
+                      </section>
+                      <Signature user={user} t={t} />
+                      <ProposalFooter page={2} totalPages={2} t={t} />
+                    </div>
+                  </div>
+                </CarouselItem>
+              </CarouselContent>
+              <CarouselPrevious className="left-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <CarouselNext className="right-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            </Carousel>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-            <div className="group flex justify-center md:col-span-8 lg:col-span-9">
-              <Carousel className="w-full max-w-[210mm]">
-                <CarouselContent>
-                  <CarouselItem>
-                    <div className="p-1 md:p-2">
-                      <div
-                        id="print-page-1"
-                        className="font-sans flex aspect-[210/297] flex-col bg-white p-8 text-[8pt] shadow-lg transition-shadow group-hover:shadow-xl"
-                      >
-                        <Page1Content />
-                      </div>
-                    </div>
-                  </CarouselItem>
-                  <CarouselItem>
-                    <div className="p-1 md:p-2">
-                      <div
-                        id="print-page-2"
-                        className="font-sans flex aspect-[210/297] flex-col bg-white p-8 text-[8pt] shadow-lg transition-shadow group-hover:shadow-xl"
-                      >
-                        <Page2Content />
-                      </div>
-                    </div>
-                  </CarouselItem>
-                </CarouselContent>
-                <CarouselPrevious className="left-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <CarouselNext className="right-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              </Carousel>
-            </div>
-
-            <div className="md:col-span-4 lg:col-span-3">
-              <Card className="sticky top-24">
-                <CardHeader>
-                  <CardTitle>{t('Proposal.customization')}</CardTitle>
-                  <CardDescription>
-                    {t('Proposal.customization_desc')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="delivery-time"
-                      className="mb-2 block text-sm font-medium text-gray-700"
-                    >
-                      {t('Proposal.delivery_time')}
-                    </label>
-                    <Textarea
-                      id="delivery-time"
-                      value={deliveryTime}
-                      onChange={(e) => setDeliveryTime(e.target.value)}
-                      placeholder={t('Proposal.delivery_time_placeholder')}
-                      className="bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="custom-note"
-                      className="mb-2 block text-sm font-medium text-gray-700"
-                    >
-                      {t('Forms.notes')}
-                    </label>
-                    <Textarea
-                      id="custom-note"
-                      value={customNote}
-                      onChange={(e) => setCustomNote(e.target.value)}
-                      placeholder={t('Proposal.custom_note_placeholder')}
-                      className="bg-white"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="md:col-span-4 lg:col-span-3">
+            <Card className="sticky top-24">
+              <CardHeader>
+                <CardTitle>{t('Proposal.customization')}</CardTitle>
+                <CardDescription>
+                  {t('Proposal.customization_desc')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="delivery-time"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    {t('Proposal.delivery_time')}
+                  </label>
+                  <Textarea
+                    id="delivery-time"
+                    value={deliveryTime}
+                    onChange={(e) => setDeliveryTime(e.target.value)}
+                    placeholder={t('Proposal.delivery_time_placeholder')}
+                    className="bg-white"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="custom-note"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    {t('Forms.notes')}
+                  </label>
+                  <Textarea
+                    id="custom-note"
+                    value={customNote}
+                    onChange={(e) => setCustomNote(e.target.value)}
+                    placeholder={t('Proposal.custom_note_placeholder')}
+                    className="bg-white"
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -1,8 +1,6 @@
-
 'use client';
 
-import { useMemo } from 'react';
-import * as XLSX from 'xlsx';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,8 +20,7 @@ import {
 } from '@/components/ui/table';
 import { useI18n } from '@/firebase/client-provider';
 import type { Client, Service, Equipment } from '@/lib/types';
-import { Download, FileSpreadsheet, Zap, HardDrive } from 'lucide-react';
-import { Badge } from '../ui/badge';
+import { Download, FileSpreadsheet, Loader2 } from 'lucide-react';
 
 interface PreBillingModalProps {
   isOpen: boolean;
@@ -41,6 +38,7 @@ export function PreBillingModal({
   equipment,
 }: PreBillingModalProps) {
   const { t } = useI18n();
+  const [isExporting, setIsExporting] = useState(false);
 
   const billingData = useMemo(() => {
     return services.map(service => {
@@ -70,32 +68,40 @@ export function PreBillingModal({
     }, { services: 0, equipment: 0, grandTotal: 0 });
   }, [billingData]);
 
-  const handleExport = () => {
-    const data = billingData.map(item => ({
-      [t('PreBilling.serviceHeader')]: item.nickname,
-      [t('PreBilling.lineHeader')]: item.lineNumber,
-      [t('PreBilling.planHeader')]: item.plan,
-      [t('PreBilling.serviceFeeHeader')]: item.serviceFee,
-      [t('PreBilling.equipmentFeeHeader')]: item.equipmentFee,
-      [t('PreBilling.totalHeader')]: item.total,
-      'Currency': item.currency
-    }));
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      // DYNAMIC IMPORT: Load XLSX only when needed
+      const XLSX = await import('xlsx');
+      
+      const data = billingData.map(item => ({
+        [t('PreBilling.serviceHeader')]: item.nickname,
+        [t('PreBilling.lineHeader')]: item.lineNumber,
+        [t('PreBilling.planHeader')]: item.plan,
+        [t('PreBilling.serviceFeeHeader')]: item.serviceFee,
+        [t('PreBilling.equipmentFeeHeader')]: item.equipmentFee,
+        [t('PreBilling.totalHeader')]: item.total,
+        'Currency': item.currency
+      }));
 
-    // Add totals row
-    data.push({
-      [t('PreBilling.serviceHeader')]: 'TOTALES',
-      [t('PreBilling.lineHeader')]: '',
-      [t('PreBilling.planHeader')]: '',
-      [t('PreBilling.serviceFeeHeader')]: totals.services,
-      [t('PreBilling.equipmentFeeHeader')]: totals.equipment,
-      [t('PreBilling.totalHeader')]: totals.grandTotal,
-      'Currency': billingData[0]?.currency || 'USD'
-    });
+      // Add totals row
+      data.push({
+        [t('PreBilling.serviceHeader')]: 'TOTALES',
+        [t('PreBilling.lineHeader')]: '',
+        [t('PreBilling.planHeader')]: '',
+        [t('PreBilling.serviceFeeHeader')]: totals.services,
+        [t('PreBilling.equipmentFeeHeader')]: totals.equipment,
+        [t('PreBilling.totalHeader')]: totals.grandTotal,
+        'Currency': billingData[0]?.currency || 'USD'
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Pre-billing");
-    XLSX.writeFile(workbook, `PreBilling_${client.name}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Pre-billing");
+      XLSX.writeFile(workbook, `PreBilling_${client.name}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -188,11 +194,11 @@ export function PreBillingModal({
         </div>
 
         <DialogFooter className="p-6 border-t bg-muted/10">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isExporting}>
             {t('Auth.cancelLabel')}
           </Button>
-          <Button onClick={handleExport} disabled={billingData.length === 0} className="gap-2">
-            <Download className="h-4 w-4" />
+          <Button onClick={handleExport} disabled={billingData.length === 0 || isExporting} className="gap-2">
+            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {t('PreBilling.exportExcel')}
           </Button>
         </DialogFooter>

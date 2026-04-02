@@ -16,24 +16,30 @@ type UseDocReturn<T> = {
   error: FirestoreError | null;
 };
 
-// Firestore timestamps need to be converted to JS Date objects.
-// This function recursively checks for and converts timestamps.
+// Optimized conversion
 const convertTimestamps = (data: any): any => {
-    if (data?.toDate) {
-      return data.toDate();
-    }
-    if (Array.isArray(data)) {
-      return data.map(convertTimestamps);
-    }
-    if (typeof data === 'object' && data !== null) {
-      const res: { [key: string]: any } = {};
-      for (const key in data) {
+  if (!data || typeof data !== 'object') return data;
+  
+  if (data?.toDate && typeof data.toDate === 'function') {
+    return data.toDate();
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(convertTimestamps);
+  }
+  
+  if (Object.prototype.toString.call(data) === '[object Object]') {
+    const res: { [key: string]: any } = {};
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
         res[key] = convertTimestamps(data[key]);
       }
-      return res;
     }
-    return data;
-  };
+    return res;
+  }
+  
+  return data;
+};
 
 export function useDoc<T>(
   ref: DocumentReference<DocumentData> | null

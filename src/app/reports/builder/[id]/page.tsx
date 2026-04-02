@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
-import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { 
   Client, Contact, Opportunity, ProductOrService, 
@@ -80,6 +80,7 @@ export default function ReportManualBuilderPage() {
 
   const [mounted, setMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
   const [activeTab, setActiveTab] = useState('source');
   
   const [config, setConfig] = useState<ReportConfig>({
@@ -141,138 +142,160 @@ export default function ReportManualBuilderPage() {
   const runReport = useCallback((reportConfig: ReportConfig) => {
     if (!reportConfig || !collectionsMap) return;
     
-    const sourceData = (collectionsMap as any)[reportConfig.primaryDataSource];
-    if (!sourceData) return;
+    setIsCalculating(true);
 
-    const processed = sourceData.map((item: any) => {
-      const row: any = { [reportConfig.primaryDataSource]: item };
-      
-      if (item.clientId && collectionsMap.clients) {
-        row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
+    // Give the UI a chance to show the loader by wrapping the heavy calculation in a small timeout
+    setTimeout(() => {
+      const sourceData = (collectionsMap as any)[reportConfig.primaryDataSource];
+      if (!sourceData) {
+        setIsCalculating(false);
+        return;
       }
 
-      if (reportConfig.primaryDataSource === 'services') {
-        const po = collectionsMap.purchaseOrders?.find(p => p.id === item.poId);
-        if (po) {
-          row.purchaseOrders = po;
-          const contract = collectionsMap.contracts?.find(c => c.id === po.contractId);
+      // Pre-create Maps for O(1) lookups during joins
+      const clientMap = new Map(collectionsMap.clients?.map(c => [c.id, c]));
+      const poMap = new Map(collectionsMap.purchaseOrders?.map(p => [p.id, p]));
+      const contractMap = new Map(collectionsMap.contracts?.map(c => [c.id, c]));
+      const equipMap = new Map(collectionsMap.equipment?.map(e => [e.id, e]));
+
+      const processed = sourceData.map((item: any) => {
+        const row: any = { [reportConfig.primaryDataSource]: item };
+        
+        // Handle Joins
+        if (item.clientId) {
+          row.clients = clientMap.get(item.clientId);
+        }
+
+        if (reportConfig.primaryDataSource === 'services') {
+          const po = poMap.get(item.poId);
+          if (po) {
+            row.purchaseOrders = po;
+            const contract = contractMap.get(po.contractId);
+            if (contract) {
+              row.contracts = contract;
+              if (!row.clients) row.clients = clientMap.get(contract.clientId);
+            }
+          }
+          if (item.equipmentId) {
+            row.equipment = equipMap.get(item.equipmentId);
+          }
+        }
+
+        if (reportConfig.primaryDataSource === 'purchaseOrders') {
+          const contract = contractMap.get(item.contractId);
           if (contract) {
             row.contracts = contract;
-            if (!row.clients) row.clients = collectionsMap.clients?.find(c => c.id === contract.clientId);
+            if (!row.clients) row.clients = clientMap.get(contract.clientId);
           }
         }
-        if (collectionsMap.equipment) {
-            row.equipment = collectionsMap.equipment.find(e => e.id === item.equipmentId);
-        }
+
+        return row;
+      });
+
+      // Apply Filters
+      let filtered = processed;
+      if (reportConfig.filters?.length) {
+        filtered = processed.filter((item: any) => {
+          return reportConfig.filters.every(f => {
+            const [source, field] = f.field.split('.');
+            const val = item[source]?.[field];
+            
+            if (f.operator === 'is_not_empty') {
+              return val !== undefined && val !== null && val !== '';
+            }
+
+            if (val === undefined || val === null) return false;
+            
+            const stringVal = String(val).toLowerCase();
+            const stringFilter = String(f.value || '').toLowerCase();
+
+            switch (f.operator) {
+              case 'contains': return stringVal.includes(stringFilter);
+              case 'equals': return stringVal === stringFilter;
+              case 'not_equals': return stringVal !== stringFilter;
+              case 'gt': return Number(val) > Number(f.value);
+              case 'lt': return Number(val) < Number(f.value);
+              case 'gte': return Number(val) >= Number(f.value);
+              case 'lte': return Number(val) <= Number(f.value);
+              default: return true;
+            }
+          });
+        });
       }
 
-      if (reportConfig.primaryDataSource === 'purchaseOrders') {
-        const contract = collectionsMap.contracts?.find(c => c.id === item.contractId);
-        if (contract) {
-          row.contracts = contract;
-          if (!row.clients) row.clients = collectionsMap.clients?.find(c => c.id === contract.clientId);
-        }
+      let finalData = filtered;
+      let finalColumns = reportConfig.fields.map(fKey => {
+        const [source, field] = fKey.split('.');
+        return { accessorKey: fKey, header: `${source}.${field}` };
+      });
+
+      // Apply Aggregations
+      if (reportConfig.aggregations?.length && reportConfig.groupBy && reportConfig.groupBy !== 'none') {
+        const groups = new Map<string, any>();
+        const [groupSource, groupField] = reportConfig.groupBy.split('.');
+
+        filtered.forEach((row: any) => {
+          const groupValue = row[groupSource]?.[groupField];
+          const groupKey = groupValue !== undefined && groupValue !== null ? String(groupValue) : 'N/A';
+          if (!groups.has(groupKey)) {
+            groups.set(groupKey, { _key: groupKey, _records: [] });
+          }
+          groups.get(groupKey)._records.push(row);
+        });
+
+        finalData = Array.from(groups.values()).map(group => {
+          const aggregatedRow: any = {};
+          aggregatedRow[reportConfig.groupBy!] = group._key;
+
+          reportConfig.aggregations!.forEach(agg => {
+            const [aggSource, aggField] = agg.field.split('.');
+            const numericValues = group._records
+              .map((r: any) => r[aggSource]?.[aggField])
+              .filter((v: any) => v !== undefined && v !== null && !isNaN(Number(v)))
+              .map((v: any) => Number(v));
+            
+            let result = 0;
+            if (agg.type === 'sum') result = numericValues.reduce((a: number, b: number) => a + b, 0);
+            else if (agg.type === 'avg') result = numericValues.length ? numericValues.reduce((a: number, b: number) => a + b, 0) / numericValues.length : 0;
+            else if (agg.type === 'count') result = group._records.length;
+
+            aggregatedRow[`${agg.field}_${agg.type}`] = result;
+          });
+          return aggregatedRow;
+        });
+
+        finalColumns = [
+          { accessorKey: reportConfig.groupBy, header: t('Reports.groupBy') + ' ' + reportConfig.groupBy },
+          ...reportConfig.aggregations.map(agg => ({
+            accessorKey: `${agg.field}_${agg.type}`,
+            header: `${agg.type.toUpperCase()}(${agg.field})`
+          }))
+        ];
+      } else if (reportConfig.sorting?.length) {
+        finalData.sort((a: any, b: any) => {
+          for (const sort of reportConfig.sorting) {
+            const [source, field] = sort.field.split('.');
+            const valA = a[source]?.[field];
+            const valB = b[source]?.[field];
+            if (valA < valB) return sort.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sort.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
+        });
       }
 
-      return row;
-    });
-
-    let filtered = processed;
-    if (reportConfig.filters?.length) {
-      filtered = processed.filter((item: any) => {
-        return reportConfig.filters.every(f => {
-          const [source, field] = f.field.split('.');
-          const val = item[source]?.[field];
-          
-          if (f.operator === 'is_not_empty') {
-            return val !== undefined && val !== null && val !== '';
-          }
-
-          if (val === undefined || val === null) return false;
-          
-          const stringVal = String(val).toLowerCase();
-          const stringFilter = String(f.value || '').toLowerCase();
-
-          switch (f.operator) {
-            case 'contains': return stringVal.includes(stringFilter);
-            case 'equals': return stringVal === stringFilter;
-            case 'not_equals': return stringVal !== stringFilter;
-            case 'gt': return Number(val) > Number(f.value);
-            case 'lt': return Number(val) < Number(f.value);
-            case 'gte': return Number(val) >= Number(f.value);
-            case 'lte': return Number(val) <= Number(f.value);
-            default: return true;
-          }
-        });
-      });
-    }
-
-    let finalData = filtered;
-    let finalColumns = reportConfig.fields.map(fKey => {
-      const [source, field] = fKey.split('.');
-      return { accessorKey: fKey, header: `${source}.${field}` };
-    });
-
-    if (reportConfig.aggregations?.length && reportConfig.groupBy && reportConfig.groupBy !== 'none') {
-      const groups = new Map<string, any>();
-      const [groupSource, groupField] = reportConfig.groupBy.split('.');
-
-      filtered.forEach((row: any) => {
-        const groupValue = row[groupSource]?.[groupField];
-        const groupKey = groupValue !== undefined && groupValue !== null ? String(groupValue) : 'N/A';
-        if (!groups.has(groupKey)) {
-          groups.set(groupKey, { _key: groupKey, _records: [] });
-        }
-        groups.get(groupKey)._records.push(row);
-      });
-
-      finalData = Array.from(groups.values()).map(group => {
-        const aggregatedRow: any = {};
-        aggregatedRow[reportConfig.groupBy!] = group._key;
-
-        reportConfig.aggregations!.forEach(agg => {
-          const [aggSource, aggField] = agg.field.split('.');
-          const numericValues = group._records
-            .map((r: any) => r[aggSource]?.[aggField])
-            .filter((v: any) => v !== undefined && v !== null && !isNaN(Number(v)))
-            .map((v: any) => Number(v));
-          
-          let result = 0;
-          if (agg.type === 'sum') result = numericValues.reduce((a: number, b: number) => a + b, 0);
-          else if (agg.type === 'avg') result = numericValues.length ? numericValues.reduce((a: number, b: number) => a + b, 0) / numericValues.length : 0;
-          else if (agg.type === 'count') result = group._records.length;
-
-          aggregatedRow[`${agg.field}_${agg.type}`] = result;
-        });
-        return aggregatedRow;
-      });
-
-      finalColumns = [
-        { accessorKey: reportConfig.groupBy, header: t('Reports.groupBy') + ' ' + reportConfig.groupBy },
-        ...reportConfig.aggregations.map(agg => ({
-          accessorKey: `${agg.field}_${agg.type}`,
-          header: `${agg.type.toUpperCase()}(${agg.field})`
-        }))
-      ];
-    } else if (reportConfig.sorting?.length) {
-      finalData.sort((a: any, b: any) => {
-        for (const sort of reportConfig.sorting) {
-          const [source, field] = sort.field.split('.');
-          const valA = a[source]?.[field];
-          const valB = b[source]?.[field];
-          if (valA < valB) return sort.direction === 'asc' ? -1 : 1;
-          if (valA > valB) return sort.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    setReportResult({ data: finalData, columns: finalColumns });
+      setReportResult({ data: finalData, columns: finalColumns });
+      setIsCalculating(false);
+    }, 10);
   }, [collectionsMap, t]);
 
+  // Use a debounced effect to prevent the app from freezing on every change
   useEffect(() => {
-    if (config && mounted && collectionsMap.clients && collectionsMap.contracts) {
-      runReport(config);
+    if (mounted && collectionsMap.clients && collectionsMap.contracts) {
+      const handler = setTimeout(() => {
+        runReport(config);
+      }, 800); // 800ms debounce
+      return () => clearTimeout(handler);
     }
   }, [config, collectionsMap, mounted, runReport]);
 
@@ -342,7 +365,7 @@ export default function ReportManualBuilderPage() {
   }
 
   const primaryOptions = Object.keys(SCHEMA);
-  const relatedOptions = ['clients', 'contracts', 'purchaseOrders', 'equipment', 'opportunities'].filter(o => o !== config.primaryDataSource);
+  const relatedOptions = ['clients', 'contracts', 'purchaseOrders', 'equipment', 'opportunities', 'locations', 'activities'].filter(o => o !== config.primaryDataSource);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -350,7 +373,7 @@ export default function ReportManualBuilderPage() {
         <Button variant="outline" onClick={() => router.push('/reports')}>
           {t('Auth.cancelLabel')}
         </Button>
-        <Button onClick={form.handleSubmit(handleSave)} disabled={isSaving}>
+        <Button onClick={form.handleSubmit(handleSave)} disabled={isSaving || isCalculating}>
           {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {t('Reports.saveReport')}
         </Button>
@@ -386,7 +409,15 @@ export default function ReportManualBuilderPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="shadow-md">
+                <Card className="shadow-md relative overflow-hidden">
+                  {isCalculating && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-primary">Procesando Datos...</span>
+                      </div>
+                    </div>
+                  )}
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <CardHeader className="border-b bg-slate-50/50 p-0 overflow-hidden">
                       <TabsList className="w-full justify-start rounded-none bg-transparent h-12 overflow-x-auto flex-nowrap scrollbar-hide">
@@ -673,7 +704,9 @@ export default function ReportManualBuilderPage() {
                       type="button" 
                       className="w-full" 
                       onClick={() => runReport(config)}
+                      disabled={isCalculating}
                     >
+                      {isCalculating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {t('Reports.updatePreview')}
                     </Button>
                   </CardContent>

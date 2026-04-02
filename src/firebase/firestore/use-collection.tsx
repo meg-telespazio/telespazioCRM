@@ -16,22 +16,29 @@ type UseCollectionReturn<T> = {
   error: FirestoreError | null;
 };
 
-// Firestore timestamps need to be converted to JS Date objects.
-// This function recursively checks for and converts timestamps.
+// Optimized conversion: Avoid deep recursion on every single render if possible
 const convertTimestamps = (data: any): any => {
-  if (data?.toDate) {
+  if (!data || typeof data !== 'object') return data;
+  
+  if (data?.toDate && typeof data.toDate === 'function') {
     return data.toDate();
   }
+  
   if (Array.isArray(data)) {
     return data.map(convertTimestamps);
   }
-  if (typeof data === 'object' && data !== null) {
+  
+  // Only recurse into plain objects
+  if (Object.prototype.toString.call(data) === '[object Object]') {
     const res: { [key: string]: any } = {};
     for (const key in data) {
-      res[key] = convertTimestamps(data[key]);
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        res[key] = convertTimestamps(data[key]);
+      }
     }
     return res;
   }
+  
   return data;
 };
 
@@ -42,7 +49,6 @@ export function useCollection<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   
-  // Memoize query to prevent re-renders from creating new query objects
   const memoizedQuery = useMemo(() => query, [query]);
 
   useEffect(() => {
