@@ -1,7 +1,7 @@
 {
-  "name": "T-Track Sales",
+  "name": "T-Track Sales CRM",
   "short_name": "T-Track",
-  "description": "A simple CRM for tracking sales opportunities.",
+  "description": "Sistema integral de gestión de ventas para Telespazio Argentina.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#EC1C24",
