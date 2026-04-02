@@ -9,10 +9,11 @@ import { StatsCards } from '@/components/dashboard/stats-cards';
 import { OpportunitiesChart } from '@/components/dashboard/opportunities-chart';
 import { RecentOpportunities } from '@/components/dashboard/recent-opportunities';
 import { useI18n } from '@/firebase/client-provider';
-import type { Opportunity, Client, Contact, Activity, SystemConfig } from '@/lib/types';
+import type { Opportunity, Client, Contact, Activity, SystemConfig, Contract } from '@/lib/types';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RecentActivities } from '@/components/dashboard/recent-activities';
+import { AlertsSection } from '@/components/dashboard/alerts-section';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -22,40 +23,42 @@ export default function DashboardPage() {
   const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
+  const managementFilter = user?.role === 'admin' ? null : user?.management;
+
   const opportunitiesQuery = useMemo(() => {
     if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'opportunities');
-    if (user.role === 'admin') return query(ref);
-    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
-    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-  }, [firestore, user]);
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [firestore, user, managementFilter]);
+
+  const contractsQuery = useMemo(() => {
+    if (!user || user.role === 'ingeniero') return null;
+    const ref = collection(firestore, 'contracts');
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [firestore, user, managementFilter]);
 
   const clientsQuery = useMemo(() => {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
-    if (user.role === 'admin') return query(ref);
-    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
-    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-  }, [firestore, user]);
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [firestore, user, managementFilter]);
 
   const contactsQuery = useMemo(() => {
     if (!user) return null;
     const ref = collection(firestore, 'contacts');
-    if (user.role === 'admin') return query(ref);
-    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
-    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-  }, [firestore, user]);
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [firestore, user, managementFilter]);
 
   const activitiesQuery = useMemo(() => {
     if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'activities');
-    if (user.role === 'admin') return query(ref);
-    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
-    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-  }, [firestore, user]);
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [firestore, user, managementFilter]);
 
   const { data: opportunities, loading: opportunitiesLoading } =
     useCollection<Opportunity>(opportunitiesQuery);
+  const { data: contracts, loading: contractsLoading } =
+    useCollection<Contract>(contractsQuery);
   const { data: clients, loading: clientsLoading } =
     useCollection<Client>(clientsQuery);
   const { data: contacts, loading: contactsLoading } =
@@ -79,6 +82,7 @@ export default function DashboardPage() {
 
   const pageIsLoading =
     (opportunitiesLoading && opportunitiesQuery !== null) ||
+    (contractsLoading && contractsQuery !== null) ||
     clientsLoading ||
     contactsLoading ||
     (activitiesLoading && activitiesQuery !== null) ||
@@ -89,7 +93,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Dashboard.title')} />
-      <div className="flex-1 space-y-4 p-4 sm:p-6 overflow-hidden">
+      <div className="flex-1 space-y-6 p-4 sm:p-6 overflow-hidden pb-24">
         {pageIsLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Skeleton className="h-28" />
@@ -104,6 +108,14 @@ export default function DashboardPage() {
             contacts={contacts || []}
             exchangeRates={configData?.exchangeRates || []}
             displayCurrency={displayCurrency}
+          />
+        )}
+
+        {!isIngeniero && !pageIsLoading && (
+          <AlertsSection 
+            opportunities={opportunities || []} 
+            contracts={contracts || []} 
+            activities={activities || []} 
           />
         )}
         

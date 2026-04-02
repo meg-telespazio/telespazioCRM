@@ -287,6 +287,7 @@ export type Activity = {
   type: ActivityType;
   description: string;
   isPriority: boolean;
+  dueDate?: Date | null;
   createdAt: Date;
   createdBy: string;
   updatedAt?: Date;

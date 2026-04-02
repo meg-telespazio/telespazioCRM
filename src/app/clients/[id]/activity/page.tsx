@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -40,22 +41,30 @@ import {
   Phone,
   User,
   Mail,
-  Calendar,
+  Calendar as CalendarIcon,
   MessageSquare,
   ListFilter,
   ArrowLeft,
+  Clock,
 } from 'lucide-react';
 import { ActivityCard } from '@/components/activity/activity-card';
 import { MentionTextarea } from '@/components/activity/mention-textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const newActivitySchema = z.object({
   description: z.string().min(1, 'Required'),
   type: z.enum(['call', 'meeting', 'email', 'message']),
   isPriority: z.boolean().default(false),
+  dueDate: z.date().optional().nullable(),
 });
 
 export default function ClientActivityPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'es' ? es : enUS;
   const params = useParams();
   const router = useRouter();
   const clientId = params.id as string;
@@ -63,6 +72,7 @@ export default function ClientActivityPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const [activityFilter, setActivityFilter] = useState<ActivityType | 'all'>('all');
+  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
 
   // Data fetching
   const clientDocRef = useMemo(() => {
@@ -130,6 +140,7 @@ export default function ClientActivityPage() {
       description: '',
       type: 'message',
       isPriority: false,
+      dueDate: null,
     },
   });
 
@@ -207,7 +218,7 @@ export default function ClientActivityPage() {
                     <ul className="space-y-1">
                         <li><Button variant={activityFilter === 'all' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('all')}><ListFilter className="h-4 w-4"/> {t('Activity.all')}</Button></li>
                         <li><Button variant={activityFilter === 'call' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('call')}><Phone className="h-4 w-4"/> {t('Activity.calls')}</Button></li>
-                        <li><Button variant={activityFilter === 'meeting' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('meeting')}><Calendar className="h-4 w-4"/> {t('Activity.meetings')}</Button></li>
+                        <li><Button variant={activityFilter === 'meeting' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('meeting')}><CalendarIcon className="h-4 w-4"/> {t('Activity.meetings')}</Button></li>
                         <li><Button variant={activityFilter === 'email' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('email')}><Mail className="h-4 w-4"/> {t('Activity.emails')}</Button></li>
                         <li><Button variant={activityFilter === 'message' ? 'secondary' : 'ghost'} className="w-full justify-start gap-2 h-8 text-xs font-normal" onClick={() => setActivityFilter('message')}><MessageSquare className="h-4 w-4"/> {t('Activity.types.message')}</Button></li>
                     </ul>
@@ -240,15 +251,15 @@ export default function ClientActivityPage() {
                         </FormItem>
                       )}
                     />
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-4">
                         <FormField
                             control={form.control}
                             name="type"
                             render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="w-32">
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                        <FormControl><SelectTrigger className="h-9"><SelectValue/></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {activityTypes.map(type => (
                                                 <SelectItem key={type} value={type}>{t(`Activity.types.${type}`)}</SelectItem>
@@ -258,13 +269,56 @@ export default function ClientActivityPage() {
                                 </FormItem>
                             )}
                         />
+                        
+                        <FormField
+                          control={form.control}
+                          name="dueDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className={cn(
+                                        "h-9 pl-3 text-left font-normal border-primary/20",
+                                        !field.value && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {field.value ? (
+                                        format(field.value, "PPP", { locale: dateLocale })
+                                      ) : (
+                                        <span className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{t('Forms.dueDate')}</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value || undefined}
+                                    onSelect={(date) => {
+                                      field.onChange(date);
+                                      setDatePickerOpen(false);
+                                    }}
+                                    initialFocus
+                                    locale={dateLocale}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </FormItem>
+                          )}
+                        />
+
                          <FormField
                             control={form.control}
                             name="isPriority"
                             render={({ field }) => (
                                 <FormItem className="flex items-center gap-2 space-y-0">
                                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                    <FormLabel>{t('Activity.markAsPriority')}</FormLabel>
+                                    <FormLabel className="text-xs font-bold uppercase text-muted-foreground">{t('Activity.markAsPriority')}</FormLabel>
                                 </FormItem>
                             )}
                         />

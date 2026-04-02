@@ -1,3 +1,4 @@
+
 # T-Track Sales CRM - Telespazio
 
 Sistema integral de gestión de relaciones con clientes (CRM) diseñado específicamente para las necesidades de Telespazio, con soporte para múltiples gerencias (SatComs y GeoInfo) y gestión financiera multimoneda.

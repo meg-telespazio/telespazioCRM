@@ -22,11 +22,12 @@ import {
   Zap,
   HardDrive,
   Settings as SettingsIcon,
+  Bell,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useUser, useAuth, useFirestore, useDoc } from '@/firebase';
+import { useUser, useAuth, useFirestore, useDoc, useCollection } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '../ui/button';
 import { useI18n } from '@/firebase/client-provider';
@@ -60,8 +61,9 @@ import {
 } from '@/components/ui/collapsible';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { doc } from 'firebase/firestore';
-import type { SystemConfig } from '@/lib/types';
+import { doc, collection, query, where } from 'firebase/firestore';
+import type { SystemConfig, Opportunity, Contract, Activity } from '@/lib/types';
+import { isBefore, addDays, startOfDay } from 'date-fns';
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
@@ -127,8 +129,54 @@ export function AppNavbar() {
   const { user } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const firestore = useFirestore();
   const { t } = useI18n();
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Notifications Logic
+  const managementFilter = user?.role === 'admin' ? null : user?.management;
+
+  const oppsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'opportunities');
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [user, firestore, managementFilter]);
+
+  const contractsQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'contracts');
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [user, firestore, managementFilter]);
+
+  const activitiesQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'activities');
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [user, firestore, managementFilter]);
+
+  const { data: opportunities } = useCollection<Opportunity>(oppsQuery);
+  const { data: contracts } = useCollection<Contract>(contractsQuery);
+  const { data: activities } = useCollection<Activity>(activitiesQuery);
+
+  const alertsCount = useMemo(() => {
+    if (!opportunities || !contracts || !activities) return 0;
+    const today = startOfDay(new Date());
+    const soonThreshold = addDays(today, 30);
+
+    const overdueOpps = opportunities.filter(o => 
+      !['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage) && 
+      isBefore(o.closeDate, today)
+    ).length;
+
+    const overdueContracts = contracts.filter(c => isBefore(c.endDate, today)).length;
+    const expiringSoonContracts = contracts.filter(c => 
+      !isBefore(c.endDate, today) && isBefore(c.endDate, soonThreshold)
+    ).length;
+
+    const overdueActivities = activities.filter(a => a.dueDate && isBefore(a.dueDate, today)).length;
+
+    return overdueOpps + overdueContracts + expiringSoonContracts + overdueActivities;
+  }, [opportunities, contracts, activities]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -246,22 +294,45 @@ export function AppNavbar() {
             <CurrencySwitcher className="text-white hover:bg-red-700" />
             <div className="h-4 w-px bg-white/20 mx-1" />
             <LanguageSwitcher className="text-white hover:bg-red-700" />
+            
+            {/* Notification Bell */}
+            <div className="relative mr-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="hover:bg-red-700"
+                onClick={() => router.push('/dashboard')}
+              >
+                <Bell className="h-5 w-5" />
+                {alertsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-destructive shadow-sm animate-in zoom-in">
+                    {alertsCount}
+                  </span>
+                )}
+              </Button>
+            </div>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   className="relative h-9 w-9 rounded-full hover:bg-red-700"
                 >
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage
-                      src={user?.photoURL || userAvatar?.imageUrl}
-                      alt="User Avatar"
-                      data-ai-hint={userAvatar?.imageHint}
-                    />
-                    <AvatarFallback>
-                      {user?.email?.[0].toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage
+                        src={user?.photoURL || userAvatar?.imageUrl}
+                        alt="User Avatar"
+                        data-ai-hint={userAvatar?.imageHint}
+                      />
+                      <AvatarFallback>
+                        {user?.email?.[0].toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {alertsCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full bg-white border-2 border-destructive animate-pulse" />
+                    )}
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -302,8 +373,11 @@ export function AppNavbar() {
           <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-red-700">
+                <Button variant="ghost" size="icon" className="hover:bg-red-700 relative">
                   <Menu className="h-6 w-6" />
+                  {alertsCount > 0 && (
+                    <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-white" />
+                  )}
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>

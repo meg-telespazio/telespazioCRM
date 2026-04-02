@@ -149,6 +149,15 @@ export const translations = {
         activityHeader: 'Action',
         clientHeader: 'Client',
         dateHeader: 'Date',
+      },
+      alerts: {
+        title: 'Priority Attention',
+        description: 'Pending tasks and overdue records that require immediate action.',
+        overdueOpportunity: 'Overdue Opportunity',
+        expiredContract: 'Expired Contract',
+        expiringContract: 'Expiring Contract',
+        overdueActivity: 'Overdue Activity',
+        noAlerts: 'No pending alerts. Great job!',
       }
     },
     Pages: {
@@ -628,6 +637,7 @@ export const translations = {
       isClientOwned: 'Client Owned Equipment',
       comodatoFee: 'Comodato Fee (USD)',
       statusUpdateDate: 'Status Change Date',
+      dueDate: 'Due Date',
     },
     Table: {
       actions: {
@@ -783,7 +793,7 @@ export const translations = {
       Energy: 'Energy',
       Construction: 'Construction',
       Manufacturing: 'Manufacturing',
-      Retail: 'Comercio',
+      Retail: 'Retail',
       Transportation: 'Transportation',
       Technology: 'Technology',
       Finance: 'Finance',
@@ -1056,6 +1066,15 @@ export const translations = {
         activityHeader: 'Acción',
         clientHeader: 'Cliente',
         dateHeader: 'Fecha',
+      },
+      alerts: {
+        title: 'Atención Prioritaria',
+        description: 'Tareas pendientes y registros vencidos que requieren acción inmediata.',
+        overdueOpportunity: 'Oportunidad Vencida',
+        expiredContract: 'Contrato Vencido',
+        expiringContract: 'Contrato por Vencer',
+        overdueActivity: 'Actividad Vencida',
+        noAlerts: 'No hay alertas pendientes. ¡Buen trabajo!',
       }
     },
     Pages: {
@@ -1329,7 +1348,7 @@ export const translations = {
       addPlan: 'Agregar Plan a Lista',
       planName: 'Nombre del Plan',
       agreedPrice: 'Precio Acordado',
-      costCenter: 'Centro de Costos',
+      costCenter: 'Centro de Costo',
     },
     Holdings: {
       title: 'Detalle de Grupo Económico',
@@ -1535,6 +1554,7 @@ export const translations = {
       isClientOwned: 'Equipo del Cliente',
       comodatoFee: 'Abono Comodato (USD)',
       statusUpdateDate: 'Fecha de Cambio de Estado',
+      dueDate: 'Fecha de Vencimiento',
     },
     Table: {
       actions: {
@@ -1550,7 +1570,7 @@ export const translations = {
       contractId: 'ID Contrato',
       opportunityId: 'ID Negocio',
       itemId: 'SKU',
-      type: 'Tipo',
+      type: 'Type',
       currency: 'Moneda',
       nrc: 'OTC',
       mrc: 'MRC',
