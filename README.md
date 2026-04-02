@@ -49,5 +49,13 @@ git branch -M main
 git push -u origin main
 ```
 
+### 🆘 Solución a Errores de Autenticación (ECONNREFUSED)
+Si recibes errores de "Missing or invalid credentials" o "ECONNREFUSED" al hacer push, es probable que el puente de autenticación del IDE se haya desconectado. Para solucionarlo:
+
+1. Genera un **Personal Access Token (PAT)** en GitHub (Settings > Developer Settings > Tokens Classic) con permisos de `repo`.
+2. Actualiza la URL remota en tu terminal usando el token:
+   `git remote set-url origin https://TU_USUARIO:TU_TOKEN@github.com/meg-telespazio/telespazioCRM.git`
+3. Intenta el push nuevamente: `git push -u origin main`
+
 ---
 Desarrollado para **Telespazio Argentina**.
