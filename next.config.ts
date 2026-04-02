@@ -8,7 +8,7 @@ const withPWA = withPWAInit({
 });
 
 // Ajustamos CSP para permitir que el IDE de Firebase Studio nos incruste en su vista previa.
-// Permitimos 'frame-ancestors' de forma más amplia para evitar bloqueos en el entorno de desarrollo.
+// Añadimos dominios de Firebase Storage a frame-src para permitir previsualización de archivos.
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com;
@@ -19,7 +19,7 @@ const cspHeader = `
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'self' https: https://*.cloudworkstations.dev https://*.firebaseapp.com https://*.google.com;
-    frame-src 'self' https://*.firebaseapp.com https://*.google.com;
+    frame-src 'self' https://*.firebaseapp.com https://*.google.com https://firebasestorage.googleapis.com https://*.firebasestorage.app blob:;
     connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://dolarapi.com;
     upgrade-insecure-requests;
 `.replace(/\s{2,}/g, ' ').trim();
