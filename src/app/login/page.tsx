@@ -11,28 +11,28 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-destructive p-4">
       <div className="text-center mb-8 flex flex-col items-center">
-        {/* Nuevo logo de la app arriba */}
-        <Image
-          src="/img/logoSmall.png"
-          alt="App Logo"
-          width={80}
-          height={80}
-          priority
-          className="mb-2"
-          style={{ height: 'auto', objectFit: 'contain' }}
-        />
-        {/* Nombre de la app en el medio */}
-        <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
-          {t('App.appName')}
-        </h1>
-        {/* Logo corporativo marcado abajo del texto */}
+        {/* Logo corporativo arriba */}
         <Image
           src="/img/logoLarge.png"
           alt="Telespazio Logo"
-          width={200}
+          width={220}
           height={60}
           priority
-          className="opacity-90"
+          className="mb-4"
+          style={{ height: 'auto', objectFit: 'contain' }}
+        />
+        {/* Nombre de la app en el medio */}
+        <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-6">
+          {t('App.appName')}
+        </h1>
+        {/* Logo de la app abajo */}
+        <Image
+          src="/img/logoRojoLargo.png"
+          alt="T-Track Logo"
+          width={180}
+          height={60}
+          priority
+          className="opacity-95"
           style={{ height: 'auto', objectFit: 'contain' }}
         />
       </div>
