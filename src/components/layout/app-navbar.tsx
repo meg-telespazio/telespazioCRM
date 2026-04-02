@@ -161,7 +161,7 @@ export function AppNavbar() {
   const alertsCount = useMemo(() => {
     if (!opportunities || !contracts || !activities) return 0;
     const today = startOfDay(new Date());
-    const soonThreshold = addDays(today, 30);
+    const soonThreshold = addDays(today, 60); // Aumentado a 60 días según pedido
 
     const overdueOpps = opportunities.filter(o => 
       !['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage) && 
@@ -187,7 +187,7 @@ export function AppNavbar() {
   const isAdmin = user?.role === 'admin';
   const isGerente = user?.role === 'gerente';
 
-  const managementSubItems = [
+  const managementSubItems = useMemo(() => [
     { href: '/clients', label: t('Pages.clients'), icon: Building },
     { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
     { href: '/locations', label: t('Pages.locations'), icon: MapPin },
@@ -198,9 +198,9 @@ export function AppNavbar() {
       { href: '/services', label: t('Sidebar.services'), icon: Zap },
       { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive },
     ] : []),
-  ];
+  ], [t, isIngeniero]);
 
-  const menuItems = [
+  const menuItems = useMemo(() => [
     {
       href: '/dashboard',
       label: t('Sidebar.dashboard'),
@@ -219,7 +219,7 @@ export function AppNavbar() {
     ...((isAdmin || isGerente) ? [{ href: '/products-and-services', label: t('Sidebar.ps'), icon: Package }] : []),
     { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal },
     ...(isAdmin ? [{ href: '/settings', label: t('Sidebar.settings'), icon: SettingsIcon }] : []),
-  ];
+  ], [t, isAdmin, isGerente, managementSubItems]);
 
   if (!user) return null;
 
@@ -228,14 +228,15 @@ export function AppNavbar() {
       <div className="flex h-16 w-full items-center px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Image
-              src="/img/logoSmall.png"
-              alt="T-Track Logo"
-              width={32}
-              height={32}
-              style={{ height: 'auto', objectFit: 'contain' }}
-              priority
-            />
+            <div className="relative h-8 w-8">
+              <Image
+                src="/img/logoSmall.png"
+                alt="T-Track Logo"
+                fill
+                style={{ objectFit: 'contain' }}
+                priority
+              />
+            </div>
             <h1 className="hidden text-xl font-bold sm:inline-block">
               {t('App.appName')}
             </h1>
@@ -330,7 +331,9 @@ export function AppNavbar() {
                       </AvatarFallback>
                     </Avatar>
                     {alertsCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full bg-white border-2 border-destructive animate-pulse" />
+                      <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-destructive shadow-lg ring-2 ring-destructive/20 animate-in zoom-in-50">
+                        {alertsCount}
+                      </span>
                     )}
                   </div>
                 </Button>
@@ -397,14 +400,15 @@ export function AppNavbar() {
                       className="mb-6 flex items-center gap-2"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <Image
-                        src="/img/logoSmall.png"
-                        alt="T-Track Logo"
-                        width={32}
-                        height={32}
-                        style={{ height: 'auto', objectFit: 'contain' }}
-                        priority
-                      />
+                      <div className="relative h-8 w-8">
+                        <Image
+                          src="/img/logoSmall.png"
+                          alt="T-Track Logo"
+                          fill
+                          style={{ objectFit: 'contain' }}
+                          priority
+                        />
+                      </div>
                       <h1 className="text-xl font-bold">{t('App.appName')}</h1>
                     </Link>
                     <nav className="flex flex-col gap-1">
@@ -416,7 +420,7 @@ export function AppNavbar() {
                                 <item.icon className="h-5 w-5" />
                                 {item.label}
                               </div>
-                              <ChevronDown className="h-5 w-5 transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                              <ChevronDown className="h-5 w-5 transition-transform duration-200" />
                             </CollapsibleTrigger>
                             <CollapsibleContent className="pl-8 pt-2">
                                {item.subItems.map(subItem => (
@@ -463,19 +467,26 @@ export function AppNavbar() {
                         href="/profile"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage
-                            src={user?.photoURL || userAvatar?.imageUrl}
-                            alt="User Avatar"
-                            data-ai-hint={userAvatar?.imageHint}
-                          />
-                          <AvatarFallback>
-                            {user?.email?.[0].toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage
+                              src={user?.photoURL || userAvatar?.imageUrl}
+                              alt="User Avatar"
+                              data-ai-hint={userAvatar?.imageHint}
+                            />
+                            <AvatarFallback>
+                              {user?.email?.[0].toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          {alertsCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-destructive ring-2 ring-destructive/20">
+                              {alertsCount}
+                            </span>
+                          )}
+                        </div>
                       </Link>
                       <div className="flex flex-col overflow-hidden">
-                        <span className="truncate font-semibold">
+                        <span className="truncate font-semibold text-white">
                           {user?.displayName || user?.email}
                         </span>
                         <span className="text-xs text-white/60">{user.role}</span>

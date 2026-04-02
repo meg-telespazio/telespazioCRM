@@ -34,10 +34,10 @@ export function AlertsSection({ opportunities, contracts, activities }: AlertsSe
 
   const alerts = useMemo(() => {
     const today = startOfDay(new Date());
-    const soonThreshold = addDays(today, 30);
+    const soonThreshold = addDays(today, 60); // Aumentado a 60 días
     const list: any[] = [];
 
-    // Overdue Opportunities
+    // Oportunidades Vencidas
     opportunities.forEach(o => {
       if (!['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage) && isBefore(o.closeDate, today)) {
         list.push({
@@ -53,7 +53,7 @@ export function AlertsSection({ opportunities, contracts, activities }: AlertsSe
       }
     });
 
-    // Overdue or Expiring Contracts
+    // Contratos Vencidos o por vencer
     contracts.forEach(c => {
       if (isBefore(c.endDate, today)) {
         list.push({
@@ -80,7 +80,7 @@ export function AlertsSection({ opportunities, contracts, activities }: AlertsSe
       }
     });
 
-    // Overdue Activities
+    // Actividades Vencidas
     activities.forEach(a => {
       if (a.dueDate && isBefore(a.dueDate, today)) {
         list.push({
@@ -102,7 +102,7 @@ export function AlertsSection({ opportunities, contracts, activities }: AlertsSe
   if (alerts.length === 0) return null;
 
   return (
-    <Card className="border-amber-200 bg-amber-50/30 overflow-hidden">
+    <Card className="border-amber-200 bg-amber-50/30 overflow-hidden shadow-sm">
       <CardHeader className="pb-3 border-b border-amber-100 bg-amber-50/50">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-5 w-5 text-amber-600" />
@@ -146,7 +146,7 @@ export function AlertsSection({ opportunities, contracts, activities }: AlertsSe
                       </span>
                     </div>
                     <p className="text-sm font-bold text-slate-800 truncate pr-4">{alert.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{alert.subTitle}</p>
+                    <p className="text-xs text-muted-foreground truncate uppercase">{alert.subTitle}</p>
                   </div>
                 </div>
                 <Button 
