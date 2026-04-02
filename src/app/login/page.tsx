@@ -27,10 +27,10 @@ export default function LoginPage() {
         </h1>
         {/* Logo de la app abajo */}
         <Image
-          src="/img/logoRojoLargo.png"
+          src="/img/logoBlancoChico.png"
           alt="T-Track Logo"
-          width={180}
-          height={60}
+          width={140}
+          height={50}
           priority
           className="opacity-95"
           style={{ height: 'auto', objectFit: 'contain' }}

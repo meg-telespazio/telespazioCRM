@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -20,7 +19,7 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 
 // Incrementa este valor para forzar a todos los usuarios a limpiar su caché en el próximo inicio
-const APP_VERSION = '1.0.8'; 
+const APP_VERSION = '1.0.9'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
