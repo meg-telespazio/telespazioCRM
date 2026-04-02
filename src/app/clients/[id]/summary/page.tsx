@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -22,7 +23,8 @@ import {
   MapPin, Activity as ActivityIcon, Linkedin, FileText, 
   ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, 
   Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
-  Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle 
+  Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle,
+  FileSpreadsheet
 } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
@@ -30,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FilePreviewModal } from '@/components/ui/file-preview-modal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
+import { PreBillingModal } from '@/components/clients/pre-billing-modal';
 
 export default function ClientSummaryPage() {
   const { t, locale } = useI18n();
@@ -44,6 +47,7 @@ export default function ClientSummaryPage() {
   // Preview State
   const [previewFile, setPreviewFile] = useState<{url: string, name: string, type: string} | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isPreBillingOpen, setIsPreBillingOpen] = useState(false);
 
   // Data fetching
   const clientDocRef = useMemo(() => firestore ? doc(firestore, 'clients', clientId) : null, [firestore, clientId]);
@@ -165,6 +169,10 @@ export default function ClientSummaryPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader title={client.name}>
         <Button variant="outline" onClick={() => router.push('/clients')}><ArrowLeft className="mr-2 h-4 w-4" />{t('Actions.back')}</Button>
+        <Button variant="outline" className="hidden sm:flex border-primary text-primary" onClick={() => setIsPreBillingOpen(true)}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          {t('Actions.generatePreBilling')}
+        </Button>
         <Button onClick={() => router.push(`/clients/${clientId}`)}><Edit className="mr-2 h-4 w-4" />{t('Actions.editClient')}</Button>
       </AppHeader>
       
@@ -628,6 +636,16 @@ export default function ClientSummaryPage() {
         onOpenChange={setIsPreviewOpen} 
         file={previewFile} 
       />
+
+      {client && (
+        <PreBillingModal 
+          isOpen={isPreBillingOpen} 
+          onOpenChange={setIsPreBillingOpen} 
+          client={client} 
+          services={clientServices} 
+          equipment={allEquip || []} 
+        />
+      )}
     </div>
   );
 }

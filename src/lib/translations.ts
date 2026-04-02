@@ -324,6 +324,7 @@ export const translations = {
       addPO: 'Add Purchase Order',
       saveSuccess: 'Record saved successfully',
       saveErrorGeneric: 'An error occurred while saving the record.',
+      generatePreBilling: 'Generate Pre-billing',
     },
     Reports: {
       createNew: 'Create New Report',
@@ -889,6 +890,21 @@ export const translations = {
       customization: 'Customize Proposal',
       customization_desc: 'Adjust details before exporting.',
       custom_note_placeholder: 'Add extra details...',
+    },
+    PreBilling: {
+      title: 'Pre-billing Summary',
+      description: 'Active services and equipment fees for current period.',
+      serviceHeader: 'Service Nickname',
+      lineHeader: 'Line Number',
+      planHeader: 'Plan',
+      serviceFeeHeader: 'Service Fee',
+      equipmentFeeHeader: 'Equip. Fee',
+      totalHeader: 'Total',
+      exportExcel: 'Export to Excel',
+      summary: 'Billing Summary',
+      totalServices: 'Services Subtotal',
+      totalEquipment: 'Equipment Subtotal',
+      grandTotal: 'Grand Total',
     }
   },
   es: {
@@ -1215,6 +1231,7 @@ export const translations = {
       addPO: 'Nueva Orden de Compra',
       saveSuccess: 'Registro guardado exitosamente',
       saveErrorGeneric: 'Ocurrió un error al guardar el registro.',
+      generatePreBilling: 'Generar Pre-billing',
     },
     Reports: {
       createNew: 'Crear Nuevo Reporte',
@@ -1780,6 +1797,21 @@ export const translations = {
       customization: 'Personalizar Propuesta',
       customization_desc: 'Ajusta detalles antes de exportar.',
       custom_note_placeholder: 'Añadir detalles extra...',
+    },
+    PreBilling: {
+      title: 'Resumen de Pre-billing',
+      description: 'Listado de servicios activos y abonos de equipos para el período actual.',
+      serviceHeader: 'Nickname de Servicio',
+      lineHeader: 'Línea',
+      planHeader: 'Plan',
+      serviceFeeHeader: 'Abono Servicio',
+      equipmentFeeHeader: 'Abono Equipo',
+      totalHeader: 'Total Fila',
+      exportExcel: 'Exportar a Excel',
+      summary: 'Resumen de Facturación',
+      totalServices: 'Total Servicios',
+      totalEquipment: 'Total Equipos (Comodato)',
+      grandTotal: 'Total General',
     }
   },
 };
