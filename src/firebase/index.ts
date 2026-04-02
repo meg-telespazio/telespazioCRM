@@ -5,7 +5,7 @@ import {
   type FirebaseApp,
   type FirebaseOptions,
 } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
+import { getAuth, setPersistence, browserSessionPersistence, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
@@ -34,6 +34,11 @@ function initializeFirebase(config: FirebaseOptions) {
     auth = getAuth(firebaseApp);
     firestore = getFirestore(firebaseApp);
     storage = getStorage(firebaseApp);
+
+    // Configurar persistencia para que la sesión se cierre al cerrar la pestaña/app
+    setPersistence(auth, browserSessionPersistence).catch((err) => {
+      console.error('Error setting auth persistence:', err);
+    });
 
     // Initialize App Check only in browser
     if (typeof window !== 'undefined') {

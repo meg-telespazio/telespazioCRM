@@ -28,6 +28,44 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = pathname === '/login' || pathname === '/register';
 
+  // Lógica para forzar limpieza de caché al abrir la aplicación (una vez por sesión)
+  useEffect(() => {
+    const clearCacheOnNewSession = async () => {
+      // Usamos sessionStorage porque se borra al cerrar la pestaña
+      const hasCleared = sessionStorage.getItem('app_init_cleanup');
+      
+      if (!hasCleared) {
+        console.log('Iniciando limpieza de caché y service workers...');
+        
+        try {
+          // 1. Eliminar Service Workers antiguos
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+              await registration.unregister();
+            }
+          }
+
+          // 2. Limpiar todos los buckets de CacheStorage
+          if ('caches' in window) {
+            const cacheKeys = await caches.keys();
+            for (const key of cacheKeys) {
+              await caches.delete(key);
+            }
+          }
+
+          // Marcar como limpio y recargar la página para obtener todo fresco de Vercel
+          sessionStorage.setItem('app_init_cleanup', 'true');
+          window.location.reload();
+        } catch (e) {
+          console.error('Fallo en la limpieza automática:', e);
+        }
+      }
+    };
+
+    clearCacheOnNewSession();
+  }, []);
+
   useEffect(() => {
     if (!loading && user && !isAuthPage) {
       const mfaUser = multiFactor(auth.currentUser!);
