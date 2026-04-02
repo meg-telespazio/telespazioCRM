@@ -69,6 +69,7 @@ const getFormSchema = (t: (key: string) => string) =>
         message: t('Validation.cuitInvalid'),
       }),
     status: z.enum(['active', 'suspended', 'canceled']),
+    type: z.enum(['client', 'prospect']),
     sector: z.string().min(1, t('Validation.selectIndustry')),
     subsector: z.string().optional(),
     management: z.string().min(1, t('Validation.fieldRequired')),
@@ -134,6 +135,7 @@ export default function ClientFormPage() {
       phone: '',
       cuit: '',
       status: 'active',
+      type: 'client',
       sector: '',
       subsector: '',
       management: user?.management || 'Satellite Communications',
@@ -178,6 +180,7 @@ export default function ClientFormPage() {
         subsector: clientData.subsector || '',
         countryHQ: clientData.countryHQ || '',
         costCenterId: clientData.costCenterId || '',
+        type: clientData.type || 'client',
       });
       setCroppedAvatar(clientData.logoURL || null);
     }
@@ -243,6 +246,7 @@ export default function ClientFormPage() {
   const isRestricted = user?.role !== 'admin' && user?.role !== 'gerente';
 
   const statusOptions: Client['status'][] = ['active', 'suspended', 'canceled'];
+  const typeOptions: Client['type'][] = ['client', 'prospect'];
   
   // Dynamic options from config
   const sectorOptions = (configData?.sectors || []).sort();
@@ -342,6 +346,32 @@ export default function ClientFormPage() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField control={form.control} name="type" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Table.type')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {typeOptions.map(opt => (
+                                <SelectItem key={opt} value={opt}>{t(`ClientType.${opt}`)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="status" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.status')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{t(`Status.${s}`)}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="countryHQ" render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t('Forms.countryHQ')}</FormLabel>
@@ -397,17 +427,9 @@ export default function ClientFormPage() {
                       )} />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="cuit" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.cuit')}</FormLabel><FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="status" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.status')}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{t(`Status.${s}`)}</SelectItem>)}</SelectContent>
-                          </Select><FormMessage />
-                        </FormItem>
                       )} />
                       <FormField control={form.control} name="sector" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.sector')}</FormLabel>

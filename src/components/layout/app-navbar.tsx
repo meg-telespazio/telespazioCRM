@@ -22,7 +22,6 @@ import {
   Zap,
   HardDrive,
   Settings as SettingsIcon,
-  Bell,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -296,23 +295,6 @@ export function AppNavbar() {
             <div className="h-4 w-px bg-white/20 mx-1" />
             <LanguageSwitcher className="text-white hover:bg-red-700" />
             
-            {/* Notification Bell */}
-            <div className="relative mr-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="hover:bg-red-700"
-                onClick={() => router.push('/dashboard')}
-              >
-                <Bell className="h-5 w-5" />
-                {alertsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-destructive shadow-sm">
-                    {alertsCount}
-                  </span>
-                )}
-              </Button>
-            </div>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

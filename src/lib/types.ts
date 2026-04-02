@@ -22,6 +22,7 @@ export type Client = {
   createdAt: Date;
   createdBy: string;
   status: 'active' | 'suspended' | 'canceled';
+  type: 'client' | 'prospect';
   sector: string;
   subsector?: string;
   notes?: string;

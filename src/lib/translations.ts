@@ -289,6 +289,10 @@ export const translations = {
       ejecutivo: 'Account Executive',
       ingeniero: 'Account Engineer',
     },
+    ClientType: {
+      client: 'Client',
+      prospect: 'Prospect',
+    },
     Actions: {
       title: 'Actions',
       back: 'Back',
@@ -298,7 +302,7 @@ export const translations = {
       copyClientId: 'Copy Client ID',
       editContact: 'Edit Contact',
       deleteContact: 'Delete Contact',
-      copyContactId: 'Copy Contact ID',
+      copyContactId: 'Copy ID de Contacto',
       editContract: 'Edit Contract',
       deleteContract: 'Delete Contract',
       copyContractId: 'Copy ID de Contrato',
@@ -1205,6 +1209,10 @@ export const translations = {
       gerente: 'Gerente',
       ejecutivo: 'Ejecutivo de Cuentas',
       ingeniero: 'Ingeniero de Cuentas',
+    },
+    ClientType: {
+      client: 'Cliente',
+      prospect: 'Prospect',
     },
     Actions: {
       title: 'Acciones',

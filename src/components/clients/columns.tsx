@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -29,6 +30,11 @@ const statusClasses: { [key in Client['status']]: string } = {
   active: 'bg-green-100 text-green-700 hover:bg-green-100 border-none px-2 py-0 font-bold text-[9px]',
   suspended: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-none px-2 py-0 font-bold text-[9px]',
   canceled: 'bg-slate-100 text-slate-700 hover:bg-slate-100 border-none px-2 py-0 font-bold text-[9px]',
+};
+
+const typeClasses: { [key in Client['type']]: string } = {
+  client: 'bg-blue-100 text-blue-700 border-none px-2 py-0 font-bold text-[9px]',
+  prospect: 'bg-orange-100 text-orange-700 border-none px-2 py-0 font-bold text-[9px]',
 };
 
 const formatCuit = (cuit: string): string => {
@@ -101,7 +107,7 @@ export const columns = (
               {initials}
             </div>
             <Link 
-              href={`/clients/${client.id}`} 
+              href={`/clients/${client.id}/summary`} 
               className="font-mono text-[11px] font-bold text-slate-600 hover:text-primary transition-colors underline-offset-2 hover:underline"
             >
               {client.publicId}
@@ -132,52 +138,22 @@ export const columns = (
       )
     },
     {
-      accessorKey: 'cuit',
-      meta: { className: "hidden lg:table-cell" },
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8 w-full justify-start"
-        >
-          TAX ID / CUIT
-          <ArrowUpDown className="ml-2 h-3 w-3" />
-        </Button>
-      ),
-      cell: ({ row }) => <span className="text-slate-600 font-bold text-[11px] min-w-[120px] inline-block">{formatCuit(row.original.cuit)}</span>,
-    },
-    {
-      accessorKey: 'sector',
-      meta: { className: "hidden md:table-cell" },
+      accessorKey: 'type',
       header: ({ column }) => (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
         >
-          SECTOR
+          TIPO
           <ArrowUpDown className="ml-2 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => <span className="text-[11px] truncate block max-w-[100px]">{row.original.sector}</span>,
-    },
-    {
-      accessorKey: 'assignedTo',
-      meta: { className: "hidden md:table-cell" },
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
-        >
-          RESPONSABLE
-          <ArrowUpDown className="ml-2 h-3 w-3" />
-        </Button>
+      cell: ({ row }) => (
+        <Badge variant="outline" className={cn("rounded-full", typeClasses[row.original.type || 'client'])}>
+          {t(`ClientType.${row.original.type || 'client'}`)}
+        </Badge>
       ),
-      cell: ({ row }) => {
-        const assignedUser = users.find(u => u.uid === row.original.assignedTo);
-        return <span className="text-[11px] font-medium text-slate-600">{assignedUser?.displayName || 'Desconocido'}</span>;
-      },
     },
     {
       accessorKey: 'status',
@@ -196,6 +172,24 @@ export const columns = (
           {t(`Status.${row.original.status}`)}
         </Badge>
       ),
+    },
+    {
+      accessorKey: 'assignedTo',
+      meta: { className: "hidden md:table-cell" },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        >
+          RESPONSABLE
+          <ArrowUpDown className="ml-2 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const assignedUser = users.find(u => u.uid === row.original.assignedTo);
+        return <span className="text-[11px] font-medium text-slate-600">{assignedUser?.displayName || 'Desconocido'}</span>;
+      },
     },
     {
       id: 'actions',
