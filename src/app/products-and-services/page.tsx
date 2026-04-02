@@ -35,7 +35,7 @@ export default function ProductsAndServicesPage() {
 
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
-    if (user?.role === 'ingeniero') redirect('/dashboard');
+    if (user && user.role !== 'admin' && user.role !== 'gerente') redirect('/dashboard');
   }, [user, userLoading]);
 
   const handleEditItem = (item: ProductOrService) => {

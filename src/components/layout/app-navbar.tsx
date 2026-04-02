@@ -137,6 +137,7 @@ export function AppNavbar() {
 
   const isIngeniero = user?.role === 'ingeniero';
   const isAdmin = user?.role === 'admin';
+  const isGerente = user?.role === 'gerente';
 
   const managementSubItems = [
     { href: '/clients', label: t('Pages.clients'), icon: Users },
@@ -167,7 +168,7 @@ export function AppNavbar() {
       icon: Building,
       subItems: managementSubItems
     },
-    ...(!isIngeniero ? [{ href: '/products-and-services', label: t('Sidebar.ps'), icon: Package }] : []),
+    ...((isAdmin || isGerente) ? [{ href: '/products-and-services', label: t('Sidebar.ps'), icon: Package }] : []),
     { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal },
     ...(isAdmin ? [{ href: '/settings', label: t('Sidebar.settings'), icon: SettingsIcon }] : []),
   ];

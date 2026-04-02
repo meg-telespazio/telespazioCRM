@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -150,6 +151,9 @@ export default function ProductServiceFormPage() {
     if (!userLoading && !user) {
       redirect('/login');
     }
+    if (user && user.role !== 'admin' && user.role !== 'gerente') {
+      redirect('/dashboard');
+    }
   }, [user, userLoading]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,7 +163,7 @@ export default function ProductServiceFormPage() {
         setImageToCrop(reader.result as string);
       });
       reader.readAsDataURL(e.target.files[0]);
-      e.target.value = '';
+      e.target.value = ''; // Reset file input
     }
   };
 
@@ -255,7 +259,7 @@ export default function ProductServiceFormPage() {
                             <Package className="h-16 w-16 text-muted-foreground" />
                           </AvatarFallback>
                         </Avatar>
-                        <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full">
+                        <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full" disabled={isSaving}>
                           <label htmlFor="item-photo-upload" className="cursor-pointer">
                             <Camera className="h-4 w-4" />
                             <input id="item-photo-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} disabled={isSaving} />
