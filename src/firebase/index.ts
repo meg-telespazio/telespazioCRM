@@ -36,7 +36,7 @@ function initializeFirebase(config: FirebaseOptions) {
     firestore = getFirestore(firebaseApp);
     storage = getStorage(firebaseApp);
 
-    // Configurar persistencia para que la sesión se cierre al cerrar la pestaña/app
+    // Configurar persistencia estricta de sesión: se cierra al cerrar la pestaña o app instalada
     setPersistence(auth, browserSessionPersistence).catch((err) => {
       console.error('Error setting auth persistence:', err);
     });

@@ -19,6 +19,9 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 
+// Incrementa este valor para forzar a todos los usuarios a limpiar su caché en el próximo inicio
+const APP_VERSION = '1.0.8'; 
+
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -29,13 +32,19 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = pathname === '/login' || pathname === '/register';
 
-  // Lógica para forzar limpieza de caché al abrir la aplicación (una vez por sesión)
+  // Lógica de actualización forzada y limpieza de caché
   useEffect(() => {
-    const clearCacheOnNewSession = async () => {
-      const hasCleared = sessionStorage.getItem('app_init_cleanup');
+    const handleUpdate = async () => {
+      if (typeof window === 'undefined') return;
+
+      const savedVersion = localStorage.getItem('crm_app_version');
       
-      if (!hasCleared) {
+      // Si la versión ha cambiado o es la primera vez, limpiamos todo
+      if (savedVersion !== APP_VERSION) {
+        console.log('Nueva versión detectada. Limpiando caché...');
+        
         try {
+          // 1. Desregistrar todos los Service Workers
           if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
@@ -43,22 +52,29 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
             }
           }
 
+          // 2. Borrar todos los storages de caché
           if ('caches' in window) {
             const cacheKeys = await caches.keys();
-            for (const key of cacheKeys) {
-              await caches.delete(key);
-            }
+            await Promise.all(cacheKeys.map(key => caches.delete(key)));
           }
 
-          sessionStorage.setItem('app_init_cleanup', 'true');
+          // 3. Guardar nueva versión y recargar
+          localStorage.setItem('crm_app_version', APP_VERSION);
           window.location.reload();
         } catch (e) {
-          console.error('Fallo en la limpieza automática:', e);
+          console.error('Error durante la actualización automática:', e);
         }
       }
     };
 
-    clearCacheOnNewSession();
+    handleUpdate();
+
+    // Adicionalmente, intentar buscar actualizaciones del service worker en segundo plano
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.update();
+      });
+    }
   }, []);
 
   useEffect(() => {
