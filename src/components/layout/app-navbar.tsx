@@ -202,13 +202,21 @@ export function AppNavbar() {
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="start">
+                  <DropdownMenuContent className="w-64 p-2" align="start" sideOffset={8}>
+                    <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground px-2 py-1.5">{item.label}</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="my-1" />
                     <DropdownMenuGroup>
                       {item.subItems.map(subItem => (
                         <DropdownMenuItem key={subItem.href} asChild>
-                          <Link href={subItem.href} className={cn('flex items-center gap-2 cursor-pointer', pathname.startsWith(subItem.href) ? 'font-bold' : '')}>
-                            <subItem.icon className="h-4 w-4 text-muted-foreground"/>
-                            {subItem.label}
+                          <Link 
+                            href={subItem.href} 
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md transition-colors',
+                              pathname.startsWith(subItem.href) ? 'bg-primary/5 text-primary font-bold' : 'text-foreground'
+                            )}
+                          >
+                            <subItem.icon className={cn("h-4 w-4 shrink-0", pathname.startsWith(subItem.href) ? "text-primary" : "text-muted-foreground")}/>
+                            <span className="text-sm">{subItem.label}</span>
                           </Link>
                         </DropdownMenuItem>
                       ))}
@@ -321,6 +329,7 @@ export function AppNavbar() {
                         width={32}
                         height={32}
                         style={{ height: 'auto', objectFit: 'contain' }}
+                        priority
                       />
                       <h1 className="text-xl font-bold">{t('App.appName')}</h1>
                     </Link>
