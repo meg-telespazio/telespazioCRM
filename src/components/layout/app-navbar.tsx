@@ -140,16 +140,16 @@ export function AppNavbar() {
   const isGerente = user?.role === 'gerente';
 
   const managementSubItems = [
-    { href: '/clients', label: t('Pages.clients'), icon: Users },
+    { href: '/clients', label: t('Pages.clients'), icon: Building },
     { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
+    { href: '/locations', label: t('Pages.locations'), icon: MapPin },
+    { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon },
     ...(!isIngeniero ? [
       { href: '/contracts', label: t('Sidebar.contracts'), icon: FileText },
       { href: '/purchase-orders', label: t('Sidebar.pos'), icon: ShoppingCart },
       { href: '/services', label: t('Sidebar.services'), icon: Zap },
       { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive },
     ] : []),
-    { href: '/locations', label: t('Pages.locations'), icon: MapPin },
-    { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon },
   ];
 
   const menuItems = [
