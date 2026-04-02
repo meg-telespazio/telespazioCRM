@@ -56,15 +56,15 @@ const getFormSchema = (t: (key: string) => string) =>
 type ReportFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
 const SCHEMA = {
-  clients: ['name', 'cuit', 'sector', 'subsector', 'status', 'email', 'phone', 'holding'],
-  contacts: ['name', 'position', 'area'],
-  opportunities: ['title', 'stage', 'value', 'currency', 'probability', 'closeDate'],
-  contracts: ['publicId', 'type', 'status', 'amount', 'currency', 'startDate', 'endDate'],
-  purchaseOrders: ['poNumber', 'amount', 'currency', 'status', 'emissionDate'],
-  services: ['serviceNickname', 'serviceLineNumber', 'servicePlan', 'monthlyFee', 'currency', 'serviceAllocationGb'],
-  equipment: ['userTerminal', 'id', 'type', 'physicalStatus'],
-  activities: ['type', 'description', 'isPriority'],
-  locations: ['name', 'type', 'city', 'province']
+  clients: ['name', 'cuit', 'sector', 'subsector', 'status', 'email', 'phone', 'holding', 'website', 'countryHQ', 'costCenterId', 'publicId', 'notes'],
+  contacts: ['name', 'position', 'area', 'notes', 'publicId'],
+  opportunities: ['title', 'stage', 'value', 'currency', 'probability', 'closeDate', 'requestDate', 'offerSentDate', 'risk', 'opportunityType', 'publicId', 'isPlanned', 'isTender', 'grossMarginPercentage', 'grossMarginAmount'],
+  contracts: ['publicId', 'type', 'status', 'amount', 'currency', 'startDate', 'endDate', 'signatureDate', 'autoRenews', 'renewalTerm', 'country', 'authorizedBy', 'costCenterId', 'notes'],
+  purchaseOrders: ['poNumber', 'amount', 'currency', 'status', 'emissionDate', 'idContractStarfleet', 'idClientStarfleet'],
+  services: ['serviceNickname', 'serviceLineNumber', 'servicePlan', 'monthlyFee', 'currency', 'serviceAllocationGb', 'partnerName', 'customerName', 'customerAccountNumber', 'topUp', 'isTelespazioOwned', 'status'],
+  equipment: ['userTerminal', 'id', 'type', 'physicalStatus', 'installationDate', 'isClientOwned', 'comodatoFee', 'latitude', 'longitude'],
+  activities: ['type', 'description', 'isPriority', 'dueDate', 'publicId'],
+  locations: ['name', 'type', 'city', 'province', 'country', 'status', 'streetName', 'streetNumber', 'postalCode', 'publicId']
 };
 
 export default function ReportManualBuilderPage() {
@@ -101,7 +101,6 @@ export default function ReportManualBuilderPage() {
 
   const { data: existingReport, loading: reportLoading } = useDoc<Report>(reportDocRef);
 
-  // Helper to create management-aware queries
   const getCollectionQuery = useCallback((collName: string) => {
     if (!user || !firestore) return null;
     const ref = collection(firestore, collName);
@@ -148,13 +147,10 @@ export default function ReportManualBuilderPage() {
     const processed = sourceData.map((item: any) => {
       const row: any = { [reportConfig.primaryDataSource]: item };
       
-      // JOIN LOGIC
-      // 1. All direct clientId links
       if (item.clientId && collectionsMap.clients) {
         row.clients = collectionsMap.clients.find(c => c.id === item.clientId);
       }
 
-      // 2. Chain for services: Services -> PO -> Contract -> Client
       if (reportConfig.primaryDataSource === 'services') {
         const po = collectionsMap.purchaseOrders?.find(p => p.id === item.poId);
         if (po) {
@@ -170,7 +166,6 @@ export default function ReportManualBuilderPage() {
         }
       }
 
-      // 3. Chain for POs: PO -> Contract -> Client
       if (reportConfig.primaryDataSource === 'purchaseOrders') {
         const contract = collectionsMap.contracts?.find(c => c.id === item.contractId);
         if (contract) {
@@ -188,10 +183,15 @@ export default function ReportManualBuilderPage() {
         return reportConfig.filters.every(f => {
           const [source, field] = f.field.split('.');
           const val = item[source]?.[field];
+          
+          if (f.operator === 'is_not_empty') {
+            return val !== undefined && val !== null && val !== '';
+          }
+
           if (val === undefined || val === null) return false;
           
           const stringVal = String(val).toLowerCase();
-          const stringFilter = String(f.value).toLowerCase();
+          const stringFilter = String(f.value || '').toLowerCase();
 
           switch (f.operator) {
             case 'contains': return stringVal.includes(stringFilter);
@@ -342,7 +342,7 @@ export default function ReportManualBuilderPage() {
   }
 
   const primaryOptions = Object.keys(SCHEMA);
-  const relatedOptions = ['clients', 'contracts', 'purchaseOrders', 'equipment'].filter(o => o !== config.primaryDataSource);
+  const relatedOptions = ['clients', 'contracts', 'purchaseOrders', 'equipment', 'opportunities'].filter(o => o !== config.primaryDataSource);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -609,8 +609,10 @@ export default function ReportManualBuilderPage() {
                                 <SelectContent>
                                   <SelectItem value="contains">CONTAINS</SelectItem>
                                   <SelectItem value="equals">EQUALS</SelectItem>
+                                  <SelectItem value="not_equals">NOT EQUALS</SelectItem>
                                   <SelectItem value="gt">GREATER THAN</SelectItem>
                                   <SelectItem value="lt">LESS THAN</SelectItem>
+                                  <SelectItem value="is_not_empty">IS NOT EMPTY</SelectItem>
                                 </SelectContent>
                               </Select>
 
@@ -623,6 +625,7 @@ export default function ReportManualBuilderPage() {
                                 }}
                                 className="bg-white"
                                 placeholder={t('Reports.selectValue')}
+                                disabled={f.operator === 'is_not_empty'}
                               />
 
                               <Button type="button" variant="ghost" size="icon" className="justify-self-end" onClick={() => removeFilter(idx)}>
