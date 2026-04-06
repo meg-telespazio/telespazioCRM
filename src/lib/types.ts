@@ -198,6 +198,7 @@ export type Contract = {
   signatureDate?: Date;
   autoRenews: boolean;
   renewalTerm?: ContractRenewalTerm;
+  noticePeriod?: 0 | 30 | 60 | 90;
   country: string;
   clientContactId?: string;
   authorizedBy?: string;

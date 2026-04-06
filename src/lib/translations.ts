@@ -415,6 +415,8 @@ export const translations = {
       durationMonths: 'Duration (Months)',
       autoRenews: 'Auto-renews',
       renewalTerm: 'Renewal Term',
+      noticePeriod: 'Notice Period (Days)',
+      selectNotice: 'Select notice period...',
       selectRenewal: 'Select renewal term...',
       hasSpecialClauses: 'Has special clauses',
       specialClauses: 'Special Clauses',
@@ -474,6 +476,12 @@ export const translations = {
     RenewalTerms: {
       '1 month': '1 Month',
       '2 months': '2 Months',
+    },
+    NoticePeriods: {
+      0: 'None',
+      30: '30 days',
+      60: '60 days',
+      90: '90 days',
     },
     Currencies: {
       USD: 'USD',
@@ -1339,6 +1347,8 @@ export const translations = {
       durationMonths: 'Duración (Meses)',
       autoRenews: 'Renovación Automática',
       renewalTerm: 'Plazo Renovación',
+      noticePeriod: 'Plazo de Preaviso (Días)',
+      selectNotice: 'Seleccione preaviso...',
       selectRenewal: 'Seleccione plazo...',
       hasSpecialClauses: 'Cláusulas Especiales',
       specialClauses: 'Detalle de Cláusulas',
@@ -1398,6 +1408,12 @@ export const translations = {
     RenewalTerms: {
       '1 month': '1 mes',
       '2 months': '2 meses',
+    },
+    NoticePeriods: {
+      0: 'Sin preaviso',
+      30: '30 días',
+      60: '60 días',
+      90: '90 días',
     },
     Currencies: {
       USD: 'USD',
