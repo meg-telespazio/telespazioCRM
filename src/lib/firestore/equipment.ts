@@ -28,7 +28,7 @@ const cleanData = (data: any) => {
 export async function addEquipment(
   firestore: Firestore,
   uid: string,
-  data: Omit<Equipment, 'createdBy' | 'createdAt'>
+  data: Omit<Equipment, 'createdBy' | 'createdAt' | 'updatedAt'>
 ) {
   const docRef = doc(firestore, COLLECTION, data.id);
   const cleaned = cleanData(data);
@@ -36,6 +36,7 @@ export async function addEquipment(
     ...cleaned,
     createdBy: uid,
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
 
   try {
@@ -58,7 +59,10 @@ export async function updateEquipment(
   originalId: string,
   data: Partial<Equipment>
 ) {
-  const cleaned = cleanData(data);
+  const cleaned = {
+    ...cleanData(data),
+    updatedAt: serverTimestamp(),
+  };
   const newId = cleaned.id;
 
   // Si el ID ha cambiado, necesitamos crear un nuevo documento y borrar el viejo

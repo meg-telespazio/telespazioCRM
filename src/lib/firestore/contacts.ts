@@ -1,3 +1,4 @@
+
 'use client';
 import {
   collection,
@@ -15,7 +16,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 const CONTACTS_COLLECTION = 'contacts';
 
-type ContactData = Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
+type ContactData = Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'createdBy'>;
 
 export async function addContact(
   firestore: Firestore,
@@ -41,6 +42,7 @@ export async function addContact(
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
       transaction.set(newContactRef, data);
@@ -64,11 +66,15 @@ export function updateContact(
   contactData: Partial<ContactData>
 ) {
   const contactRef = doc(firestore, CONTACTS_COLLECTION, contactId);
-  updateDoc(contactRef, contactData).catch((serverError) => {
+  const data = {
+    ...contactData,
+    updatedAt: serverTimestamp(),
+  };
+  updateDoc(contactRef, data).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: contactRef.path,
       operation: 'update',
-      requestResourceData: contactData,
+      requestResourceData: data,
     });
     errorEmitter.emit('permission-error', permissionError);
   });

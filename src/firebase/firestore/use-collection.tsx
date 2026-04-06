@@ -20,8 +20,12 @@ type UseCollectionReturn<T> = {
 const convertTimestamps = (data: any): any => {
   if (!data || typeof data !== 'object') return data;
   if (data?.toDate && typeof data.toDate === 'function') return data.toDate();
+  
+  // Optimization: only recurse if it's a plain object or array
   if (Array.isArray(data)) return data.map(convertTimestamps);
-  if (Object.prototype.toString.call(data) === '[object Object]') {
+  
+  const isPlainObject = Object.prototype.toString.call(data) === '[object Object]';
+  if (isPlainObject) {
     const res: { [key: string]: any } = {};
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {

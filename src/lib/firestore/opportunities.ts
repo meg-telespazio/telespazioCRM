@@ -18,7 +18,7 @@ import { logAuditAction } from './audit';
 
 const OPPORTUNITIES_COLLECTION = 'opportunities';
 
-type OpportunityData = Omit<Opportunity, 'id' | 'publicId' | 'createdAt' | 'createdBy' | 'management' | 'assignedTo'>;
+type OpportunityData = Omit<Opportunity, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'createdBy' | 'management' | 'assignedTo'>;
 
 const cleanData = (data: any) => {
   const result: any = {};
@@ -59,6 +59,7 @@ export async function addOpportunity(
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         management: clientData.management,
         assignedTo: clientData.assignedTo,
       };
@@ -109,7 +110,12 @@ export function updateOpportunity(
   const cleaned = cleanData(opportunityData);
   delete (cleaned as any).publicId;
 
-  return updateDoc(opportunityRef, cleaned).then(() => {
+  const data = {
+    ...cleaned,
+    updatedAt: serverTimestamp(),
+  };
+
+  return updateDoc(opportunityRef, data).then(() => {
     logAuditAction(firestore, {
       action: 'update',
       collection: OPPORTUNITIES_COLLECTION,
@@ -120,7 +126,7 @@ export function updateOpportunity(
     const permissionError = new FirestorePermissionError({
       path: opportunityRef.path,
       operation: 'update',
-      requestResourceData: opportunityData,
+      requestResourceData: data,
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;

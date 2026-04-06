@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -38,7 +39,11 @@ export default function ContractsPage() {
 
   const contracts = useMemo(() => {
     if (!contractsData) return [];
-    return [...contractsData].sort((a, b) => (b.publicId || '').localeCompare(a.publicId || ''));
+    return [...contractsData].sort((a, b) => {
+      const dateA = a.updatedAt || a.createdAt;
+      const dateB = b.updatedAt || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
   }, [contractsData]);
 
   const clients = useMemo(() => {

@@ -29,7 +29,7 @@ const cleanData = (data: any) => {
 export async function addPurchaseOrder(
   firestore: Firestore,
   uid: string,
-  data: Omit<PurchaseOrder, 'id' | 'createdBy' | 'createdAt' | 'management' | 'assignedTo'>
+  data: Omit<PurchaseOrder, 'id' | 'createdBy' | 'createdAt' | 'updatedAt' | 'management' | 'assignedTo'>
 ) {
   // Inherit security fields from contract
   const contractRef = doc(firestore, 'contracts', data.contractId);
@@ -43,6 +43,7 @@ export async function addPurchaseOrder(
     ...cleaned,
     createdBy: uid,
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
     management: contractData.management,
     assignedTo: contractData.assignedTo,
   };
@@ -68,7 +69,10 @@ export function updatePurchaseOrder(
   data: Partial<Omit<PurchaseOrder, 'id'>>
 ) {
   const docRef = doc(firestore, COLLECTION, poId);
-  const cleaned = cleanData(data);
+  const cleaned = {
+    ...cleanData(data),
+    updatedAt: serverTimestamp(),
+  };
   updateDoc(docRef, cleaned).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,

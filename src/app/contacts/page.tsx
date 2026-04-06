@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -58,9 +59,11 @@ export default function ContactsPage() {
       filtered = filtered.filter(contact => contact.clientId === clientFilter);
     }
     
-    return [...filtered].sort((a, b) =>
-      (a.publicId || '').localeCompare(b.publicId || '')
-    );
+    return [...filtered].sort((a, b) => {
+      const dateA = a.updatedAt || a.createdAt;
+      const dateB = b.updatedAt || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
   }, [contactsData, clientFilter]);
 
   const clientMap = useMemo(() => {

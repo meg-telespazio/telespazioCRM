@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -43,7 +44,11 @@ export default function OpportunitiesPage() {
 
   const opportunities = useMemo(() => {
     if (!opportunitiesData) return [];
-    return [...opportunitiesData].sort((a, b) => (a.publicId || '').localeCompare(a.publicId || ''));
+    return [...opportunitiesData].sort((a, b) => {
+      const dateA = a.updatedAt || a.createdAt;
+      const dateB = b.updatedAt || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
   }, [opportunitiesData]);
 
   const clients = useMemo(() => clientsData || [], [clientsData]);

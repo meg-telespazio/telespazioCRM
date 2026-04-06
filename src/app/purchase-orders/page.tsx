@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useEffect } from 'react';
@@ -46,9 +47,18 @@ export default function PurchaseOrdersPage() {
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
-  const { data: pos, loading: posLoading } = useCollection<PurchaseOrder>(posQuery);
+  const { data: posData, loading: posLoading } = useCollection<PurchaseOrder>(posQuery);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
   const { data: clients } = useCollection<Client>(clientsQuery);
+
+  const pos = useMemo(() => {
+    if (!posData) return [];
+    return [...posData].sort((a, b) => {
+      const dateA = a.updatedAt || a.createdAt;
+      const dateB = b.updatedAt || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [posData]);
 
   const contractMap = useMemo(() => new Map(contracts?.map(c => [c.id, c])), [contracts]);
   const clientMap = useMemo(() => new Map(clients?.map(c => [c.id, c])), [clients]);

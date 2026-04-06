@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -174,6 +175,8 @@ export default function ContractFormPage() {
       .filter(item => item.type === 'service' || item.type === 'bundle')
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [catalogData]);
+
+  const formSchema = useMemo(() => getFormSchema(t), [t]);
 
   const form = useForm<ContractFormData>({
     resolver: zodResolver(formSchema),

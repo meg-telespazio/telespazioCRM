@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -40,7 +41,11 @@ export default function ClientsPage() {
 
   const clients = useMemo(() => {
     if (!clientsData) return [];
-    return [...clientsData].sort((a, b) => (a.publicId || '').localeCompare(b.publicId || ''));
+    return [...clientsData].sort((a, b) => {
+      const dateA = a.updatedAt || a.createdAt;
+      const dateB = b.updatedAt || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
   }, [clientsData]);
 
   const users = useMemo(() => usersData || [], [usersData]);

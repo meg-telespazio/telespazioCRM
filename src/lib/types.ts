@@ -20,6 +20,7 @@ export type Client = {
   holding?: string;
   linkedinPage?: string;
   createdAt: Date;
+  updatedAt?: Date;
   createdBy: string;
   status: 'active' | 'suspended' | 'canceled';
   type: 'client' | 'prospect';
@@ -43,6 +44,7 @@ export type Holding = {
   description?: string;
   createdBy: string;
   createdAt: Date;
+  updatedAt?: Date;
 };
 
 export type EmailEntry = {
@@ -69,6 +71,7 @@ export type Contact = {
   notes?: string;
   clientId: string;
   createdAt: Date;
+  updatedAt?: Date;
   createdBy: string;
   management: ManagementArea;
   assignedTo: string;
@@ -106,6 +109,7 @@ export type Opportunity = {
   probability: number;
   closeDate: Date;
   createdAt: Date;
+  updatedAt?: Date;
   createdBy: string;
   contractMonths: 12 | 24 | 36;
   requestDate: Date;
@@ -148,6 +152,7 @@ export type ProductOrService = {
   availableDiscounts?: number[];
   bundleItems?: Array<{ itemId: string; quantity: number }>;
   createdAt: Date;
+  updatedAt?: Date;
   createdBy: string;
 };
 
@@ -205,6 +210,7 @@ export type Contract = {
   topUp500GbPrice?: number;
   createdBy: string;
   createdAt: Date;
+  updatedAt?: Date;
   management: ManagementArea;
   assignedTo: string;
   costCenterId: string;
@@ -220,6 +226,7 @@ export type Addendum = {
   description: string;
   createdBy: string;
   createdAt: Date;
+  updatedAt?: Date;
 };
 
 export type PurchaseOrderStatus = 'pending' | 'approved' | 'canceled' | 'received';
@@ -237,6 +244,7 @@ export type PurchaseOrder = {
   idClientStarfleet?: string;
   createdBy: string;
   createdAt: Date;
+  updatedAt?: Date;
   management: ManagementArea;
   assignedTo: string;
 };
@@ -262,6 +270,7 @@ export type Service = {
   statusUpdateDate?: Date;
   createdBy: string;
   createdAt: Date;
+  updatedAt?: Date;
   management: ManagementArea;
   assignedTo: string;
 };
@@ -279,6 +288,7 @@ export type Equipment = {
   currentServiceId?: string;
   createdBy: string;
   createdAt: Date;
+  updatedAt?: Date;
   isClientOwned: boolean;
   comodatoFee?: number;
 };
@@ -322,6 +332,7 @@ export type Location = {
   latitude: number;
   longitude: number;
   createdAt: Date;
+  updatedAt?: Date;
   createdBy: string;
   management: ManagementArea;
   assignedTo: string;
@@ -357,6 +368,7 @@ export type Report = {
   description?: string;
   config: ReportConfig;
   createdAt: Date;
+  updatedAt?: Date;
   createdBy: string;
 };
 

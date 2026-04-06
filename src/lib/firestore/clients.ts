@@ -20,7 +20,7 @@ import { logAuditAction } from './audit';
 
 const CLIENTS_COLLECTION = 'clients';
 
-type ClientData = Omit<Client, 'id' | 'publicId' | 'createdAt' | 'createdBy'>;
+type ClientData = Omit<Client, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'createdBy'>;
 
 const cleanData = (data: any) => {
   const result: any = {};
@@ -66,6 +66,7 @@ export async function addClient(
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
       transaction.set(newClientRef, data);
@@ -113,7 +114,10 @@ export async function updateClient(
   }
 
   const clientRef = doc(firestore, CLIENTS_COLLECTION, clientId);
-  const data = cleanData(clientData);
+  const data = {
+    ...cleanData(clientData),
+    updatedAt: serverTimestamp(),
+  };
   try {
     await updateDoc(clientRef, data);
     logAuditAction(firestore, {

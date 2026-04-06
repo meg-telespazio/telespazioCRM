@@ -17,7 +17,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 const LOCATIONS_COLLECTION = 'locations';
 
-type LocationData = Omit<Location, 'id' | 'publicId' | 'createdAt' | 'createdBy' | 'management' | 'assignedTo'>;
+type LocationData = Omit<Location, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'createdBy' | 'management' | 'assignedTo'>;
 
 export async function addLocation(
   firestore: Firestore,
@@ -49,6 +49,7 @@ export async function addLocation(
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         management: clientData.management,
         assignedTo: clientData.assignedTo,
       };
@@ -74,11 +75,15 @@ export function updateLocation(
   locationData: Partial<LocationData>
 ) {
   const locationRef = doc(firestore, LOCATIONS_COLLECTION, locationId);
-  return updateDoc(locationRef, locationData).catch((serverError) => {
+  const data = {
+    ...locationData,
+    updatedAt: serverTimestamp(),
+  };
+  return updateDoc(locationRef, data).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: locationRef.path,
       operation: 'update',
-      requestResourceData: locationData,
+      requestResourceData: data,
     });
     errorEmitter.emit('permission-error', permissionError);
     throw serverError;

@@ -17,7 +17,7 @@ import { logAuditAction } from './audit';
 
 const CONTRACTS_COLLECTION = 'contracts';
 
-type ContractData = Omit<Contract, 'id' | 'publicId' | 'createdAt' | 'createdBy' | 'management' | 'assignedTo'>;
+type ContractData = Omit<Contract, 'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'createdBy' | 'management' | 'assignedTo'>;
 
 const cleanData = (data: any) => {
   const result: any = {};
@@ -57,6 +57,7 @@ export async function addContract(
         publicId,
         createdBy: uid,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         management: clientData.management,
         assignedTo: clientData.assignedTo,
       };
@@ -83,7 +84,10 @@ export function updateContract(
   contractData: Partial<ContractData>
 ) {
   const contractRef = doc(firestore, CONTRACTS_COLLECTION, contractId);
-  const data = cleanData(contractData);
+  const data = {
+    ...cleanData(contractData),
+    updatedAt: serverTimestamp(),
+  };
   
   return updateDoc(contractRef, data).then(() => {
     logAuditAction(firestore, {
