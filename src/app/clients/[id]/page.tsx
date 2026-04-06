@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -31,12 +32,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight } from 'lucide-react';
+import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
 import { cn } from '@/lib/utils';
 
@@ -77,6 +78,9 @@ const getFormSchema = (t: (key: string) => string) =>
     notes: z.string().optional(),
     countryHQ: z.string().optional(),
     costCenterId: z.string().optional(),
+    supplierPortalUrl: z.string().url({ message: t('Validation.invalidUrl') }).optional().or(z.literal('')),
+    supplierPortalUser: z.string().optional(),
+    supplierPortalPassword: z.string().optional(),
   });
 
 type ClientFormData = z.infer<ReturnType<typeof getFormSchema>>;
@@ -143,10 +147,14 @@ export default function ClientFormPage() {
       notes: '',
       countryHQ: '',
       costCenterId: '',
+      supplierPortalUrl: '',
+      supplierPortalUser: '',
+      supplierPortalPassword: '',
     },
   });
 
   const watchedSector = form.watch('sector');
+  const watchedPortalUrl = form.watch('supplierPortalUrl');
 
   // Filtered subsectors based on hierarchy
   const subsectorOptions = useMemo(() => {
@@ -181,6 +189,9 @@ export default function ClientFormPage() {
         countryHQ: clientData.countryHQ || '',
         costCenterId: clientData.costCenterId || '',
         type: clientData.type || 'client',
+        supplierPortalUrl: clientData.supplierPortalUrl || '',
+        supplierPortalUser: clientData.supplierPortalUser || '',
+        supplierPortalPassword: clientData.supplierPortalPassword || '',
       });
       setCroppedAvatar(clientData.logoURL || null);
     }
@@ -467,6 +478,52 @@ export default function ClientFormPage() {
                     <FormField control={form.control} name="notes" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.notes')}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
+                  </CardContent>
+                </Card>
+
+                {/* Portal Proveedores Section */}
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <ExternalLink className="h-5 w-5 text-primary" />
+                      {t('Forms.supplierPortalUrl')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField control={form.control} name="supplierPortalUrl" render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="relative flex items-center">
+                            <Input {...field} placeholder="https://portal.cliente.com" className="bg-white" />
+                            {watchedPortalUrl && (
+                              <Button asChild type="button" size="icon" variant="ghost" className="absolute right-1 h-8 w-8">
+                                <a href={watchedPortalUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                              </Button>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    {watchedPortalUrl && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <FormField control={form.control} name="supplierPortalUser" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2"><Key className="h-3 w-3" /> {t('Forms.supplierPortalUser')}</FormLabel>
+                            <FormControl><Input {...field} className="bg-white" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="supplierPortalPassword" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2"><ShieldAlert className="h-3 w-3" /> {t('Forms.supplierPortalPassword')}</FormLabel>
+                            <FormControl><Input {...field} type="password" className="bg-white" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

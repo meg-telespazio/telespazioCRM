@@ -31,6 +31,10 @@ export type Client = {
   assignedTo: string; // UID of Ejecutivo
   countryHQ?: string;
   costCenterId?: string;
+  // Portal Proveedores
+  supplierPortalUrl?: string;
+  supplierPortalUser?: string;
+  supplierPortalPassword?: string;
 };
 
 export type Holding = {

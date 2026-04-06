@@ -642,6 +642,9 @@ export const translations = {
       comodatoFee: 'Comodato Fee (USD)',
       statusUpdateDate: 'Status Change Date',
       dueDate: 'Due Date',
+      supplierPortalUrl: 'Supplier Portal URL',
+      supplierPortalUser: 'Portal Username',
+      supplierPortalPassword: 'Portal Password',
     },
     Table: {
       actions: {
@@ -1563,6 +1566,9 @@ export const translations = {
       comodatoFee: 'Abono Comodato (USD)',
       statusUpdateDate: 'Fecha de Cambio de Estado',
       dueDate: 'Fecha de Vencimiento',
+      supplierPortalUrl: 'URL Portal Proveedores',
+      supplierPortalUser: 'Usuario Portal',
+      supplierPortalPassword: 'Password Portal',
     },
     Table: {
       actions: {

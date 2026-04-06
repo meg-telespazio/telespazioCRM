@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -23,7 +24,7 @@ import {
   ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, 
   Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
   Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle,
-  FileSpreadsheet, ChevronRight
+  FileSpreadsheet, ChevronRight, Key, ShieldAlert
 } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
@@ -242,35 +243,72 @@ export default function ClientSummaryPage() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 text-sm">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Auth.emailLabel')}</span>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <a href={`mailto:${client.email}`} className="text-primary font-medium hover:underline">{client.email}</a>
+          <CardContent className="p-0">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 text-sm">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Auth.emailLabel')}</span>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <a href={`mailto:${client.email}`} className="text-primary font-medium hover:underline">{client.email}</a>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Auth.phoneLabel')}</span>
+                <div className="flex items-center gap-2 text-foreground font-medium">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>{client.phone}</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Forms.cuit')}</span>
+                <div className="flex items-center gap-2 text-foreground font-medium">
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                  <span>{client.cuit}</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Forms.countryHQ')}</span>
+                <div className="flex items-center gap-2 text-foreground font-medium">
+                  <Flag className="h-4 w-4 text-muted-foreground" />
+                  <span>{client.countryHQ ? t(`Countries.${client.countryHQ}`) : '-'}</span>
+                </div>
               </div>
             </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Auth.phoneLabel')}</span>
-              <div className="flex items-center gap-2 text-foreground font-medium">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{client.phone}</span>
+
+            {/* Portal Proveedores Display */}
+            {client.supplierPortalUrl && (
+              <div className="px-6 pb-6 animate-in fade-in">
+                <div className="p-4 bg-primary/5 rounded-lg border border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded text-primary">
+                      <ExternalLink className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('Forms.supplierPortalUrl')}</p>
+                      <a href={client.supplierPortalUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-primary hover:underline">
+                        {client.supplierPortalUrl}
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">{t('Forms.supplierPortalUser')}</p>
+                      <div className="flex items-center gap-1.5 font-medium text-xs">
+                        <User className="h-3 w-3 text-slate-400" />
+                        {client.supplierPortalUser || '-'}
+                      </div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">{t('Forms.supplierPortalPassword')}</p>
+                      <div className="flex items-center gap-1.5 font-medium text-xs">
+                        <Key className="h-3 w-3 text-slate-400" />
+                        {client.supplierPortalPassword ? '••••••••' : '-'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Forms.cuit')}</span>
-              <div className="flex items-center gap-2 text-foreground font-medium">
-                <Building className="h-4 w-4 text-muted-foreground" />
-                <span>{client.cuit}</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Forms.countryHQ')}</span>
-              <div className="flex items-center gap-2 text-foreground font-medium">
-                <Flag className="h-4 w-4 text-muted-foreground" />
-                <span>{client.countryHQ ? t(`Countries.${client.countryHQ}`) : '-'}</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
