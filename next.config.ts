@@ -1,4 +1,3 @@
-
 import type {NextConfig} from 'next';
 import withPWAInit from '@ducanh2912/next-pwa';
 
@@ -6,28 +5,42 @@ const withPWA = withPWAInit({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
   register: true,
-  skipWaiting: true, // Fuerza a la nueva versión a activarse inmediatamente
+  skipWaiting: true,
   reloadOnOnline: true,
   workboxOptions: {
     cleanupOutdatedCaches: true,
     clientsClaim: true,
-    // NO cachear el HTML para evitar que la PWA cargue versiones viejas de la app
     exclude: [/index\.html$/, /_next\/static\/.*\.html$/],
+    // Fuerza a que las llamadas de Auth NUNCA pasen por la caché del Service Worker
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/(www\.)?googleapis\.com\/identitytoolkit/,
+        handler: 'NetworkOnly',
+      },
+      {
+        urlPattern: /^https:\/\/securetoken\.googleapis\.com/,
+        handler: 'NetworkOnly',
+      },
+      {
+        urlPattern: /^https:\/\/(www\.)?googleapis\.com\/recaptcha/,
+        handler: 'NetworkOnly',
+      }
+    ]
   }
 });
 
 const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com;
-    img-src 'self' blob: data: https://images.unsplash.com https://picsum.photos https://logo.clearbit.com https://*.tile.openstreetmap.org https://firebasestorage.googleapis.com https://placehold.co https://www.google.com;
+    img-src 'self' blob: data: https://images.unsplash.com https://picsum.photos https://logo.clearbit.com https://*.tile.openstreetmap.org https://firebasestorage.googleapis.com https://placehold.co https://www.google.com https://*.firebasestorage.app;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'self' https: https://*.cloudworkstations.dev https://*.firebaseapp.com https://*.google.com;
     frame-src 'self' https://*.firebaseapp.com https://*.google.com https://firebasestorage.googleapis.com https://*.firebasestorage.app blob:;
-    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://dolarapi.com https://www.google.com;
+    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://dolarapi.com https://www.google.com https://*.firebaseapp.com;
     upgrade-insecure-requests;
 `.replace(/\s{2,}/g, ' ').trim();
 

@@ -18,8 +18,8 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 
-// VERSIÓN 1.1.0 - Forza limpieza total de PWA y Caché
-const APP_VERSION = '1.1.0'; 
+// VERSIÓN 1.1.1 - Resolución de Error de Red en PWA y Bypass de SW para Auth
+const APP_VERSION = '1.1.1'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,9 +38,8 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
     const handleUpdate = async () => {
       const savedVersion = localStorage.getItem('crm_app_version');
       
-      // Si la versión ha cambiado o es la primera vez, limpiamos todo de raíz
       if (savedVersion !== APP_VERSION) {
-        console.warn('Nueva versión detectada (1.1.0). Forzando limpieza de PWA...');
+        console.warn(`Nueva versión detectada (${APP_VERSION}). Forzando limpieza de PWA...`);
         
         try {
           // 1. Borrar todos los storages de caché del navegador
@@ -49,7 +48,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
             await Promise.all(cacheKeys.map(key => caches.delete(key)));
           }
 
-          // 2. Desregistrar todos los Service Workers de forma agresiva
+          // 2. Desregistrar todos los Service Workers
           if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
@@ -60,7 +59,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
           // 3. Guardar nueva versión
           localStorage.setItem('crm_app_version', APP_VERSION);
           
-          // 4. Recarga dura desde el servidor (no desde caché)
+          // 4. Recarga dura
           window.location.reload();
         } catch (e) {
           console.error('Error durante la actualización automática:', e);
@@ -70,7 +69,6 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
     handleUpdate();
 
-    // Notificar al service worker que se actualice si hay algo nuevo
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.update();
@@ -106,7 +104,6 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       <main className="flex flex-1 flex-col">{children}</main>
       <SessionTimeoutController />
 
-      {/* Mandatory MFA Compliance Modal */}
       <Dialog open={isMfaModalOpen} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader>

@@ -1,4 +1,3 @@
-
 'use client';
 import {
   getApps,
@@ -36,19 +35,26 @@ function initializeFirebase(config: FirebaseOptions) {
     firestore = getFirestore(firebaseApp);
     storage = getStorage(firebaseApp);
 
-    // Configurar persistencia estricta de sesión: se cierra al cerrar la pestaña o app instalada
+    // Configurar persistencia estricta de sesión
     setPersistence(auth, browserSessionPersistence).catch((err) => {
       console.error('Error setting auth persistence:', err);
     });
 
-    // Initialize App Check only in browser
+    // Initialize App Check only if key is valid and in browser
     if (typeof window !== 'undefined') {
-      initializeAppCheck(firebaseApp, {
-        provider: new ReCaptchaEnterpriseProvider(
-          process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6Lc_dummy_site_key'
-        ),
-        isTokenAutoRefreshEnabled: true,
-      });
+      const recaptchaKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      if (recaptchaKey && recaptchaKey !== '6Lc_dummy_site_key') {
+        try {
+          initializeAppCheck(firebaseApp, {
+            provider: new ReCaptchaEnterpriseProvider(recaptchaKey),
+            isTokenAutoRefreshEnabled: true,
+          });
+        } catch (e) {
+          console.warn('App Check initialization failed:', e);
+        }
+      } else {
+        console.info('App Check bypassed: No valid NEXT_PUBLIC_RECAPTCHA_SITE_KEY found.');
+      }
     }
   }
   return { firebaseApp, auth, firestore, storage };
