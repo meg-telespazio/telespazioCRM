@@ -11,6 +11,8 @@ const withPWA = withPWAInit({
   workboxOptions: {
     cleanupOutdatedCaches: true,
     clientsClaim: true,
+    // NO cachear el HTML para evitar que la PWA cargue versiones viejas de la app
+    exclude: [/index\.html$/, /_next\/static\/.*\.html$/],
   }
 });
 
@@ -25,7 +27,7 @@ const cspHeader = `
     form-action 'self';
     frame-ancestors 'self' https: https://*.cloudworkstations.dev https://*.firebaseapp.com https://*.google.com;
     frame-src 'self' https://*.firebaseapp.com https://*.google.com https://firebasestorage.googleapis.com https://*.firebasestorage.app blob:;
-    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://dolarapi.com;
+    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://dolarapi.com https://www.google.com;
     upgrade-insecure-requests;
 `.replace(/\s{2,}/g, ' ').trim();
 

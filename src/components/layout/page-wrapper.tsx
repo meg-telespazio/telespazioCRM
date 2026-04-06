@@ -18,8 +18,8 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 
-// Incrementa este valor para forzar a todos los usuarios a limpiar su caché en el próximo inicio
-const APP_VERSION = '1.0.9'; 
+// VERSIÓN 1.1.0 - Forza limpieza total de PWA y Caché
+const APP_VERSION = '1.1.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -31,19 +31,25 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = pathname === '/login' || pathname === '/register';
 
-  // Lógica de actualización forzada y limpieza de caché
+  // Lógica de actualización forzada y limpieza de caché profunda
   useEffect(() => {
-    const handleUpdate = async () => {
-      if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
 
+    const handleUpdate = async () => {
       const savedVersion = localStorage.getItem('crm_app_version');
       
-      // Si la versión ha cambiado o es la primera vez, limpiamos todo
+      // Si la versión ha cambiado o es la primera vez, limpiamos todo de raíz
       if (savedVersion !== APP_VERSION) {
-        console.log('Nueva versión detectada. Limpiando caché...');
+        console.warn('Nueva versión detectada (1.1.0). Forzando limpieza de PWA...');
         
         try {
-          // 1. Desregistrar todos los Service Workers
+          // 1. Borrar todos los storages de caché del navegador
+          if ('caches' in window) {
+            const cacheKeys = await caches.keys();
+            await Promise.all(cacheKeys.map(key => caches.delete(key)));
+          }
+
+          // 2. Desregistrar todos los Service Workers de forma agresiva
           if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
@@ -51,14 +57,10 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // 2. Borrar todos los storages de caché
-          if ('caches' in window) {
-            const cacheKeys = await caches.keys();
-            await Promise.all(cacheKeys.map(key => caches.delete(key)));
-          }
-
-          // 3. Guardar nueva versión y recargar
+          // 3. Guardar nueva versión
           localStorage.setItem('crm_app_version', APP_VERSION);
+          
+          // 4. Recarga dura desde el servidor (no desde caché)
           window.location.reload();
         } catch (e) {
           console.error('Error durante la actualización automática:', e);
@@ -68,7 +70,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
     handleUpdate();
 
-    // Adicionalmente, intentar buscar actualizaciones del service worker en segundo plano
+    // Notificar al service worker que se actualice si hay algo nuevo
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.update();
@@ -78,8 +80,8 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && user && !isAuthPage) {
-      const mfaUser = multiFactor(auth.currentUser!);
-      const hasMfa = mfaUser.enrolledFactors.length > 0;
+      const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
+      const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
       const isBypassed = user.email === 'roxana.patrese@telespazio.com';
 
