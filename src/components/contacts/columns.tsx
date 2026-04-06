@@ -19,6 +19,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import type { Contact, Client } from '@/lib/types';
 import Link from 'next/link';
+import { useUser } from '@/firebase';
 
 const getClientName = (clientId: string, clients: Client[]) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
@@ -201,8 +202,11 @@ export const columns = (
         ACCIONES
       </div>
     ),
-    cell: ({ row }) => {
+    cell: function ActionCell({ row }) {
       const contact = row.original;
+      const { user } = useUser();
+      const isIngeniero = user?.role === 'ingeniero';
+
       return (
         <div className="flex justify-center">
           <DropdownMenu>
@@ -216,15 +220,19 @@ export const columns = (
               <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
               <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(contact)}>
                 <MoreHorizontal className="mr-2 h-3.5 w-3.5" />
-                <span>{t('Actions.editContact')}</span>
+                <span>{isIngeniero ? t('Activity.view') : t('Actions.editContact')}</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive text-[11px]"
-                onClick={() => onDelete(contact.id)}
-              >
-                {t('Actions.deleteContact')}
-              </DropdownMenuItem>
+              {!isIngeniero && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive text-[11px]"
+                    onClick={() => onDelete(contact.id)}
+                  >
+                    {t('Actions.deleteContact')}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

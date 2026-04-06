@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   MoreHorizontal,
   ShoppingCart,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +23,7 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useUser } from '@/firebase';
 
 const getClientName = (clientId: string, clients: Client[]) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
@@ -201,8 +203,11 @@ export const columns = (
         ACCIONES
       </div>
     ),
-    cell: ({ row }) => {
+    cell: function ActionCell({ row }) {
       const contract = row.original;
+      const { user } = useUser();
+      const isIngeniero = user?.role === 'ingeniero';
+
       return (
         <div className="flex justify-center">
           <DropdownMenu>
@@ -214,22 +219,27 @@ export const columns = (
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
-              <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}>
-                <ShoppingCart className="mr-2 h-3.5 w-3.5" />
-                <span>{t('Actions.addPO')}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              
               <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(contract)}>
-                <MoreHorizontal className="mr-2 h-3.5 w-3.5" />
-                <span>{t('Actions.editContract')}</span>
+                {isIngeniero ? <Eye className="mr-2 h-3.5 w-3.5" /> : <MoreHorizontal className="mr-2 h-3.5 w-3.5" />}
+                <span>{isIngeniero ? t('Activity.view') : t('Actions.editContract')}</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive text-[11px]"
-                onClick={() => onDelete(contract.id)}
-              >
-                {t('Actions.deleteContract')}
-              </DropdownMenuItem>
+
+              {!isIngeniero && (
+                <>
+                  <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}>
+                    <ShoppingCart className="mr-2 h-3.5 w-3.5" />
+                    <span>{t('Actions.addPO')}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive text-[11px]"
+                    onClick={() => onDelete(contract.id)}
+                  >
+                    {t('Actions.deleteContract')}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -103,6 +102,7 @@ export default function ContactsPage() {
   }
 
   const pageIsLoading = contactsLoading || clientsLoading;
+  const isIngeniero = user?.role === 'ingeniero';
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -128,19 +128,22 @@ export default function ContactsPage() {
             </Button>
         </div>
         
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setImporterOpen(true)}
-          disabled={user?.role === 'ingeniero'}
-        >
-          <Upload className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('Importer.button')}</span>
-        </Button>
-        <Button size="sm" onClick={handleAddNew} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('Pages.addContact')}</span>
-        </Button>
+        {!isIngeniero && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setImporterOpen(true)}
+            >
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('Importer.button')}</span>
+            </Button>
+            <Button size="sm" onClick={handleAddNew}>
+              <PlusCircle className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('Pages.addContact')}</span>
+            </Button>
+          </>
+        )}
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {pageIsLoading ? (

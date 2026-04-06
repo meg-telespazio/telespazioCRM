@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -28,7 +27,7 @@ export default function ClientsPage() {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
-    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
+    if (user.role === 'gerente' || user.role === 'ingeniero') return query(ref, where('management', '==', user.management));
     return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
   }, [user, firestore]);
 
@@ -73,18 +72,23 @@ export default function ClientsPage() {
   if (userLoading) return <div className="p-12 text-center">{t('App.loading')}</div>;
 
   const isLoading = clientsLoading || usersLoading;
+  const isIngeniero = user?.role === 'ingeniero';
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.clients')}>
-        <Button variant="outline" size="sm" onClick={() => setImporterOpen(true)} disabled={user?.role === 'ingeniero'}>
-          <Upload className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('Importer.button')}</span>
-        </Button>
-        <Button size="sm" onClick={handleAddNew} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('Pages.addClient')}</span>
-        </Button>
+        {!isIngeniero && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => setImporterOpen(true)}>
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('Importer.button')}</span>
+            </Button>
+            <Button size="sm" onClick={handleAddNew}>
+              <PlusCircle className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('Pages.addClient')}</span>
+            </Button>
+          </>
+        )}
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {isLoading ? (

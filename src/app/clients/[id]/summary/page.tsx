@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
@@ -161,6 +160,7 @@ export default function ClientSummaryPage() {
   };
 
   const isLoading = userLoading || clientLoading;
+  const isIngeniero = user?.role === 'ingeniero';
 
   if (isLoading) return <div className="p-6 space-y-6"><Skeleton className="h-48" /><Skeleton className="h-96" /></div>;
   if (!client) return <div className="p-12 text-center"><p>Client not found.</p></div>;
@@ -175,11 +175,16 @@ export default function ClientSummaryPage() {
         </div>
       }>
         <Button variant="outline" onClick={() => router.push('/clients')}><ArrowLeft className="mr-2 h-4 w-4" />{t('Actions.back')}</Button>
-        <Button variant="outline" className="hidden sm:flex border-primary text-primary" onClick={() => setIsPreBillingOpen(true)}>
-          <FileSpreadsheet className="mr-2 h-4 w-4" />
-          {t('Actions.generatePreBilling')}
-        </Button>
-        <Button onClick={() => router.push(`/clients/${clientId}`)}><Edit className="mr-2 h-4 w-4" />{t('Actions.editClient')}</Button>
+        
+        {!isIngeniero && (
+          <>
+            <Button variant="outline" className="hidden sm:flex border-primary text-primary" onClick={() => setIsPreBillingOpen(true)}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              {t('Actions.generatePreBilling')}
+            </Button>
+            <Button onClick={() => router.push(`/clients/${clientId}`)}><Edit className="mr-2 h-4 w-4" />{t('Actions.editClient')}</Button>
+          </>
+        )}
       </AppHeader>
       
       <main className="flex-1 p-4 sm:p-6 space-y-6">
@@ -360,9 +365,9 @@ export default function ClientSummaryPage() {
         <Tabs defaultValue="operations" className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 md:w-[600px]">
             <TabsTrigger value="operations">Operaciones</TabsTrigger>
-            <TabsTrigger value="opportunities">Negocios</TabsTrigger>
+            <TabsTrigger value="opportunities" disabled={isIngeniero}>Negocios</TabsTrigger>
             <TabsTrigger value="documents">Documentos ({allDocuments.length})</TabsTrigger>
-            <TabsTrigger value="activities">Actividad</TabsTrigger>
+            <TabsTrigger value="activities" disabled={isIngeniero}>Actividad</TabsTrigger>
           </TabsList>
 
           {/* Operations View */}
@@ -431,7 +436,9 @@ export default function ClientSummaryPage() {
 
                             <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md">
                               <span className="text-xs font-bold text-muted-foreground uppercase">{t('Sidebar.pos')}</span>
-                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}><PlusCircle className="h-3 w-3 mr-1"/>Nueva PO</Button>
+                              {!isIngeniero && (
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => router.push(`/purchase-orders/new?contractId=${contract.id}`)}><PlusCircle className="h-3 w-3 mr-1"/>Nueva PO</Button>
+                              )}
                             </div>
                             {contractPos.length > 0 ? (
                               <div className="space-y-2">
@@ -506,7 +513,9 @@ export default function ClientSummaryPage() {
                   <div className="text-center py-12 text-muted-foreground">
                     <FileText className="mx-auto h-12 w-12 opacity-20 mb-2" />
                     <p>No hay contratos registrados.</p>
-                    <Button variant="link" className="mt-2" onClick={() => router.push(`/contracts/new?clientId=${clientId}`)}>Crear primer contrato</Button>
+                    {!isIngeniero && (
+                      <Button variant="link" className="mt-2" onClick={() => router.push(`/contracts/new?clientId=${clientId}`)}>Crear primer contrato</Button>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -521,10 +530,12 @@ export default function ClientSummaryPage() {
                   <CardTitle className="flex items-center gap-2 text-lg"><Briefcase className="h-5 w-5 text-primary" /> Negocios & Oportunidades</CardTitle>
                   <CardDescription>Pipeline de ventas relacionado a este cliente.</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => router.push(`/opportunities/new?clientId=${clientId}`)}>
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Nueva Oportunidad
-                </Button>
+                {!isIngeniero && (
+                  <Button size="sm" onClick={() => router.push(`/opportunities/new?clientId=${clientId}`)}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Nueva Oportunidad
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -624,7 +635,9 @@ export default function ClientSummaryPage() {
               <Card>
                 <CardHeader className="flex-row items-center justify-between border-b pb-4">
                   <CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> {t('Pages.contacts')}</CardTitle>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => router.push(`/contacts/new?clientId=${clientId}`)}><PlusCircle className="h-5 w-5" /></Button>
+                  {!isIngeniero && (
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => router.push(`/contacts/new?clientId=${clientId}`)}><PlusCircle className="h-5 w-5" /></Button>
+                  )}
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y">
@@ -651,7 +664,9 @@ export default function ClientSummaryPage() {
               <Card>
                 <CardHeader className="flex-row items-center justify-between border-b pb-4">
                   <CardTitle className="text-lg flex items-center gap-2"><ActivityIcon className="h-5 w-5 text-primary" /> {t('Dashboard.recentActivities.title')}</CardTitle>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => router.push(`/clients/${clientId}/activity`)}><PlusCircle className="h-5 w-5" /></Button>
+                  {!isIngeniero && (
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => router.push(`/clients/${clientId}/activity`)}><PlusCircle className="h-5 w-5" /></Button>
+                  )}
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y">

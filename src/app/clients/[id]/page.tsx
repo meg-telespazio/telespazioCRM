@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -95,6 +94,12 @@ export default function ClientFormPage() {
 
   const clientId = params.id as string;
   const isNew = clientId === 'new';
+
+  useEffect(() => {
+    if (!userLoading && user && user.role === 'ingeniero') {
+      router.push('/dashboard');
+    }
+  }, [user, userLoading, router]);
 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedImage, setCroppedAvatar] = useState<string | null>(null);
@@ -343,7 +348,8 @@ export default function ClientFormPage() {
                       <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t('Forms.clientName')}</FormLabel>
-                          <FormControl><Input {...field} /></FormControl><FormMessage />
+                          <FormControl><Input {...field} /></FormControl>
+                          <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="holding" render={({ field }) => (

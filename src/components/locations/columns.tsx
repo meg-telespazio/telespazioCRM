@@ -6,6 +6,7 @@ import {
   ArrowUp,
   ChevronsUpDown,
   MoreHorizontal,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { Location } from '@/lib/types';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/firebase';
 
 const statusClasses: { [key in Location['status']]: string } = {
   active: 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200',
@@ -34,23 +36,33 @@ export const columns = (
 ): ColumnDef<Location>[] => [
   {
     id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
+    header: ({ table }) => {
+      const { user } = useUser();
+      const isIngeniero = user?.role === 'ingeniero';
+      return (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          disabled={isIngeniero}
+        />
+      );
+    },
+    cell: ({ row }) => {
+      const { user } = useUser();
+      const isIngeniero = user?.role === 'ingeniero';
+      return (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+          disabled={isIngeniero}
+        />
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -142,8 +154,11 @@ export const columns = (
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
+    cell: function ActionCell({ row }) {
       const location = row.original;
+      const { user } = useUser();
+      const isIngeniero = user?.role === 'ingeniero';
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -155,20 +170,25 @@ export const columns = (
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => onEdit(location)}>
-              {t('Actions.editLocation')}
+              {isIngeniero ? <Eye className="mr-2 h-4 w-4" /> : null}
+              {isIngeniero ? t('Activity.view') : t('Actions.editLocation')}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(location.id)}
             >
               {t('Actions.copyLocationId')}
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => onDelete(location.id)}
-            >
-              {t('Actions.deleteLocation')}
-            </DropdownMenuItem>
+            {!isIngeniero && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => onDelete(location.id)}
+                >
+                  {t('Actions.deleteLocation')}
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );

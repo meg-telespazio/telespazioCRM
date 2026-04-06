@@ -70,17 +70,16 @@ service cloud.firestore {
     // Auditoría: Solo admins pueden leer los logs. Nadie puede borrarlos.
     match /auditLogs/{logId} {
       allow read: if isAdmin();
-      // Validamos que el log sea creado por el usuario autenticado para evitar spoofing
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid; 
-      allow update, delete: if false; // Inmutabilidad de los logs
+      allow update, delete: if false; 
     }
 
-    // Clientes, Contactos, Locaciones: Visibles por todos en la gerencia, editables por Gerente o Ejecutivo asignado
+    // Clientes, Contactos, Locaciones: Visibles por todos en la gerencia (incluye ingenieros), editables por Gerente o Ejecutivo asignado
     match /clients/{clientId} {
       allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
       allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
-      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente()); // Solo gerentes borran
+      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente()); 
     }
 
     match /contacts/{contactId} {
@@ -95,7 +94,7 @@ service cloud.firestore {
       allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
     }
 
-    // Oportunidades, POs, Servicios: No visibles para Ingenieros
+    // Oportunidades, POs: No visibles para Ingenieros (Solo lectura NO aplica aquí según definición comercial)
     match /opportunities/{opportunityId} {
       allow read: if isAuthenticated() && (isAdmin() || (isSameManagement(resource.data) && !isIngeniero()));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
@@ -110,14 +109,15 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
     }
 
+    // Servicios: Ingenieros ahora pueden leerlos (Solo Lectura)
     match /services/{serviceId} {
-      allow read: if isAuthenticated() && (isAdmin() || (isSameManagement(resource.data) && !isIngeniero()));
+      allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
       allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
       allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
     }
 
-    // Contratos: Ingenieros pueden verlos
+    // Contratos: Ingenieros pueden leerlos
     match /contracts/{contractId} {
       allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
       allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
@@ -158,7 +158,6 @@ service cloud.firestore {
       allow write: if isAdmin() || isGerente();
     }
 
-    // Contadores: Protegidos contra borrado masivo.
     match /counters/{counterId} {
       allow get, update, create: if isAuthenticated();
       allow list, delete: if isSuperAdmin();

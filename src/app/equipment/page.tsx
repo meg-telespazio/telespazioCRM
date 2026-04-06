@@ -19,7 +19,8 @@ import {
   Building,
   MoreHorizontal,
   Edit,
-  Trash2
+  Trash2,
+  Eye,
 } from 'lucide-react';
 import type { Equipment, Service, PurchaseOrder, Contract, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -183,13 +184,17 @@ export default function EquipmentPage() {
 
   if (userLoading || eqLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
+  const isIngeniero = user?.role === 'ingeniero';
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Equipment.title')}>
-        <Button size="sm" onClick={() => router.push('/equipment/new')} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('Equipment.add')}</span>
-        </Button>
+        {!isIngeniero && (
+          <Button size="sm" onClick={() => router.push('/equipment/new')}>
+            <PlusCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('Equipment.add')}</span>
+          </Button>
+        )}
       </AppHeader>
 
       <main className="flex-1 p-4 sm:p-6 space-y-4">
@@ -300,14 +305,16 @@ export default function EquipmentPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/equipment/${eq.id}`)} className="cursor-pointer" disabled={user?.role === 'ingeniero'}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            {t('Actions.editItem')}
+                          <DropdownMenuItem onClick={() => router.push(`/equipment/${eq.id}`)} className="cursor-pointer">
+                            {isIngeniero ? <Eye className="mr-2 h-4 w-4" /> : <Edit className="mr-2 h-4 w-4" />}
+                            {isIngeniero ? t('Activity.view') : t('Actions.editItem')}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(eq.id)} className="text-destructive cursor-pointer" disabled={user?.role !== 'admin' && user?.role !== 'gerente'}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            {t('Table.actions.delete')}
-                          </DropdownMenuItem>
+                          {!isIngeniero && (
+                            <DropdownMenuItem onClick={() => handleDelete(eq.id)} className="text-destructive cursor-pointer">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              {t('Table.actions.delete')}
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

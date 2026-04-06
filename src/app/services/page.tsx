@@ -22,6 +22,7 @@ import {
   DollarSign,
   Link2,
   PlusCircle,
+  Eye,
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client, ServiceStatus } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -83,10 +84,12 @@ const statusClasses: Record<ServiceStatus, string> = {
 
 function InlineFeeEdit({ 
   service, 
-  onUpdate 
+  onUpdate,
+  disabled
 }: { 
   service: Service, 
-  onUpdate: (id: string, fee: number) => Promise<void> 
+  onUpdate: (id: string, fee: number) => Promise<void>,
+  disabled: boolean
 }) {
   const [val, setVal] = useState(service.monthlyFee?.toString() || '0');
   const [isSaving, setIsSaving] = useState(false);
@@ -96,6 +99,7 @@ function InlineFeeEdit({
   }, [service.monthlyFee]);
 
   const handleBlur = async () => {
+    if (disabled) return;
     const numericFee = parseFloat(val);
     if (isNaN(numericFee) || numericFee === service.monthlyFee) return;
     
@@ -120,9 +124,10 @@ function InlineFeeEdit({
           onChange={(e) => setVal(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+          disabled={disabled}
           className={cn(
             "h-7 w-24 text-xs px-2 font-semibold bg-transparent border-transparent hover:border-input focus:border-primary transition-all text-right",
-            isSaving && "opacity-50 pointer-events-none"
+            (isSaving || disabled) && "opacity-50 pointer-events-none"
           )}
         />
         {isSaving && <Loader2 className="absolute -right-5 h-3 w-3 animate-spin text-primary" />}
@@ -160,14 +165,14 @@ export default function ServicesPage() {
 
   // Data fetching - Services filtered by management
   const servicesQuery = useMemo(() => {
-    if (!user || user.role === 'ingeniero') return null;
+    if (!user) return null;
     const ref = collection(firestore, 'services');
     if (user.role === 'admin') return query(ref);
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
   const posQuery = useMemo(() => {
-    if (!user || user.role === 'ingeniero') return null;
+    if (!user) return null;
     const ref = collection(firestore, 'purchaseOrders');
     if (user.role === 'admin') return query(ref);
     return query(ref, where('management', '==', user.management));
@@ -327,155 +332,162 @@ export default function ServicesPage() {
 
   if (userLoading || (servicesLoading && servicesQuery !== null)) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
+  const isIngeniero = user?.role === 'ingeniero';
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Services.title')}>
-        <Button variant="outline" size="sm" onClick={() => router.push('/services/new')} disabled={user?.role === 'ingeniero'} className="mr-2 border-primary text-primary">
-          <PlusCircle className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Carga Manual</span>
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setImporterOpen(true)} disabled={user?.role === 'ingeniero'}>
-          <Upload className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('Services.import')}</span>
-        </Button>
+        {!isIngeniero && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => router.push('/services/new')} className="mr-2 border-primary text-primary">
+              <PlusCircle className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Carga Manual</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setImporterOpen(true)}>
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('Services.import')}</span>
+            </Button>
+          </>
+        )}
       </AppHeader>
 
       <main className="flex-1 p-4 sm:p-6 space-y-4">
-        {user?.role === 'ingeniero' ? (
-          <div className="text-center py-20 text-muted-foreground">Acceso restringido para Ingeniería.</div>
-        ) : (
-          <>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex flex-1 flex-col md:flex-row items-center gap-4 w-full">
-                <div className="relative w-full md:max-w-md">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
-                  <Input 
-                    placeholder="Buscar por Nickname o Línea..." 
-                    className="pl-10 bg-white"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                  <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Select value={clientFilter} onValueChange={setClientFilter}>
-                    <SelectTrigger className="w-full md:w-[250px] bg-white">
-                      <SelectValue placeholder={t('Forms.selectClient')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('Table.all')} {t('Sidebar.clients')}</SelectItem>
-                      {clients?.sort((a,b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              {selectedIds.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="border-primary text-primary">
-                      {t('Actions.bulkActions')} ({selectedIds.length})
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => setBulkMode('price')}><DollarSign className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePrice')}</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setBulkMode('plan')}><LayoutGrid className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePlan')}</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setBulkMode('po')}><Link2 className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePo')}</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex flex-1 flex-col md:flex-row items-center gap-4 w-full">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+              <Input 
+                placeholder="Buscar por Nickname o Línea..." 
+                className="pl-10 bg-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
+            
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Select value={clientFilter} onValueChange={setClientFilter}>
+                <SelectTrigger className="w-full md:w-[250px] bg-white">
+                  <SelectValue placeholder={t('Forms.selectClient')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('Table.all')} {t('Sidebar.clients')}</SelectItem>
+                  {clients?.sort((a,b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {selectedIds.length > 0 && !isIngeniero && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-primary text-primary">
+                  {t('Actions.bulkActions')} ({selectedIds.length})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setBulkMode('price')}><DollarSign className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePrice')}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setBulkMode('plan')}><LayoutGrid className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePlan')}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setBulkMode('po')}><Link2 className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePo')}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
 
-            <div className="rounded-md border bg-card overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-destructive hover:bg-destructive">
-                    <TableHead className="w-[50px]"><Checkbox checked={selectedIds.length === paginatedServices.length && paginatedServices.length > 0} onCheckedChange={toggleSelectAll} /></TableHead>
-                    <TableHead className="text-white"><button onClick={() => handleSort('serviceNickname')} className="flex items-center">{t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}</button></TableHead>
-                    <TableHead className="text-white"><button onClick={() => handleSort('monthlyFee')} className="flex items-center">{t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}</button></TableHead>
-                    <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
-                    <TableHead className="text-white"><button onClick={() => handleSort('client')} className="flex items-center">{t('Pages.clients')} {getSortIcon('client')}</button></TableHead>
-                    <TableHead className="text-white">Estado</TableHead>
-                    <TableHead className="text-right text-white px-4">{t('Table.actions.title')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedServices.map((s) => {
-                    const po = poMap.get(s.poId);
-                    const contract = po ? contractMap.get(po.contractId) : null;
-                    const client = contract ? clientMap.get(contract.clientId) : null;
+        <div className="rounded-md border bg-card overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-destructive hover:bg-destructive">
+                <TableHead className="w-[50px]"><Checkbox checked={selectedIds.length === paginatedServices.length && paginatedServices.length > 0} onCheckedChange={toggleSelectAll} disabled={isIngeniero} /></TableHead>
+                <TableHead className="text-white"><button onClick={() => handleSort('serviceNickname')} className="flex items-center">{t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}</button></TableHead>
+                <TableHead className="text-white"><button onClick={() => handleSort('monthlyFee')} className="flex items-center">{t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}</button></TableHead>
+                <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
+                <TableHead className="text-white"><button onClick={() => handleSort('client')} className="flex items-center">{t('Pages.clients')} {getSortIcon('client')}</button></TableHead>
+                <TableHead className="text-white">Estado</TableHead>
+                <TableHead className="text-right text-white px-4">{t('Table.actions.title')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedServices.map((s) => {
+                const po = poMap.get(s.poId);
+                const contract = po ? contractMap.get(po.contractId) : null;
+                const client = contract ? clientMap.get(contract.clientId) : null;
 
-                    return (
-                      <TableRow key={s.id}>
-                        <TableCell><Checkbox checked={selectedIds.includes(s.id)} onCheckedChange={(checked) => toggleSelect(s.id, !!checked)} /></TableCell>
-                        <TableCell>
-                          <button onClick={() => router.push(`/services/${s.id}`)} className="font-bold text-primary hover:underline flex items-center gap-2">
-                            <Zap className="h-3 w-3 text-yellow-500" /> {s.serviceNickname}
-                          </button>
-                          <p className="text-[10px] text-muted-foreground ml-5">{s.serviceLineNumber}</p>
-                        </TableCell>
-                        <TableCell><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} /></TableCell>
-                        <TableCell className="text-xs">{s.servicePlan}</TableCell>
-                        <TableCell>{client?.name || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={cn("rounded-full", statusClasses[s.status || 'active'])}>
-                            {t(`Status.${s.status || 'active'}`)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right px-4">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/services/${s.id}`)}><Edit className="mr-2 h-4 w-4" />{t('Services.edit')}</DropdownMenuItem>
+                return (
+                  <TableRow key={s.id}>
+                    <TableCell><Checkbox checked={selectedIds.includes(s.id)} onCheckedChange={(checked) => toggleSelect(s.id, !!checked)} disabled={isIngeniero} /></TableCell>
+                    <TableCell>
+                      <button onClick={() => router.push(`/services/${s.id}`)} className="font-bold text-primary hover:underline flex items-center gap-2">
+                        <Zap className="h-3 w-3 text-yellow-500" /> {s.serviceNickname}
+                      </button>
+                      <p className="text-[10px] text-muted-foreground ml-5">{s.serviceLineNumber}</p>
+                    </TableCell>
+                    <TableCell><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} disabled={isIngeniero} /></TableCell>
+                    <TableCell className="text-xs">{s.servicePlan}</TableCell>
+                    <TableCell>{client?.name || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={cn("rounded-full", statusClasses[s.status || 'active'])}>
+                        {t(`Status.${s.status || 'active'}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right px-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/services/${s.id}`)}>
+                            {isIngeniero ? <Eye className="mr-2 h-4 w-4" /> : <Edit className="mr-2 h-4 w-4" />}
+                            {isIngeniero ? t('Activity.view') : t('Services.edit')}
+                          </DropdownMenuItem>
+                          {!isIngeniero && (
+                            <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleDelete(s.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />{t('Table.actions.delete')}</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {paginatedServices.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
-                        {t('Services.noServices')}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {paginatedServices.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
+                    {t('Services.noServices')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-2 py-4">
-                <p className="text-xs text-muted-foreground">
-                  {t('Table.pagination.pageInfo', { page: currentPage, totalPages })}
-                </p>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(p => p - 1)}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    {t('Table.previous')}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(p => p + 1)}
-                  >
-                    {t('Table.next')}
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-2 py-4">
+            <p className="text-xs text-muted-foreground">
+              {t('Table.pagination.pageInfo', { page: currentPage, totalPages })}
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                {t('Table.previous')}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => p + 1)}
+              >
+                {t('Table.next')}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
         )}
       </main>
 

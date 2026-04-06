@@ -79,6 +79,7 @@ export default function ClientLocationsPage() {
   };
 
   const isLoading = userLoading || clientLoading || locationsLoading;
+  const isIngeniero = user?.role === 'ingeniero';
   
   return (
     <>
@@ -98,14 +99,18 @@ export default function ClientLocationsPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('Actions.backToClientList')}
             </Button>
-            <Button variant="outline" onClick={() => setImporterOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              {t('Importer.button')}
-            </Button>
-            <Button onClick={() => router.push(`/locations/new?clientId=${clientId}`)} disabled={isLoading || !client}>
-               <PlusCircle className="mr-2 h-4 w-4" />
-               {t('Locations.add')}
-            </Button>
+            {!isIngeniero && (
+              <>
+                <Button variant="outline" onClick={() => setImporterOpen(true)}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  {t('Importer.button')}
+                </Button>
+                <Button onClick={() => router.push(`/locations/new?clientId=${clientId}`)} disabled={isLoading || !client}>
+                   <PlusCircle className="mr-2 h-4 w-4" />
+                   {t('Locations.add')}
+                </Button>
+              </>
+            )}
         </AppHeader>
         <main className="flex-1 p-4 sm:p-6 overflow-hidden">
           <div className="flex flex-col gap-6">

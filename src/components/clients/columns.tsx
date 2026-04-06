@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -25,6 +24,7 @@ import type { Client, UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useUser } from '@/firebase';
 
 const statusClasses: { [key in Client['status']]: string } = {
   active: 'bg-green-100 text-green-700 hover:bg-green-100 border-none px-2 py-0 font-bold text-[9px]',
@@ -198,8 +198,11 @@ export const columns = (
           ACCIONES
         </div>
       ),
-      cell: ({ row }) => {
+      cell: function ActionCell({ row }) {
         const client = row.original;
+        const { user } = useUser();
+        const isIngeniero = user?.role === 'ingeniero';
+
         return (
           <div className="flex justify-center">
             <DropdownMenu>
@@ -215,14 +218,20 @@ export const columns = (
                   <FileText className="mr-2 h-3.5 w-3.5" />
                   <span>{t('Actions.viewSummary')}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(client)}>
-                  <FileText className="mr-2 h-3.5 w-3.5" />
-                  <span>{t('Actions.editClient')}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/contacts/new?clientId=${client.id}`)}>
-                  <UserPlus className="mr-2 h-3.5 w-3.5" />
-                  <span>{t('Pages.addContact')}</span>
-                </DropdownMenuItem>
+                
+                {!isIngeniero && (
+                  <>
+                    <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(client)}>
+                      <FileText className="mr-2 h-3.5 w-3.5" />
+                      <span>{t('Actions.editClient')}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/contacts/new?clientId=${client.id}`)}>
+                      <UserPlus className="mr-2 h-3.5 w-3.5" />
+                      <span>{t('Pages.addContact')}</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+
                 <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/clients/${client.id}/activity`)}>
                   <ActivityIcon className="mr-2 h-3.5 w-3.5" />
                   <span>{t('Activity.view')}</span>
@@ -231,13 +240,18 @@ export const columns = (
                   <MapPin className="mr-2 h-3.5 w-3.5" />
                   <span>{t('Locations.view')}</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive text-[11px]"
-                  onClick={() => onDelete(client.id)}
-                >
-                  {t('Actions.deleteClient')}
-                </DropdownMenuItem>
+                
+                {!isIngeniero && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive text-[11px]"
+                      onClick={() => onDelete(client.id)}
+                    >
+                      {t('Actions.deleteClient')}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
