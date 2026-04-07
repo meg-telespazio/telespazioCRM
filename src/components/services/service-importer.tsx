@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -40,7 +39,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser, useFirestore } from '@/firebase';
 import { importServices } from '@/lib/firestore/services';
-import type { PurchaseOrder, Service } from '@/lib/types';
+import type { PurchaseOrder, Service, Contract, Client } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const SERVICE_FIELDS = [
@@ -62,6 +61,8 @@ type ServiceImporterProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   pos: PurchaseOrder[];
+  contracts: Contract[];
+  clients: Client[];
   defaultPoId?: string;
 };
 
@@ -69,6 +70,8 @@ export function ServiceImporter({
   isOpen,
   onOpenChange,
   pos,
+  contracts,
+  clients,
   defaultPoId,
 }: ServiceImporterProps) {
   const { t } = useI18n();
@@ -136,6 +139,21 @@ export function ServiceImporter({
       reader.readAsBinaryString(file);
     }
   };
+
+  const poOptions = useMemo(() => {
+    if (!pos || !contracts || !clients) return [];
+    
+    return pos.map(po => {
+      const contract = contracts.find(c => c.id === po.contractId);
+      const client = clients.find(c => c.id === contract?.clientId);
+      const clientName = client?.name || '...';
+      const contractId = contract?.publicId || '...';
+      return {
+        id: po.id,
+        label: `${clientName} - ${contractId} - PO: ${po.poNumber}`
+      };
+    }).sort((a, b) => a.label.localeCompare(b.label));
+  }, [pos, contracts, clients]);
 
   const startImport = async () => {
     if (!user || !selectedPo) return;
@@ -215,13 +233,13 @@ export function ServiceImporter({
                 {t('Forms.poNumber')}
               </label>
               <Select value={selectedPo} onValueChange={setSelectedPo}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione la PO..." />
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Seleccione la Orden de Compra..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {pos.map((po) => (
-                    <SelectItem key={po.id} value={po.id}>
-                      {po.poNumber} ({po.contractId})
+                  {poOptions.map((opt) => (
+                    <SelectItem key={opt.id} value={opt.id}>
+                      {opt.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

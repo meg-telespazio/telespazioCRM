@@ -503,7 +503,13 @@ export default function ServicesPage() {
         </DialogContent>
       </Dialog>
 
-      <ServiceImporter isOpen={isImporterOpen} onOpenChange={setImporterOpen} pos={pos || []} />
+      <ServiceImporter 
+        isOpen={isImporterOpen} 
+        onOpenChange={setImporterOpen} 
+        pos={pos || []} 
+        contracts={contracts || []}
+        clients={clients || []}
+      />
     </div>
   );
 }

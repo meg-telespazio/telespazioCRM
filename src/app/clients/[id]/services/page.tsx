@@ -204,19 +204,19 @@ export default function ClientServicesPage() {
   const { data: contracts, loading: contractsLoading } = useCollection<Contract>(contractsQuery);
 
   const posQuery = useMemo(() => {
-    if (!user || !firestore) return null;
+    if (!user) return null;
     return query(collection(firestore, 'purchaseOrders'), where('createdBy', '==', user.uid));
   }, [firestore, user]);
   const { data: allPos, loading: posLoading } = useCollection<PurchaseOrder>(posQuery);
 
   const servicesQuery = useMemo(() => {
-    if (!user || !firestore) return null;
+    if (!user) return null;
     return query(collection(firestore, 'services'), where('createdBy', '==', user.uid));
   }, [firestore, user]);
   const { data: allServices, loading: servicesLoading } = useCollection<Service>(servicesQuery);
 
   const equipQuery = useMemo(() => {
-    if (!user || !firestore) return null;
+    if (!user) return null;
     return query(collection(firestore, 'equipment'), where('createdBy', '==', user.uid));
   }, [firestore, user]);
   const { data: allEquip } = useCollection<Equipment>(equipQuery);
@@ -299,7 +299,7 @@ export default function ClientServicesPage() {
                               <div className="flex items-center justify-between bg-muted/30 p-3 rounded-lg border">
                                 <div className="flex items-center gap-3">
                                   <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                                  <span className="font-bold">PO: {po.id}</span>
+                                  <span className="font-bold">PO: {po.poNumber}</span>
                                   <Badge variant="secondary" className="text-[10px]">{t(`Status.${po.status}`)}</Badge>
                                 </div>
                                 <Button size="sm" variant="outline" onClick={() => handleOpenImporter(po.id)}>
@@ -348,6 +348,8 @@ export default function ClientServicesPage() {
         isOpen={isImporterOpen} 
         onOpenChange={setImporterOpen} 
         pos={allPos || []}
+        contracts={contracts || []}
+        clients={client ? [client] : []}
         defaultPoId={targetPoId || undefined}
       />
     </div>
