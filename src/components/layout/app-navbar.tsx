@@ -93,8 +93,10 @@ function LanguageSwitcher({ className }: { className?: string }) {
 function CurrencySwitcher({ className }: { className?: string }) {
   const { currency, setCurrency } = useI18n();
   const firestore = useFirestore();
+  const { user } = useUser();
   
-  const configDocRef = useMemo(() => doc(firestore, 'systemConfig', 'globals'), [firestore]);
+  // Solo consultamos si hay usuario
+  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: config } = useDoc<SystemConfig>(configDocRef);
 
   const availableCurrencies = useMemo(() => {

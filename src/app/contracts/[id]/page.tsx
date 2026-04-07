@@ -138,8 +138,8 @@ export default function ContractFormPage() {
 
   const { data: contractData, loading: contractLoading } = useDoc<Contract>(contractDocRef);
 
-  // Fetch system config for cost centers
-  const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
+  // Fetch system config for cost centers - Solo si hay usuario autenticado
+  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   // Filtered clients by permission for selection

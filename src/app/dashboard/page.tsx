@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const { t, currency: displayCurrency } = useI18n();
   const firestore = useFirestore();
 
-  const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
+  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   const managementFilter = user?.role === 'admin' ? null : user?.management;

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -202,7 +203,8 @@ export default function OpportunityFormPage() {
   const isNew = opportunityId === 'new';
   const clientIdFromQuery = searchParams.get('clientId');
 
-  const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
+  // Solo consultamos si hay usuario
+  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   useEffect(() => {
@@ -533,7 +535,8 @@ export default function OpportunityFormPage() {
     clientsLoading ||
     contactsLoading ||
     productsAndServicesLoading ||
-    (opportunityLoading && !isNew);
+    (opportunityLoading && !isNew) ||
+    !configData;
 
   if (pageIsLoading) {
     return <div className="flex flex-1 flex-col"><AppHeader title={t('App.loading')} /><main className="p-6"><Skeleton className="h-[70vh] w-full" /></main></div>;
@@ -965,6 +968,7 @@ export default function OpportunityFormPage() {
                 </CardContent>
               </Card>
 
+              {/* Footer de Acciones */}
               <div className="flex items-center justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.back()}>{t('Auth.cancelLabel')}</Button>
                 <Button type="submit" disabled={isLocked}>{t('Forms.saveOpportunity')}</Button>

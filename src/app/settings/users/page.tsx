@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useFirestore, useCollection, useDoc } from '@/firebase';
+import { useFirestore, useCollection, useDoc, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { useI18n } from '@/firebase/client-provider';
@@ -84,13 +84,15 @@ const MENU_ITEMS = [
 export default function UsersManagementPage() {
   const { t } = useI18n();
   const firestore = useFirestore();
+  const { user: currentUser } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
   const usersQuery = useMemo(() => query(collection(firestore, 'users')), [firestore]);
   const { data: users, loading } = useCollection<UserProfile>(usersQuery);
 
-  const configDocRef = useMemo(() => doc(firestore, 'systemConfig', 'globals'), [firestore]);
+  // Solo solicitamos el config si hay un usuario autenticado
+  const configDocRef = useMemo(() => (firestore && currentUser) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, currentUser]);
   const { data: config } = useDoc<SystemConfig>(configDocRef);
 
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -193,7 +195,7 @@ export default function UsersManagementPage() {
   };
 
   const handleSaveMatrix = async () => {
-    if (!localMatrix) return;
+    if (!localMatrix || !configDocRef) return;
     setIsSavingMatrix(true);
     try {
       await updateDoc(configDocRef, {
@@ -208,7 +210,7 @@ export default function UsersManagementPage() {
     }
   };
 
-  if (loading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
+  if (loading || !config) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   return (
     <div className="flex flex-1 flex-col">

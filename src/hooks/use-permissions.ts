@@ -14,9 +14,10 @@ export function usePermissions() {
   const { user } = useUser();
   const firestore = useFirestore();
 
+  // Solo intentamos obtener el doc si hay un usuario autenticado para evitar errores de permisos
   const configDocRef = useMemo(() => 
-    firestore ? doc(firestore, 'systemConfig', 'globals') : null, 
-  [firestore]);
+    (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, 
+  [firestore, user]);
   
   const { data: config } = useDoc<SystemConfig>(configDocRef);
 
@@ -26,7 +27,7 @@ export function usePermissions() {
   }, [user, config]);
 
   const can = (action: 'view' | 'create' | 'edit' | 'delete', module: string) => {
-    if (user?.role === 'admin') return true; // Admin siempre tiene bypass local (aunque el servidor valide)
+    if (user?.role === 'admin') return true; // Admin siempre tiene bypass local
     if (!permissions) return false;
     return permissions.modules[module]?.[action] === true;
   };

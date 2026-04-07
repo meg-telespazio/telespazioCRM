@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -105,8 +106,8 @@ export default function ClientFormPage() {
   const [croppedImage, setCroppedAvatar] = useState<string | null>(null);
   const [isFindingLogo, setIsFindingLogo] = useState(false);
 
-  // Fetch system config for dynamic dropdowns
-  const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
+  // Fetch system config for dynamic dropdowns - Solo si hay usuario
+  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   const clientDocRef = useMemo(() => {
