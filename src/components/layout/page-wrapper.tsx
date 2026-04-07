@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -20,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.1.8 - Corrección de error de permisos en globals
-const APP_VERSION = '1.1.8'; 
+// VERSIÓN 1.2.0 - Despliegue de nuevas funcionalidades: Matriz, Prebilling y Mapas
+const APP_VERSION = '1.2.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -35,7 +34,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname === '/login' || pathname === '/register';
   const isUnauthorizedPage = pathname === '/unauthorized';
 
-  // Lógica de actualización forzada
+  // Lógica de actualización forzada para PWA
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -43,7 +42,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       const savedVersion = localStorage.getItem('crm_app_version');
       
       if (savedVersion !== APP_VERSION) {
-        console.warn(`Nueva versión detectada (${APP_VERSION}). Forzando limpieza de PWA...`);
+        console.warn(`Nueva versión detectada (${APP_VERSION}). Actualizando aplicación...`);
         
         try {
           if ('caches' in window) {
@@ -93,7 +92,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
     if (matchedRoute) {
       const permissionKey = routePermissionMap[matchedRoute];
       if (!canSeeMenu(permissionKey)) {
-        console.warn(`Acceso denegado a ${pathname}. Redirigiendo...`);
+        console.warn(`Acceso denegado a ${pathname}. Redirigiendo a unauthorized...`);
         router.replace('/unauthorized');
       }
     }
