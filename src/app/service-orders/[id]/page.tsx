@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, ArrowLeft, ClipboardList, User, ShieldCheck, Clock, MessageSquare, AlertCircle, Loader2 } from 'lucide-react';
+import { Save, ArrowLeft, ClipboardList, User, ShieldCheck, Clock, MessageSquare, AlertCircle, Loader2, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SOItemManager } from '@/components/service-orders/so-item-manager';
 import { SOComments } from '@/components/service-orders/so-comments';
@@ -284,7 +284,21 @@ export default function SODetailPage() {
               </form>
             </Form>
 
-            {!isNew && (
+            {isNew ? (
+              <Card className="border-dashed bg-slate-50">
+                <CardContent className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="p-3 bg-white rounded-full shadow-sm">
+                    <MapPin className="h-8 w-8 text-slate-300" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-bold text-slate-600">Gestión de Ítems por Sucursal</p>
+                    <p className="text-xs text-slate-400 max-w-sm">
+                      Primero guarde los datos generales de la Service Order para habilitar la carga de servicios y equipos por sucursal.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
               <SOItemManager 
                 soId={soId} 
                 clientId={so?.clientId || ''} 
@@ -307,7 +321,7 @@ export default function SODetailPage() {
                   <Clock className="h-4 w-4 text-slate-400" />
                   <div>
                     <p className="text-slate-400">Creada el</p>
-                    <p className="font-medium">{so?.dates.createdAt ? format(so.dates.createdAt, 'PPp') : '-'}</p>
+                    <p className="font-medium">{so?.dates?.createdAt ? format(so.dates.createdAt, 'PPp') : '-'}</p>
                   </div>
                 </div>
                 {so?.eeccId && (

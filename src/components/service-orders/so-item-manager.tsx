@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Zap, MapPin, Trash2, Plus, HardDrive, CheckCircle2, User, Loader2, CalendarIcon } from 'lucide-react';
+import { Zap, MapPin, Trash2, Plus, HardDrive, CheckCircle2, User, Loader2, CalendarIcon, Building2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -113,39 +113,39 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
   const isEngineer = user?.role === 'ingeniero' || user?.role === 'admin';
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="overflow-hidden border-none shadow-md">
+      <CardHeader className="bg-slate-50 border-b">
         <CardTitle className="text-base flex items-center gap-2">
-          <Zap className="h-4 w-4 text-primary" />
-          {t('SO.items')}
+          <Building2 className="h-4 w-4 text-primary" />
+          Servicios por Sucursal
         </CardTitle>
-        <Badge variant="secondary">{items?.length || 0} ítems</Badge>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow>
-                <TableHead className="w-[200px]">Locación & Contacto</TableHead>
-                <TableHead>Servicio & Equipo</TableHead>
-                <TableHead>Modalidad</TableHead>
-                <TableHead className="w-[200px]">Activación (PM)</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="w-[200px] text-[10px] uppercase font-bold text-slate-500">Sucursal & Referente</TableHead>
+                <TableHead className="text-[10px] uppercase font-bold text-slate-500">Plan & Hardware</TableHead>
+                <TableHead className="text-[10px] uppercase font-bold text-slate-500">Modalidad</TableHead>
+                <TableHead className="w-[200px] text-[10px] uppercase font-bold text-slate-500">Activación (Ingeniería)</TableHead>
+                <TableHead className="text-right text-[10px] uppercase font-bold text-slate-500">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {/* Row for New Item */}
               {!disabled && user?.role !== 'ingeniero' && (
-                <TableRow className="bg-primary/5">
+                <TableRow className="bg-primary/5 hover:bg-primary/10 transition-colors">
                   <TableCell className="space-y-2">
                     <Select value={newItem.locationId} onValueChange={(v) => setNewItem(p => ({...p, locationId: v}))}>
-                      <SelectTrigger className="h-8 bg-white"><SelectValue placeholder="Locación..." /></SelectTrigger>
+                      <SelectTrigger className="h-8 bg-white border-primary/20"><SelectValue placeholder="Elegir Sucursal..." /></SelectTrigger>
                       <SelectContent>
                         {locations?.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                        {locations?.length === 0 && <SelectItem value="none" disabled>No hay locaciones cargadas</SelectItem>}
                       </SelectContent>
                     </Select>
                     <Select value={newItem.contactId} onValueChange={(v) => setNewItem(p => ({...p, contactId: v}))}>
-                      <SelectTrigger className="h-8 bg-white"><SelectValue placeholder="Contacto..." /></SelectTrigger>
+                      <SelectTrigger className="h-8 bg-white border-primary/20"><SelectValue placeholder="Referente..." /></SelectTrigger>
                       <SelectContent>
                         {contacts?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
@@ -153,7 +153,7 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
                   </TableCell>
                   <TableCell className="space-y-2">
                     <Select value={newItem.serviceIdCatalog} onValueChange={(v) => setNewItem(p => ({...p, serviceIdCatalog: v}))}>
-                      <SelectTrigger className="h-8 bg-white"><SelectValue placeholder="Plan..." /></SelectTrigger>
+                      <SelectTrigger className="h-8 bg-white border-primary/20"><SelectValue placeholder="Plan..." /></SelectTrigger>
                       <SelectContent>
                         {soType === 'Alta' ? (
                           services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)
@@ -163,7 +163,7 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
                       </SelectContent>
                     </Select>
                     <Select value={newItem.equipmentIdCatalog} onValueChange={(v) => setNewItem(p => ({...p, equipmentIdCatalog: v}))}>
-                      <SelectTrigger className="h-8 bg-white"><SelectValue placeholder="Hardware..." /></SelectTrigger>
+                      <SelectTrigger className="h-8 bg-white border-primary/20"><SelectValue placeholder="Hardware..." /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Sin Equipo</SelectItem>
                         {equipment.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
@@ -172,19 +172,20 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
                   </TableCell>
                   <TableCell>
                     <Select value={newItem.modality} onValueChange={(v: any) => setNewItem(p => ({...p, modality: v}))}>
-                      <SelectTrigger className="h-8 bg-white"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-8 bg-white border-primary/20"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Comodato">Comodato</SelectItem>
                         <SelectItem value="Venta">Venta</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="text-center text-muted-foreground italic text-[10px]">
-                    Completado por PM
+                  <TableCell className="text-center text-muted-foreground italic text-[9px] uppercase tracking-tighter">
+                    Asignar PM para activar
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" onClick={handleAddItem} disabled={isAdding || !newItem.locationId || !newItem.serviceIdCatalog}>
-                      {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    <Button size="sm" onClick={handleAddItem} disabled={isAdding || !newItem.locationId || !newItem.serviceIdCatalog} className="h-8 shadow-sm">
+                      {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+                      Agregar
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -277,7 +278,7 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
               })}
               {items?.length === 0 && !isAdding && (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-20 text-center text-muted-foreground italic text-xs">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground italic text-xs">
                     {t('SO.noItems')}
                   </TableCell>
                 </TableRow>
