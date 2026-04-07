@@ -42,20 +42,22 @@
       },
       "required": ["publicId", "name", "taxIdType", "cuit", "status", "sector", "management", "assignedTo"]
     },
-    "AuditLog": {
-      "title": "Audit Log",
-      "description": "Records all sensitive changes in the system.",
+    "ServiceOrder": {
+      "title": "Service Order",
+      "description": "Represents a transition from contract to operations.",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "userEmail": { "type": "string" },
-        "action": { "type": "string", "enum": ["create", "update", "delete"] },
-        "collection": { "type": "string" },
-        "docId": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "details": { "type": "string" }
+        "publicId": { "type": "string" },
+        "contractId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "eeccId": { "type": "string" },
+        "pmAssignedId": { "type": "string" },
+        "status": { "type": "string", "enum": ["Abierta", "Asignada", "Devuelta", "Cancelada", "Cerrada"] },
+        "type": { "type": "string", "enum": ["Alta", "Modificación", "Baja"] },
+        "itemsCount": { "type": "number" },
+        "management": { "type": "string", "enum": ["Satellite Communications", "GeoInformacion"] }
       },
-      "required": ["userId", "action", "collection", "docId", "timestamp"]
+      "required": ["publicId", "contractId", "clientId", "status", "type", "management"]
     }
   },
   "auth": {
@@ -64,6 +66,6 @@
   "firestore": {
     "/users/{userId}": { "schema": { "$ref": "#/entities/UserProfile" }, "description": "User profiles and settings." },
     "/clients/{clientId}": { "schema": { "$ref": "#/entities/Client" }, "description": "Client accounts." },
-    "/auditLogs/{logId}": { "schema": { "$ref": "#/entities/AuditLog" }, "description": "System audit trail." }
+    "/service_orders/{soId}": { "schema": { "$ref": "#/entities/ServiceOrder" }, "description": "Operational service orders." }
   }
 }

@@ -28,6 +28,7 @@ export type RolePermissions = {
     showPos: boolean;
     showServices: boolean;
     showEquipment: boolean;
+    showServiceOrders: boolean;
   };
 };
 
@@ -430,4 +431,57 @@ export type SystemConfig = {
   lastRatesUpdate?: Date;
   updatedAt?: Date;
   updatedBy?: string;
+};
+
+// --- SERVICE ORDERS (SO) ---
+
+export type ServiceOrderStatus = 'Abierta' | 'Asignada' | 'Devuelta' | 'Cancelada' | 'Cerrada';
+export type ServiceOrderType = 'Alta' | 'Modificación' | 'Baja';
+
+export type ServiceOrder = {
+  id: string;
+  publicId: string;
+  contractId: string;
+  clientId: string;
+  clientName: string;
+  cuit: string;
+  eeccId: string; // Account Executive UID
+  pmAssignedId?: string; // Engineer/PM UID
+  status: ServiceOrderStatus;
+  type: ServiceOrderType;
+  starfleetAccount?: string;
+  itemsCount: number;
+  management: ManagementArea;
+  dates: {
+    createdAt: Date;
+    contractStart?: Date;
+    contractDuration?: number;
+    leadTimeTarget?: number;
+    sentAt?: Date;
+    serviceActivationComplete?: Date;
+  };
+  createdBy: string;
+  updatedAt?: Date;
+};
+
+export type ServiceOrderItem = {
+  id: string;
+  serviceOrderId: string;
+  locationId: string;
+  serviceIdCatalog: string; // reference to ProductOrService
+  equipmentIdCatalog?: string; // reference to ProductOrService (product type)
+  modality: 'Venta' | 'Comodato';
+  contactId: string;
+  serviceIdFinal?: string; // Completed by PM
+  activationDate?: Date; // Completed by PM
+  isClosed: boolean;
+};
+
+export type ServiceOrderComment = {
+  id: string;
+  userId: string;
+  userName: string;
+  text: string;
+  timestamp: Date;
+  statusChange?: ServiceOrderStatus;
 };

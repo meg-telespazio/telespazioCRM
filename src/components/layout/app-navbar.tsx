@@ -22,6 +22,7 @@ import {
   Zap,
   HardDrive,
   Settings as SettingsIcon,
+  ClipboardList,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -220,6 +221,7 @@ export function AppNavbar() {
       icon: Building,
       subItems: managementSubItems
     },
+    { href: '/service-orders', label: 'Service Orders', icon: ClipboardList, permission: 'showServiceOrders' },
     { href: '/products-and-services', label: t('Sidebar.ps'), icon: Package, permission: 'showCatalog' },
     { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal, permission: 'showReports' },
     { href: '/settings', label: t('Sidebar.settings'), icon: SettingsIcon, permission: 'showSettings' },

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -19,8 +20,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.2.4 - Alertas animadas (Marquee)
-const APP_VERSION = '1.2.4'; 
+// VERSIÓN 1.3.0 - Módulo Service Orders
+const APP_VERSION = '1.3.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -84,6 +85,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       '/equipment': 'showEquipment',
       '/activities': 'showActivities',
       '/locations': 'showLocations',
+      '/service-orders': 'showServiceOrders',
     };
 
     // Encontrar si la ruta actual (o su padre) requiere permiso
