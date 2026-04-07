@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, User as UserIcon, PlusCircle, Loader2, CheckCircle2, ShieldAlert, ShieldCheck, Lock, Save, Users as UsersIcon } from 'lucide-react';
+import { Edit, User as UserIcon, PlusCircle, Loader2, CheckCircle2, ShieldAlert, ShieldCheck, Lock, Save, Users as UsersIcon, Info } from 'lucide-react';
 import Link from 'next/link';
 import { 
   Dialog, 
@@ -102,7 +102,6 @@ export default function UsersManagementPage() {
     if (config?.permissionsMatrix) {
       setLocalMatrix(config.permissionsMatrix);
     } else if (config) {
-      // Inicializar matriz por defecto si no existe pero el config sí
       const initial: any = {};
       ROLES.forEach(role => {
         initial[role] = {
@@ -304,15 +303,41 @@ export default function UsersManagementPage() {
 
           <TabsContent value="matrix" className="animate-in fade-in duration-300">
             <div className="space-y-6">
-              <div className="flex items-center justify-between bg-primary/5 p-4 rounded-lg border border-primary/20">
-                <div>
-                  <h3 className="text-lg font-bold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Configuración de Acceso Dinámico</h3>
-                  <p className="text-sm text-muted-foreground">Define las capacidades de cada rol. Los cambios se aplican inmediatamente.</p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between bg-primary/5 p-4 rounded-lg border border-primary/20 gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-primary/10 rounded-full mt-1">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold">Configuración de Acceso Dinámico</h3>
+                    <p className="text-xs text-muted-foreground max-w-xl">
+                      Define las capacidades base de cada rol. Los cambios se aplican inmediatamente a toda la plataforma.
+                    </p>
+                  </div>
                 </div>
                 <Button onClick={handleSaveMatrix} disabled={isSavingMatrix} className="gap-2">
                   {isSavingMatrix ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   Guardar Matriz de Permisos
                 </Button>
+              </div>
+
+              {/* Bloque Informativo sobre Reglas Inmutables */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-4">
+                <div className="p-2 bg-amber-100 rounded-full h-fit">
+                  <Info className="h-5 w-5 text-amber-700" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-amber-900 uppercase tracking-tight">Reglas de Oro del Sistema (Filtros de Seguridad)</h4>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Independientemente de lo que se marque en esta matriz, el sistema siempre aplica las siguientes restricciones de seguridad:
+                  </p>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 list-disc pl-4 text-[11px] text-amber-800">
+                    <li><strong>Admin:</strong> Posee bypass total. Visualiza y edita todos los registros de ambas gerencias.</li>
+                    <li><strong>Gerente:</strong> Solo visualiza y gestiona datos pertenecientes a su propia gerencia (SatCom o GeoInfo).</li>
+                    <li><strong>Ejecutivo (Visibilidad):</strong> Visualiza todos los registros de su gerencia para evitar duplicados.</li>
+                    <li><strong>Ejecutivo (Modificación):</strong> Solo puede Editar o Borrar registros donde figure como "Responsable".</li>
+                  </ul>
+                </div>
               </div>
 
               {localMatrix && ROLES.map(role => (
@@ -382,7 +407,6 @@ export default function UsersManagementPage() {
         </Tabs>
       </main>
 
-      {/* Modal Añadir Usuario */}
       <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

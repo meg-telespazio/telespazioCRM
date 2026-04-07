@@ -19,8 +19,8 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 
-// VERSIÓN 1.1.4 - Forzar visibilidad de Matriz de Permisos
-const APP_VERSION = '1.1.4'; 
+// VERSIÓN 1.1.5 - Reglas de Oro en Matriz de Permisos
+const APP_VERSION = '1.1.5'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
