@@ -148,6 +148,7 @@ export async function importServices(
     const cleanedService = cleanData(s);
     batch.set(serviceRef, {
       ...cleanedService,
+      status: 'active',
       poId,
       createdBy: uid,
       createdAt: serverTimestamp(),

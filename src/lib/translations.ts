@@ -1,4 +1,3 @@
-
 export const translations = {
   en: {
     App: { appName: 'T-Track', loading: 'Loading...' },
@@ -123,7 +122,7 @@ export const translations = {
     Dashboard: {
       title: 'Dashboard',
       stats: {
-        totalRevenue: 'Won Revenue',
+        totalRevenue: 'Sales (Won Revenue)',
         totalRevenueDesc: 'Sum of Won opportunities',
         closeRate: 'Close Rate',
         closeRateDesc: 'Percentage of Won vs Total',
@@ -1073,7 +1072,7 @@ export const translations = {
     Dashboard: {
       title: 'Dashboard',
       stats: {
-        totalRevenue: 'Revenue Ganado',
+        totalRevenue: 'Ventas (Revenue Ganado)',
         totalRevenueDesc: 'Suma de oportunidades Ganadas',
         closeRate: 'Tasa de Cierre',
         closeRateDesc: 'Ganadas vs Totales',

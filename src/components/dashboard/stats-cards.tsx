@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -8,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Target, Zap, DollarSign, TrendingUp, Briefcase, Contact as ContactIcon } from 'lucide-react';
+import { Target, Zap, DollarSign, TrendingUp, Briefcase } from 'lucide-react';
 import type { Opportunity, Client, Contact, ExchangeRate, Service, Equipment } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 
@@ -39,13 +38,14 @@ export function StatsCards({
   };
 
   const convertValue = (val: number, fromCcy: string, toCcy: string) => {
-    if (fromCcy === toCcy) return val;
+    const numericVal = Number(val) || 0;
+    if (fromCcy === toCcy) return numericVal;
     const rateFrom = getRateToUsd(fromCcy);
     const rateTo = getRateToUsd(toCcy);
-    return (val * rateFrom) / rateTo;
+    return (numericVal * rateFrom) / rateTo;
   };
 
-  // KPI 1: Revenue Ganado
+  // KPI 1: Ventas (Revenue Ganado)
   const totalRevenueConverted = opportunities
     .filter((opp) => opp.stage === 'Won')
     .reduce((sum, opp) => sum + convertValue(opp.value, opp.currency || 'USD', displayCurrency), 0);
@@ -55,18 +55,18 @@ export function StatsCards({
   const totalOpportunities = opportunities.length;
   const closeRate = totalOpportunities > 0 ? (totalWon / totalOpportunities) * 100 : 0;
 
-  // KPI 3: Servicios Activos
-  const activeServicesCount = services.filter(s => s.status === 'active').length;
+  // KPI 3: Servicios Activos (Consideramos activo si el status es null/undefined o 'active')
+  const activeServicesCount = services.filter(s => (s.status || 'active') === 'active').length;
 
   // KPI 4: Abono Mensual Total (MRR + Comodato)
   const totalMonthlyMRR = useMemo(() => {
     return services
-      .filter(s => s.status === 'active')
+      .filter(s => (s.status || 'active') === 'active')
       .reduce((acc, s) => {
         // Abono del servicio
         let mrrValue = convertValue(s.monthlyFee || 0, s.currency || 'USD', displayCurrency);
         
-        // Cargo por comodato si el equipo no es del cliente
+        // Cargo por comodato si el equipo no es del cliente (Telespazio Owned)
         const equip = equipment.find(e => e.id === s.equipmentId);
         if (equip && !equip.isClientOwned) {
           mrrValue += convertValue(equip.comodatoFee || 0, 'USD', displayCurrency);
