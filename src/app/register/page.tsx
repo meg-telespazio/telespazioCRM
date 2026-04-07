@@ -10,29 +10,26 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-destructive p-4">
-      <div className="text-center mb-8 flex flex-col items-center">
-        {/* Logo corporativo arriba */}
+      <div className="text-center mb-6 flex flex-col items-center">
+        {/* Logo de la app arriba - Reducido de tamaño */}
         <Image
           src="/img/logoLarge.png"
-          alt="Telespazio Logo"
-          width={220}
-          height={60}
-          priority
-          className="mb-4"
-          style={{ height: 'auto', objectFit: 'contain' }}
-        />
-        {/* Nombre de la app en el medio */}
-        <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-6">
-          {t('App.appName')}
-        </h1>
-        {/* Logo de la app abajo */}
-        <Image
-          src="/img/logoBlancoChico.png"
           alt="T-Track Logo"
           width={140}
-          height={50}
+          height={140}
           priority
-          className="opacity-95"
+          className="mb-6 drop-shadow-xl"
+          style={{ height: 'auto', objectFit: 'contain' }}
+        />
+        
+        {/* Logo corporativo blanco abajo */}
+        <Image
+          src="/img/logoBlancoChico.png"
+          alt="Telespazio Logo"
+          width={160}
+          height={40}
+          priority
+          className="opacity-90"
           style={{ height: 'auto', objectFit: 'contain' }}
         />
       </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -19,8 +18,8 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 
-// VERSIÓN 1.1.5 - Reglas de Oro en Matriz de Permisos
-const APP_VERSION = '1.1.5'; 
+// VERSIÓN 1.1.6 - Ajuste de logos y UI en Login
+const APP_VERSION = '1.1.6'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
