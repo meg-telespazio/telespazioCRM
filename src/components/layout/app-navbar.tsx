@@ -63,6 +63,7 @@ import { cn } from '@/lib/utils';
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { SystemConfig, Opportunity, Contract, Activity } from '@/lib/types';
 import { isBefore, addDays, startOfDay } from 'date-fns';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar');
 
@@ -130,6 +131,7 @@ export function AppNavbar() {
   const router = useRouter();
   const firestore = useFirestore();
   const { t } = useI18n();
+  const { canSeeMenu } = usePermissions();
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Notifications Logic
@@ -182,22 +184,22 @@ export function AppNavbar() {
     router.push('/login');
   };
 
-  const isIngeniero = user?.role === 'ingeniero';
   const isAdmin = user?.role === 'admin';
-  const isGerente = user?.role === 'gerente';
 
-  const managementSubItems = useMemo(() => [
-    { href: '/clients', label: t('Pages.clients'), icon: Building },
-    { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
-    { href: '/locations', label: t('Pages.locations'), icon: MapPin },
-    { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon },
-    ...(!isIngeniero ? [
-      { href: '/contracts', label: t('Sidebar.contracts'), icon: FileText },
-      { href: '/purchase-orders', label: t('Sidebar.pos'), icon: ShoppingCart },
-      { href: '/services', label: t('Sidebar.services'), icon: Zap },
-      { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive },
-    ] : []),
-  ], [t, isIngeniero]);
+  const managementSubItems = useMemo(() => {
+    const items = [
+      { href: '/clients', label: t('Pages.clients'), icon: Building },
+      { href: '/contacts', label: t('Sidebar.contacts'), icon: Contact },
+      { href: '/locations', label: t('Pages.locations'), icon: MapPin, permission: 'showLocations' },
+      { href: '/activities', label: t('Pages.activities'), icon: ActivityIcon, permission: 'showActivities' },
+      { href: '/contracts', label: t('Sidebar.contracts'), icon: FileText, permission: 'showContracts' },
+      { href: '/purchase-orders', label: t('Sidebar.pos'), icon: ShoppingCart, permission: 'showPos' },
+      { href: '/services', label: t('Sidebar.services'), icon: Zap, permission: 'showServices' },
+      { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive, permission: 'showEquipment' },
+    ];
+
+    return items.filter(item => !item.permission || canSeeMenu(item.permission as any));
+  }, [t, canSeeMenu]);
 
   const menuItems = useMemo(() => [
     {
@@ -209,16 +211,17 @@ export function AppNavbar() {
       href: '/opportunities',
       label: t('Sidebar.opportunities'),
       icon: Briefcase,
+      permission: 'showOpportunities'
     },
     {
       label: t('Sidebar.management'),
       icon: Building,
       subItems: managementSubItems
     },
-    ...((isAdmin || isGerente) ? [{ href: '/products-and-services', label: t('Sidebar.ps'), icon: Package }] : []),
-    { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal },
-    ...(isAdmin ? [{ href: '/settings', label: t('Sidebar.settings'), icon: SettingsIcon }] : []),
-  ], [t, isAdmin, isGerente, managementSubItems]);
+    { href: '/products-and-services', label: t('Sidebar.ps'), icon: Package, permission: 'showCatalog' },
+    { href: '/reports', label: t('Pages.reports'), icon: BarChartHorizontal, permission: 'showReports' },
+    { href: '/settings', label: t('Sidebar.settings'), icon: SettingsIcon, permission: 'showSettings' },
+  ].filter(item => !item.permission || canSeeMenu(item.permission as any)), [t, canSeeMenu, managementSubItems]);
 
   if (!user) return null;
 

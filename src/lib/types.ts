@@ -9,6 +9,31 @@ export type CostCenter = {
   name: string;
 };
 
+export type ModulePermission = {
+  view: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+};
+
+export type RolePermissions = {
+  modules: Record<string, ModulePermission>;
+  menu: {
+    showCatalog: boolean;
+    showReports: boolean;
+    showSettings: boolean;
+    showOpportunities: boolean;
+    showActivities: boolean;
+    showLocations: boolean;
+    showContracts: boolean;
+    showPos: boolean;
+    showServices: boolean;
+    showEquipment: boolean;
+  };
+};
+
+export type PermissionsMatrix = Record<UserRole, RolePermissions>;
+
 export type Client = {
   id: string;
   publicId: string;
@@ -399,6 +424,7 @@ export type SystemConfig = {
   unitsOfMeasure: string[];
   exchangeRates: ExchangeRate[];
   costCenters: CostCenter[];
+  permissionsMatrix?: PermissionsMatrix;
   lastRatesUpdate?: Date;
   updatedAt?: Date;
   updatedBy?: string;

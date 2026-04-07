@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -13,33 +14,31 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
     }
 
-    // El Admin tiene permisos de gestión sobre cualquier gerencia, pero sujeto a auditoría.
-    function isAdmin() {
-      return isSuperAdmin() || (isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin');
-    }
-
     function getUserData() {
       let path = /databases/$(database)/documents/users/$(request.auth.uid);
       return exists(path) ? get(path).data : {};
     }
 
-    // --- Helpers de Permisos por Rol ---
-
-    function isGerente() {
-      return getUserData().get('role', 'ejecutivo') == 'gerente';
+    function getPermissions() {
+      let path = /databases/$(database)/documents/systemConfig/globals;
+      let role = getUserData().role;
+      return exists(path) ? get(path).data.permissionsMatrix[role] : null;
     }
 
-    function isEjecutivo() {
-      return getUserData().get('role', 'ejecutivo') == 'ejecutivo';
+    // El Admin tiene permisos de gestión sobre cualquier gerencia, pero sujeto a auditoría.
+    function isAdmin() {
+      return isSuperAdmin() || (isAuthenticated() && getUserData().role == 'admin');
     }
 
-    function isIngeniero() {
-      return getUserData().get('role', 'ejecutivo') == 'ingeniero';
+    // --- Helpers Dinámicos basados en la Matriz ---
+
+    function hasPermission(module, action) {
+      return isAdmin() || (isAuthenticated() && getPermissions().modules[module][action] == true);
     }
 
     // Comprueba si el documento pertenece a la gerencia del usuario
     function isSameManagement(data) {
-      return data.management == getUserData().get('management', '');
+      return isAdmin() || data.management == getUserData().get('management', '');
     }
 
     // Comprueba si el usuario es the responsable asignado
@@ -74,88 +73,87 @@ service cloud.firestore {
       allow update, delete: if false; 
     }
 
-    // Clientes, Contactos, Locaciones: Visibles por todos en la gerencia (incluye ingenieros), editables por Gerente o Ejecutivo asignado
     match /clients/{clientId} {
-      allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
-      allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
-      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente()); 
+      allow read: if hasPermission('clients', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('clients', 'create');
+      allow update: if hasPermission('clients', 'edit') && isSameManagement(resource.data) && (isAdmin() || getUserData().role == 'gerente' || isAssignedTo(resource.data));
+      allow delete: if hasPermission('clients', 'delete') && isSameManagement(resource.data); 
     }
 
     match /contacts/{contactId} {
-      allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
-      allow write: if isAdmin() || (isAuthenticated() && isSameManagement(request.resource.data) && (isGerente() || isEjecutivo()));
-      allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow read: if hasPermission('contacts', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('contacts', 'create');
+      allow update: if hasPermission('contacts', 'edit') && isSameManagement(resource.data);
+      allow delete: if hasPermission('contacts', 'delete') && isSameManagement(resource.data);
     }
 
     match /locations/{locationId} {
-      allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
-      allow write: if isAdmin() || (isAuthenticated() && isSameManagement(request.resource.data) && (isGerente() || isEjecutivo()));
-      allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow read: if hasPermission('locations', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('locations', 'create');
+      allow update: if hasPermission('locations', 'edit') && isSameManagement(resource.data);
+      allow delete: if hasPermission('locations', 'delete') && isSameManagement(resource.data);
     }
 
-    // Oportunidades, POs: No visibles para Ingenieros (Solo lectura NO aplica aquí según definición comercial)
     match /opportunities/{opportunityId} {
-      allow read: if isAuthenticated() && (isAdmin() || (isSameManagement(resource.data) && !isIngeniero()));
-      allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
-      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
+      allow read: if hasPermission('opportunities', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('opportunities', 'create');
+      allow update: if hasPermission('opportunities', 'edit') && isSameManagement(resource.data);
+      allow delete: if hasPermission('opportunities', 'delete') && isSameManagement(resource.data);
     }
 
     match /purchaseOrders/{poId} {
-      allow read: if isAuthenticated() && (isAdmin() || (isSameManagement(resource.data) && !isIngeniero()));
-      allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
-      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
+      allow read: if hasPermission('purchaseOrders', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('purchaseOrders', 'create');
+      allow update: if hasPermission('purchaseOrders', 'edit') && isSameManagement(resource.data);
+      allow delete: if hasPermission('purchaseOrders', 'delete') && isSameManagement(resource.data);
     }
 
-    // Servicios: Ingenieros ahora pueden leerlos (Solo Lectura)
     match /services/{serviceId} {
-      allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
-      allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
-      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
+      allow read: if hasPermission('services', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('services', 'create');
+      allow update: if hasPermission('services', 'edit') && isSameManagement(resource.data);
+      allow delete: if hasPermission('services', 'delete') && isSameManagement(resource.data);
     }
 
-    // Contratos: Ingenieros pueden leerlos
     match /contracts/{contractId} {
-      allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
-      allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
-      allow delete: if isAdmin() || (isSameManagement(resource.data) && isGerente());
+      allow read: if hasPermission('contracts', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('contracts', 'create');
+      allow update: if hasPermission('contracts', 'edit') && isSameManagement(resource.data);
+      allow delete: if hasPermission('contracts', 'delete') && isSameManagement(resource.data);
       
       match /addendums/{addendumId} {
-        allow read: if isAuthenticated() && (isAdmin() || isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data));
-        allow write: if isAdmin() || (isGerente() && isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data));
+        allow read: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data);
+        allow write: if hasPermission('contracts', 'edit') && isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data);
       }
     }
 
-    // Activos (Kits): Visibles por todos en la gerencia
     match /equipment/{equipmentId} {
-      allow read: if isAuthenticated() && (isAdmin() || isSameManagement(resource.data));
-      allow write: if isAdmin() || isGerente();
+      allow read: if hasPermission('equipment', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('equipment', 'create');
+      allow update: if hasPermission('equipment', 'edit') && isSameManagement(resource.data);
+      allow delete: if hasPermission('equipment', 'delete') && isSameManagement(resource.data);
     }
 
-    // Actividades: No visibles para ingenieros
     match /activities/{activityId} {
-      allow read: if isAuthenticated() && (isAdmin() || (isSameManagement(resource.data) && !isIngeniero()));
-      allow create: if isAuthenticated() && (isAdmin() || isGerente() || isEjecutivo());
-      allow update, delete: if isAdmin() || (isSameManagement(resource.data) && (isGerente() || isAssignedTo(resource.data)));
+      allow read: if hasPermission('activities', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('activities', 'create');
+      allow update: if hasPermission('activities', 'edit') && isSameManagement(resource.data);
+      allow delete: if hasPermission('activities', 'delete') && isSameManagement(resource.data);
 
       match /followUps/{followUpId} {
-        allow read: if isAuthenticated() && (isAdmin() || isSameManagement(get(/databases/$(database)/documents/activities/$(activityId)).data));
-        allow write: if isAuthenticated() && (isAdmin() || isSameManagement(get(/databases/$(database)/documents/activities/$(activityId)).data));
+        allow read: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/activities/$(activityId)).data);
+        allow write: if hasPermission('activities', 'edit') && isSameManagement(get(/databases/$(database)/documents/activities/$(activityId)).data);
       }
     }
 
     match /productsAndServices/{itemId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if hasPermission('productsAndServices', 'view');
+      allow write: if isAdmin() || (getUserData().role == 'gerente' && hasPermission('productsAndServices', 'create'));
     }
 
     match /holdings/{holdingId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isGerente();
+      allow write: if isAdmin() || getUserData().role == 'gerente';
     }
 
     match /counters/{counterId} {

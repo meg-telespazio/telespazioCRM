@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -18,8 +19,8 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 
-// VERSIÓN 1.1.1 - Resolución de Error de Red en PWA y Bypass de SW para Auth
-const APP_VERSION = '1.1.1'; 
+// VERSIÓN 1.1.3 - Implementación de Matriz de Permisos Dinámica
+const APP_VERSION = '1.1.3'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -42,13 +43,11 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
         console.warn(`Nueva versión detectada (${APP_VERSION}). Forzando limpieza de PWA...`);
         
         try {
-          // 1. Borrar todos los storages de caché del navegador
           if ('caches' in window) {
             const cacheKeys = await caches.keys();
             await Promise.all(cacheKeys.map(key => caches.delete(key)));
           }
 
-          // 2. Desregistrar todos los Service Workers
           if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
@@ -56,10 +55,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // 3. Guardar nueva versión
           localStorage.setItem('crm_app_version', APP_VERSION);
-          
-          // 4. Recarga dura
           window.location.reload();
         } catch (e) {
           console.error('Error durante la actualización automática:', e);
