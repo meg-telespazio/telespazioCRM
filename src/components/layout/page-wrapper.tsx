@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -20,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.2.1 - Despliegue de nuevas funcionalidades: Matriz, Prebilling y Mapas
-const APP_VERSION = '1.2.1'; 
+// VERSIÓN 1.2.2 - Contratos 12m, Permisos Ejecutivo Reforzados e Importador PO Labels
+const APP_VERSION = '1.2.2'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

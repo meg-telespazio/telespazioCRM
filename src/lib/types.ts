@@ -1,4 +1,3 @@
-
 import type { FieldValue } from "firebase/firestore";
 
 export type UserRole = 'admin' | 'gerente' | 'ejecutivo' | 'ingeniero';
