@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import type { UserProfile, SystemConfig, PermissionsMatrix, UserRole } from '@/lib/types';
+import type { UserProfile, SystemConfig, PermissionsMatrix, UserRole, ModulePermission } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, User as UserIcon, PlusCircle, Loader2, CheckCircle2, ShieldAlert, ShieldCheck, Lock, Save } from 'lucide-react';
+import { Edit, User as UserIcon, PlusCircle, Loader2, CheckCircle2, ShieldAlert, ShieldCheck, Lock, Save, Users as UsersIcon } from 'lucide-react';
 import Link from 'next/link';
 import { 
   Dialog, 
@@ -101,8 +101,8 @@ export default function UsersManagementPage() {
   useEffect(() => {
     if (config?.permissionsMatrix) {
       setLocalMatrix(config.permissionsMatrix);
-    } else {
-      // Inicializar matriz por defecto si no existe
+    } else if (config) {
+      // Inicializar matriz por defecto si no existe pero el config sí
       const initial: any = {};
       ROLES.forEach(role => {
         initial[role] = {
@@ -184,7 +184,7 @@ export default function UsersManagementPage() {
 
   const updateMatrixValue = (role: UserRole, type: 'modules' | 'menu', key: string, action?: keyof ModulePermission) => {
     if (!localMatrix) return;
-    const newMatrix = { ...localMatrix };
+    const newMatrix = JSON.parse(JSON.stringify(localMatrix)) as PermissionsMatrix;
     if (type === 'modules' && action) {
       newMatrix[role].modules[key][action] = !newMatrix[role].modules[key][action];
     } else if (type === 'menu') {
@@ -230,12 +230,18 @@ export default function UsersManagementPage() {
 
       <main className="flex-1 p-4 sm:p-6 pb-24">
         <Tabs defaultValue="list" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="list" className="gap-2"><UserIcon className="h-4 w-4" /> Directorio de Usuarios</TabsTrigger>
-            <TabsTrigger value="matrix" className="gap-2"><Lock className="h-4 w-4" /> Matriz de Roles y Permisos</TabsTrigger>
+          <TabsList className="mb-6 grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="list" className="gap-2">
+              <UsersIcon className="h-4 w-4" /> 
+              Directorio
+            </TabsTrigger>
+            <TabsTrigger value="matrix" className="gap-2">
+              <Lock className="h-4 w-4" /> 
+              Matriz de Permisos
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="list">
+          <TabsContent value="list" className="animate-in fade-in duration-300">
             <div className="rounded-md border bg-white shadow-sm overflow-hidden">
               <Table>
                 <TableHeader>
@@ -251,7 +257,7 @@ export default function UsersManagementPage() {
                 </TableHeader>
                 <TableBody>
                   {users?.sort((a,b) => a.displayName.localeCompare(b.displayName)).map((user) => (
-                    <TableRow key={user.uid} className="hover:bg-slate-50/50">
+                    <TableRow key={user.uid} className="hover:bg-slate-50/50 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center text-primary">
@@ -296,51 +302,54 @@ export default function UsersManagementPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="matrix">
+          <TabsContent value="matrix" className="animate-in fade-in duration-300">
             <div className="space-y-6">
               <div className="flex items-center justify-between bg-primary/5 p-4 rounded-lg border border-primary/20">
                 <div>
-                  <h3 className="text-lg font-bold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Configuración de Acceso</h3>
-                  <p className="text-sm text-muted-foreground">Defina qué puede hacer cada rol en los diferentes módulos del sistema.</p>
+                  <h3 className="text-lg font-bold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Configuración de Acceso Dinámico</h3>
+                  <p className="text-sm text-muted-foreground">Define las capacidades de cada rol. Los cambios se aplican inmediatamente.</p>
                 </div>
-                <Button onClick={handleSaveMatrix} disabled={isSavingMatrix}>
-                  {isSavingMatrix ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                  Guardar Cambios en la Matriz
+                <Button onClick={handleSaveMatrix} disabled={isSavingMatrix} className="gap-2">
+                  {isSavingMatrix ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Guardar Matriz de Permisos
                 </Button>
               </div>
 
               {localMatrix && ROLES.map(role => (
-                <div key={role} className="rounded-xl border bg-white shadow-sm overflow-hidden mb-8">
+                <div key={role} className="rounded-xl border bg-white shadow-sm overflow-hidden mb-8 border-slate-200">
                   <div className="bg-slate-50 border-b p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded shadow-sm"><Lock className="h-4 w-4 text-slate-600" /></div>
+                      <div className="p-2 bg-white rounded shadow-sm border border-slate-100"><Lock className="h-4 w-4 text-slate-600" /></div>
                       <div>
-                        <h4 className="font-bold text-sm uppercase tracking-wider">Permisos para: {t(`Roles.${role}`)}</h4>
-                        <p className="text-[10px] text-muted-foreground">Control de módulos y visibilidad de menús.</p>
+                        <h4 className="font-bold text-sm uppercase tracking-wider text-slate-800">Permisos de {t(`Roles.${role}`)}</h4>
+                        <p className="text-[10px] text-muted-foreground font-medium">Control granular de módulos y visibilidad del menú principal.</p>
                       </div>
                     </div>
                   </div>
-                  <div className="p-0">
+                  <div className="p-0 overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-slate-100/50">
-                          <TableHead className="w-[200px] text-[10px] font-bold">MÓDULO</TableHead>
-                          <TableHead className="text-center text-[10px] font-bold">VER</TableHead>
-                          <TableHead className="text-center text-[10px] font-bold">CREAR</TableHead>
-                          <TableHead className="text-center text-[10px] font-bold">EDITAR</TableHead>
-                          <TableHead className="text-center text-[10px] font-bold">BORRAR</TableHead>
+                        <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+                          <TableHead className="w-[250px] text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50">MÓDULO DEL SISTEMA</TableHead>
+                          <TableHead className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50">VER</TableHead>
+                          <TableHead className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50">CREAR</TableHead>
+                          <TableHead className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50">EDITAR</TableHead>
+                          <TableHead className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50">BORRAR</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {MODULES.map(mod => (
-                          <TableRow key={mod.id}>
-                            <TableCell className="font-medium text-xs text-slate-700">{mod.label}</TableCell>
+                          <TableRow key={mod.id} className="hover:bg-slate-50/30">
+                            <TableCell className="font-bold text-[11px] text-slate-700">{mod.label}</TableCell>
                             {(['view', 'create', 'edit', 'delete'] as const).map(action => (
                               <TableCell key={action} className="text-center">
-                                <Checkbox 
-                                  checked={localMatrix[role].modules[mod.id]?.[action]} 
-                                  onCheckedChange={() => updateMatrixValue(role, 'modules', mod.id, action)}
-                                />
+                                <div className="flex justify-center">
+                                  <Checkbox 
+                                    checked={localMatrix[role].modules[mod.id]?.[action]} 
+                                    onCheckedChange={() => updateMatrixValue(role, 'modules', mod.id, action)}
+                                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                </div>
                               </TableCell>
                             ))}
                           </TableRow>
@@ -348,17 +357,20 @@ export default function UsersManagementPage() {
                       </TableBody>
                     </Table>
                   </div>
-                  <div className="bg-slate-50/50 p-4 border-t">
-                    <h5 className="text-[10px] font-bold uppercase text-muted-foreground mb-3 tracking-widest">Opciones de Menú</h5>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="bg-slate-50/50 p-4 border-t border-slate-100">
+                    <h5 className="text-[10px] font-bold uppercase text-slate-400 mb-4 tracking-widest flex items-center gap-2">
+                      <UsersIcon className="h-3 w-3" /> Visibilidad en Menú Principal
+                    </h5>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       {MENU_ITEMS.map(item => (
-                        <div key={item.id} className="flex items-center gap-2 border bg-white p-2 rounded-md">
+                        <div key={item.id} className="flex items-center gap-3 border bg-white p-2.5 rounded-lg shadow-sm hover:border-primary/20 transition-all">
                           <Checkbox 
                             id={`${role}-${item.id}`}
                             checked={(localMatrix[role].menu as any)[item.id]} 
                             onCheckedChange={() => updateMatrixValue(role, 'menu', item.id)}
+                            className="h-4 w-4 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                           />
-                          <label htmlFor={`${role}-${item.id}`} className="text-[10px] font-medium cursor-pointer">{item.label}</label>
+                          <label htmlFor={`${role}-${item.id}`} className="text-[10px] font-bold text-slate-600 cursor-pointer select-none leading-none">{item.label}</label>
                         </div>
                       ))}
                     </div>
