@@ -30,7 +30,8 @@
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "phone": { "type": "string" },
-        "cuit": { "type": "string" },
+        "taxIdType": { "type": "string", "enum": ["CUIT", "RUT_CL", "RUC_PE", "CNPJ", "RUT_CO", "NIT_CR", "EIN_US", "OTHER"] },
+        "cuit": { "type": "string", "description": "The numeric Tax ID value" },
         "holding": { "type": "string" },
         "status": { "type": "string", "enum": ["active", "suspended", "canceled"] },
         "sector": { "type": "string" },
@@ -39,7 +40,7 @@
         "assignedTo": { "type": "string" },
         "costCenterId": { "type": "string" }
       },
-      "required": ["publicId", "name", "cuit", "status", "sector", "management", "assignedTo"]
+      "required": ["publicId", "name", "taxIdType", "cuit", "status", "sector", "management", "assignedTo"]
     },
     "AuditLog": {
       "title": "Audit Log",

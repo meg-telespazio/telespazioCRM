@@ -38,13 +38,15 @@ export async function addClient(
   clientData: ClientData
 ) {
   const clientCollectionRef = collection(firestore, CLIENTS_COLLECTION);
-  const cleanCuitValue = clientData.cuit;
+  const cleanIdValue = clientData.cuit;
 
-  if (cleanCuitValue && cleanCuitValue !== '00000000000') {
-    const q = query(clientCollectionRef, where('cuit', '==', cleanCuitValue));
+  // Check for duplicates within the same type or globally if preferred
+  // For safety across regions, we check global string value
+  if (cleanIdValue && cleanIdValue !== '00000000000' && cleanIdValue !== '-') {
+    const q = query(clientCollectionRef, where('cuit', '==', cleanIdValue));
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
-      throw new Error('This CUIT is already registered.');
+      throw new Error('This Tax ID is already registered.');
     }
   }
   
@@ -72,17 +74,16 @@ export async function addClient(
       transaction.set(newClientRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
       
-      // Log auditoría
       logAuditAction(firestore, {
         action: 'create',
         collection: CLIENTS_COLLECTION,
         docId: newClientRef.id,
-        details: `Nuevo cliente: ${clientData.name}`
+        details: `Nuevo cliente: ${clientData.name} (${clientData.taxIdType}: ${clientData.cuit})`
       });
     });
   } catch (error) {
     console.error("Client creation transaction failed: ", error);
-    if (error instanceof Error && error.message.includes('CUIT')) {
+    if (error instanceof Error && error.message.includes('Tax ID')) {
       throw error;
     }
     const permissionError = new FirestorePermissionError({
@@ -102,13 +103,13 @@ export async function updateClient(
 ) {
   const clientCollectionRef = collection(firestore, CLIENTS_COLLECTION);
   
-  if (clientData.cuit && clientData.cuit !== '00000000000') {
+  if (clientData.cuit && clientData.cuit !== '00000000000' && clientData.cuit !== '-') {
       const q = query(clientCollectionRef, where("cuit", "==", clientData.cuit));
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
           const docExists = snapshot.docs.some(doc => doc.id !== clientId);
           if (docExists) {
-              throw new Error("This CUIT is already registered.");
+              throw new Error("This Tax ID is already registered.");
           }
       }
   }

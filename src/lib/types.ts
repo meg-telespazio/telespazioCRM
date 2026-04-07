@@ -34,6 +34,8 @@ export type RolePermissions = {
 
 export type PermissionsMatrix = Record<UserRole, RolePermissions>;
 
+export type TaxIdType = 'CUIT' | 'RUT_CL' | 'RUC_PE' | 'CNPJ' | 'RUT_CO' | 'NIT_CR' | 'EIN_US' | 'OTHER';
+
 export type Client = {
   id: string;
   publicId: string;
@@ -41,7 +43,8 @@ export type Client = {
   email: string;
   phone: string;
   website?: string;
-  cuit: string;
+  cuit: string; // We keep this as the main tax ID value
+  taxIdType: TaxIdType;
   holding?: string;
   linkedinPage?: string;
   createdAt: Date;

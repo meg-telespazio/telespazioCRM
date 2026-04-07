@@ -24,7 +24,7 @@ import {
   ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, 
   Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
   Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle,
-  FileSpreadsheet, ChevronRight, Key, ShieldAlert
+  FileSpreadsheet, ChevronRight, Key, ShieldAlert, Fingerprint
 } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
@@ -268,8 +268,9 @@ export default function ClientSummaryPage() {
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Forms.cuit')}</span>
                 <div className="flex items-center gap-2 text-foreground font-medium">
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                  <span>{client.cuit}</span>
+                  <Fingerprint className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-bold">{client.cuit}</span>
+                  <Badge variant="outline" className="text-[8px] h-4 py-0 uppercase">{client.taxIdType || 'CUIT'}</Badge>
                 </div>
               </div>
               <div className="space-y-1">

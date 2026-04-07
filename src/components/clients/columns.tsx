@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -35,11 +36,6 @@ const statusClasses: { [key in Client['status']]: string } = {
 const typeClasses: { [key in Client['type']]: string } = {
   client: 'bg-blue-100 text-blue-700 border-none px-2 py-0 font-bold text-[9px]',
   prospect: 'bg-orange-100 text-orange-700 border-none px-2 py-0 font-bold text-[9px]',
-};
-
-const formatCuit = (cuit: string): string => {
-  if (!cuit || cuit.length !== 11) return cuit;
-  return `${cuit.slice(0, 2)}-${cuit.slice(2, 10)}-${cuit.slice(10)}`;
 };
 
 export const columns = (
@@ -138,22 +134,26 @@ export const columns = (
       )
     },
     {
-      accessorKey: 'type',
+      accessorKey: 'cuit',
       header: ({ column }) => (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
         >
-          TIPO
+          TAX ID
           <ArrowUpDown className="ml-2 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <Badge variant="outline" className={cn("rounded-full", typeClasses[row.original.type || 'client'])}>
-          {t(`ClientType.${row.original.type || 'client'}`)}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const client = row.original;
+        return (
+          <div className="flex flex-col">
+            <span className="text-[11px] font-bold text-slate-700">{client.cuit}</span>
+            <span className="text-[8px] uppercase text-muted-foreground font-bold">{client.taxIdType || 'CUIT'}</span>
+          </div>
+        )
+      }
     },
     {
       accessorKey: 'status',

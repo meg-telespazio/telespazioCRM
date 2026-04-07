@@ -6,7 +6,7 @@ import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppHeader } from '@/components/layout/app-header';
-import type { Client, UserProfile, SystemConfig } from '@/lib/types';
+import type { Client, UserProfile, SystemConfig, TaxIdType } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { addClient, updateClient } from '@/lib/firestore/clients';
@@ -62,13 +62,10 @@ const getFormSchema = (t: (key: string) => string) =>
       .or(z.literal('')),
     email: z.string().email(t('Validation.invalidEmail')),
     phone: z.string().min(10, t('Validation.phoneMin')),
+    taxIdType: z.enum(['CUIT', 'RUT_CL', 'RUC_PE', 'CNPJ', 'RUT_CO', 'NIT_CR', 'EIN_US', 'OTHER']),
     cuit: z
       .string()
-      .min(1, t('Validation.cuitRequired'))
-      .transform((val) => val.replace(/\D/g, ''))
-      .refine((val) => val.length === 11, {
-        message: t('Validation.cuitInvalid'),
-      }),
+      .min(1, t('Validation.cuitRequired')),
     status: z.enum(['active', 'suspended', 'canceled']),
     type: z.enum(['client', 'prospect']),
     sector: z.string().min(1, t('Validation.selectIndustry')),
@@ -81,6 +78,18 @@ const getFormSchema = (t: (key: string) => string) =>
     supplierPortalUrl: z.string().url({ message: t('Validation.invalidUrl') }).optional().or(z.literal('')),
     supplierPortalUser: z.string().optional(),
     supplierPortalPassword: z.string().optional(),
+  }).superRefine((data, ctx) => {
+    const cleanId = data.cuit.replace(/\D/g, '');
+    
+    if (data.taxIdType === 'CUIT' && cleanId.length !== 11) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('Validation.cuitInvalid'), path: ['cuit'] });
+    } else if (data.taxIdType === 'CNPJ' && cleanId.length !== 14) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('Validation.taxIdInvalid'), path: ['cuit'] });
+    } else if (data.taxIdType === 'RUC_PE' && cleanId.length !== 11) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('Validation.taxIdInvalid'), path: ['cuit'] });
+    } else if (data.taxIdType === 'EIN_US' && cleanId.length !== 9) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('Validation.taxIdInvalid'), path: ['cuit'] });
+    }
   });
 
 type ClientFormData = z.infer<ReturnType<typeof getFormSchema>>;
@@ -106,7 +115,7 @@ export default function ClientFormPage() {
   const [croppedImage, setCroppedAvatar] = useState<string | null>(null);
   const [isFindingLogo, setIsFindingLogo] = useState(false);
 
-  // Fetch system config for dynamic dropdowns - Solo si hay usuario
+  // Fetch system config for dynamic dropdowns
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
@@ -143,6 +152,7 @@ export default function ClientFormPage() {
       linkedinPage: '',
       email: '',
       phone: '',
+      taxIdType: 'CUIT',
       cuit: '',
       status: 'active',
       type: 'client',
@@ -161,6 +171,7 @@ export default function ClientFormPage() {
 
   const watchedSector = form.watch('sector');
   const watchedPortalUrl = form.watch('supplierPortalUrl');
+  const watchedTaxIdType = form.watch('taxIdType');
 
   // Filtered subsectors based on hierarchy
   const subsectorOptions = useMemo(() => {
@@ -171,7 +182,7 @@ export default function ClientFormPage() {
       .sort();
   }, [configData, watchedSector]);
 
-  // Reset subsector if sector changes and current value is not in new options
+  // Reset subsector if sector changes
   useEffect(() => {
     const currentSubsector = form.getValues('subsector');
     if (currentSubsector && !subsectorOptions.includes(currentSubsector)) {
@@ -183,7 +194,8 @@ export default function ClientFormPage() {
     if (clientData) {
       form.reset({
         ...clientData,
-        cuit: clientData.cuit ? formatCuit(clientData.cuit) : '',
+        cuit: clientData.cuit || '',
+        taxIdType: clientData.taxIdType || 'CUIT',
         website: clientData.website || '',
         linkedinPage: clientData.linkedinPage || '',
         holding: clientData.holding || '',
@@ -250,8 +262,7 @@ export default function ClientFormPage() {
         await addClient(firestore, user.uid, dataToSave as any);
         toast({ variant: 'success', title: t('Actions.saveSuccess') });
       } else {
-        const { cuit, ...updateData } = dataToSave;
-        await updateClient(firestore, clientId, updateData);
+        await updateClient(firestore, clientId, dataToSave);
         toast({ variant: 'success', title: t('Actions.saveSuccess') });
       }
       router.push('/clients');
@@ -264,8 +275,8 @@ export default function ClientFormPage() {
 
   const statusOptions: Client['status'][] = ['active', 'suspended', 'canceled'];
   const typeOptions: Client['type'][] = ['client', 'prospect'];
+  const taxIdTypeOptions: TaxIdType[] = ['CUIT', 'RUT_CL', 'RUC_PE', 'CNPJ', 'RUT_CO', 'NIT_CR', 'EIN_US', 'OTHER'];
   
-  // Dynamic options from config
   const sectorOptions = (configData?.sectors || []).sort();
   const managementOptions = configData?.managementAreas || ['Satellite Communications', 'GeoInformacion'];
   const costCenterOptions = configData?.costCenters || [];
@@ -279,6 +290,16 @@ export default function ClientFormPage() {
     'France', 'Italy', 'Switzerland', 'Netherlands', 'SouthAfrica', 'Nigeria', 
     'Egypt', 'China', 'Japan', 'India', 'SouthKorea', 'UAE'
   ].sort((a, b) => t(`Countries.${a}`).localeCompare(t(`Countries.${b}`)));
+
+  const getTaxIdPlaceholder = (type: TaxIdType) => {
+    switch (type) {
+      case 'CUIT': return '20-12345678-9';
+      case 'CNPJ': return '12.345.678/0001-90';
+      case 'RUT_CL': return '12.345.678-9';
+      case 'EIN_US': return '12-3456789';
+      default: return 'ID...';
+    }
+  }
 
   if (userLoading || (clientLoading && !isNew)) {
     return <div className="p-6"><Skeleton className="h-[70vh] w-full" /></div>;
@@ -327,7 +348,6 @@ export default function ClientFormPage() {
                               ))}
                             </SelectContent>
                           </Select>
-                          {isRestricted && <FormDescription className="text-[10px] flex items-center gap-1"><ShieldAlert className="h-3 w-3" /> Solo lectura para ejecutivos</FormDescription>}
                           <FormMessage />
                         </FormItem>
                       )} />
@@ -364,6 +384,30 @@ export default function ClientFormPage() {
                               </datalist>
                             </div>
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <FormField control={form.control} name="taxIdType" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.taxIdType')}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {taxIdTypeOptions.map(opt => (
+                                <SelectItem key={opt} value={opt}>{t(`TaxIdTypes.${opt}`)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="cuit" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Forms.cuit')}</FormLabel>
+                          <FormControl><Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
@@ -416,7 +460,6 @@ export default function ClientFormPage() {
                               {costCenterOptions.map(cc => (
                                 <SelectItem key={cc.id} value={cc.id}>{cc.name} ({cc.id})</SelectItem>
                               ))}
-                              {costCenterOptions.length === 0 && <SelectItem value="none" disabled>No hay centros de costo configurados</SelectItem>}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -452,30 +495,22 @@ export default function ClientFormPage() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormField control={form.control} name="cuit" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.cuit')}</FormLabel><FormControl><Input {...field} disabled={!isNew} /></FormControl><FormMessage /></FormItem>
-                      )} />
                       <FormField control={form.control} name="sector" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.sector')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
                             <SelectContent>
                               {sectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                              {sectorOptions.length === 0 && <SelectItem value="none" disabled>No hay sectores configurados</SelectItem>}
                             </SelectContent>
                           </Select><FormMessage />
                         </FormItem>
                       )} />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="subsector" render={({ field }) => (
                         <FormItem><FormLabel>{t('Forms.subsector')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={!watchedSector}>
                             <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
                             <SelectContent>
                               {subsectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                              {subsectorOptions.length === 0 && <SelectItem value="none" disabled>Seleccione un sector primero</SelectItem>}
                             </SelectContent>
                           </Select><FormMessage />
                         </FormItem>
