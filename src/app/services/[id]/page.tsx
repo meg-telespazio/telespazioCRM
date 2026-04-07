@@ -72,7 +72,6 @@ export default function ServiceEditPage() {
     if (!user || !firestore) return null;
     return query(
       collection(firestore, 'productsAndServices'),
-      where('createdBy', '==', user.uid),
       where('status', '==', 'active')
     );
   }, [user, firestore]);

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -702,6 +703,8 @@ export default function ClientSummaryPage() {
           client={client} 
           services={clientServices} 
           equipment={allEquip || []} 
+          contracts={contracts || []}
+          pos={allPos || []}
         />
       )}
     </div>
