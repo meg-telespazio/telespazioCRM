@@ -29,7 +29,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addMonths, isValid } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign, Briefcase, ChevronRight, Info, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign, Briefcase, ChevronRight, Info, ShieldCheck, Clock, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -315,7 +315,21 @@ export default function ContractFormPage() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
           <span>{isNew ? t('Pages.addContract') : (contractData?.publicId || t('Contracts.edit'))}</span>
         </div>
-      } />
+      }>
+        <div className="flex items-center gap-2">
+          {!isNew && contractData?.status === 'activo' && (
+            <Button 
+              variant="outline" 
+              className="border-primary text-primary"
+              onClick={() => router.push(`/service-orders/new?contractId=${contractId}`)}
+            >
+              <ClipboardList className="mr-2 h-4 w-4" />
+              Generar SO
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" />{t('Actions.back')}</Button>
+        </div>
+      </AppHeader>
       <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="mx-auto max-w-4xl space-y-6">
           <Form {...form}>
