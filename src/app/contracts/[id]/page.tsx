@@ -77,7 +77,7 @@ const getFormSchema = (t: (key: string) => string) => {
       endDate: z.date(),
       signatureDate: z.date().optional(),
       autoRenews: z.boolean().default(false),
-      renewalTerm: z.enum(['1 month', '2 months']).optional(),
+      renewalTerm: z.enum(['1 month', '2 months', '3 months', '12 months']).optional(),
       noticePeriod: z.coerce.number().optional().default(0),
       clientContactId: z.string().optional(),
       authorizedBy: z.string().optional(),
@@ -298,7 +298,7 @@ export default function ContractFormPage() {
   const contractTypes: ContractType[] = ['Acuerdo Marco', 'Locación de Servicios', 'Compraventa', 'Locación de Equipos', 'Comodato de Equipos'];
   const contractStatuses: ContractStatus[] = ['activo', 'vencido', 'renovado', 'renovado automatico'];
   const currencyOptions: Contract['currency'][] = ['USD', 'EUR', 'ARS'];
-  const renewalTerms: ContractRenewalTerm[] = ['1 month', '2 months'];
+  const renewalTerms: ContractRenewalTerm[] = ['1 month', '2 months', '3 months', '12 months'];
   const noticePeriodOptions = [0, 30, 60, 90];
   const costCenterOptions = configData.costCenters || [];
 

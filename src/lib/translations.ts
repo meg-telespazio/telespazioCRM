@@ -487,6 +487,8 @@ export const translations = {
     RenewalTerms: {
       '1 month': '1 Month',
       '2 months': '2 Months',
+      '3 months': '3 Months',
+      '12 months': '12 Months',
     },
     NoticePeriods: {
       0: 'None',
@@ -1008,7 +1010,7 @@ export const translations = {
       register: 'Registro',
       management: 'Gestión',
       contracts: 'Contratos',
-      pos: 'Órdenes de Compra',
+      pos: 'Contratos',
       services: 'Servicios',
       equipment: 'Inventario de Equipos',
       activities: 'Actividades',
@@ -1431,6 +1433,8 @@ export const translations = {
     RenewalTerms: {
       '1 month': '1 mes',
       '2 months': '2 meses',
+      '3 months': '3 meses',
+      '12 months': '12 meses',
     },
     NoticePeriods: {
       0: 'Sin preaviso',
@@ -1769,6 +1773,7 @@ export const translations = {
       Technology: 'Tecnología',
       Finance: 'Finanzas',
       Healthcare: 'Salud',
+      Energy: 'Energía',
       Education: 'Educación',
       Government: 'Gobierno',
       Other: 'Otro',

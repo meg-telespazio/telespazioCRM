@@ -205,7 +205,7 @@ export type UserProfile = {
 
 export type ContractType = 'Acuerdo Marco' | 'Locación de Servicios' | 'Compraventa' | 'Locación de Equipos' | 'Comodato de Equipos';
 export type ContractStatus = 'activo' | 'vencido' | 'renovado' | 'renovado automatico';
-export type ContractRenewalTerm = '1 month' | '2 months';
+export type ContractRenewalTerm = '1 month' | '2 months' | '3 months' | '12 months';
 
 export type PriceListItem = {
   planName: string;
