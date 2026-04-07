@@ -36,6 +36,7 @@ import { SOItemManager } from '@/components/service-orders/so-item-manager';
 import { SOComments } from '@/components/service-orders/so-comments';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   contractId: z.string().min(1, 'Contrato requerido'),
