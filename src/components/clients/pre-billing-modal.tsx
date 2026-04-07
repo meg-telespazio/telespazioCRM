@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -24,6 +23,7 @@ import type { Client, Service, Equipment, Contract, PurchaseOrder } from '@/lib/
 import { Download, FileSpreadsheet, Loader2, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, endOfMonth, startOfMonth, differenceInDays, isSameMonth, isBefore, isAfter } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface PreBillingModalProps {
   isOpen: boolean;
