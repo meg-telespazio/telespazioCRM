@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -19,8 +20,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.2.2 - Contratos 12m, Permisos Ejecutivo Reforzados e Importador PO Labels
-const APP_VERSION = '1.2.2'; 
+// VERSIÓN 1.2.3 - Dashboard Ticker y KPIs MRR
+const APP_VERSION = '1.2.3'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -126,6 +127,8 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       <AppNavbar />
       <main className="flex flex-1 flex-col">{children}</main>
       <SessionTimeoutController />
+
+      <div id="recaptcha-container"></div>
 
       <Dialog open={isMfaModalOpen} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()}>

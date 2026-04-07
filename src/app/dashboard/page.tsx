@@ -9,11 +9,11 @@ import { StatsCards } from '@/components/dashboard/stats-cards';
 import { OpportunitiesChart } from '@/components/dashboard/opportunities-chart';
 import { RecentOpportunities } from '@/components/dashboard/recent-opportunities';
 import { useI18n } from '@/firebase/client-provider';
-import type { Opportunity, Client, Contact, Activity, SystemConfig, Contract } from '@/lib/types';
+import type { Opportunity, Client, Contact, Activity, SystemConfig, Contract, Service, Equipment } from '@/lib/types';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RecentActivities } from '@/components/dashboard/recent-activities';
-import { AlertsSection } from '@/components/dashboard/alerts-section';
+import { AlertsTicker } from '@/components/dashboard/alerts-ticker';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -55,6 +55,18 @@ export default function DashboardPage() {
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
   }, [firestore, user, managementFilter]);
 
+  const servicesQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'services');
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [firestore, user, managementFilter]);
+
+  const equipmentQuery = useMemo(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'equipment');
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [firestore, user, managementFilter]);
+
   const { data: opportunities, loading: opportunitiesLoading } =
     useCollection<Opportunity>(opportunitiesQuery);
   const { data: contracts, loading: contractsLoading } =
@@ -65,6 +77,10 @@ export default function DashboardPage() {
     useCollection<Contact>(contactsQuery);
   const { data: activities, loading: activitiesLoading } =
     useCollection<Activity>(activitiesQuery);
+  const { data: services, loading: servicesLoading } =
+    useCollection<Service>(servicesQuery);
+  const { data: equipment, loading: equipmentLoading } =
+    useCollection<Equipment>(equipmentQuery);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -86,6 +102,8 @@ export default function DashboardPage() {
     clientsLoading ||
     contactsLoading ||
     (activitiesLoading && activitiesQuery !== null) ||
+    servicesLoading ||
+    equipmentLoading ||
     !configData;
 
   const isIngeniero = user?.role === 'ingeniero';
@@ -93,6 +111,15 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Dashboard.title')} />
+      
+      {!isIngeniero && !pageIsLoading && (
+        <AlertsTicker 
+          opportunities={opportunities || []} 
+          contracts={contracts || []} 
+          activities={activities || []} 
+        />
+      )}
+
       <div className="flex-1 space-y-6 p-4 sm:p-6 overflow-hidden pb-24">
         {pageIsLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -106,16 +133,10 @@ export default function DashboardPage() {
             opportunities={opportunities || []}
             clients={clients || []}
             contacts={contacts || []}
+            services={services || []}
+            equipment={equipment || []}
             exchangeRates={configData?.exchangeRates || []}
             displayCurrency={displayCurrency}
-          />
-        )}
-
-        {!isIngeniero && !pageIsLoading && (
-          <AlertsSection 
-            opportunities={opportunities || []} 
-            contracts={contracts || []} 
-            activities={activities || []} 
           />
         )}
         

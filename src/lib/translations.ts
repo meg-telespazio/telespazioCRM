@@ -123,7 +123,7 @@ export const translations = {
     Dashboard: {
       title: 'Dashboard',
       stats: {
-        totalRevenue: 'Total Revenue',
+        totalRevenue: 'Won Revenue',
         totalRevenueDesc: 'Sum of Won opportunities',
         closeRate: 'Close Rate',
         closeRateDesc: 'Percentage of Won vs Total',
@@ -132,6 +132,10 @@ export const translations = {
         overdue: 'overdue',
         newContacts: 'New Contacts',
         newContactsDesc: 'Added in the last 30 days',
+        activeServices: 'Active Services',
+        activeServicesDesc: 'Current active installations',
+        totalMonthlyMRR: 'Monthly MRR',
+        totalMonthlyMRRDesc: 'Total monthly fee + Comodato',
       },
       opportunitiesChart: {
         byMonth: 'Revenue projection by month',
@@ -368,7 +372,7 @@ export const translations = {
       step3: '3. Select Fields',
       dataSource: 'Data Source',
       selectDataSource: 'Select a data source...',
-      primaryTable: 'Primary Table',
+      primaryTable: 'Table Primary',
       relatedTables: 'Related Tables',
       aggregation: 'Aggregation',
       filters: 'Filters',
@@ -1069,7 +1073,7 @@ export const translations = {
     Dashboard: {
       title: 'Dashboard',
       stats: {
-        totalRevenue: 'Ingresos Totales',
+        totalRevenue: 'Revenue Ganado',
         totalRevenueDesc: 'Suma de oportunidades Ganadas',
         closeRate: 'Tasa de Cierre',
         closeRateDesc: 'Ganadas vs Totales',
@@ -1078,6 +1082,10 @@ export const translations = {
         overdue: 'vencidas',
         newContacts: 'Nuevos Contactos',
         newContactsDesc: 'Agregados en los últimos 30 días',
+        activeServices: 'Servicios Activos',
+        activeServicesDesc: 'Total instalaciones vigentes',
+        totalMonthlyMRR: 'Abono Mensual (MRR)',
+        totalMonthlyMRRDesc: 'Total servicios + Comodatos',
       },
       opportunitiesChart: {
         byMonth: 'Proyección de ingresos por mes',
