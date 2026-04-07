@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -91,7 +90,6 @@ export default function UsersManagementPage() {
   const usersQuery = useMemo(() => query(collection(firestore, 'users')), [firestore]);
   const { data: users, loading } = useCollection<UserProfile>(usersQuery);
 
-  // Solo solicitamos el config si hay un usuario autenticado
   const configDocRef = useMemo(() => (firestore && currentUser) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, currentUser]);
   const { data: config } = useDoc<SystemConfig>(configDocRef);
 

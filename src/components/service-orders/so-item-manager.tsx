@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useUser } from '@/firebase';
+import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import type { ServiceOrderItem, Location, ProductOrService, Contact, Service } from '@/lib/types';
 import { addSOItem, updateSOItem, deleteSOItem } from '@/lib/firestore/service-orders';
@@ -47,19 +46,35 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
     contactId: '',
   });
 
-  // Fetch contextual data
-  const locationsQuery = useMemo(() => clientId ? query(collection(firestore, 'locations'), where('clientId', '==', clientId)) : null, [firestore, clientId]);
-  const contactsQuery = useMemo(() => clientId ? query(collection(firestore, 'contacts'), where('clientId', '==', clientId)) : null, [firestore, clientId]);
-  const catalogQuery = useMemo(() => query(collection(firestore, 'productsAndServices'), where('status', '==', 'active')), [firestore]);
+  // Fetch contextual data with stabilized queries to prevent infinite loops
+  const locationsQuery = useMemoFirebase(() => 
+    clientId ? query(collection(firestore, 'locations'), where('clientId', '==', clientId)) : null, 
+    [firestore, clientId]
+  );
   
-  // If Modification/Baja, fetch current active services for this client
-  const activeServicesQuery = useMemo(() => 
+  const contactsQuery = useMemoFirebase(() => 
+    clientId ? query(collection(firestore, 'contacts'), where('clientId', '==', clientId)) : null, 
+    [firestore, clientId]
+  );
+  
+  const catalogQuery = useMemoFirebase(() => 
+    query(collection(firestore, 'productsAndServices'), where('status', '==', 'active')), 
+    [firestore]
+  );
+  
+  const activeServicesQuery = useMemoFirebase(() => 
     (soType === 'Baja' || soType === 'Modificación') && clientId 
       ? query(collection(firestore, 'services'), where('clientId', '==', clientId), where('status', '==', 'active'))
       : null, 
-  [firestore, clientId, soType]);
+    [firestore, clientId, soType]
+  );
 
-  const { data: items } = useCollection<ServiceOrderItem>(collection(firestore, 'service_orders', soId, 'items'));
+  const itemsRef = useMemoFirebase(() => 
+    collection(firestore, 'service_orders', soId, 'items'), 
+    [firestore, soId]
+  );
+
+  const { data: items } = useCollection<ServiceOrderItem>(itemsRef);
   const { data: locations } = useCollection<Location>(locationsQuery);
   const { data: contacts } = useCollection<Contact>(contactsQuery);
   const { data: catalog } = useCollection<ProductOrService>(catalogQuery);

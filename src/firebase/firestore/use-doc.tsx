@@ -1,9 +1,9 @@
-
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   onSnapshot,
+  refEqual,
   type DocumentReference,
   type DocumentData,
   type FirestoreError,
@@ -42,7 +42,19 @@ export function useDoc<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
 
-  const memoizedRef = useMemo(() => ref, [ref]);
+  // Estabilizar la referencia para evitar bucles infinitos
+  const refStore = useRef<DocumentReference<DocumentData> | null>(null);
+  const memoizedRef = useMemo(() => {
+    if (!ref) {
+      refStore.current = null;
+      return null;
+    }
+    if (refStore.current && refEqual(ref, refStore.current)) {
+      return refStore.current;
+    }
+    refStore.current = ref;
+    return ref;
+  }, [ref]);
 
   useEffect(() => {
     if (!memoizedRef) {

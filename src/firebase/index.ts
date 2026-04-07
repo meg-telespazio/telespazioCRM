@@ -14,6 +14,7 @@ import { getFirebaseConfig } from './config';
 import { useUser } from './auth/use-user';
 import { useCollection } from './firestore/use-collection';
 import { useDoc } from './firestore/use-doc';
+import { useMemoFirebase } from './firestore/use-memo-firebase';
 import {
   FirebaseProvider,
   useFirebaseApp,
@@ -67,6 +68,7 @@ export {
   useUser,
   useCollection,
   useDoc,
+  useMemoFirebase,
   useFirebaseApp,
   useAuth,
   useFirestore,

@@ -1,9 +1,9 @@
-
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   onSnapshot,
+  queryEqual,
   type Query,
   type DocumentData,
   type FirestoreError,
@@ -21,7 +21,6 @@ const convertTimestamps = (data: any): any => {
   if (!data || typeof data !== 'object') return data;
   if (data?.toDate && typeof data.toDate === 'function') return data.toDate();
   
-  // Optimization: only recurse if it's a plain object or array
   if (Array.isArray(data)) return data.map(convertTimestamps);
   
   const isPlainObject = Object.prototype.toString.call(data) === '[object Object]';
@@ -44,7 +43,19 @@ export function useCollection<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   
-  const memoizedQuery = useMemo(() => query, [query]);
+  // Estabilizar la consulta para evitar bucles infinitos si se pasa una nueva instancia del mismo query
+  const queryRef = useRef<Query<DocumentData> | null>(null);
+  const memoizedQuery = useMemo(() => {
+    if (!query) {
+      queryRef.current = null;
+      return null;
+    }
+    if (queryRef.current && queryEqual(query, queryRef.current)) {
+      return queryRef.current;
+    }
+    queryRef.current = query;
+    return query;
+  }, [query]);
 
   useEffect(() => {
     if (!memoizedQuery) {

@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -72,9 +71,11 @@ export default function SODetailPage() {
   const { data: clients } = useCollection<Client>(clientsQuery);
   const { data: allUsers } = useCollection<UserProfile>(usersQuery);
 
-  const { data: items } = useCollection<ServiceOrderItem>(
-    useMemo(() => isNew ? null : collection(firestore, 'service_orders', soId, 'items'), [firestore, soId, isNew])
+  const itemsQuery = useMemoFirebase(() => 
+    isNew ? null : collection(firestore, 'service_orders', soId, 'items'), 
+    [firestore, soId, isNew]
   );
+  const { data: items } = useCollection<ServiceOrderItem>(itemsQuery);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -244,7 +245,7 @@ export default function SODetailPage() {
                           <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
                             <FormControl><SelectTrigger className="bg-white"><SelectValue placeholder="Asignar Ingeniero..." /></SelectTrigger></FormControl>
                             <SelectContent>
-                              {engineers.map(e => <SelectItem key={u.uid} value={e.uid}>{e.displayName}</SelectItem>)}
+                              {engineers.map(e => <SelectItem key={e.uid} value={e.uid}>{e.displayName}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </FormItem>
