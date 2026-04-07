@@ -94,32 +94,35 @@ export function AlertsTicker({ opportunities, contracts, activities }: AlertsTic
 
   if (alerts.length === 0) return null;
 
+  // Repetimos la lista para el efecto de marquee infinito
+  const displayAlerts = [...alerts, ...alerts];
+
   return (
-    <div className="w-full bg-amber-50 border-b border-amber-200 overflow-hidden relative group">
-      <div className="flex items-center px-4 h-10 overflow-x-auto scrollbar-hide">
-        <div className="flex items-center gap-2 pr-4 border-r border-amber-200 shrink-0 mr-4">
+    <div className="w-full bg-amber-50 border-b border-amber-200 overflow-hidden relative">
+      <div className="flex items-center h-10">
+        <div className="flex items-center gap-2 px-4 border-r border-amber-200 bg-amber-50 shrink-0 z-10 shadow-[5px_0_10px_-5px_rgba(0,0,0,0.1)]">
           <ShieldAlert className="h-4 w-4 text-amber-600" />
           <span className="text-[10px] font-bold uppercase text-amber-900 tracking-tighter whitespace-nowrap">
             {t('Dashboard.alerts.title')} ({alerts.length})
           </span>
         </div>
         
-        <div className="flex animate-in fade-in duration-500 whitespace-nowrap items-center gap-8">
-          {alerts.map((alert, idx) => (
+        <div className="flex animate-marquee whitespace-nowrap items-center hover:[animation-play-state:paused] cursor-default">
+          {displayAlerts.map((alert, idx) => (
             <button
               key={`${alert.type}-${alert.id}-${idx}`}
               onClick={() => router.push(alert.link)}
-              className="flex items-center gap-2 hover:bg-amber-100/50 px-2 py-1 rounded transition-colors group/item"
+              className="flex items-center gap-2 px-6 py-1 transition-colors hover:bg-amber-100/50 group/item"
             >
               <Badge variant="outline" className={cn(
-                "text-[8px] h-4 py-0 uppercase font-bold",
+                "text-[8px] h-4 py-0 uppercase font-bold shrink-0",
                 alert.status === 'overdue' ? "bg-red-100 text-red-700 border-red-200" : "bg-blue-100 text-blue-700 border-blue-200"
               )}>
                 {alert.label}
               </Badge>
-              <span className="text-xs font-bold text-amber-900 max-w-[200px] truncate">{alert.title}</span>
-              <span className="text-[10px] text-amber-700/70 font-medium">({format(alert.date, 'dd/MM', { locale: dateLocale })})</span>
-              <ArrowRight className="h-3 w-3 text-amber-400 group-hover/item:translate-x-1 transition-transform" />
+              <span className="text-xs font-bold text-amber-900 max-w-[300px] truncate">{alert.title}</span>
+              <span className="text-[10px] text-amber-700/70 font-medium shrink-0">({format(alert.date, 'dd/MM', { locale: dateLocale })})</span>
+              <ArrowRight className="h-3 w-3 text-amber-400 group-hover/item:translate-x-1 transition-transform shrink-0" />
             </button>
           ))}
         </div>
