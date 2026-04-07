@@ -117,3 +117,16 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Leaflet Custom Styles */
+.custom-leaflet-popup .leaflet-popup-content-wrapper {
+  @apply rounded-lg shadow-xl border border-slate-200 p-0 overflow-hidden;
+}
+
+.custom-leaflet-popup .leaflet-popup-content {
+  @apply m-0;
+}
+
+.custom-leaflet-popup .leaflet-popup-tip {
+  @apply shadow-none border-slate-200;
+}

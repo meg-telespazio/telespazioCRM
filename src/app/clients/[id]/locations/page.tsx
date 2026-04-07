@@ -114,20 +114,23 @@ export default function ClientLocationsPage() {
         </AppHeader>
         <main className="flex-1 p-4 sm:p-6 overflow-hidden">
           <div className="flex flex-col gap-6">
-              <Card className="h-[400px] flex flex-col">
-                  <CardHeader>
-                      <CardTitle>Mapa</CardTitle>
+              <Card className="h-[400px] flex flex-col border-none shadow-md overflow-hidden">
+                  <CardHeader className="bg-slate-50 border-b">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        Mapa
+                      </CardTitle>
                   </CardHeader>
-                  <CardContent className='relative flex-grow p-4 pt-0'>
+                  <CardContent className='relative flex-grow p-0'>
                     <LocationsMap client={client} locations={locationsWithCoords} />
                      {isLoading && (
-                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
+                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 p-4 text-center backdrop-blur-sm">
                           <Loader2 className="h-12 w-12 animate-spin text-primary" />
                           <p className="mt-4 text-sm text-muted-foreground">{t('App.loading')}</p>
                       </div>
                      )}
                      {(!isLoading && locationsWithCoords.length === 0) && (
-                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
+                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 p-4 text-center backdrop-blur-sm">
                           <MapPin className="h-16 w-16 text-muted-foreground" />
                           <p className="mt-2 text-center text-sm text-muted-foreground">{t('Locations.noLocationsMap')}</p>
                       </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -7,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Location, Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin, Loader2, PlusCircle } from 'lucide-react';
 import { LocationsTable } from '@/components/locations/locations-table';
+import { Button } from '@/components/ui/button';
 
 const LocationsMap = dynamic(
   () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
@@ -29,12 +29,16 @@ export default function GlobalLocationsPage() {
 
   const locationsQuery = useMemo(() => {
     if (!user) return null;
-    return collection(firestore, 'locations');
+    const ref = collection(firestore, 'locations');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
   }, [firestore, user]);
   
   const clientsQuery = useMemo(() => {
     if (!user) return null;
-    return collection(firestore, 'clients');
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
   }, [firestore, user]);
 
   const { data: locations, loading: locationsLoading } = useCollection<Location>(locationsQuery);
@@ -46,28 +50,38 @@ export default function GlobalLocationsPage() {
   }, [locations]);
 
   const isLoading = userLoading || locationsLoading || clientsLoading;
+  const isIngeniero = user?.role === 'ingeniero';
 
   const handleEditLocation = (location: Location) => {
     router.push(`/locations/${location.id}`);
   };
 
   const handleDeleteLocation = (locationId: string) => {
-    // Para la vista global, la eliminación se maneja desde el detalle del cliente para seguridad
-    // o se podría implementar aquí con una confirmación.
+    // handled in component context
   };
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={t('Pages.locations')} />
+      <AppHeader title={t('Pages.locations')}>
+        {!isIngeniero && (
+          <Button size="sm" onClick={() => router.push('/locations/new')}>
+            <PlusCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('Locations.add')}</span>
+          </Button>
+        )}
+      </AppHeader>
       <main className="flex-1 p-4 sm:p-6 space-y-6">
-        <Card className="h-[500px] flex flex-col">
-          <CardHeader>
-            <CardTitle>{t('Locations.view')}</CardTitle>
+        <Card className="h-[500px] flex flex-col border-none shadow-md overflow-hidden">
+          <CardHeader className="bg-slate-50 border-b">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              {t('Locations.view')}
+            </CardTitle>
           </CardHeader>
-          <CardContent className='relative flex-grow p-4 pt-0'>
-            <LocationsMap client={null} locations={locationsWithCoords} />
+          <CardContent className='relative flex-grow p-0'>
+            <LocationsMap clients={clients || []} locations={locationsWithCoords} />
             {isLoading && (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-b-lg bg-background/80 p-4 text-center backdrop-blur-sm">
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 p-4 text-center backdrop-blur-sm">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <p className="mt-4 text-sm text-muted-foreground">{t('App.loading')}</p>
               </div>
