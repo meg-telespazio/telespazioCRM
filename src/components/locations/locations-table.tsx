@@ -40,12 +40,14 @@ type LocationTableProps = {
   data: Location[];
   onEdit: (location: Location) => void;
   onDelete: (locationId: string) => void;
+  onFocus?: (location: Location) => void;
 };
 
 export function LocationsTable({
   data,
   onEdit,
   onDelete,
+  onFocus,
 }: LocationTableProps) {
   const { t } = useI18n();
   const { user } = useUser();
@@ -84,8 +86,8 @@ export function LocationsTable({
   };
 
   const tableColumns = React.useMemo(
-    () => columns(t, onEdit, onDelete),
-    [t, onEdit, onDelete]
+    () => columns(t, onEdit, onDelete, onFocus),
+    [t, onEdit, onDelete, onFocus]
   );
 
   const table = useReactTable({
@@ -199,5 +201,3 @@ export function LocationsTable({
     </div>
   );
 }
-
-    

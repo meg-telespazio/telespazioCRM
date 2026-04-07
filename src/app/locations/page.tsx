@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
@@ -26,6 +26,8 @@ export default function GlobalLocationsPage() {
   const router = useRouter();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+
+  const [focusedLocation, setFocusedLocation] = useState<Location | null>(null);
 
   const locationsQuery = useMemo(() => {
     if (!user) return null;
@@ -60,6 +62,14 @@ export default function GlobalLocationsPage() {
     // handled in component context
   };
 
+  const handleFocusOnMap = (location: Location) => {
+    setFocusedLocation(null); // Reset focus to trigger effect if it's the same
+    setTimeout(() => {
+      setFocusedLocation(location);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
+  };
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Pages.locations')}>
@@ -79,7 +89,11 @@ export default function GlobalLocationsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className='relative flex-grow p-0'>
-            <LocationsMap clients={clients || []} locations={locationsWithCoords} />
+            <LocationsMap 
+              clients={clients || []} 
+              locations={locationsWithCoords} 
+              focusedLocation={focusedLocation}
+            />
             {isLoading && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 p-4 text-center backdrop-blur-sm">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -98,6 +112,7 @@ export default function GlobalLocationsPage() {
               data={locations} 
               onEdit={handleEditLocation} 
               onDelete={handleDeleteLocation} 
+              onFocus={handleFocusOnMap}
             />
           </div>
         ) : (

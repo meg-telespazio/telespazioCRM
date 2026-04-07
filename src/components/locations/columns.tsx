@@ -7,6 +7,7 @@ import {
   ChevronsUpDown,
   MoreHorizontal,
   Eye,
+  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,9 +31,10 @@ const statusClasses: { [key in Location['status']]: string } = {
 };
 
 export const columns = (
-  t: (key: string) => void,
+  t: (key: string) => string,
   onEdit: (location: Location) => void,
-  onDelete: (locationId: string) => void
+  onDelete: (locationId: string) => void,
+  onFocus?: (location: Location) => void
 ): ColumnDef<Location>[] => [
   {
     id: 'select',
@@ -89,6 +91,18 @@ export const columns = (
         </Button>
       );
     },
+    cell: ({ row }) => {
+      const location = row.original;
+      return (
+        <button
+          onClick={() => onFocus?.(location)}
+          className="font-bold text-primary hover:underline flex items-center gap-2 text-left"
+        >
+          <MapPin className="h-3 w-3 shrink-0" />
+          {location.name}
+        </button>
+      );
+    }
   },
   {
     accessorKey: 'type',
@@ -169,6 +183,10 @@ export const columns = (
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{t('Actions.title')}</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => onFocus?.(location)}>
+              <MapPin className="mr-2 h-4 w-4" />
+              Ver en mapa
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(location)}>
               {isIngeniero ? <Eye className="mr-2 h-4 w-4" /> : null}
               {isIngeniero ? t('Activity.view') : t('Actions.editLocation')}

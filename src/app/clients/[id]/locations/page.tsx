@@ -44,6 +44,7 @@ export default function ClientLocationsPage() {
   const clientId = params.id as string;
   
   const [isImporterOpen, setImporterOpen] = useState(false);
+  const [focusedLocation, setFocusedLocation] = useState<Location | null>(null);
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
@@ -76,6 +77,14 @@ export default function ClientLocationsPage() {
     if (window.confirm(t('Actions.confirmDelete'))) {
       deleteLocation(firestore, locationId);
     }
+  };
+
+  const handleFocusOnMap = (location: Location) => {
+    setFocusedLocation(null);
+    setTimeout(() => {
+      setFocusedLocation(location);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
   };
 
   const isLoading = userLoading || clientLoading || locationsLoading;
@@ -122,7 +131,11 @@ export default function ClientLocationsPage() {
                       </CardTitle>
                   </CardHeader>
                   <CardContent className='relative flex-grow p-0'>
-                    <LocationsMap client={client} locations={locationsWithCoords} />
+                    <LocationsMap 
+                      client={client} 
+                      locations={locationsWithCoords} 
+                      focusedLocation={focusedLocation}
+                    />
                      {isLoading && (
                       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 p-4 text-center backdrop-blur-sm">
                           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -145,7 +158,12 @@ export default function ClientLocationsPage() {
                         <p>Client not found.</p>
                     </div>
                 ) : locations && locations.length > 0 ? (
-                    <LocationsTable data={locations} onEdit={handleEditLocation} onDelete={handleDeleteLocation} />
+                    <LocationsTable 
+                      data={locations} 
+                      onEdit={handleEditLocation} 
+                      onDelete={handleDeleteLocation} 
+                      onFocus={handleFocusOnMap}
+                    />
                 ) : (
                     <div className="flex h-[20vh] flex-col items-center justify-center rounded-lg border-2 border-dashed">
                         <MapPin className="h-16 w-16 text-muted-foreground" />

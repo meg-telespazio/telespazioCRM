@@ -13,11 +13,13 @@ type LocationsMapProps = {
   client?: Client | null;
   clients?: Client[];
   locations: Location[];
+  focusedLocation?: Location | null;
 };
 
-export function LocationsMap({ client, clients, locations }: LocationsMapProps) {
+export function LocationsMap({ client, clients, locations, focusedLocation }: LocationsMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const { t } = useI18n();
   const defaultCenter: L.LatLngTuple = [-38.4161, -63.6167];
 
@@ -27,7 +29,6 @@ export function LocationsMap({ client, clients, locations }: LocationsMapProps) 
     for (let i = 0; i < clientId.length; i++) {
       hash = clientId.charCodeAt(i) + ((hash << 5) - hash);
     }
-    // Use HSL for better visibility control
     const hue = Math.abs(hash % 360);
     return `hsl(${hue}, 70%, 45%)`;
   };
@@ -39,6 +40,7 @@ export function LocationsMap({ client, clients, locations }: LocationsMapProps) 
     return map;
   }, [client, clients]);
 
+  // Initialize Map
   useEffect(() => {
     if (typeof window !== 'undefined' && mapContainerRef.current && !mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current).setView(defaultCenter, 4);
@@ -58,19 +60,19 @@ export function LocationsMap({ client, clients, locations }: LocationsMapProps) 
     };
   }, []);
 
+  // Handle markers sync
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !locations) return;
 
     // Clear existing markers
-    map.eachLayer((layer) => {
-      if (layer instanceof L.CircleMarker) {
-        map.removeLayer(layer);
-      }
-    });
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.clear();
 
     // Add new markers
     locations.forEach(location => {
+      if (typeof location.latitude !== 'number' || typeof location.longitude !== 'number') return;
+
       const targetClient = clientMap.get(location.clientId);
       const color = getClientColor(location.clientId);
       
@@ -90,7 +92,7 @@ export function LocationsMap({ client, clients, locations }: LocationsMapProps) 
         </div>
       `;
 
-      L.circleMarker([location.latitude, location.longitude], {
+      const marker = L.circleMarker([location.latitude, location.longitude], {
         radius: 8,
         fillColor: color,
         color: '#fff',
@@ -102,18 +104,32 @@ export function LocationsMap({ client, clients, locations }: LocationsMapProps) 
       .bindPopup(popupContent, {
         className: 'custom-leaflet-popup'
       });
+
+      markersRef.current.set(location.id, marker);
     });
 
-    if (locations.length > 0) {
+    // Auto-fit bounds on load if no focus
+    if (!focusedLocation && locations.length > 0) {
       const bounds = L.latLngBounds(locations.map(loc => [loc.latitude, loc.longitude]));
-      if (locations.length === 1) {
-          map.setView(bounds.getCenter(), 13);
-      } else {
-          map.fitBounds(bounds, { padding: [50, 50] });
-      }
+      map.fitBounds(bounds, { padding: [50, 50] });
     }
 
-  }, [locations, clientMap, t]);
+  }, [locations, clientMap, t, focusedLocation]);
+
+  // Handle focus sync
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !focusedLocation) return;
+
+    const marker = markersRef.current.get(focusedLocation.id);
+    if (marker) {
+      map.flyTo([focusedLocation.latitude, focusedLocation.longitude], 15, {
+        animate: true,
+        duration: 1
+      });
+      marker.openPopup();
+    }
+  }, [focusedLocation]);
 
   return <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} className="rounded-lg z-0" />;
 }
