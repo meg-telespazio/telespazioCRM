@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -17,6 +16,7 @@ import type { Opportunity, Contract, Activity } from '@/lib/types';
 import { isBefore, addDays, startOfDay, format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface AlertsTickerProps {
   opportunities: Opportunity[];
