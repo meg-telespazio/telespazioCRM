@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -17,9 +18,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
+import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.1.6 - Ajuste de logos y UI en Login
-const APP_VERSION = '1.1.6'; 
+// VERSIÓN 1.1.7 - Blindaje de matriz y guardia de rutas
+const APP_VERSION = '1.1.7'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,11 +29,13 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser();
   const auth = useAuth();
   const { t } = useI18n();
+  const { canSeeMenu, isLoading: permissionsLoading } = usePermissions();
   const [isMfaModalOpen, setIsMfaModalOpen] = useState(false);
 
   const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isUnauthorizedPage = pathname === '/unauthorized';
 
-  // Lógica de actualización forzada y limpieza de caché profunda
+  // Lógica de actualización forzada
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -63,16 +67,41 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
     };
 
     handleUpdate();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.update();
-      });
-    }
   }, []);
 
+  // Guardia de Rutas Dinámica basada en la Matriz
   useEffect(() => {
-    if (!loading && user && !isAuthPage) {
+    if (loading || permissionsLoading || !user || isAuthPage || isUnauthorizedPage) return;
+
+    // Mapa de rutas a permisos de menú
+    const routePermissionMap: Record<string, any> = {
+      '/opportunities': 'showOpportunities',
+      '/products-and-services': 'showCatalog',
+      '/reports': 'showReports',
+      '/settings': 'showSettings',
+      '/contracts': 'showContracts',
+      '/purchase-orders': 'showPos',
+      '/services': 'showServices',
+      '/equipment': 'showEquipment',
+      '/activities': 'showActivities',
+      '/locations': 'showLocations',
+    };
+
+    // Encontrar si la ruta actual (o su padre) requiere permiso
+    const matchedRoute = Object.keys(routePermissionMap).find(route => pathname.startsWith(route));
+    
+    if (matchedRoute) {
+      const permissionKey = routePermissionMap[matchedRoute];
+      if (!canSeeMenu(permissionKey)) {
+        console.warn(`Acceso denegado a ${pathname}. Redirigiendo...`);
+        router.replace('/unauthorized');
+      }
+    }
+  }, [pathname, user, loading, permissionsLoading, canSeeMenu, router, isAuthPage, isUnauthorizedPage]);
+
+  // MFA Enforcement
+  useEffect(() => {
+    if (!loading && user && !isAuthPage && !isUnauthorizedPage) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
       const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
@@ -87,9 +116,9 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
         setIsMfaModalOpen(false);
       }
     }
-  }, [user, loading, pathname, auth.currentUser, router, isAuthPage]);
+  }, [user, loading, pathname, auth.currentUser, router, isAuthPage, isUnauthorizedPage]);
 
-  if (isAuthPage) {
+  if (isAuthPage || isUnauthorizedPage) {
     return <main>{children}</main>;
   }
 

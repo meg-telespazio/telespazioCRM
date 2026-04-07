@@ -2,7 +2,7 @@
 'use client';
 
 import { useUser } from '@/firebase';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -12,12 +12,13 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useUser();
+  const router = useRouter();
 
   useEffect(() => {
     if (!loading && (!user || user.role !== 'admin')) {
-      redirect('/dashboard');
+      router.replace('/unauthorized');
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
   if (loading) {
     return (
