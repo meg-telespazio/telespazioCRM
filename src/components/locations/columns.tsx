@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -8,6 +9,7 @@ import {
   MoreHorizontal,
   Eye,
   MapPin,
+  Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +25,7 @@ import type { Location } from '@/lib/types';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 const statusClasses: { [key in Location['status']]: string } = {
   active: 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200',
@@ -171,7 +174,12 @@ export const columns = (
     cell: function ActionCell({ row }) {
       const location = row.original;
       const { user } = useUser();
+      const router = useRouter();
       const isIngeniero = user?.role === 'ingeniero';
+      
+      const isOwner = user?.uid === location.assignedTo || user?.uid === location.createdBy;
+      const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+      const canModify = isManagerOrAdmin || isOwner;
 
       return (
         <DropdownMenu>
@@ -187,16 +195,19 @@ export const columns = (
               <MapPin className="mr-2 h-4 w-4" />
               Ver en mapa
             </DropdownMenuItem>
+            
             <DropdownMenuItem onClick={() => onEdit(location)}>
-              {isIngeniero ? <Eye className="mr-2 h-4 w-4" /> : null}
-              {isIngeniero ? t('Activity.view') : t('Actions.editLocation')}
+              {canModify && !isIngeniero ? <Edit className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+              {canModify && !isIngeniero ? t('Actions.editLocation') : t('Activity.view')}
             </DropdownMenuItem>
+
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(location.id)}
             >
               {t('Actions.copyLocationId')}
             </DropdownMenuItem>
-            {!isIngeniero && (
+            
+            {!isIngeniero && canModify && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

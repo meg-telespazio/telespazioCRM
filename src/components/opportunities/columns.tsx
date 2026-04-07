@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -7,6 +8,7 @@ import {
   Copy,
   Edit,
   Trash2,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Opportunity, Client, ExchangeRate } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useUser } from '@/firebase';
 
 const getClientName = (clientId: string, clients: Client[]) => {
   return clients.find((c) => c.id === clientId)?.name || 'N/A';
@@ -219,8 +222,14 @@ export const columns = (
           ACCIONES
         </div>
       ),
-      cell: ({ row }) => {
+      cell: function ActionCell({ row }) {
         const opportunity = row.original;
+        const { user } = useUser();
+        
+        const isOwner = user?.uid === opportunity.assignedTo || user?.uid === opportunity.createdBy;
+        const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+        const canModify = isManagerOrAdmin || isOwner;
+
         return (
           <div className="flex justify-center">
             <DropdownMenu>
@@ -232,22 +241,29 @@ export const columns = (
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
+                
                 <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(opportunity)}>
-                  <Edit className="mr-2 h-3.5 w-3.5" />
-                  <span>{t('Actions.editOpportunity')}</span>
+                  {canModify ? <Edit className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
+                  <span>{canModify ? t('Actions.editOpportunity') : t('Activity.view')}</span>
                 </DropdownMenuItem>
+
                 <DropdownMenuItem className="text-[11px]" onClick={() => onDuplicate(opportunity)}>
                   <Copy className="mr-2 h-3.5 w-3.5" />
                   <span>Duplicar Negocio</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive text-[11px]"
-                  onClick={() => onDelete(opportunity.id)}
-                >
-                  <Trash2 className="mr-2 h-3.5 w-3.5" />
-                  {t('Actions.deleteOpportunity')}
-                </DropdownMenuItem>
+                
+                {canModify && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive text-[11px]"
+                      onClick={() => onDelete(opportunity.id)}
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      {t('Actions.deleteOpportunity')}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

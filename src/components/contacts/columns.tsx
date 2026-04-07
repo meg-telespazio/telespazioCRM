@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -6,6 +7,7 @@ import {
   MoreHorizontal,
   Mail,
   Phone,
+  Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -206,6 +208,10 @@ export const columns = (
       const contact = row.original;
       const { user } = useUser();
       const isIngeniero = user?.role === 'ingeniero';
+      
+      const isOwner = user?.uid === contact.assignedTo || user?.uid === contact.createdBy;
+      const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+      const canModify = isManagerOrAdmin || isOwner;
 
       return (
         <div className="flex justify-center">
@@ -218,11 +224,20 @@ export const columns = (
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
-              <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(contact)}>
-                <MoreHorizontal className="mr-2 h-3.5 w-3.5" />
-                <span>{isIngeniero ? t('Activity.view') : t('Actions.editContact')}</span>
-              </DropdownMenuItem>
-              {!isIngeniero && (
+              
+              {!isIngeniero && canModify ? (
+                <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(contact)}>
+                  <Edit className="mr-2 h-3.5 w-3.5" />
+                  <span>{t('Actions.editContact')}</span>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/contacts/${contact.id}`)}>
+                  <MoreHorizontal className="mr-2 h-3.5 w-3.5" />
+                  <span>{t('Activity.view')}</span>
+                </DropdownMenuItem>
+              )}
+
+              {!isIngeniero && canModify && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

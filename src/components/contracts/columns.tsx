@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -6,6 +7,7 @@ import {
   MoreHorizontal,
   ShoppingCart,
   Eye,
+  Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -207,6 +209,10 @@ export const columns = (
       const contract = row.original;
       const { user } = useUser();
       const isIngeniero = user?.role === 'ingeniero';
+      
+      const isOwner = user?.uid === contract.assignedTo || user?.uid === contract.createdBy;
+      const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+      const canModify = isManagerOrAdmin || isOwner;
 
       return (
         <div className="flex justify-center">
@@ -221,8 +227,8 @@ export const columns = (
               <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
               
               <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(contract)}>
-                {isIngeniero ? <Eye className="mr-2 h-3.5 w-3.5" /> : <MoreHorizontal className="mr-2 h-3.5 w-3.5" />}
-                <span>{isIngeniero ? t('Activity.view') : t('Actions.editContract')}</span>
+                {canModify && !isIngeniero ? <Edit className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
+                <span>{canModify && !isIngeniero ? t('Actions.editContract') : t('Activity.view')}</span>
               </DropdownMenuItem>
 
               {!isIngeniero && (
@@ -231,12 +237,17 @@ export const columns = (
                     <ShoppingCart className="mr-2 h-3.5 w-3.5" />
                     <span>{t('Actions.addPO')}</span>
                   </DropdownMenuItem>
+                </>
+              )}
+
+              {!isIngeniero && canModify && (
+                <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive text-[11px]"
                     onClick={() => onDelete(contract.id)}
                   >
-                    {t('Actions.deleteContract')}
+                    <span>{t('Actions.deleteContract')}</span>
                   </DropdownMenuItem>
                 </>
               )}

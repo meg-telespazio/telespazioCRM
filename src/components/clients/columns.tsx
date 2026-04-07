@@ -202,6 +202,11 @@ export const columns = (
         const client = row.original;
         const { user } = useUser();
         const isIngeniero = user?.role === 'ingeniero';
+        
+        // Un ejecutivo solo puede editar/borrar si es el dueño o creador
+        const isOwner = user?.uid === client.assignedTo || user?.uid === client.createdBy;
+        const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+        const canModify = isManagerOrAdmin || isOwner;
 
         return (
           <div className="flex justify-center">
@@ -219,17 +224,18 @@ export const columns = (
                   <span>{t('Actions.viewSummary')}</span>
                 </DropdownMenuItem>
                 
+                {!isIngeniero && canModify && (
+                  <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(client)}>
+                    <FileText className="mr-2 h-3.5 w-3.5" />
+                    <span>{t('Actions.editClient')}</span>
+                  </DropdownMenuItem>
+                )}
+
                 {!isIngeniero && (
-                  <>
-                    <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(client)}>
-                      <FileText className="mr-2 h-3.5 w-3.5" />
-                      <span>{t('Actions.editClient')}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/contacts/new?clientId=${client.id}`)}>
-                      <UserPlus className="mr-2 h-3.5 w-3.5" />
-                      <span>{t('Pages.addContact')}</span>
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/contacts/new?clientId=${client.id}`)}>
+                    <UserPlus className="mr-2 h-3.5 w-3.5" />
+                    <span>{t('Pages.addContact')}</span>
+                  </DropdownMenuItem>
                 )}
 
                 <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/clients/${client.id}/activity`)}>
@@ -241,7 +247,7 @@ export const columns = (
                   <span>{t('Locations.view')}</span>
                 </DropdownMenuItem>
                 
-                {!isIngeniero && (
+                {!isIngeniero && canModify && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
