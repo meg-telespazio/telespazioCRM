@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -6,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
 import type { Client, Contact, Opportunity, Activity, Contract, PurchaseOrder, Service, Equipment } from '@/lib/types';
 
 import { AppHeader } from '@/components/layout/app-header';
@@ -24,7 +23,8 @@ import {
   ShoppingCart, Zap, HardDrive, LayoutGrid, ExternalLink, 
   Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
   Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle,
-  FileSpreadsheet, ChevronRight, Key, ShieldAlert, Fingerprint
+  FileSpreadsheet, ChevronRight, Key, ShieldAlert, Fingerprint,
+  Wand2, Loader2, Sparkles
 } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
@@ -33,21 +33,25 @@ import { FilePreviewModal } from '@/components/ui/file-preview-modal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { PreBillingModal } from '@/components/clients/pre-billing-modal';
+import { generateClientAiDescription } from '@/ai/flows/client-description-flow';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ClientSummaryPage() {
   const { t, locale } = useI18n();
   const dateLocale = locale === 'es' ? es : enUS;
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const clientId = params.id as string;
   
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
-  // Preview State
+  // State
   const [previewFile, setPreviewFile] = useState<{url: string, name: string, type: string} | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPreBillingOpen, setIsPreBillingOpen] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   // Data fetching
   const clientDocRef = useMemo(() => firestore ? doc(firestore, 'clients', clientId) : null, [firestore, clientId]);
@@ -160,6 +164,27 @@ export default function ClientSummaryPage() {
     setIsPreviewOpen(true);
   };
 
+  const handleGenerateAiDescription = async () => {
+    if (!client) return;
+    setIsGeneratingAi(true);
+    try {
+      const description = await generateClientAiDescription({
+        name: client.name,
+        website: client.website,
+        sector: client.sector
+      });
+      
+      if (clientDocRef) {
+        await updateDoc(clientDocRef, { aiDescription: description });
+        toast({ variant: 'success', title: 'Análisis IA completado' });
+      }
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error de IA', description: e.message });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
   const isLoading = userLoading || clientLoading;
   const isIngeniero = user?.role === 'ingeniero';
 
@@ -250,6 +275,45 @@ export default function ClientSummaryPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            {/* AI Description Section */}
+            <div className="p-6 border-b bg-slate-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('Forms.aiDescription')}</span>
+                </div>
+                {!client.aiDescription && !isGeneratingAi && (
+                  <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase gap-1.5 text-primary hover:bg-primary/5" onClick={handleGenerateAiDescription}>
+                    <Wand2 className="h-3 w-3" />
+                    {t('Actions.generateWithAi')}
+                  </Button>
+                )}
+              </div>
+              
+              {isGeneratingAi ? (
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ) : client.aiDescription ? (
+                <div className="relative group">
+                  <p className="text-sm leading-relaxed text-slate-600 font-medium italic">
+                    "{client.aiDescription}"
+                  </p>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute -right-2 -bottom-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
+                    onClick={handleGenerateAiDescription}
+                  >
+                    <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">No hay un perfil de negocio generado aún. Usa la IA para analizar la empresa.</p>
+              )}
+            </div>
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 text-sm">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Auth.emailLabel')}</span>

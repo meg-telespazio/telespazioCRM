@@ -68,7 +68,7 @@ export const translations = {
       equipment: 'Equipment Inventory',
       activities: 'Activities',
       locations: 'Locations',
-      settings: 'Settings',
+      settings: 'App Configuration',
       serviceOrders: 'Service Orders',
     },
     Auth: {
@@ -355,6 +355,7 @@ export const translations = {
       saveErrorGeneric: 'An error occurred while saving the record.',
       generatePreBilling: 'Generate Pre-billing',
       showOnlyMine: 'Show only mine',
+      generateWithAi: 'Analyze with AI',
     },
     Reports: {
       createNew: 'Create New Report',
@@ -443,7 +444,7 @@ export const translations = {
       noContracts: 'No contracts found.',
       addendums: 'Addendums & Modifications',
       addAddendum: 'Add Addendum',
-      addendumType: 'Addendum Type',
+      addendumsType: 'Addendum Type',
       addendumDate: 'Date',
       addendumDescription: 'Description of changes',
       noAddendums: 'No addendums registered for this contract.',
@@ -675,6 +676,7 @@ export const translations = {
       supplierPortalUser: 'Portal Username',
       supplierPortalPassword: 'Portal Password',
       specialEntryConditions: 'Special Entry Conditions',
+      aiDescription: 'AI Business Summary',
     },
     Table: {
       actions: {
@@ -1344,6 +1346,7 @@ export const translations = {
       saveErrorGeneric: 'Ocurrió un error al guardar el registro.',
       generatePreBilling: 'Generar Pre-billing',
       showOnlyMine: 'Ver solo mis registros',
+      generateWithAi: 'Analizar con IA',
     },
     Reports: {
       createNew: 'Crear Nuevo Reporte',
@@ -1664,6 +1667,7 @@ export const translations = {
       supplierPortalUser: 'Usuario Portal',
       supplierPortalPassword: 'Password Portal',
       specialEntryConditions: 'Condiciones de Ingresos Especiales',
+      aiDescription: 'Descripción AI del Negocio',
     },
     Table: {
       actions: {

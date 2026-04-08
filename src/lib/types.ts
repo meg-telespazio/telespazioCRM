@@ -55,6 +55,7 @@ export type Client = {
   sector: string;
   subsector?: string;
   notes?: string;
+  aiDescription?: string;
   logoURL?: string | null;
   management: ManagementArea;
   assignedTo: string; // UID of Ejecutivo
