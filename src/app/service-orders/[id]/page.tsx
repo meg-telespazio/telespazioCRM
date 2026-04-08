@@ -56,6 +56,7 @@ export default function SODetailPage() {
   const { toast } = useToast();
   const soId = params.id as string;
   const isNew = soId === 'new';
+  const contractIdFromQuery = searchParams.get('contractId');
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -83,7 +84,7 @@ export default function SODetailPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      contractId: searchParams.get('contractId') || '',
+      contractId: contractIdFromQuery || '',
       type: 'Alta',
       status: 'Abierta',
       pmAssignedId: '',
@@ -99,6 +100,13 @@ export default function SODetailPage() {
   const selectedClient = useMemo(() => clients?.find(c => c.id === selectedContract?.clientId), [clients, selectedContract]);
 
   const engineers = useMemo(() => allUsers?.filter(u => u.role === 'ingeniero' || u.role === 'admin') || [], [allUsers]);
+
+  // Sync contractId from URL if it's a new SO
+  useEffect(() => {
+    if (isNew && contractIdFromQuery) {
+      form.setValue('contractId', contractIdFromQuery);
+    }
+  }, [isNew, contractIdFromQuery, form]);
 
   useEffect(() => {
     if (so) {
