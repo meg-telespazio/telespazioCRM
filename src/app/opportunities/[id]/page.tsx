@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -20,6 +19,7 @@ import type {
   Contract,
   OpportunityRisk,
   OpportunityType,
+  UserProfile,
 } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -235,6 +235,17 @@ export default function OpportunityFormPage() {
     if (!clientsData) return [];
     return [...clientsData].sort((a, b) => a.name.localeCompare(b.name));
   }, [clientsData]);
+
+  // Fetch Engineers for PM selection
+  const usersQuery = useMemo(() => (firestore ? query(collection(firestore, 'users')) : null), [firestore]);
+  const { data: allUsers, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
+
+  const engineers = useMemo(() => {
+    if (!allUsers) return [];
+    return allUsers
+      .filter(u => u.role === 'ingeniero' || u.role === 'admin')
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [allUsers]);
 
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(getFormSchema(t)),
@@ -535,6 +546,7 @@ export default function OpportunityFormPage() {
     clientsLoading ||
     contactsLoading ||
     productsAndServicesLoading ||
+    usersLoading ||
     (opportunityLoading && !isNew) ||
     !configData;
 
@@ -630,7 +642,20 @@ export default function OpportunityFormPage() {
                     <FormField control={form.control} name="projectManagerEmail" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.projectManagerEmail')}</FormLabel>
-                        <FormControl><Input type="email" placeholder="pm@telespazio.com" {...field} disabled={isLocked} /></FormControl>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
+                          <FormControl>
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Seleccionar Ingeniero..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {engineers.map(e => (
+                              <SelectItem key={e.uid} value={e.email}>
+                                {e.displayName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )} />
