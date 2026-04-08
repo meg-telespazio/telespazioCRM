@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -37,6 +36,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { deleteServiceOrder } from '@/lib/firestore/service-orders';
 import { SOCloseModal } from '@/components/service-orders/so-close-modal';
+import { SODeleteModal } from '@/components/service-orders/so-delete-modal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -61,6 +61,10 @@ export default function ServiceOrdersPage() {
   const [isValidating, setIsValidating] = useState<string | null>(null);
   const [selectedSoForClose, setSelectedSoForClose] = useState<ServiceOrder | null>(null);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  
+  const [selectedSoForDelete, setSelectedSoForDelete] = useState<ServiceOrder | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
@@ -93,13 +97,23 @@ export default function ServiceOrdersPage() {
 
   const userMap = useMemo(() => new Map(users?.map(u => [u.uid, u])), [users]);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm(t('Actions.confirmDelete'))) return;
+  const handleDeleteAttempt = (so: ServiceOrder) => {
+    setSelectedSoForDelete(so);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedSoForDelete) return;
+    setIsDeleting(true);
     try {
-      await deleteServiceOrder(firestore, id);
-      toast({ variant: 'success', title: 'Service Order eliminada.' });
+      await deleteServiceOrder(firestore, selectedSoForDelete.id);
+      toast({ variant: 'success', title: 'Service Order eliminada correctamente.' });
+      setIsDeleteModalOpen(false);
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Error', description: e.message });
+      toast({ variant: 'destructive', title: 'Error al eliminar', description: e.message });
+    } finally {
+      setIsDeleting(false);
+      setSelectedSoForDelete(null);
     }
   };
 
@@ -209,7 +223,7 @@ export default function ServiceOrdersPage() {
                     <TableCell>
                       {so.pmAssignedId ? (
                         <div className="flex items-center gap-2 text-xs">
-                          <UserIcon className="h-3 w-3" />
+                          <UserIcon className="h-3.5 w-3.5" />
                           {userMap.get(so.pmAssignedId)?.displayName || '...'}
                         </div>
                       ) : (
@@ -244,7 +258,7 @@ export default function ServiceOrdersPage() {
                               {t('Activity.view')}
                             </DropdownMenuItem>
                             {isAdmin && (
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(so.id)}>
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteAttempt(so)}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 {t('Table.actions.delete')}
                               </DropdownMenuItem>
@@ -288,6 +302,14 @@ export default function ServiceOrdersPage() {
         isOpen={isCloseModalOpen} 
         onOpenChange={setIsCloseModalOpen} 
         so={selectedSoForClose} 
+      />
+
+      <SODeleteModal
+        isOpen={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        so={selectedSoForDelete}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );
