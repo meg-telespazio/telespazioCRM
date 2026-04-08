@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.4.4 - Added AI Business Summary to Client View
-const APP_VERSION = '1.4.4'; 
+// VERSIÓN 1.4.5 - Improved AI error handling and fixed RefreshCw import
+const APP_VERSION = '1.4.5'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -24,7 +24,7 @@ import {
   Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
   Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle,
   FileSpreadsheet, ChevronRight, Key, ShieldAlert, Fingerprint,
-  Wand2, Loader2, Sparkles
+  Wand2, Loader2, Sparkles, RefreshCw
 } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
@@ -179,7 +179,12 @@ export default function ClientSummaryPage() {
         toast({ variant: 'success', title: 'Análisis IA completado' });
       }
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Error de IA', description: e.message });
+      console.error("AI Error:", e);
+      let friendlyMessage = e.message;
+      if (e.message?.includes('503') || e.message?.includes('high demand')) {
+        friendlyMessage = "El servicio de IA está saturado en este momento. Por favor, reintenta en un minuto.";
+      }
+      toast({ variant: 'destructive', title: 'Error de IA', description: friendlyMessage });
     } finally {
       setIsGeneratingAi(false);
     }
