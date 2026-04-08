@@ -63,6 +63,7 @@ const MODULES = [
   { id: 'equipment', label: 'Equipos' },
   { id: 'activities', label: 'Actividades' },
   { id: 'locations', label: 'Locaciones' },
+  { id: 'serviceOrders', label: 'Service Orders' },
   { id: 'productsAndServices', label: 'Catálogo' },
   { id: 'reports', label: 'Reportes' },
 ];
@@ -78,6 +79,7 @@ const MENU_ITEMS = [
   { id: 'showEquipment', label: 'Ver Equipos' },
   { id: 'showActivities', label: 'Ver Actividades' },
   { id: 'showLocations', label: 'Ver Locaciones' },
+  { id: 'showServiceOrders', label: 'Ver Service Orders' },
 ];
 
 export default function UsersManagementPage() {
@@ -100,7 +102,39 @@ export default function UsersManagementPage() {
 
   useEffect(() => {
     if (config?.permissionsMatrix) {
-      setLocalMatrix(config.permissionsMatrix);
+      // Sincronizar localMatrix si faltan claves nuevas (como showServiceOrders)
+      const currentMatrix = JSON.parse(JSON.stringify(config.permissionsMatrix)) as PermissionsMatrix;
+      let needsSync = false;
+
+      ROLES.forEach(role => {
+        if (!currentMatrix[role]) {
+          currentMatrix[role] = { modules: {}, menu: {} as any };
+          needsSync = true;
+        }
+        
+        // Check new modules
+        MODULES.forEach(mod => {
+          if (!currentMatrix[role].modules[mod.id]) {
+            currentMatrix[role].modules[mod.id] = {
+              view: true,
+              create: role !== 'ingeniero',
+              edit: role !== 'ingeniero',
+              delete: role === 'admin' || role === 'gerente',
+            };
+            needsSync = true;
+          }
+        });
+
+        // Check new menu items
+        MENU_ITEMS.forEach(item => {
+          if ((currentMatrix[role].menu as any)[item.id] === undefined) {
+            (currentMatrix[role].menu as any)[item.id] = true;
+            needsSync = true;
+          }
+        });
+      });
+
+      setLocalMatrix(currentMatrix);
     } else if (config) {
       const initial: any = {};
       ROLES.forEach(role => {
@@ -117,6 +151,7 @@ export default function UsersManagementPage() {
             showPos: true,
             showServices: true,
             showEquipment: true,
+            showServiceOrders: true,
           }
         };
         MODULES.forEach(mod => {

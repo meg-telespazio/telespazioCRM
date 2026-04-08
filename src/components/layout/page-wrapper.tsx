@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.4.2 - Owner Filter for Executives
-const APP_VERSION = '1.4.2'; 
+// VERSIÓN 1.4.3 - Added Service Orders to Permissions Matrix
+const APP_VERSION = '1.4.3'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
