@@ -453,6 +453,8 @@ export type ServiceOrder = {
   starfleetAccount?: string;
   itemsCount: number;
   management: ManagementArea;
+  specialEntryConditions: boolean;
+  attachments?: OpportunityAttachment[];
   dates: {
     createdAt: Date;
     contractStart?: Date;

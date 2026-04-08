@@ -673,6 +673,7 @@ export const translations = {
       supplierPortalUrl: 'Supplier Portal URL',
       supplierPortalUser: 'Portal Username',
       supplierPortalPassword: 'Portal Password',
+      specialEntryConditions: 'Special Entry Conditions',
     },
     Table: {
       actions: {
@@ -976,6 +977,7 @@ export const translations = {
       noItems: 'No items registered in this order.',
       cannotClose: 'Cannot close order. Some items are still pending activation.',
       saveSuccess: 'Service Order saved successfully',
+      attachments: 'SO Documents & Files',
     }
   },
   es: {
@@ -1652,6 +1654,7 @@ export const translations = {
       supplierPortalUrl: 'URL Portal Proveedores',
       supplierPortalUser: 'Usuario Portal',
       supplierPortalPassword: 'Password Portal',
+      specialEntryConditions: 'Condiciones de Ingresos Especiales',
     },
     Table: {
       actions: {
@@ -1956,6 +1959,7 @@ export const translations = {
       noItems: 'Sin ítems registrados en esta orden.',
       cannotClose: 'No se puede cerrar la orden. Algunos ítems aún no tienen confirmación de activación.',
       saveSuccess: 'Service Order guardada exitosamente',
+      attachments: 'Documentación Adjunta SO',
     }
   },
 };

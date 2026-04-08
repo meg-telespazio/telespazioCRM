@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -7,14 +8,12 @@ import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { doc, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, collection, query, where } from 'firebase/firestore';
 import type { 
   ServiceOrder, 
   Contract, 
   Client, 
   UserProfile, 
-  ServiceOrderType, 
-  ServiceOrderStatus,
   ServiceOrderItem
 } from '@/lib/types';
 import { 
@@ -30,11 +29,12 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, ArrowLeft, ClipboardList, User, ShieldCheck, Clock, MessageSquare, AlertCircle, Loader2, MapPin } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Save, ArrowLeft, ClipboardList, User, ShieldCheck, Clock, Loader2, MapPin, ShieldAlert, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SOItemManager } from '@/components/service-orders/so-item-manager';
 import { SOComments } from '@/components/service-orders/so-comments';
-import { Separator } from '@/components/ui/separator';
+import { SOAttachmentsManager } from '@/components/service-orders/so-attachments-manager';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -45,6 +45,7 @@ const formSchema = z.object({
   status: z.enum(['Abierta', 'Asignada', 'Devuelta', 'Cancelada', 'Cerrada']),
   pmAssignedId: z.string().optional(),
   starfleetAccount: z.string().optional(),
+  specialEntryConditions: z.boolean().default(false),
 });
 
 export default function SODetailPage() {
@@ -87,6 +88,7 @@ export default function SODetailPage() {
       status: 'Abierta',
       pmAssignedId: '',
       starfleetAccount: '',
+      specialEntryConditions: false,
     },
   });
 
@@ -106,6 +108,7 @@ export default function SODetailPage() {
         status: so.status,
         pmAssignedId: so.pmAssignedId || '',
         starfleetAccount: so.starfleetAccount || '',
+        specialEntryConditions: so.specialEntryConditions || false,
       });
     }
   }, [so, form]);
@@ -185,7 +188,7 @@ export default function SODetailPage() {
       <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
           
-          {/* Main Form Area */}
+          {/* Main Column */}
           <div className="lg:col-span-8 space-y-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -197,6 +200,18 @@ export default function SODetailPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid gap-6">
+                    <FormField control={form.control} name="specialEntryConditions" render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-primary/5 border-primary/20">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm font-bold flex items-center gap-2 text-primary">
+                            <ShieldAlert className="h-4 w-4" />
+                            {t('Forms.specialEntryConditions')}
+                          </FormLabel>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
+                      </FormItem>
+                    )} />
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="contractId" render={({ field }) => (
                         <FormItem>
@@ -300,19 +315,27 @@ export default function SODetailPage() {
                 </CardContent>
               </Card>
             ) : (
-              <SOItemManager 
-                soId={soId} 
-                clientId={so?.clientId || ''} 
-                soType={so?.type || 'Alta'} 
-                disabled={isLocked}
-              />
+              <>
+                <SOItemManager 
+                  soId={soId} 
+                  clientId={so?.clientId || ''} 
+                  soType={so?.type || 'Alta'} 
+                  disabled={isLocked}
+                />
+                
+                <SOAttachmentsManager 
+                  soId={soId} 
+                  attachments={so?.attachments}
+                  disabled={isLocked}
+                />
+
+                <SOComments soId={soId} />
+              </>
             )}
           </div>
 
-          {/* Sidebar Area */}
+          {/* Sidebar Column */}
           <div className="lg:col-span-4 space-y-6">
-            {!isNew && <SOComments soId={soId} />}
-            
             <Card className="bg-slate-50 border-dashed">
               <CardHeader className="pb-3">
                 <CardTitle className="text-xs font-bold uppercase text-slate-500">Info Operativa</CardTitle>
@@ -331,6 +354,15 @@ export default function SODetailPage() {
                     <div>
                       <p className="text-slate-400">Ejecutivo de Cuentas</p>
                       <p className="font-medium">{allUsers?.find(u => u.uid === so.eeccId)?.displayName}</p>
+                    </div>
+                  </div>
+                )}
+                {so?.pmAssignedId && (
+                  <div className="flex items-center gap-3 text-xs">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-slate-400">PM Asignado</p>
+                      <p className="font-medium">{allUsers?.find(u => u.uid === so.pmAssignedId)?.displayName}</p>
                     </div>
                   </div>
                 )}

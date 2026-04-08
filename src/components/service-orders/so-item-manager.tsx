@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -123,13 +124,13 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-slate-50/50">
+            <TableHeader className="bg-destructive border-b">
               <TableRow>
-                <TableHead className="w-[200px] text-[10px] uppercase font-bold text-slate-500">Sucursal & Referente</TableHead>
-                <TableHead className="text-[10px] uppercase font-bold text-slate-500">Plan & Hardware</TableHead>
-                <TableHead className="text-[10px] uppercase font-bold text-slate-500">Modalidad</TableHead>
-                <TableHead className="w-[200px] text-[10px] uppercase font-bold text-slate-500">Activación (Ingeniería)</TableHead>
-                <TableHead className="text-right text-[10px] uppercase font-bold text-slate-500">Acciones</TableHead>
+                <TableHead className="w-[200px] text-[10px] uppercase font-bold text-white">Sucursal & Referente</TableHead>
+                <TableHead className="text-[10px] uppercase font-bold text-white">Plan & Hardware</TableHead>
+                <TableHead className="text-[10px] uppercase font-bold text-white">Modalidad</TableHead>
+                <TableHead className="w-[200px] text-[10px] uppercase font-bold text-white">Activación (Ingeniería)</TableHead>
+                <TableHead className="text-right text-[10px] uppercase font-bold text-white px-4">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,7 +183,7 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
                   <TableCell className="text-center text-muted-foreground italic text-[9px] uppercase tracking-tighter">
                     Asignar PM para activar
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right px-4">
                     <Button size="sm" onClick={handleAddItem} disabled={isAdding || !newItem.locationId || !newItem.serviceIdCatalog} className="h-8 shadow-sm">
                       {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
                       Agregar
@@ -266,7 +267,7 @@ export function SOItemManager({ soId, clientId, soType, disabled }: SOItemManage
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right px-4">
                       {!disabled && user?.role !== 'ingeniero' && (
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteItem(item.id)}>
                           <Trash2 className="h-4 w-4" />

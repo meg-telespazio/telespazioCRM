@@ -31,6 +31,16 @@ const cleanData = (data: any) => {
   return result;
 };
 
+/**
+ * Mock function to represent sending an email.
+ * In production, this would trigger a Cloud Function or call an external service (SendGrid, Resend, etc.)
+ */
+async function sendSONotificationEmail(so: any, action: 'created' | 'modified') {
+  console.log(`[EMAIL MOCK] Notification to EECC and PM: Service Order ${so.publicId} has been ${action}.`);
+  console.log(`[EMAIL MOCK] Link: /service-orders/${so.id}`);
+  // Lógica real aquí dispararía un evento o una Cloud Function
+}
+
 export async function addServiceOrder(
   firestore: Firestore,
   uid: string,
@@ -41,7 +51,7 @@ export async function addServiceOrder(
   const soCollectionRef = collection(firestore, SO_COLLECTION);
 
   try {
-    return await runTransaction(firestore, async (transaction) => {
+    const result = await runTransaction(firestore, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
       const currentCount = counterDoc.data()?.count || 0;
       const newCount = currentCount + 1;
@@ -61,8 +71,13 @@ export async function addServiceOrder(
       transaction.set(newSORef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
       
-      return newSORef.id;
+      return { id: newSORef.id, publicId };
     });
+
+    // Enviar correo tras crear exitosamente
+    await sendSONotificationEmail(result, 'created');
+    
+    return result.id;
   } catch (error: any) {
     console.error("SO creation failed: ", error);
     throw error;
@@ -80,6 +95,12 @@ export async function updateServiceOrder(
 
   try {
     await updateDoc(soRef, cleaned);
+    
+    // Obtenemos los datos actuales para el mock de email
+    const snap = await getDoc(soRef);
+    if (snap.exists()) {
+      await sendSONotificationEmail({ id: soId, ...snap.data() }, 'modified');
+    }
   } catch (serverError: any) {
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: soRef.path,
