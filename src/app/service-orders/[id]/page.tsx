@@ -7,7 +7,7 @@ import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { z } from 'z';
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { 
   ServiceOrder, 
@@ -63,13 +63,29 @@ export default function SODetailPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  // Data
+  // Data fetching
   const soDocRef = useMemo(() => isNew ? null : doc(firestore, 'service_orders', soId), [firestore, soId, isNew]);
   const { data: so, loading: soLoading } = useDoc<ServiceOrder>(soDocRef);
 
-  const contractsQuery = useMemo(() => query(collection(firestore, 'contracts')), [firestore]);
-  const clientsQuery = useMemo(() => query(collection(firestore, 'clients')), [firestore]);
-  const usersQuery = useMemo(() => query(collection(firestore, 'users')), [firestore]);
+  const managementFilter = user?.role === 'admin' ? null : user?.management;
+
+  const contractsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'contracts');
+    return managementFilter 
+      ? query(ref, where('management', '==', managementFilter)) 
+      : query(ref);
+  }, [firestore, user, managementFilter]);
+
+  const clientsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    const ref = collection(firestore, 'clients');
+    return managementFilter 
+      ? query(ref, where('management', '==', managementFilter)) 
+      : query(ref);
+  }, [firestore, user, managementFilter]);
+
+  const usersQuery = useMemoFirebase(() => query(collection(firestore, 'users')), [firestore]);
 
   const { data: contracts } = useCollection<Contract>(contractsQuery);
   const { data: clients } = useCollection<Client>(clientsQuery);
@@ -84,7 +100,7 @@ export default function SODetailPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      contractId: contractIdFromQuery || '',
+      contractId: '',
       type: 'Alta',
       status: 'Abierta',
       pmAssignedId: '',
@@ -230,6 +246,7 @@ export default function SODetailPage() {
                               {contracts?.map(c => (
                                 <SelectItem key={c.id} value={c.id}>{c.publicId} - {clients?.find(cl => cl.id === c.clientId)?.name}</SelectItem>
                               ))}
+                              {(!contracts || contracts.length === 0) && <SelectItem value="none" disabled>No se encontraron contratos</SelectItem>}
                             </SelectContent>
                           </Select>
                           <FormMessage />
