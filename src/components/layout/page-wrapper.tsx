@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -20,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.4.0 - Service Order Real Notification Engine
-const APP_VERSION = '1.4.0'; 
+// VERSIÓN 1.4.1 - SO Contract Display Fix
+const APP_VERSION = '1.4.1'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -16,9 +16,10 @@ import {
   Loader2,
   CheckCircle2,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  FileText
 } from 'lucide-react';
-import type { ServiceOrder, UserProfile, ServiceOrderItem } from '@/lib/types';
+import type { ServiceOrder, UserProfile, ServiceOrderItem, Contract } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -78,6 +79,9 @@ export default function ServiceOrdersPage() {
 
   const { data: serviceOrders, loading: soLoading } = useCollection<ServiceOrder>(soQuery);
   const { data: users } = useCollection<UserProfile>(collection(firestore, 'users'));
+  const { data: contracts } = useCollection<Contract>(collection(firestore, 'contracts'));
+
+  const contractMap = useMemo(() => new Map(contracts?.map(c => [c.id, c.publicId])), [contracts]);
 
   const filteredOrders = useMemo(() => {
     if (!serviceOrders) return [];
@@ -191,6 +195,7 @@ export default function ServiceOrdersPage() {
               <TableRow className="bg-destructive hover:bg-destructive">
                 <TableHead className="text-white font-bold">ID ORDEN</TableHead>
                 <TableHead className="text-white font-bold">CLIENTE</TableHead>
+                <TableHead className="text-white font-bold">CONTRATO</TableHead>
                 <TableHead className="text-white font-bold">ESTADO</TableHead>
                 <TableHead className="text-white font-bold">PM ASIGNADO</TableHead>
                 <TableHead className="text-white font-bold">F. CREACIÓN</TableHead>
@@ -200,6 +205,7 @@ export default function ServiceOrdersPage() {
             <TableBody>
               {paginatedOrders.length > 0 ? paginatedOrders.map((so) => {
                 const canClose = so.status !== 'Cerrada' && (isAdmin || user?.uid === so.pmAssignedId);
+                const contractPublicId = contractMap.get(so.contractId) || '-';
                 return (
                   <TableRow 
                     key={so.id} 
@@ -214,6 +220,12 @@ export default function ServiceOrdersPage() {
                     <TableCell onClick={() => router.push(`/service-orders/${so.id}`)} className="cursor-pointer">
                       <div className="font-bold text-slate-700">{so.clientName}</div>
                       <div className="text-[10px] text-muted-foreground uppercase">{so.cuit}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-mono text-[11px] font-bold">{contractPublicId}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge className={cn("rounded-full font-bold text-[9px] uppercase", statusColors[so.status])}>
@@ -271,7 +283,7 @@ export default function ServiceOrdersPage() {
                 );
               }) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
                     No se encontraron Service Orders.
                   </TableCell>
                 </TableRow>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useAuth, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -29,7 +29,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, ArrowLeft, ClipboardList, User, ShieldCheck, Clock, Loader2, MapPin, ShieldAlert, Paperclip } from 'lucide-react';
+import { Save, ArrowLeft, ClipboardList, User, ShieldCheck, Clock, Loader2, MapPin, ShieldAlert, Paperclip, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SOItemManager } from '@/components/service-orders/so-item-manager';
 import { SOComments } from '@/components/service-orders/so-comments';
@@ -137,7 +137,10 @@ export default function SODetailPage() {
   }, [so, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user || !selectedContract || !selectedClient) return;
+    if (!user || !selectedContract || !selectedClient) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Debe seleccionar un contrato válido para continuar.' });
+      return;
+    }
     setIsSaving(true);
 
     const data: any = {
@@ -240,12 +243,31 @@ export default function SODetailPage() {
                         <FormItem>
                           <FormLabel>Contrato Relacionado</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={!isNew || isLocked}>
-                            <FormControl><SelectTrigger className="bg-white"><SelectValue placeholder="Contrato..." /></SelectTrigger></FormControl>
+                            <FormControl>
+                              <SelectTrigger className="bg-white">
+                                <SelectValue placeholder="Seleccionar contrato...">
+                                  {selectedContract ? (
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-3 w-3 text-primary" />
+                                      <span className="font-bold">{selectedContract.publicId}</span>
+                                    </div>
+                                  ) : "Contrato..."}
+                                </SelectValue>
+                              </SelectTrigger>
+                            </FormControl>
                             <SelectContent>
-                              {contracts?.map(c => (
-                                <SelectItem key={c.id} value={c.id}>{c.publicId} - {clients?.find(cl => cl.id === c.clientId)?.name}</SelectItem>
-                              ))}
-                              {(!contracts || contracts.length === 0) && <SelectItem value="none" disabled>No se encontraron contratos</SelectItem>}
+                              {contracts?.map(c => {
+                                const contractClient = clients?.find(cl => cl.id === c.clientId);
+                                return (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    <div className="flex flex-col">
+                                      <span className="font-bold">{c.publicId}</span>
+                                      <span className="text-[10px] text-muted-foreground uppercase">{contractClient?.name || 'Cliente...'}</span>
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
+                              {(!contracts || contracts.length === 0) && <SelectItem value="none" disabled>No se encontraron contratos disponibles</SelectItem>}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -267,14 +289,14 @@ export default function SODetailPage() {
                     </div>
 
                     {selectedClient && (
-                      <div className="p-4 bg-muted/20 border rounded-lg grid grid-cols-2 gap-4 animate-in fade-in">
+                      <div className="p-4 bg-primary/5 border border-primary/10 rounded-lg grid grid-cols-2 gap-4 animate-in fade-in">
                         <div className="space-y-1">
                           <span className="text-[10px] font-bold text-muted-foreground uppercase">Cliente</span>
-                          <p className="text-sm font-bold">{selectedClient.name}</p>
+                          <p className="text-sm font-bold text-slate-800">{selectedClient.name}</p>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">ID Tributario</span>
-                          <p className="text-sm font-mono">{selectedClient.cuit}</p>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Contrato Vinculado</span>
+                          <p className="text-sm font-mono font-bold text-primary">{selectedContract?.publicId}</p>
                         </div>
                       </div>
                     )}
