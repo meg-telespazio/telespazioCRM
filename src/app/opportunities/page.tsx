@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -14,6 +13,8 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { deleteOpportunity, duplicateOpportunity } from '@/lib/firestore/opportunities';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function OpportunitiesPage() {
   const { user, loading: userLoading } = useUser();
@@ -21,6 +22,8 @@ export default function OpportunitiesPage() {
   const router = useRouter();
   const { t, currency: displayCurrency } = useI18n();
   const { toast } = useToast();
+
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
@@ -44,12 +47,18 @@ export default function OpportunitiesPage() {
 
   const opportunities = useMemo(() => {
     if (!opportunitiesData) return [];
-    return [...opportunitiesData].sort((a, b) => {
+    
+    let filtered = opportunitiesData;
+    if (showOnlyMine && user?.role === 'ejecutivo') {
+      filtered = filtered.filter(opp => opp.assignedTo === user.uid);
+    }
+
+    return [...filtered].sort((a, b) => {
       const dateA = a.updatedAt || a.createdAt;
       const dateB = b.updatedAt || b.createdAt;
       return dateB.getTime() - dateA.getTime();
     });
-  }, [opportunitiesData]);
+  }, [opportunitiesData, showOnlyMine, user]);
 
   const clients = useMemo(() => clientsData || [], [clientsData]);
 
@@ -88,13 +97,29 @@ export default function OpportunitiesPage() {
 
   if (userLoading) return <div className="p-12 text-center">{t('App.loading')}</div>;
 
+  const isEjecutivo = user?.role === 'ejecutivo';
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.opportunities')}>
-        <Button size="sm" onClick={() => router.push('/opportunities/new')} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('Pages.addOpportunity')}</span>
-        </Button>
+        <div className="flex items-center gap-4 mr-4">
+          {isEjecutivo && (
+            <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+              <Switch 
+                id="mine-filter" 
+                checked={showOnlyMine} 
+                onCheckedChange={setShowOnlyMine} 
+              />
+              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer">
+                {t('Actions.showOnlyMine')}
+              </Label>
+            </div>
+          )}
+          <Button size="sm" onClick={() => router.push('/opportunities/new')} disabled={user?.role === 'ingeniero'}>
+            <PlusCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('Pages.addOpportunity')}</span>
+          </Button>
+        </div>
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {(opportunitiesLoading && oppsQuery !== null) || clientsLoading ? (

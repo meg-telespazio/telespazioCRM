@@ -13,6 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Loader2, PlusCircle } from 'lucide-react';
 import { LocationsTable } from '@/components/locations/locations-table';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const LocationsMap = dynamic(
   () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
@@ -28,6 +30,7 @@ export default function GlobalLocationsPage() {
   const firestore = useFirestore();
 
   const [focusedLocation, setFocusedLocation] = useState<Location | null>(null);
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const locationsQuery = useMemo(() => {
     if (!user) return null;
@@ -43,16 +46,25 @@ export default function GlobalLocationsPage() {
     return query(ref, where('management', '==', user.management));
   }, [firestore, user]);
 
-  const { data: locations, loading: locationsLoading } = useCollection<Location>(locationsQuery);
+  const { data: locationsData, loading: locationsLoading } = useCollection<Location>(locationsQuery);
   const { data: clients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
 
+  const filteredLocations = useMemo(() => {
+    if (!locationsData) return [];
+    let filtered = locationsData;
+    if (showOnlyMine && user?.role === 'ejecutivo') {
+      filtered = filtered.filter(loc => loc.assignedTo === user.uid);
+    }
+    return filtered;
+  }, [locationsData, showOnlyMine, user]);
+
   const locationsWithCoords = useMemo(() => {
-    if (!locations) return [];
-    return locations.filter(l => typeof l.latitude === 'number' && typeof l.longitude === 'number');
-  }, [locations]);
+    return filteredLocations.filter(l => typeof l.latitude === 'number' && typeof l.longitude === 'number');
+  }, [filteredLocations]);
 
   const isLoading = userLoading || locationsLoading || clientsLoading;
   const isIngeniero = user?.role === 'ingeniero';
+  const isEjecutivo = user?.role === 'ejecutivo';
 
   const handleEditLocation = (location: Location) => {
     router.push(`/locations/${location.id}`);
@@ -73,12 +85,26 @@ export default function GlobalLocationsPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Pages.locations')}>
-        {!isIngeniero && (
-          <Button size="sm" onClick={() => router.push('/locations/new')}>
-            <PlusCircle className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{t('Locations.add')}</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-4">
+          {isEjecutivo && (
+            <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+              <Switch 
+                id="mine-filter" 
+                checked={showOnlyMine} 
+                onCheckedChange={setShowOnlyMine} 
+              />
+              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer">
+                {t('Actions.showOnlyMine')}
+              </Label>
+            </div>
+          )}
+          {!isIngeniero && (
+            <Button size="sm" onClick={() => router.push('/locations/new')}>
+              <PlusCircle className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('Locations.add')}</span>
+            </Button>
+          )}
+        </div>
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6 space-y-6">
         <Card className="h-[500px] flex flex-col border-none shadow-md overflow-hidden">
@@ -105,11 +131,11 @@ export default function GlobalLocationsPage() {
 
         {isLoading ? (
           <Skeleton className="h-64 w-full" />
-        ) : locations && locations.length > 0 ? (
+        ) : filteredLocations && filteredLocations.length > 0 ? (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">{t('Locations.globalTitle')}</h2>
             <LocationsTable 
-              data={locations} 
+              data={filteredLocations} 
               onEdit={handleEditLocation} 
               onDelete={handleDeleteLocation} 
               onFocus={handleFocusOnMap}

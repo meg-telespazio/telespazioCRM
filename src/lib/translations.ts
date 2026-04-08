@@ -354,6 +354,7 @@ export const translations = {
       saveSuccess: 'Record saved successfully',
       saveErrorGeneric: 'An error occurred while saving the record.',
       generatePreBilling: 'Generate Pre-billing',
+      showOnlyMine: 'Show only mine',
     },
     Reports: {
       createNew: 'Create New Report',
@@ -1342,6 +1343,7 @@ export const translations = {
       saveSuccess: 'Registro guardado exitosamente',
       saveErrorGeneric: 'Ocurrió un error al guardar el registro.',
       generatePreBilling: 'Generar Pre-billing',
+      showOnlyMine: 'Ver solo mis registros',
     },
     Reports: {
       createNew: 'Crear Nuevo Reporte',

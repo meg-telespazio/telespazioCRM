@@ -15,6 +15,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ContactImporter } from '@/components/contacts/contact-importer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ContactCard } from '@/components/contacts/contact-card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function ContactsPage() {
   const { user, loading: userLoading } = useUser();
@@ -25,6 +27,7 @@ export default function ContactsPage() {
   const [isImporterOpen, setImporterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [clientFilter, setClientFilter] = useState('all');
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const contactsQuery = useMemo(() => {
     if (!user) return null;
@@ -57,13 +60,17 @@ export default function ContactsPage() {
     if (clientFilter !== 'all') {
       filtered = filtered.filter(contact => contact.clientId === clientFilter);
     }
+
+    if (showOnlyMine && user?.role === 'ejecutivo') {
+      filtered = filtered.filter(contact => contact.assignedTo === user.uid);
+    }
     
     return [...filtered].sort((a, b) => {
       const dateA = a.updatedAt || a.createdAt;
       const dateB = b.updatedAt || b.createdAt;
       return dateB.getTime() - dateA.getTime();
     });
-  }, [contactsData, clientFilter]);
+  }, [contactsData, clientFilter, showOnlyMine, user]);
 
   const clientMap = useMemo(() => {
     const map = new Map<string, Client>();
@@ -103,47 +110,63 @@ export default function ContactsPage() {
 
   const pageIsLoading = contactsLoading || clientsLoading;
   const isIngeniero = user?.role === 'ingeniero';
+  const isEjecutivo = user?.role === 'ejecutivo';
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.contacts')}>
-        <Select value={clientFilter} onValueChange={setClientFilter}>
-            <SelectTrigger className="hidden sm:flex w-[180px] h-8 text-xs">
-                <SelectValue placeholder={t('Forms.selectClient')} />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="all">{t('Table.all')} {t('Pages.clients')}</SelectItem>
-                {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                ))}
-            </SelectContent>
-        </Select>
+        <div className="flex items-center gap-4">
+          {isEjecutivo && (
+            <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+              <Switch 
+                id="mine-filter" 
+                checked={showOnlyMine} 
+                onCheckedChange={setShowOnlyMine} 
+              />
+              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer">
+                {t('Actions.showOnlyMine')}
+              </Label>
+            </div>
+          )}
 
-        <div className="hidden sm:flex items-center rounded-md bg-muted p-1">
-            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2" onClick={() => setViewMode('table')}>
-                <List className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant={viewMode === 'card' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2" onClick={() => setViewMode('card')}>
-                <LayoutGrid className="h-3.5 w-3.5" />
-            </Button>
+          <Select value={clientFilter} onValueChange={setClientFilter}>
+              <SelectTrigger className="hidden sm:flex w-[180px] h-8 text-xs">
+                  <SelectValue placeholder={t('Forms.selectClient')} />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="all">{t('Table.all')} {t('Pages.clients')}</SelectItem>
+                  {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                  ))}
+              </SelectContent>
+          </Select>
+
+          <div className="hidden sm:flex items-center rounded-md bg-muted p-1">
+              <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2" onClick={() => setViewMode('table')}>
+                  <List className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant={viewMode === 'card' ? 'secondary' : 'ghost'} size="sm" className="h-6 px-2" onClick={() => setViewMode('card')}>
+                  <LayoutGrid className="h-3.5 w-3.5" />
+              </Button>
+          </div>
+          
+          {!isIngeniero && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setImporterOpen(true)}
+              >
+                <Upload className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('Importer.button')}</span>
+              </Button>
+              <Button size="sm" onClick={handleAddNew}>
+                <PlusCircle className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('Pages.addContact')}</span>
+              </Button>
+            </>
+          )}
         </div>
-        
-        {!isIngeniero && (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setImporterOpen(true)}
-            >
-              <Upload className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('Importer.button')}</span>
-            </Button>
-            <Button size="sm" onClick={handleAddNew}>
-              <PlusCircle className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('Pages.addContact')}</span>
-            </Button>
-          </>
-        )}
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {pageIsLoading ? (

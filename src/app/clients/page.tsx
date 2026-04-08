@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -14,6 +13,8 @@ import { collection, query, where } from 'firebase/firestore';
 import { deleteClient } from '@/lib/firestore/clients';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClientImporter } from '@/components/clients/client-importer';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function ClientsPage() {
   const { user, loading: userLoading } = useUser();
@@ -22,6 +23,7 @@ export default function ClientsPage() {
   const router = useRouter();
 
   const [isImporterOpen, setImporterOpen] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   // Filter clients by permission
   const clientsQuery = useMemo(() => {
@@ -44,12 +46,18 @@ export default function ClientsPage() {
 
   const clients = useMemo(() => {
     if (!clientsData) return [];
-    return [...clientsData].sort((a, b) => {
+    
+    let filtered = clientsData;
+    if (showOnlyMine && user?.role === 'ejecutivo') {
+      filtered = filtered.filter(c => c.assignedTo === user.uid);
+    }
+
+    return [...filtered].sort((a, b) => {
       const dateA = a.updatedAt || a.createdAt;
       const dateB = b.updatedAt || b.createdAt;
       return dateB.getTime() - dateA.getTime();
     });
-  }, [clientsData]);
+  }, [clientsData, showOnlyMine, user]);
 
   const users = useMemo(() => usersData || [], [usersData]);
 
@@ -77,22 +85,37 @@ export default function ClientsPage() {
 
   const isLoading = clientsLoading || usersLoading;
   const isIngeniero = user?.role === 'ingeniero';
+  const isEjecutivo = user?.role === 'ejecutivo';
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.clients')}>
-        {!isIngeniero && (
-          <>
-            <Button variant="outline" size="sm" onClick={() => setImporterOpen(true)}>
-              <Upload className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('Importer.button')}</span>
-            </Button>
-            <Button size="sm" onClick={handleAddNew}>
-              <PlusCircle className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('Pages.addClient')}</span>
-            </Button>
-          </>
-        )}
+        <div className="flex items-center gap-4">
+          {isEjecutivo && (
+            <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+              <Switch 
+                id="mine-filter" 
+                checked={showOnlyMine} 
+                onCheckedChange={setShowOnlyMine} 
+              />
+              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer">
+                {t('Actions.showOnlyMine')}
+              </Label>
+            </div>
+          )}
+          {!isIngeniero && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setImporterOpen(true)}>
+                <Upload className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('Importer.button')}</span>
+              </Button>
+              <Button size="sm" onClick={handleAddNew}>
+                <PlusCircle className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('Pages.addClient')}</span>
+              </Button>
+            </>
+          )}
+        </div>
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {isLoading ? (
