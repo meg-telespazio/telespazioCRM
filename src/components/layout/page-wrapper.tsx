@@ -20,8 +20,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.3.8 - Fix contracts visibility in SO
-const APP_VERSION = '1.3.8'; 
+// VERSIÓN 1.4.0 - Service Order Real Notification Engine
+const APP_VERSION = '1.4.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

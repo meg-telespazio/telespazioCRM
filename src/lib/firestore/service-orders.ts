@@ -33,12 +33,69 @@ const cleanData = (data: any) => {
 };
 
 /**
- * Mock function to represent sending an email.
- * In production, this would trigger a Cloud Function or call an external service (SendGrid, Resend, etc.)
+ * Recupera el email de un usuario por su UID.
  */
-async function sendSONotificationEmail(so: any, action: 'created' | 'modified' | 'closed') {
-  console.log(`[EMAIL MOCK] Notification to EECC and PM: Service Order ${so.publicId} has been ${action}.`);
-  console.log(`[EMAIL MOCK] Link: /service-orders/${so.id}`);
+async function getUserEmail(firestore: Firestore, uid: string): Promise<string | null> {
+  if (!uid) return null;
+  const userDoc = await getDoc(doc(firestore, 'users', uid));
+  return userDoc.exists() ? userDoc.data().email : null;
+}
+
+/**
+ * Prepara y envía notificaciones (Email y Alerta Interna).
+ */
+async function sendSONotification(firestore: Firestore, so: any, action: 'creada' | 'modificada' | 'cerrada') {
+  const eeccEmail = await getUserEmail(firestore, so.eeccId);
+  const pmEmail = so.pmAssignedId ? await getUserEmail(firestore, so.pmAssignedId) : null;
+  
+  const recipients = [eeccEmail, pmEmail].filter(Boolean) as string[];
+  if (recipients.length === 0) return;
+
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const soLink = `${appUrl}/service-orders/${so.id}`;
+
+  const subject = `[T-Track] Service Order ${so.publicId} - ${action.toUpperCase()}`;
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+      <h2 style="color: #EC1C24;">Notificación de Service Order</h2>
+      <p>La Service Order <strong>${so.publicId}</strong> (${so.clientName}) ha sido <strong>${action}</strong>.</p>
+      <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <p style="margin: 0;"><strong>Tipo:</strong> ${so.type}</p>
+        <p style="margin: 0;"><strong>Estado Actual:</strong> ${so.status}</p>
+      </div>
+      <a href="${soLink}" style="display: inline-block; background: #EC1C24; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ver en T-Track</a>
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+      <p style="font-size: 10px; color: #999;">Telespazio Argentina - T-Track CRM. Este es un mensaje automático.</p>
+    </div>
+  `;
+
+  try {
+    // 1. Grabamos en la colección /mail para la extensión "Trigger Email"
+    await addDoc(collection(firestore, 'mail'), {
+      to: recipients,
+      message: {
+        subject,
+        html,
+      },
+      createdAt: serverTimestamp(),
+    });
+
+    // 2. Grabamos en una colección de notificaciones internas para el Dashboard (opcional)
+    recipients.forEach(async (email) => {
+      await addDoc(collection(firestore, 'notifications'), {
+        toEmail: email,
+        title: subject,
+        message: `La SO ${so.publicId} ha sido ${action}.`,
+        link: soLink,
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+    });
+
+    console.log(`[NOTIFICACIÓN] Enviada a ${recipients.join(', ')} por SO ${so.publicId}`);
+  } catch (e) {
+    console.warn('Fallo al registrar notificación:', e);
+  }
 }
 
 export async function addServiceOrder(
@@ -71,10 +128,10 @@ export async function addServiceOrder(
       transaction.set(newSORef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
       
-      return { id: newSORef.id, publicId };
+      return { id: newSORef.id, publicId, ...data };
     });
 
-    await sendSONotificationEmail(result, 'created');
+    await sendSONotification(firestore, result, 'creada');
     
     return result.id;
   } catch (error: any) {
@@ -97,7 +154,7 @@ export async function updateServiceOrder(
     
     const snap = await getDoc(soRef);
     if (snap.exists()) {
-      await sendSONotificationEmail({ id: soId, ...snap.data() }, 'modified');
+      await sendSONotification(firestore, { id: soId, ...snap.data() }, 'modificada');
     }
   } catch (serverError: any) {
     errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -128,7 +185,7 @@ export async function closeServiceOrder(
 
   const snap = await getDoc(soRef);
   if (snap.exists()) {
-    await sendSONotificationEmail({ id: soId, ...snap.data() }, 'closed');
+    await sendSONotification(firestore, { id: soId, ...snap.data() }, 'cerrada');
   }
 }
 
