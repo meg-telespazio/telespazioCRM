@@ -14,6 +14,7 @@ import {
   query,
   where,
   setDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import type { ServiceOrder, ServiceOrderItem, ServiceOrderComment, UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -35,10 +36,9 @@ const cleanData = (data: any) => {
  * Mock function to represent sending an email.
  * In production, this would trigger a Cloud Function or call an external service (SendGrid, Resend, etc.)
  */
-async function sendSONotificationEmail(so: any, action: 'created' | 'modified') {
+async function sendSONotificationEmail(so: any, action: 'created' | 'modified' | 'closed') {
   console.log(`[EMAIL MOCK] Notification to EECC and PM: Service Order ${so.publicId} has been ${action}.`);
   console.log(`[EMAIL MOCK] Link: /service-orders/${so.id}`);
-  // Lógica real aquí dispararía un evento o una Cloud Function
 }
 
 export async function addServiceOrder(
@@ -74,7 +74,6 @@ export async function addServiceOrder(
       return { id: newSORef.id, publicId };
     });
 
-    // Enviar correo tras crear exitosamente
     await sendSONotificationEmail(result, 'created');
     
     return result.id;
@@ -96,7 +95,6 @@ export async function updateServiceOrder(
   try {
     await updateDoc(soRef, cleaned);
     
-    // Obtenemos los datos actuales para el mock de email
     const snap = await getDoc(soRef);
     if (snap.exists()) {
       await sendSONotificationEmail({ id: soId, ...snap.data() }, 'modified');
@@ -108,6 +106,53 @@ export async function updateServiceOrder(
       requestResourceData: cleaned,
     }));
     throw serverError;
+  }
+}
+
+export async function closeServiceOrder(
+  firestore: Firestore,
+  soId: string,
+  user: UserProfile,
+  closingData: { comments: string; date: Date }
+) {
+  const soRef = doc(firestore, SO_COLLECTION, soId);
+  
+  // Create closing log
+  await addSOComment(firestore, soId, user, `ORDEN CERRADA: ${closingData.comments}`, 'Cerrada');
+
+  await updateDoc(soRef, {
+    status: 'Cerrada',
+    'dates.serviceActivationComplete': closingData.date,
+    updatedAt: serverTimestamp(),
+  });
+
+  const snap = await getDoc(soRef);
+  if (snap.exists()) {
+    await sendSONotificationEmail({ id: soId, ...snap.data() }, 'closed');
+  }
+}
+
+export async function deleteServiceOrder(firestore: Firestore, soId: string) {
+  const soRef = doc(firestore, SO_COLLECTION, soId);
+  const itemsRef = collection(firestore, SO_COLLECTION, soId, 'items');
+  const commentsRef = collection(firestore, SO_COLLECTION, soId, 'comments');
+
+  const itemsSnap = await getDocs(itemsRef);
+  const commentsSnap = await getDocs(commentsRef);
+
+  const batch = writeBatch(firestore);
+  itemsSnap.forEach(d => batch.delete(d.ref));
+  commentsSnap.forEach(d => batch.delete(d.ref));
+  batch.delete(soRef);
+
+  try {
+    await batch.commit();
+  } catch (error: any) {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({
+      path: soRef.path,
+      operation: 'delete',
+    }));
+    throw error;
   }
 }
 
@@ -151,7 +196,6 @@ export async function updateSOItem(
   const itemRef = doc(firestore, SO_COLLECTION, soId, 'items', itemId);
   const cleaned = cleanData(data);
 
-  // Business logic: isClosed is true if PM provides final IDs
   if (cleaned.serviceIdFinal && cleaned.activationDate) {
     cleaned.isClosed = true;
   }
@@ -188,7 +232,7 @@ export async function addSOComment(
   soId: string,
   user: UserProfile,
   text: string,
-  statusChange?: ServiceOrder.status
+  statusChange?: ServiceOrder['status']
 ) {
   const commentsRef = collection(firestore, SO_COLLECTION, soId, 'comments');
   const data = {
@@ -202,7 +246,7 @@ export async function addSOComment(
   try {
     await addDoc(commentsRef, data);
     if (statusChange) {
-      await updateServiceOrder(firestore, soId, { status: statusChange });
+      await updateDoc(doc(firestore, SO_COLLECTION, soId), { status: statusChange });
     }
   } catch (error: any) {
     throw error;

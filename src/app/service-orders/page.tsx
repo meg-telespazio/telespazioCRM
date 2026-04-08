@@ -10,27 +10,33 @@ import { Input } from '@/components/ui/input';
 import { 
   PlusCircle, 
   Search, 
-  Filter, 
   ChevronLeft, 
   ChevronRight, 
-  ArrowUpDown, 
-  ArrowUp, 
-  ArrowDown,
-  Building,
   ClipboardList,
   User as UserIcon,
-  BadgeAlert,
-  Loader2
+  Loader2,
+  CheckCircle2,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
-import type { ServiceOrder, Client, UserProfile } from '@/lib/types';
+import type { ServiceOrder, UserProfile, ServiceOrderItem } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import { deleteServiceOrder } from '@/lib/firestore/service-orders';
+import { SOCloseModal } from '@/components/service-orders/so-close-modal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -47,10 +53,14 @@ export default function ServiceOrdersPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { t } = useI18n();
+  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isValidating, setIsValidating] = useState<string | null>(null);
+  const [selectedSoForClose, setSelectedSoForClose] = useState<ServiceOrder | null>(null);
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
 
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
@@ -59,13 +69,7 @@ export default function ServiceOrdersPage() {
   // Data fetching
   const soQuery = useMemo(() => {
     if (!user) return null;
-    const ref = collection(firestore, 'service_orders');
-    
-    let q = query(ref, orderBy('createdAt', 'desc'));
-    
-    // Security: Managers and Admins see all. EECC and Engineers see all but only edit their own.
-    // The spec says they can READ all.
-    return q;
+    return query(collection(firestore, 'service_orders'), orderBy('createdAt', 'desc'));
   }, [user, firestore]);
 
   const { data: serviceOrders, loading: soLoading } = useCollection<ServiceOrder>(soQuery);
@@ -89,7 +93,46 @@ export default function ServiceOrdersPage() {
 
   const userMap = useMemo(() => new Map(users?.map(u => [u.uid, u])), [users]);
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm(t('Actions.confirmDelete'))) return;
+    try {
+      await deleteServiceOrder(firestore, id);
+      toast({ variant: 'success', title: 'Service Order eliminada.' });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error', description: e.message });
+    }
+  };
+
+  const handleCloseAttempt = async (so: ServiceOrder) => {
+    setIsValidating(so.id);
+    try {
+      const itemsRef = collection(firestore, 'service_orders', so.id, 'items');
+      const itemsSnap = await getDocs(itemsRef);
+      const items = itemsSnap.docs.map(d => d.data() as ServiceOrderItem);
+
+      if (items.length === 0) {
+        toast({ variant: 'destructive', title: t('SO.noItems') });
+        return;
+      }
+
+      const allClosed = items.every(i => i.isClosed);
+      if (!allClosed) {
+        toast({ variant: 'destructive', title: t('SO.itemsIncomplete') });
+        return;
+      }
+
+      setSelectedSoForClose(so);
+      setIsCloseModalOpen(true);
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error de validación', description: e.message });
+    } finally {
+      setIsValidating(null);
+    }
+  };
+
   if (userLoading || soLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
+
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="flex flex-1 flex-col">
@@ -134,52 +177,85 @@ export default function ServiceOrdersPage() {
               <TableRow className="bg-destructive hover:bg-destructive">
                 <TableHead className="text-white font-bold">ID ORDEN</TableHead>
                 <TableHead className="text-white font-bold">CLIENTE</TableHead>
-                <TableHead className="text-white font-bold">TIPO</TableHead>
                 <TableHead className="text-white font-bold">ESTADO</TableHead>
                 <TableHead className="text-white font-bold">PM ASIGNADO</TableHead>
-                <TableHead className="text-white font-bold text-right">F. CREACIÓN</TableHead>
+                <TableHead className="text-white font-bold">F. CREACIÓN</TableHead>
+                <TableHead className="text-white font-bold text-right px-4">ACCIONES</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedOrders.length > 0 ? paginatedOrders.map((so) => (
-                <TableRow 
-                  key={so.id} 
-                  className="hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => router.push(`/service-orders/${so.id}`)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-mono font-bold text-primary">{so.publicId}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-bold text-slate-700">{so.clientName}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase">{so.cuit}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px] uppercase">{so.type}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={cn("rounded-full font-bold text-[9px] uppercase", statusColors[so.status])}>
-                      {t(`Status.${so.status}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {so.pmAssignedId ? (
-                      <div className="flex items-center gap-2 text-xs">
-                        <UserIcon className="h-3 w-3" />
-                        {userMap.get(so.pmAssignedId)?.displayName || '...'}
+              {paginatedOrders.length > 0 ? paginatedOrders.map((so) => {
+                const canClose = so.status !== 'Cerrada' && (isAdmin || user?.uid === so.pmAssignedId);
+                return (
+                  <TableRow 
+                    key={so.id} 
+                    className="hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell onClick={() => router.push(`/service-orders/${so.id}`)} className="cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-mono font-bold text-primary">{so.publicId}</span>
                       </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">No asignado</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right text-xs font-medium text-slate-500">
-                    {format(so.createdAt, 'dd/MM/yyyy')}
-                  </TableCell>
-                </TableRow>
-              )) : (
+                    </TableCell>
+                    <TableCell onClick={() => router.push(`/service-orders/${so.id}`)} className="cursor-pointer">
+                      <div className="font-bold text-slate-700">{so.clientName}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase">{so.cuit}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={cn("rounded-full font-bold text-[9px] uppercase", statusColors[so.status])}>
+                        {t(`Status.${so.status}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {so.pmAssignedId ? (
+                        <div className="flex items-center gap-2 text-xs">
+                          <UserIcon className="h-3 w-3" />
+                          {userMap.get(so.pmAssignedId)?.displayName || '...'}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">No asignado</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs font-medium text-slate-500">
+                      {format(so.createdAt, 'dd/MM/yyyy')}
+                    </TableCell>
+                    <TableCell className="text-right px-4">
+                      <div className="flex justify-end gap-2">
+                        {canClose && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-[10px] uppercase font-bold border-green-200 text-green-700 hover:bg-green-50"
+                            onClick={() => handleCloseAttempt(so)}
+                            disabled={isValidating === so.id}
+                          >
+                            {isValidating === so.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                            {t('SO.close')}
+                          </Button>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/service-orders/${so.id}`)}>
+                              {t('Activity.view')}
+                            </DropdownMenuItem>
+                            {isAdmin && (
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(so.id)}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {t('Table.actions.delete')}
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              }) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">
                     No se encontraron Service Orders.
@@ -198,15 +274,21 @@ export default function ServiceOrdersPage() {
             </p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
-                <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                <ChevronLeft className="h-4 w-4 mr-1" /> {t('Table.previous')}
               </Button>
               <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
-                Siguiente <ChevronRight className="h-4 w-4 ml-1" />
+                {t('Table.next')} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </div>
         )}
       </main>
+
+      <SOCloseModal 
+        isOpen={isCloseModalOpen} 
+        onOpenChange={setIsCloseModalOpen} 
+        so={selectedSoForClose} 
+      />
     </div>
   );
 }
