@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -7,6 +6,7 @@ import {
   useFirestore,
   useDoc,
   useCollection,
+  useMemoFirebase,
 } from '@/firebase';
 import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ import type {
   Contract,
   Client,
   Contact,
+  Opportunity,
   ContractType,
   ContractStatus,
   ContractRenewalTerm,
@@ -29,7 +30,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addMonths, isValid } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign, Briefcase, ChevronRight, Info, ShieldCheck, Clock, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Save, Plus, Trash2, Zap, DollarSign, Briefcase, ChevronRight, Info, ShieldCheck, Clock, ClipboardList, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -67,6 +68,7 @@ import { Label } from '@/components/ui/label';
 const getFormSchema = (t: (key: string) => string) => {
   return z.object({
       clientId: z.string().min(1, t('Validation.selectClient')),
+      opportunityId: z.string().optional().or(z.literal('')),
       type: z.enum(['Acuerdo Marco', 'Locación de Servicios', 'Compraventa', 'Locación de Equipos', 'Comodato de Equipos']),
       status: z.enum(['activo', 'vencido', 'renovado', 'renovado automatico']),
       amount: z.coerce.number().min(0),
@@ -138,51 +140,30 @@ export default function ContractFormPage() {
 
   const { data: contractData, loading: contractLoading } = useDoc<Contract>(contractDocRef);
 
-  // Fetch system config for cost centers - Solo si hay usuario autenticado
+  // Fetch system config for cost centers
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   // Filtered clients by permission for selection
-  const clientsQuery = useMemo(() => {
+  const clientsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
     if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
-    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-  }, [user, firestore]);
-
-  const contactsQuery = useMemo(() => {
-    if (!user || !firestore) return null;
-    const ref = collection(firestore, 'contacts');
-    if (user.role === 'admin') return query(ref);
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
-  const psQuery = useMemo(() => {
-    if (!user || !firestore) return null;
-    const ref = collection(firestore, 'productsAndServices');
-    return query(ref, where('status', '==', 'active'));
-  }, [user, firestore]);
-
   const { data: clientsData, loading: clientsLoading } = useCollection<Client>(clientsQuery);
-  const { data: allContactsData, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
-  const { data: catalogData, loading: catalogLoading } = useCollection<ProductOrService>(psQuery);
 
   const clients = useMemo(() => clientsData ? [...clientsData].sort((a, b) => a.name.localeCompare(b.name)) : [], [clientsData]);
   
-  const servicePlans = useMemo(() => {
-    if (!catalogData) return [];
-    return catalogData
-      .filter(item => item.type === 'service' || item.type === 'bundle')
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [catalogData]);
-
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
   const form = useForm<ContractFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       clientId: clientIdFromQuery || '',
+      opportunityId: '',
       type: 'Acuerdo Marco',
       status: 'activo',
       amount: 0,
@@ -218,6 +199,34 @@ export default function ContractFormPage() {
   const watchedDuration = form.watch('durationMonths');
   const watchedAutoRenews = form.watch('autoRenews');
   const watchedHasSpecialClauses = form.watch('hasSpecialClauses');
+
+  // Related Opportunities logic
+  const oppsQuery = useMemoFirebase(() => {
+    if (!watchedClientId || !firestore) return null;
+    return query(collection(firestore, 'opportunities'), where('clientId', '==', watchedClientId), where('stage', '==', 'Won'));
+  }, [firestore, watchedClientId]);
+  const { data: wonOpportunities } = useCollection<Opportunity>(oppsQuery);
+
+  // Contacts Logic
+  const contactsQuery = useMemoFirebase(() => {
+    if (!user || !firestore || !watchedClientId) return null;
+    return query(collection(firestore, 'contacts'), where('clientId', '==', watchedClientId));
+  }, [user, firestore, watchedClientId]);
+  const { data: allContactsData, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
+
+  // Catalog Logic
+  const psQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, 'productsAndServices'), where('status', '==', 'active'));
+  }, [user, firestore]);
+  const { data: catalogData, loading: catalogLoading } = useCollection<ProductOrService>(psQuery);
+
+  const servicePlans = useMemo(() => {
+    if (!catalogData) return [];
+    return catalogData
+      .filter(item => item.type === 'service' || item.type === 'bundle')
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [catalogData]);
 
   // Auto-set cost center if client has one (only for new contracts)
   useEffect(() => {
@@ -257,7 +266,8 @@ export default function ContractFormPage() {
         topUp500GbPrice: contractData.topUp500GbPrice || 0,
         attachments: contractData.attachments || [],
         costCenterId: contractData.costCenterId || '',
-        noticePeriod: contractData.noticePeriod || 0,
+        noticePeriod: (contractData.noticePeriod as any) || 0,
+        opportunityId: contractData.opportunityId || '',
       });
       isFormLoaded.current = true;
     }
@@ -381,6 +391,28 @@ export default function ContractFormPage() {
                         <FormControl><SelectTrigger><SelectValue placeholder={t('Contracts.selectType')} /></SelectTrigger></FormControl>
                         <SelectContent>{contractTypes.map(type => <SelectItem key={type} value={type}>{t(`ContractTypes.${type}`)}</SelectItem>)}</SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="opportunityId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        {t('Contracts.opportunity')}
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger className="bg-white"><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">-- Sin asociar --</SelectItem>
+                          {wonOpportunities?.map(opp => (
+                            <SelectItem key={opp.id} value={opp.id}>{opp.publicId} - {opp.title}</SelectItem>
+                          ))}
+                          {(!wonOpportunities || wonOpportunities.length === 0) && (
+                            <SelectItem value="no-won" disabled>No hay oportunidades ganadas</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>Solo se listan negocios en etapa "Ganada".</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )} />

@@ -216,6 +216,7 @@ export type Contract = {
   id: string;
   publicId: string;
   clientId: string;
+  opportunityId?: string;
   amount: number;
   currency: 'USD' | 'EUR' | 'ARS';
   type: ContractType;

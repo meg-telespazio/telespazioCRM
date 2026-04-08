@@ -276,7 +276,7 @@ export const translations = {
       Netherlands: 'Netherlands',
       SouthAfrica: 'South Africa',
       Nigeria: 'Nigeria',
-      Egypt: 'Egypt',
+      Egypt: 'Egipto',
       China: 'China',
       Japan: 'Japan',
       India: 'India',
@@ -454,6 +454,7 @@ export const translations = {
       planName: 'Plan Name',
       agreedPrice: 'Agreed Price',
       costCenter: 'Cost Center',
+      opportunity: 'Opportunity',
     },
     Holdings: {
       title: 'Holding Group Details',
@@ -1432,6 +1433,7 @@ export const translations = {
       planName: 'Nombre del Plan',
       agreedPrice: 'Precio Acordado',
       costCenter: 'Centro de Costo',
+      opportunity: 'Oportunidad',
     },
     Holdings: {
       title: 'Detalle de Grupo Económico',
