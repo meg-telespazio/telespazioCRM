@@ -216,10 +216,12 @@ export default function ClientSummaryPage() {
         
         {!isIngeniero && (
           <>
-            <Button variant="outline" className="hidden sm:flex border-primary text-primary" onClick={() => setIsPreBillingOpen(true)}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              {t('Actions.generatePreBilling')}
-            </Button>
+            {clientServices.length > 0 && (
+              <Button variant="outline" className="hidden sm:flex border-primary text-primary" onClick={() => setIsPreBillingOpen(true)}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                {t('Actions.generatePreBilling')}
+              </Button>
+            )}
             <Button onClick={() => router.push(`/clients/${clientId}`)}><Edit className="mr-2 h-4 w-4" />{t('Actions.editClient')}</Button>
           </>
         )}
