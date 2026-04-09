@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.4.5 - Improved AI error handling and fixed RefreshCw import
-const APP_VERSION = '1.4.5'; 
+// VERSIÓN 1.4.6 - Fixed AI production error obfuscation
+const APP_VERSION = '1.4.6'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

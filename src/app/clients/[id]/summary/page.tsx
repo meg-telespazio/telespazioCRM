@@ -168,23 +168,30 @@ export default function ClientSummaryPage() {
     if (!client) return;
     setIsGeneratingAi(true);
     try {
-      const description = await generateClientAiDescription({
+      const result = await generateClientAiDescription({
         name: client.name,
         website: client.website,
         sector: client.sector
       });
       
-      if (clientDocRef) {
-        await updateDoc(clientDocRef, { aiDescription: description });
+      if (result.error) {
+        let friendlyMessage = result.error;
+        if (result.error.includes('503') || result.error.includes('high demand')) {
+          friendlyMessage = "El servicio de IA está saturado en este momento. Por favor, reintenta en un minuto.";
+        } else if (result.error.includes('API_KEY')) {
+          friendlyMessage = "Falta configuración técnica (API Key). Contacte al administrador.";
+        }
+        toast({ variant: 'destructive', title: 'Error de IA', description: friendlyMessage });
+        return;
+      }
+
+      if (result.description && clientDocRef) {
+        await updateDoc(clientDocRef, { aiDescription: result.description });
         toast({ variant: 'success', title: 'Análisis IA completado' });
       }
     } catch (e: any) {
-      console.error("AI Error:", e);
-      let friendlyMessage = e.message;
-      if (e.message?.includes('503') || e.message?.includes('high demand')) {
-        friendlyMessage = "El servicio de IA está saturado en este momento. Por favor, reintenta en un minuto.";
-      }
-      toast({ variant: 'destructive', title: 'Error de IA', description: friendlyMessage });
+      console.error("Critical AI component error:", e);
+      toast({ variant: 'destructive', title: 'Error de Sistema', description: "Ocurrió un error inesperado al procesar la IA." });
     } finally {
       setIsGeneratingAi(false);
     }

@@ -13,9 +13,17 @@ const ClientDescriptionInputSchema = z.object({
 
 export type ClientDescriptionInput = z.infer<typeof ClientDescriptionInputSchema>;
 
-export async function generateClientAiDescription(input: ClientDescriptionInput): Promise<string> {
-  const result = await clientDescriptionFlow(input);
-  return result;
+export async function generateClientAiDescription(input: ClientDescriptionInput): Promise<{ description?: string; error?: string }> {
+  try {
+    const result = await clientDescriptionFlow(input);
+    return { description: result };
+  } catch (e: any) {
+    console.error("Genkit Flow Error:", e);
+    // En producción, capturamos el error para devolverlo de forma segura a la UI
+    return { 
+      error: e.message || "Error desconocido en el servicio de IA" 
+    };
+  }
 }
 
 const prompt = ai.definePrompt({
