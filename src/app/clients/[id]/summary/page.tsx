@@ -248,6 +248,9 @@ export default function ClientSummaryPage() {
                   {t(`Status.${client.status}`)}
                 </Badge>
               </div>
+              {client.legalName && (
+                <p className="text-sm font-bold text-muted-foreground italic">{client.legalName}</p>
+              )}
               <CardDescription className="text-base flex items-center gap-2 flex-wrap">
                 <Tag className="h-3.5 w-3.5" />
                 {client.sector} 

@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.4.8 - Solid SO Status Badges
-const APP_VERSION = '1.4.8'; 
+// VERSIÓN 1.5.0 - New Client UI and Legal Name
+const APP_VERSION = '1.5.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

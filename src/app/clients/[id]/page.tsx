@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -37,9 +36,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key } from 'lucide-react';
+import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key, BadgeInfo, PhoneCall, Globe, Briefcase, Tag } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 const formatCuit = (cuit: string): string => {
   if (!cuit || cuit.length !== 11) return cuit;
@@ -49,6 +49,7 @@ const formatCuit = (cuit: string): string => {
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
     name: z.string().min(2, t('Validation.nameMin')),
+    legalName: z.string().optional().or(z.literal('')),
     holding: z.string().optional(),
     website: z
       .string()
@@ -69,7 +70,7 @@ const getFormSchema = (t: (key: string) => string) =>
     status: z.enum(['active', 'suspended', 'canceled']),
     type: z.enum(['client', 'prospect']),
     sector: z.string().min(1, t('Validation.selectIndustry')),
-    subsector: z.string().optional(),
+    subsector: z.string().optional().or(z.literal('')),
     management: z.string().min(1, t('Validation.fieldRequired')),
     assignedTo: z.string().min(1, t('Validation.fieldRequired')),
     notes: z.string().optional(),
@@ -147,6 +148,7 @@ export default function ClientFormPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      legalName: '',
       holding: '',
       website: '',
       linkedinPage: '',
@@ -194,6 +196,7 @@ export default function ClientFormPage() {
     if (clientData) {
       form.reset({
         ...clientData,
+        legalName: clientData.legalName || '',
         cuit: clientData.cuit || '',
         taxIdType: clientData.taxIdType || 'CUIT',
         website: clientData.website || '',
@@ -316,138 +319,160 @@ export default function ClientFormPage() {
           </div>
         } />
         <main className="flex-1 p-4 sm:p-6 pb-24">
-          <div className="mx-auto max-w-2xl">
+          <div className="mx-auto max-w-3xl space-y-8">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <Card>
-                  <CardContent className="space-y-4 p-6">
-                    <div className="flex flex-col items-center gap-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                
+                {/* SECCION 1: IDENTIDAD COMERCIAL */}
+                <Card className="border-none shadow-md">
+                  <CardHeader className="bg-slate-50 border-b">
+                    <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                      <BadgeInfo className="h-4 w-4 text-primary" /> Identidad Comercial
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-6">
+                    <div className="flex flex-col sm:flex-row items-center gap-8">
                       <div className="relative">
-                        <Avatar className="h-32 w-32 rounded-lg">
+                        <Avatar className="h-32 w-32 rounded-lg border-2 border-slate-100 shadow-inner bg-slate-50">
                           <AvatarImage src={croppedImage || clientData?.logoURL || undefined} />
-                          <AvatarFallback className="rounded-lg bg-muted"><Building className="h-16 w-16 text-muted-foreground" /></AvatarFallback>
+                          <AvatarFallback className="rounded-lg"><Building className="h-12 w-12 text-slate-300" /></AvatarFallback>
                         </Avatar>
-                        <Button asChild variant="outline" size="icon" className="absolute bottom-1 right-1 h-8 w-8 rounded-full">
+                        <Button asChild variant="outline" size="icon" className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full shadow-lg bg-white">
                           <label htmlFor="logo-upload" className="cursor-pointer">
-                            <Camera className="h-4 w-4" />
+                            <Camera className="h-5 w-5 text-primary" />
                             <input id="logo-upload" type="file" accept="image/*" className="sr-only" onChange={onFileChange} />
                           </label>
                         </Button>
                       </div>
+                      
+                      <div className="flex-1 w-full space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField control={form.control} name="name" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('Forms.clientName')}</FormLabel>
+                              <FormControl><Input placeholder="Nombre Comercial" {...field} className="bg-slate-50/50" /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="legalName" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('Forms.legalName')}</FormLabel>
+                              <FormControl><Input placeholder="Razón Social Completa" {...field} className="bg-slate-50/50" /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField control={form.control} name="taxIdType" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('Forms.taxIdType')}</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent>{taxIdTypeOptions.map(opt => <SelectItem key={opt} value={opt}>{t(`TaxIdTypes.${opt}`)}</SelectItem>)}</SelectContent>
+                              </Select><FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="cuit" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('Forms.cuit')}</FormLabel>
+                              <FormControl><Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} className="bg-slate-50/50" /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Separator className="bg-slate-100" />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <FormField control={form.control} name="management" render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t('Profile.management')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={isRestricted}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {managementOptions.map(opt => (
-                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
+                            <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>{managementOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="assignedTo" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Responsable / Ejecutivo</FormLabel>
+                          <FormLabel>Responsable</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={isRestricted}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar ejecutivo..." /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {ejecutivos.map(u => <SelectItem key={u.uid} value={u.uid}>{u.displayName}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
+                            <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
+                            <SelectContent>{ejecutivos.map(u => <SelectItem key={u.uid} value={u.uid}>{u.displayName}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage />
                         </FormItem>
                       )} />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.clientName')}</FormLabel>
-                          <FormControl><Input {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="holding" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.holding')}</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input {...field} list="holdings-list" placeholder={t('Forms.holdingPlaceholder')} />
-                              <datalist id="holdings-list">
-                                {holdings.map(h => <option key={h} value={h} />)}
-                              </datalist>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormField control={form.control} name="taxIdType" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.taxIdType')}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {taxIdTypeOptions.map(opt => (
-                                <SelectItem key={opt} value={opt}>{t(`TaxIdTypes.${opt}`)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="cuit" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('Forms.cuit')}</FormLabel>
-                          <FormControl><Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField control={form.control} name="type" render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t('Table.type')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {typeOptions.map(opt => (
-                                <SelectItem key={opt} value={opt}>{t(`ClientType.${opt}`)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
+                            <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>{typeOptions.map(opt => <SelectItem key={opt} value={opt}>{t(`ClientType.${opt}`)}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="status" render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t('Forms.status')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger className={cn("bg-slate-50/50 font-bold", field.value === 'active' ? "text-green-600" : "text-slate-600")}><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{t(`Status.${s}`)}</SelectItem>)}</SelectContent>
                           </Select><FormMessage />
                         </FormItem>
                       )} />
                     </div>
+                  </CardContent>
+                </Card>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* SECCION 2: CATEGORIZACION Y ESTRUCTURA */}
+                <Card className="border-none shadow-md">
+                  <CardHeader className="bg-slate-50 border-b">
+                    <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-primary" /> Categorización y Estructura
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="sector" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.sector')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
+                          <SelectContent>{sectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
+                        </Select><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="subsector" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.subsector')}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""} disabled={!watchedSector}>
+                          <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
+                          <SelectContent>{subsectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
+                        </Select><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="holding" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Forms.holding')}</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input {...field} list="holdings-list" placeholder={t('Forms.holdingPlaceholder')} className="bg-slate-50/50" />
+                            <datalist id="holdings-list">
+                              {holdings.map(h => <option key={h} value={h} />)}
+                            </datalist>
+                          </div>
+                        </FormControl><FormMessage />
+                      </FormItem>
+                    )} />
+                    <div className="grid grid-cols-2 gap-4">
                       <FormField control={form.control} name="countryHQ" render={({ field }) => (
                         <FormItem>
                           <FormLabel>{t('Forms.countryHQ')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {countryOptions.map(c => <SelectItem key={c} value={c}>{t(`Countries.${c}`)}</SelectItem>)}
-                            </SelectContent>
+                            <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder="..." /></SelectTrigger></FormControl>
+                            <SelectContent>{countryOptions.map(c => <SelectItem key={c} value={c}>{t(`Countries.${c}`)}</SelectItem>)}</SelectContent>
                           </Select><FormMessage />
                         </FormItem>
                       )} />
@@ -455,76 +480,56 @@ export default function ClientFormPage() {
                         <FormItem>
                           <FormLabel>{t('Forms.costCenter')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {costCenterOptions.map(cc => (
-                                <SelectItem key={cc.id} value={cc.id}>{cc.name} ({cc.id})</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
+                            <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder="..." /></SelectTrigger></FormControl>
+                            <SelectContent>{costCenterOptions.map(cc => <SelectItem key={cc.id} value={cc.id}>{cc.id}</SelectItem>)}</SelectContent>
+                          </Select><FormMessage />
                         </FormItem>
                       )} />
                     </div>
+                  </CardContent>
+                </Card>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* SECCION 3: CONTACTO Y CANALES DIGITALES */}
+                <Card className="border-none shadow-md">
+                  <CardHeader className="bg-slate-50 border-b">
+                    <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                      <PhoneCall className="h-4 w-4 text-primary" /> Contacto y Digital
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="email" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.clientEmail')}</FormLabel><FormControl><Input placeholder="ejemplo@empresa.com" {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={form.control} name="phone" render={({ field }) => (
+                        <FormItem><FormLabel>{t('Forms.clientPhone')}</FormLabel><FormControl><Input placeholder="+54..." {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField control={form.control} name="website" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.website')}</FormLabel>
+                        <FormItem><FormLabel className="flex items-center gap-2"><Globe className="h-3 w-3" /> {t('Forms.website')}</FormLabel>
                           <FormControl>
                             <div className="relative flex items-center">
-                              <Input {...field} />
-                              <Button type="button" size="icon" variant="ghost" className="absolute right-1 h-8 w-8" onClick={handleFindLogo} disabled={isFindingLogo || !form.watch('website')}><Wand2 className={cn(isFindingLogo && "animate-spin")} /></Button>
+                              <Input placeholder="https://..." {...field} className="bg-slate-50/50" />
+                              <Button type="button" size="icon" variant="ghost" className="absolute right-1 h-8 w-8 text-primary" onClick={handleFindLogo} disabled={isFindingLogo || !form.watch('website')}><Wand2 className={cn(isFindingLogo && "animate-spin")} /></Button>
                             </div>
                           </FormControl><FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="linkedinPage" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.linkedinPage')}</FormLabel>
-                          <FormControl><Input {...field} /></FormControl><FormMessage />
+                        <FormItem><FormLabel className="flex items-center gap-2"><Linkedin className="h-3 w-3 text-blue-700" /> LinkedIn</FormLabel>
+                          <FormControl><Input placeholder="https://linkedin.com/..." {...field} className="bg-slate-50/50" /></FormControl><FormMessage />
                         </FormItem>
                       )} />
                     </div>
-                    
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormField control={form.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.clientEmail')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="phone" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.clientPhone')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormField control={form.control} name="sector" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.sector')}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {sectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                            </SelectContent>
-                          </Select><FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="subsector" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.subsector')}</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value} disabled={!watchedSector}>
-                            <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {subsectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                            </SelectContent>
-                          </Select><FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-
                     <FormField control={form.control} name="notes" render={({ field }) => (
-                      <FormItem><FormLabel>{t('Forms.notes')}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel>{t('Forms.notes')}</FormLabel><FormControl><Textarea placeholder="Observaciones generales..." {...field} className="bg-slate-50/50 min-h-[100px]" /></FormControl><FormMessage /></FormItem>
                     )} />
                   </CardContent>
                 </Card>
 
-                {/* Portal Proveedores Section */}
-                <Card className="border-primary/20 bg-primary/5">
+                {/* SECCION 4: PORTAL DE PROVEEDORES */}
+                <Card className="border-primary/20 bg-primary/5 shadow-inner">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <ExternalLink className="h-5 w-5 text-primary" />
@@ -536,7 +541,7 @@ export default function ClientFormPage() {
                       <FormItem>
                         <FormControl>
                           <div className="relative flex items-center">
-                            <Input {...field} placeholder="https://portal.cliente.com" className="bg-white" />
+                            <Input {...field} placeholder="https://portal.cliente.com" className="bg-white border-primary/20" />
                             {watchedPortalUrl && (
                               <Button asChild type="button" size="icon" variant="ghost" className="absolute right-1 h-8 w-8">
                                 <a href={watchedPortalUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
@@ -553,14 +558,14 @@ export default function ClientFormPage() {
                         <FormField control={form.control} name="supplierPortalUser" render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2"><Key className="h-3 w-3" /> {t('Forms.supplierPortalUser')}</FormLabel>
-                            <FormControl><Input {...field} className="bg-white" /></FormControl>
+                            <FormControl><Input {...field} className="bg-white border-primary/20" /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="supplierPortalPassword" render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-2"><ShieldAlert className="h-3 w-3" /> {t('Forms.supplierPortalPassword')}</FormLabel>
-                            <FormControl><Input {...field} type="password" className="bg-white" /></FormControl>
+                            <FormControl><Input {...field} type="password" className="bg-white border-primary/20" /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
@@ -569,9 +574,9 @@ export default function ClientFormPage() {
                   </CardContent>
                 </Card>
 
-                <div className="flex items-center justify-end gap-4">
-                  <Button type="button" variant="outline" onClick={() => router.back()}>{t('Auth.cancelLabel')}</Button>
-                  <Button type="submit">{t('Forms.saveClient')}</Button>
+                <div className="flex items-center justify-end gap-4 pt-4">
+                  <Button type="button" variant="outline" size="lg" onClick={() => router.back()} className="h-12 px-8">{t('Auth.cancelLabel')}</Button>
+                  <Button type="submit" size="lg" className="h-12 px-12 shadow-lg">{t('Forms.saveClient')}</Button>
                 </div>
               </form>
             </Form>

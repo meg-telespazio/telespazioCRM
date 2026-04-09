@@ -40,6 +40,7 @@ export type Client = {
   id: string;
   publicId: string;
   name: string;
+  legalName?: string;
   email: string;
   phone: string;
   website?: string;
