@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -40,11 +40,6 @@ import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, 
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-
-const formatCuit = (cuit: string): string => {
-  if (!cuit || cuit.length !== 11) return cuit;
-  return `${cuit.slice(0, 2)}-${cuit.slice(2, 10)}-${cuit.slice(10)}`;
-};
 
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
@@ -105,12 +100,7 @@ export default function ClientFormPage() {
 
   const clientId = params.id as string;
   const isNew = clientId === 'new';
-
-  useEffect(() => {
-    if (!userLoading && user && user.role === 'ingeniero') {
-      router.push('/dashboard');
-    }
-  }, [user, userLoading, router]);
+  const isInitialLoad = useRef(true);
 
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedImage, setCroppedAvatar] = useState<string | null>(null);
@@ -184,8 +174,10 @@ export default function ClientFormPage() {
       .sort();
   }, [configData, watchedSector]);
 
-  // Reset subsector if sector changes
+  // Reset subsector if sector changes (Only when not initial loading)
   useEffect(() => {
+    if (isInitialLoad.current) return;
+    
     const currentSubsector = form.getValues('subsector');
     if (currentSubsector && !subsectorOptions.includes(currentSubsector)) {
       form.setValue('subsector', '');
@@ -193,7 +185,7 @@ export default function ClientFormPage() {
   }, [watchedSector, subsectorOptions, form]);
 
   useEffect(() => {
-    if (clientData) {
+    if (clientData && isInitialLoad.current) {
       form.reset({
         ...clientData,
         legalName: clientData.legalName || '',
@@ -215,8 +207,15 @@ export default function ClientFormPage() {
         supplierPortalPassword: clientData.supplierPortalPassword || '',
       });
       setCroppedAvatar(clientData.logoURL || null);
+      
+      // Mark initial load as complete after a small delay to let options populate
+      setTimeout(() => {
+        isInitialLoad.current = false;
+      }, 500);
+    } else if (isNew) {
+      isInitialLoad.current = false;
     }
-  }, [clientData, form]);
+  }, [clientData, form, isNew]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -499,10 +498,10 @@ export default function ClientFormPage() {
                   <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField control={form.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.clientEmail')}</FormLabel><FormControl><Input placeholder="ejemplo@empresa.com" {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{t('Auth.emailLabel')}</FormLabel><FormControl><Input placeholder="ejemplo@empresa.com" {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="phone" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Forms.clientPhone')}</FormLabel><FormControl><Input placeholder="+54..." {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{t('Auth.phoneLabel')}</FormLabel><FormControl><Input placeholder="+54..." {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
