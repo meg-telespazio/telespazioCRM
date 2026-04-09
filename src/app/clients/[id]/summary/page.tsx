@@ -114,16 +114,17 @@ export default function ClientSummaryPage() {
   const { data: activities } = useCollection<Activity>(activitiesQuery);
 
   // Calculations for MRR and Services
-  const { clientServices, totalMRR } = useMemo(() => {
-    if (!contracts || !allPos || !allServices) return { clientServices: [], totalMRR: 0 };
+  const { clientServices, totalMRR, activeServicesCount } = useMemo(() => {
+    if (!contracts || !allPos || !allServices) return { clientServices: [], totalMRR: 0, activeServicesCount: 0 };
     
     const clientContractIds = new Set(contracts.map(c => c.id));
     const clientPoIds = new Set(allPos.filter(po => clientContractIds.has(po.contractId)).map(po => po.id));
     const filteredServices = allServices.filter(s => clientPoIds.has(s.poId));
     
+    const activeCount = filteredServices.filter(s => s.status === 'active' || !s.status).length;
     const mrr = filteredServices.reduce((acc, s) => acc + (s.monthlyFee || 0), 0);
     
-    return { clientServices: filteredServices, totalMRR: mrr };
+    return { clientServices: filteredServices, totalMRR: mrr, activeServicesCount: activeCount };
   }, [contracts, allPos, allServices]);
 
   // Budget Execution Logic
@@ -216,7 +217,7 @@ export default function ClientSummaryPage() {
         
         {!isIngeniero && (
           <>
-            {clientServices.length > 0 && (
+            {activeServicesCount > 0 && (
               <Button variant="outline" className="hidden sm:flex border-primary text-primary" onClick={() => setIsPreBillingOpen(true)}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
                 {t('Actions.generatePreBilling')}

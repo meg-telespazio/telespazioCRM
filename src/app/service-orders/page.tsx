@@ -42,11 +42,11 @@ import { SODeleteModal } from '@/components/service-orders/so-delete-modal';
 const ITEMS_PER_PAGE = 10;
 
 const statusColors: Record<string, string> = {
-  Abierta: 'bg-blue-100 text-blue-700 border-blue-200',
-  Asignada: 'bg-purple-100 text-purple-700 border-purple-200',
-  Devuelta: 'bg-amber-100 text-amber-700 border-amber-200',
-  Cerrada: 'bg-green-100 text-green-700 border-green-200',
-  Cancelada: 'bg-slate-100 text-slate-700 border-slate-200',
+  Abierta: 'bg-blue-600 text-white border-transparent',
+  Asignada: 'bg-purple-600 text-white border-transparent',
+  Devuelta: 'bg-amber-500 text-white border-transparent',
+  Cerrada: 'bg-green-600 text-white border-transparent',
+  Cancelada: 'bg-slate-500 text-white border-transparent',
 };
 
 export default function ServiceOrdersPage() {
