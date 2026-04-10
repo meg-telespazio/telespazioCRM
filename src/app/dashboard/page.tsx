@@ -32,7 +32,7 @@ export default function DashboardPage() {
   }, [firestore, user, managementFilter]);
 
   const contractsQuery = useMemo(() => {
-    if (!user || user.role === 'ingeniero') return null;
+    if (!user) return null;
     const ref = collection(firestore, 'contracts');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
   }, [firestore, user, managementFilter]);
@@ -50,7 +50,7 @@ export default function DashboardPage() {
   }, [firestore, user, managementFilter]);
 
   const activitiesQuery = useMemo(() => {
-    if (!user || user.role === 'ingeniero') return null;
+    if (!user) return null;
     const ref = collection(firestore, 'activities');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
   }, [firestore, user, managementFilter]);
@@ -112,7 +112,7 @@ export default function DashboardPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Dashboard.title')} />
       
-      {!isIngeniero && !pageIsLoading && (
+      {!pageIsLoading && (
         <AlertsTicker 
           opportunities={opportunities || []} 
           contracts={contracts || []} 
@@ -172,15 +172,11 @@ export default function DashboardPage() {
         <div className="min-w-0">
           {pageIsLoading ? (
             <Skeleton className="h-[360px]" />
-          ) : !isIngeniero ? (
+          ) : (
             <RecentActivities
               activities={activities || []}
               clients={clients || []}
             />
-          ) : (
-            <div className="p-8 border-2 border-dashed rounded-lg text-center text-muted-foreground">
-              Dashboard simplificado para Ingeniería. Las métricas de ventas y actividades comerciales están restringidas.
-            </div>
           )}
         </div>
       </div>

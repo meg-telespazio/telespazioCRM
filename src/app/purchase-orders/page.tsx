@@ -23,11 +23,10 @@ export default function PurchaseOrdersPage() {
 
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
-    if (user?.role === 'ingeniero') redirect('/dashboard');
   }, [user, userLoading]);
 
   const posQuery = useMemo(() => {
-    if (!user || user.role === 'ingeniero') return null;
+    if (!user) return null;
     const ref = collection(firestore, 'purchaseOrders');
     if (user.role === 'admin') return query(ref);
     return query(ref, where('management', '==', user.management));
@@ -65,55 +64,55 @@ export default function PurchaseOrdersPage() {
 
   if (userLoading || (posLoading && posQuery !== null)) return <div className="p-6"><Skeleton className="h-96" /></div>;
 
+  const isIngeniero = user?.role === 'ingeniero';
+
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('PO.title')}>
-        <Button size="sm" onClick={() => router.push('/purchase-orders/new')} disabled={user?.role === 'ingeniero'}>
-          <PlusCircle className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">{t('PO.add')}</span>
-        </Button>
+        {!isIngeniero && (
+          <Button size="sm" onClick={() => router.push('/purchase-orders/new')}>
+            <PlusCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('PO.add')}</span>
+          </Button>
+        )}
       </AppHeader>
       <main className="flex-1 p-4 sm:p-6">
-        {user?.role === 'ingeniero' ? (
-          <div className="text-center py-20 text-muted-foreground">Acceso restringido para Ingeniería.</div>
-        ) : (
-          <div className="rounded-md border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('Forms.poNumber')}</TableHead>
-                  <TableHead>{t('Pages.clients')}</TableHead>
-                  <TableHead>{t('Sidebar.contracts')}</TableHead>
-                  <TableHead>{t('Forms.amount')}</TableHead>
-                  <TableHead>{t('Table.status')}</TableHead>
-                  <TableHead>{t('Forms.emissionDate')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pos && pos.length > 0 ? pos.map((po) => {
-                  const contract = contractMap.get(po.contractId);
-                  const client = contract ? clientMap.get(contract.clientId) : null;
-                  return (
-                    <TableRow key={po.id} className="cursor-pointer" onClick={() => router.push(`/purchase-orders/${po.id}`)}>
-                      <TableCell className="font-bold">{po.poNumber}</TableCell>
-                      <TableCell>{client?.name || '...'}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{contract?.publicId || '...'}</TableCell>
-                      <TableCell>{po.amount.toLocaleString()} {po.currency}</TableCell>
-                      <TableCell><Badge variant="secondary">{t(`Status.${po.status}`)}</Badge></TableCell>
-                      <TableCell>{format(po.emissionDate, 'P')}</TableCell>
-                    </TableRow>
-                  );
-                }) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">
-                      {t('PO.noPos')}
-                    </TableCell>
+        <div className="rounded-md border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('Forms.poNumber')}</TableHead>
+                <TableHead>{t('Pages.clients')}</TableHead>
+                <TableHead>{t('Sidebar.contracts')}</TableHead>
+                <TableHead>{t('Forms.amount')}</TableHead>
+                <TableHead>{t('Table.status')}</TableHead>
+                <TableHead>{t('Forms.emissionDate')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pos && pos.length > 0 ? pos.map((po) => {
+                const contract = contractMap.get(po.contractId);
+                const client = contract ? clientMap.get(contract.clientId) : null;
+                return (
+                  <TableRow key={po.id} className="cursor-pointer" onClick={() => router.push(`/purchase-orders/${po.id}`)}>
+                    <TableCell className="font-bold">{po.poNumber}</TableCell>
+                    <TableCell>{client?.name || '...'}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{contract?.publicId || '...'}</TableCell>
+                    <TableCell>{po.amount.toLocaleString()} {po.currency}</TableCell>
+                    <TableCell><Badge variant="secondary">{t(`Status.${po.status}`)}</Badge></TableCell>
+                    <TableCell>{format(po.emissionDate, 'P')}</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                );
+              }) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">
+                    {t('PO.noPos')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </main>
     </div>
   );

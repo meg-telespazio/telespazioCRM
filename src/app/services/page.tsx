@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -160,7 +161,6 @@ export default function ServicesPage() {
 
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
-    if (user?.role === 'ingeniero') redirect('/dashboard');
   }, [user, userLoading]);
 
   // Data fetching - Services filtered by management
@@ -190,8 +190,7 @@ export default function ServicesPage() {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
-    if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
-    return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
   const { data: services, loading: servicesLoading } = useCollection<Service>(servicesQuery);
