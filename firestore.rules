@@ -21,20 +21,23 @@ service cloud.firestore {
 
     function getPermissions() {
       let path = /databases/$(database)/documents/systemConfig/globals;
-      let role = getUserData().role;
+      let role = getUserData().get('role', 'ejecutivo');
       return exists(path) ? get(path).data.permissionsMatrix[role] : null;
     }
 
     function isAdmin() {
-      return isSuperAdmin() || (isAuthenticated() && getUserData().role == 'admin');
+      return isSuperAdmin() || (isAuthenticated() && getUserData().get('role', '') == 'admin');
     }
 
     function hasPermission(module, action) {
-      return isAdmin() || (isAuthenticated() && getPermissions().modules[module][action] == true);
+      let perms = getPermissions();
+      return isAdmin() || (isAuthenticated() && perms != null && perms.modules[module][action] == true);
     }
 
     function isSameManagement(data) {
-      return isAdmin() || data.get('management', '') == getUserData().get('management', '');
+      let userMgt = getUserData().get('management', '');
+      let docMgt = data.get('management', '');
+      return isAdmin() || docMgt == userMgt;
     }
 
     function isOwner(data) {
@@ -42,7 +45,7 @@ service cloud.firestore {
     }
 
     function canModify(data) {
-      return isAdmin() || (isSameManagement(data) && (getUserData().role == 'gerente' || isOwner(data)));
+      return isAdmin() || (isSameManagement(data) && (getUserData().get('role', '') == 'gerente' || isOwner(data)));
     }
 
     // --- Reglas por Colección ---
@@ -59,23 +62,36 @@ service cloud.firestore {
     }
     
     match /service_orders/{soId} {
-      allow read: if isAuthenticated();
-      allow create: if hasPermission('serviceOrders', 'create');
-      allow update: if isAdmin() || getUserData().role == 'gerente' || 
-        (request.auth.uid == resource.data.eeccId || request.auth.uid == resource.data.pmAssignedId);
-      allow delete: if isAdmin();
+      allow read: if hasPermission('serviceOrders', 'view') && isSameManagement(resource.data);
+      allow create: if hasPermission('serviceOrders', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if hasPermission('serviceOrders', 'edit') && (isAdmin() || getUserData().get('role', '') == 'gerente' || 
+        (request.auth.uid == resource.data.eeccId || request.auth.uid == resource.data.pmAssignedId));
+      allow delete: if hasPermission('serviceOrders', 'delete') && isAdmin();
 
       match /items/{itemId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin() || getUserData().role == 'gerente' || 
+        allow read: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/service_orders/$(soId)).data);
+        allow write: if isAdmin() || getUserData().get('role', '') == 'gerente' || 
           (request.auth.uid == get(/databases/$(database)/documents/service_orders/$(soId)).data.eeccId || 
            request.auth.uid == get(/databases/$(database)/documents/service_orders/$(soId)).data.pmAssignedId);
       }
 
       match /comments/{commentId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
+        allow read: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/service_orders/$(soId)).data);
+        allow create: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/service_orders/$(soId)).data);
       }
+    }
+
+    // Notificaciones y Correo
+    match /mail/{mailId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if false; 
+    }
+
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated() && resource.data.toEmail == request.auth.token.email;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.toEmail == request.auth.token.email;
+      allow delete: if isAdmin();
     }
 
     match /accessRequests/{requestId} {
@@ -100,8 +116,11 @@ service cloud.firestore {
     match /contacts/{contactId} {
       allow read: if hasPermission('contacts', 'view') && isSameManagement(resource.data);
       allow create: if hasPermission('contacts', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
-      allow update: if hasPermission('contacts', 'edit') && canModify(resource.data);
-      allow delete: if hasPermission('contacts', 'delete') && canModify(resource.data);
+      allow update: if hasPermission('contacts', 'edit') && canModify(rowSource(resource.data));
+      allow delete: if hasPermission('contacts', 'delete') && canModify(rowSource(resource.data));
+      
+      // Helper interno para contactos ya que a veces no traen management directo
+      function rowSource(d) { return d; }
     }
 
     match /locations/{locationId} {
@@ -165,12 +184,12 @@ service cloud.firestore {
 
     match /productsAndServices/{itemId} {
       allow read: if hasPermission('productsAndServices', 'view');
-      allow write: if isAdmin() || (getUserData().role == 'gerente' && hasPermission('productsAndServices', 'create'));
+      allow write: if isAdmin() || (getUserData().get('role', '') == 'gerente' && hasPermission('productsAndServices', 'create'));
     }
 
     match /holdings/{holdingId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || getUserData().role == 'gerente';
+      allow write: if isAdmin() || getUserData().get('role', '') == 'gerente';
     }
 
     match /counters/{counterId} {
