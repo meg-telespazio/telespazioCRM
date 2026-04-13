@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import { redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
@@ -14,17 +14,23 @@ import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RecentActivities } from '@/components/dashboard/recent-activities';
 import { AlertsTicker } from '@/components/dashboard/alerts-ticker';
+import { ClientsSectorChart } from '@/components/dashboard/clients-sector-chart';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
   const { t, currency: displayCurrency } = useI18n();
   const firestore = useFirestore();
 
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
+
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   const managementFilter = user?.role === 'admin' ? null : user?.management;
 
+  // Base queries
   const opportunitiesQuery = useMemo(() => {
     if (!user || user.role === 'ingeniero') return null;
     const ref = collection(firestore, 'opportunities');
@@ -67,20 +73,32 @@ export default function DashboardPage() {
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
   }, [firestore, user, managementFilter]);
 
-  const { data: opportunities, loading: opportunitiesLoading } =
-    useCollection<Opportunity>(opportunitiesQuery);
-  const { data: contracts, loading: contractsLoading } =
-    useCollection<Contract>(contractsQuery);
-  const { data: clients, loading: clientsLoading } =
-    useCollection<Client>(clientsQuery);
-  const { data: contacts, loading: contactsLoading } =
-    useCollection<Contact>(contactsQuery);
-  const { data: activities, loading: activitiesLoading } =
-    useCollection<Activity>(activitiesQuery);
-  const { data: services, loading: servicesLoading } =
-    useCollection<Service>(servicesQuery);
-  const { data: equipment, loading: equipmentLoading } =
-    useCollection<Equipment>(equipmentQuery);
+  // Data fetching
+  const { data: rawOpportunities, loading: opportunitiesLoading } = useCollection<Opportunity>(opportunitiesQuery);
+  const { data: rawContracts, loading: contractsLoading } = useCollection<Contract>(contractsQuery);
+  const { data: rawClients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
+  const { data: rawContacts, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
+  const { data: rawActivities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
+  const { data: rawServices, loading: servicesLoading } = useCollection<Service>(servicesQuery);
+  const { data: rawEquipment, loading: equipmentLoading } = useCollection<Equipment>(equipmentQuery);
+
+  // Filtering logic
+  const filteredData = useMemo(() => {
+    const isEjecutivo = user?.role === 'ejecutivo';
+    const filterByOwner = isEjecutivo && showOnlyMine;
+
+    const filterFn = (item: any) => !filterByOwner || item.assignedTo === user?.uid;
+
+    return {
+      opportunities: (rawOpportunities || []).filter(filterFn),
+      contracts: (rawContracts || []).filter(filterFn),
+      clients: (rawClients || []).filter(filterFn),
+      contacts: (rawContacts || []).filter(filterFn),
+      activities: (rawActivities || []).filter(filterFn),
+      services: (rawServices || []).filter(filterFn),
+      equipment: (rawEquipment || []).filter(filterFn),
+    };
+  }, [rawOpportunities, rawContracts, rawClients, rawContacts, rawActivities, rawServices, rawEquipment, showOnlyMine, user]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -107,34 +125,45 @@ export default function DashboardPage() {
     !configData;
 
   const isIngeniero = user?.role === 'ingeniero';
+  const isEjecutivo = user?.role === 'ejecutivo';
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader title={t('Dashboard.title')} />
+      <AppHeader title={t('Dashboard.title')}>
+        {isEjecutivo && (
+          <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+            <Switch 
+              id="mine-filter-dashboard" 
+              checked={showOnlyMine} 
+              onCheckedChange={setShowOnlyMine} 
+            />
+            <Label htmlFor="mine-filter-dashboard" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer text-white">
+              {t('Actions.showOnlyMine')}
+            </Label>
+          </div>
+        )}
+      </AppHeader>
       
       {!pageIsLoading && (
         <AlertsTicker 
-          opportunities={opportunities || []} 
-          contracts={contracts || []} 
-          activities={activities || []} 
+          opportunities={filteredData.opportunities} 
+          contracts={filteredData.contracts} 
+          activities={filteredData.activities} 
         />
       )}
 
       <div className="flex-1 space-y-6 p-4 sm:p-6 overflow-hidden pb-24">
         {pageIsLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
           </div>
         ) : (
           <StatsCards
-            opportunities={opportunities || []}
-            clients={clients || []}
-            contacts={contacts || []}
-            services={services || []}
-            equipment={equipment || []}
+            opportunities={filteredData.opportunities}
+            clients={filteredData.clients}
+            contacts={filteredData.contacts}
+            services={filteredData.services}
+            equipment={filteredData.equipment}
             exchangeRates={configData?.exchangeRates || []}
             displayCurrency={displayCurrency}
           />
@@ -147,8 +176,8 @@ export default function DashboardPage() {
                 <Skeleton className="h-[425px]" />
               ) : (
                 <OpportunitiesChart 
-                  opportunities={opportunities || []} 
-                  clients={clients || []} 
+                  opportunities={filteredData.opportunities} 
+                  clients={filteredData.clients} 
                   exchangeRates={configData?.exchangeRates || []}
                   displayCurrency={displayCurrency}
                 />
@@ -156,28 +185,35 @@ export default function DashboardPage() {
             </div>
             <div className="col-span-4 lg:col-span-3 min-w-0">
               {pageIsLoading ? (
-                <Skeleton className="h-[360px]" />
+                <Skeleton className="h-[425px]" />
               ) : (
-                <RecentOpportunities
-                  opportunities={opportunities || []}
-                  clients={clients || []}
-                  exchangeRates={configData?.exchangeRates || []}
-                  displayCurrency={displayCurrency}
-                />
+                <ClientsSectorChart clients={filteredData.clients} />
               )}
             </div>
           </div>
         )}
 
-        <div className="min-w-0">
-          {pageIsLoading ? (
-            <Skeleton className="h-[360px]" />
-          ) : (
-            <RecentActivities
-              activities={activities || []}
-              clients={clients || []}
-            />
-          )}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <div className="col-span-4 min-w-0">
+            {pageIsLoading ? (
+              <Skeleton className="h-[360px]" />
+            ) : (
+              <RecentActivities
+                activities={filteredData.activities}
+                clients={filteredData.clients}
+              />
+            )}
+          </div>
+          <div className="col-span-4 lg:col-span-3 min-w-0">
+            {!isIngeniero && !pageIsLoading && (
+              <RecentOpportunities
+                opportunities={filteredData.opportunities}
+                clients={filteredData.clients}
+                exchangeRates={configData?.exchangeRates || []}
+                displayCurrency={displayCurrency}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
