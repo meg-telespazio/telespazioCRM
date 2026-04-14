@@ -1059,7 +1059,7 @@ export const translations = {
       register: 'Registro',
       management: 'Gestión',
       contracts: 'Contratos',
-      pos: 'Contratos',
+      pos: 'Órdenes de Compra',
       services: 'Servicios',
       equipment: 'Equipos',
       activities: 'Actividades',

@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { collection, query, where, doc } from 'firebase/firestore';
-import type { PurchaseOrder, Contract, Contact } from '@/lib/types';
+import type { PurchaseOrder, Contract, Contact, Client } from '@/lib/types';
 import { addPurchaseOrder, updatePurchaseOrder } from '@/lib/firestore/purchase-orders';
 
 import { AppHeader } from '@/components/layout/app-header';
@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { CalendarIcon, Save, ArrowLeft, ChevronRight } from 'lucide-react';
+import { CalendarIcon, Save, ArrowLeft, ChevronRight, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -60,8 +60,27 @@ export default function POFormPage() {
   const docRef = useMemo(() => (!firestore || !poId || isNew) ? null : doc(firestore, 'purchaseOrders', poId), [firestore, poId, isNew]);
   const { data: poData, loading: poLoading } = useDoc<PurchaseOrder>(docRef);
 
-  const contractsQuery = useMemo(() => user ? query(collection(firestore, 'contracts'), where('createdBy', '==', user.uid)) : null, [user, firestore]);
+  // Management filter logic
+  const managementFilter = user?.role === 'admin' ? null : user?.management;
+
+  const contractsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'contracts');
+    // Only show active contracts for new POs or the current one if editing
+    let q = query(ref, where('status', '==', 'activo'));
+    if (managementFilter) {
+      q = query(q, where('management', '==', managementFilter));
+    }
+    return q;
+  }, [user, firestore, managementFilter]);
+
+  const clientsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, 'clients'));
+  }, [user, firestore]);
+
   const { data: contracts } = useCollection<Contract>(contractsQuery);
+  const { data: clients } = useCollection<Client>(clientsQuery);
 
   const form = useForm<POFormData>({
     resolver: zodResolver(getFormSchema(t)),
@@ -100,7 +119,7 @@ export default function POFormPage() {
         idContractStarfleet: poData.idContractStarfleet ?? '',
         idClientStarfleet: poData.idClientStarfleet ?? '',
         amount: poData.amount ?? 0,
-        currency: poData.currency ?? 'USD',
+        currency: (poData.currency as any) || 'USD',
         status: poData.status ?? 'pending',
       });
     }
@@ -120,7 +139,7 @@ export default function POFormPage() {
     }
   };
 
-  const pageIsLoading = !mounted || poLoading || !contracts;
+  const pageIsLoading = !mounted || poLoading || !contracts || !clients;
   if (pageIsLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   return (
@@ -147,8 +166,33 @@ export default function POFormPage() {
                   <FormField control={form.control} name="contractId" render={({ field }) => (
                     <FormItem><FormLabel>{t('Forms.contract')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value} disabled={!!contractIdFromQuery}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar contrato..." /></SelectTrigger></FormControl>
-                      <SelectContent>{contracts?.map(c => <SelectItem key={c.id} value={c.id}>{c.publicId}</SelectItem>)}</SelectContent>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar contrato activo...">
+                            {field.value && contracts ? (
+                              (() => {
+                                const c = contracts.find(con => con.id === field.value);
+                                const cl = clients?.find(client => client.id === c?.clientId);
+                                return c ? `${c.publicId} - ${cl?.name || '...'}` : 'Seleccionar...';
+                              })()
+                            ) : "Seleccionar contrato activo..."}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {contracts?.map(c => {
+                          const client = clients?.find(cl => cl.id === c.clientId);
+                          return (
+                            <SelectItem key={c.id} value={c.id}>
+                              <div className="flex flex-col">
+                                <span className="font-bold">{c.publicId}</span>
+                                <span className="text-[10px] text-muted-foreground uppercase">{client?.name || '...'}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                        {(!contracts || contracts.length === 0) && <SelectItem value="none" disabled>No se encontraron contratos activos</SelectItem>}
+                      </SelectContent>
                     </Select><FormMessage /></FormItem>
                   )} />
                   <div className="grid grid-cols-2 gap-4">
@@ -221,7 +265,10 @@ export default function POFormPage() {
                 </CardContent>
               </Card>
               <div className="flex justify-end gap-4">
-                <Button type="submit"><Save className="mr-2 h-4 w-4"/>{t('Forms.save')}</Button>
+                <Button type="submit" className="gap-2">
+                  <Save className="h-4 w-4"/>
+                  {t('Forms.save')}
+                </Button>
               </div>
             </form>
           </Form>
