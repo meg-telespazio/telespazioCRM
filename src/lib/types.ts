@@ -301,6 +301,7 @@ export type Service = {
   isTelespazioOwned: boolean;
   status: ServiceStatus;
   statusUpdateDate?: Date;
+  activationDate?: Date;
   createdBy: string;
   createdAt: Date;
   updatedAt?: Date;
@@ -343,6 +344,14 @@ export type Activity = {
   latestFollowUpBy?: string;
   management: ManagementArea;
   assignedTo: string;
+};
+
+export type ActivityFollowUp = {
+  id: string;
+  activityId: string;
+  content: string;
+  createdBy: string;
+  createdAt: Date;
 };
 
 export type LocationType = 'branch' | 'headquarters' | 'warehouse' | 'office' | 'property' | 'field';

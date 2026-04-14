@@ -19,9 +19,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, ArrowLeft, Zap, Loader2, HardDrive, ShoppingCart } from 'lucide-react';
+import { Save, ArrowLeft, Zap, Loader2, HardDrive, ShoppingCart, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
   // Service Data
@@ -33,6 +38,7 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   monthlyFee: z.coerce.number().min(0),
   isTelespazioOwned: z.boolean().default(true),
   poId: z.string().min(1, t('Validation.fieldRequired')),
+  activationDate: z.date().optional(),
   
   // Equipment Data
   equipmentId: z.string().min(1, t('Validation.fieldRequired')), // UUID
@@ -46,13 +52,15 @@ const getFormSchema = (t: (key: string) => string) => z.object({
 type ServiceNewFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
 export default function ServiceNewPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'es' ? es : enUS;
   const router = useRouter();
   const { toast } = useToast();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isActivationDatePickerOpen, setActivationDatePickerOpen] = useState(false);
 
   // Data fetching
   const posQuery = useMemo(() => {
@@ -103,6 +111,7 @@ export default function ServiceNewPage() {
       monthlyFee: 0,
       isTelespazioOwned: true,
       poId: '',
+      activationDate: undefined,
       equipmentId: '',
       equipmentSerial: '',
       equipmentType: 'Antena Standard',
@@ -139,6 +148,7 @@ export default function ServiceNewPage() {
         isTelespazioOwned: values.isTelespazioOwned,
         status: 'active',
         poId: values.poId,
+        activationDate: values.activationDate || null,
       };
 
       const equipmentData = {
@@ -298,7 +308,7 @@ export default function ServiceNewPage() {
                       <FormItem>
                         <FormLabel>{t('Forms.currency')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.currency')} /></SelectTrigger></FormControl>
                           <SelectContent>
                             <SelectItem value="USD">USD</SelectItem>
                             <SelectItem value="EUR">EUR</SelectItem>
@@ -316,6 +326,44 @@ export default function ServiceNewPage() {
                       </FormItem>
                     )} />
                   </div>
+
+                  <FormField control={form.control} name="activationDate" render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>{t('Forms.activationDate')}</FormLabel>
+                      <Popover open={isActivationDatePickerOpen} onOpenChange={setActivationDatePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP", { locale: dateLocale })
+                              ) : (
+                                <span>{t('Forms.pickDate')}</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            onAccept={() => setActivationDatePickerOpen(false)}
+                            onCancel={() => setActivationDatePickerOpen(false)}
+                            initialFocus
+                            locale={dateLocale}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
                   <FormField control={form.control} name="isTelespazioOwned" render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/20">

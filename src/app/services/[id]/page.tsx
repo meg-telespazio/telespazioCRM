@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -43,6 +42,7 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   isTelespazioOwned: z.boolean().default(true),
   status: z.enum(['active', 'paused', 'canceled']),
   statusUpdateDate: z.date().optional(),
+  activationDate: z.date().optional(),
 });
 
 type ServiceFormData = z.infer<ReturnType<typeof getFormSchema>>;
@@ -58,7 +58,8 @@ export default function ServiceEditPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
-  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
+  const [isStatusDatePickerOpen, setStatusDatePickerOpen] = useState(false);
+  const [isActivationDatePickerOpen, setActivationDatePickerOpen] = useState(false);
 
   const serviceDocRef = useMemo(() => {
     if (!firestore || !serviceId) return null;
@@ -101,6 +102,7 @@ export default function ServiceEditPage() {
       isTelespazioOwned: true,
       status: 'active',
       statusUpdateDate: undefined,
+      activationDate: undefined,
     },
   });
 
@@ -134,6 +136,7 @@ export default function ServiceEditPage() {
         isTelespazioOwned: service.isTelespazioOwned !== undefined ? service.isTelespazioOwned : true,
         status: service.status || 'active',
         statusUpdateDate: service.statusUpdateDate ? new Date(service.statusUpdateDate) : undefined,
+        activationDate: service.activationDate ? new Date(service.activationDate) : undefined,
       });
     }
   }, [service, form]);
@@ -194,7 +197,7 @@ export default function ServiceEditPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-6">
-                  {/* Status Section */}
+                  {/* Status & Dates Section */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 bg-muted/30 p-4 rounded-lg border border-dashed">
                     <FormField control={form.control} name="status" render={({ field }) => (
                       <FormItem>
@@ -217,13 +220,13 @@ export default function ServiceEditPage() {
                     <FormField control={form.control} name="statusUpdateDate" render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>{t('Forms.statusUpdateDate')}</FormLabel>
-                        <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
+                        <Popover open={isStatusDatePickerOpen} onOpenChange={setStatusDatePickerOpen}>
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  "pl-3 text-left font-normal",
+                                  "pl-3 text-left font-normal bg-white",
                                   !field.value && "text-muted-foreground"
                                 )}
                                 disabled={watchedStatus === 'active'}
@@ -242,13 +245,55 @@ export default function ServiceEditPage() {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              onAccept={() => setDatePickerOpen(false)}
-                              onCancel={() => setDatePickerOpen(false)}
+                              onAccept={() => setStatusDatePickerOpen(false)}
+                              onCancel={() => setStatusDatePickerOpen(false)}
                               initialFocus
                               locale={dateLocale}
                             />
                           </PopoverContent>
                         </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    
+                    <FormField control={form.control} name="activationDate" render={({ field }) => (
+                      <FormItem className="flex flex-col sm:col-span-2 mt-2">
+                        <FormLabel className="text-primary font-bold flex items-center gap-2">
+                          <Zap className="h-3 w-3" />
+                          {t('Forms.activationDate')}
+                        </FormLabel>
+                        <Popover open={isActivationDatePickerOpen} onOpenChange={setActivationDatePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-bold border-primary/30 bg-white",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", { locale: dateLocale })
+                                ) : (
+                                  <span>{t('Forms.pickDate')}</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              onAccept={() => setActivationDatePickerOpen(false)}
+                              onCancel={() => setActivationDatePickerOpen(false)}
+                              initialFocus
+                              locale={dateLocale}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormDescription>Fecha original de alta del servicio.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />
