@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -110,6 +111,7 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
         Nombre: row.original.name,
         'TAX ID': row.original.cuit,
         Sector: row.original.sector,
+        Tipo: t(`ClientType.${row.original.type}`),
         Estado: t(`Status.${row.original.status}`),
         Gerencia: row.original.management,
         Responsable: assignedUser?.displayName || 'Desconocido',
@@ -128,6 +130,7 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
       case 'publicId': return 'ID Cliente';
       case 'name': return 'Nombre';
       case 'cuit': return 'TAX ID';
+      case 'type': return 'Tipo';
       case 'sector': return 'Sector';
       case 'status': return 'Estado';
       case 'assignedTo': return 'Responsable';

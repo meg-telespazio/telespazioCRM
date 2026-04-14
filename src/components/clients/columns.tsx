@@ -34,8 +34,8 @@ const statusClasses: { [key in Client['status']]: string } = {
 };
 
 const typeClasses: { [key in Client['type']]: string } = {
-  client: 'bg-blue-100 text-blue-700 border-none px-2 py-0 font-bold text-[9px]',
-  prospect: 'bg-orange-100 text-orange-700 border-none px-2 py-0 font-bold text-[9px]',
+  client: 'bg-green-100 text-green-700 hover:bg-green-100 border-none px-2 py-0 font-bold text-[9px]',
+  prospect: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-none px-2 py-0 font-bold text-[9px]',
 };
 
 export const columns = (
@@ -132,6 +132,24 @@ export const columns = (
           {row.original.name}
         </Link>
       )
+    },
+    {
+      accessorKey: 'type',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        >
+          TIPO
+          <ArrowUpDown className="ml-2 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <Badge variant="outline" className={cn("rounded-full", typeClasses[row.original.type])}>
+          {t(`ClientType.${row.original.type}`)}
+        </Badge>
+      ),
     },
     {
       accessorKey: 'cuit',
