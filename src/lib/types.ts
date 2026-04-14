@@ -46,6 +46,7 @@ export type Client = {
   website?: string;
   cuit: string; // We keep this as the main tax ID value
   taxIdType: TaxIdType;
+  clientePresea?: string; // Internal billing ID (3 digits)
   holding?: string;
   linkedinPage?: string;
   createdAt: Date;

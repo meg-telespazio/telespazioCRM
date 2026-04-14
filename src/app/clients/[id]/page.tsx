@@ -36,7 +36,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key, BadgeInfo, PhoneCall, Globe, Briefcase, Tag } from 'lucide-react';
+import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key, BadgeInfo, PhoneCall, Globe, Briefcase, Tag, Hash } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -62,6 +62,7 @@ const getFormSchema = (t: (key: string) => string) =>
     cuit: z
       .string()
       .min(1, t('Validation.cuitRequired')),
+    clientePresea: z.string().length(3, t('Validation.preseaInvalid')).optional().or(z.literal('')),
     status: z.enum(['active', 'suspended', 'canceled']),
     type: z.enum(['client', 'prospect']),
     sector: z.string().min(1, t('Validation.selectIndustry')),
@@ -146,6 +147,7 @@ export default function ClientFormPage() {
       phone: '',
       taxIdType: 'CUIT',
       cuit: '',
+      clientePresea: '',
       status: 'active',
       type: 'client',
       sector: '',
@@ -191,6 +193,7 @@ export default function ClientFormPage() {
         legalName: clientData.legalName || '',
         cuit: clientData.cuit || '',
         taxIdType: clientData.taxIdType || 'CUIT',
+        clientePresea: clientData.clientePresea || '',
         website: clientData.website || '',
         linkedinPage: clientData.linkedinPage || '',
         holding: clientData.holding || '',
@@ -362,7 +365,7 @@ export default function ClientFormPage() {
                           )} />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <FormField control={form.control} name="taxIdType" render={({ field }) => (
                             <FormItem>
                               <FormLabel>{t('Forms.taxIdType')}</FormLabel>
@@ -376,6 +379,16 @@ export default function ClientFormPage() {
                             <FormItem>
                               <FormLabel>{t('Forms.cuit')}</FormLabel>
                               <FormControl><Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} className="bg-slate-50/50" /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="clientePresea" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-2">
+                                <Hash className="h-3 w-3" />
+                                {t('Forms.clientePresea')}
+                              </FormLabel>
+                              <FormControl><Input {...field} placeholder="000" maxLength={3} className="bg-slate-50/50 font-mono" /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />

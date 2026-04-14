@@ -24,7 +24,7 @@ import {
   Users, ShieldCheck, User, Paperclip, Eye, Download, Tag, 
   Flag, Briefcase, TrendingUp, AlertTriangle, AlertCircle,
   FileSpreadsheet, ChevronRight, Key, ShieldAlert, Fingerprint,
-  Wand2, Loader2, Sparkles, RefreshCw
+  Wand2, Loader2, Sparkles, RefreshCw, Hash
 } from 'lucide-react';
 import { RenderWithMentions } from '@/components/activity/render-with-mentions';
 import { cn } from '@/lib/utils';
@@ -332,7 +332,7 @@ export default function ClientSummaryPage() {
               )}
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 text-sm">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 p-6 text-sm">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{t('Auth.emailLabel')}</span>
                 <div className="flex items-center gap-2">
@@ -353,6 +353,13 @@ export default function ClientSummaryPage() {
                   <Fingerprint className="h-4 w-4 text-muted-foreground" />
                   <span className="font-bold">{client.cuit}</span>
                   <Badge variant="outline" className="text-[8px] h-4 py-0 uppercase">{client.taxIdType || 'CUIT'}</Badge>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{t('Forms.clientePresea')}</span>
+                <div className="flex items-center gap-2 text-foreground font-medium">
+                  <Hash className="h-4 w-4 text-primary" />
+                  <span className="font-bold text-primary">{client.clientePresea || '-'}</span>
                 </div>
               </div>
               <div className="space-y-1">

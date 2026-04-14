@@ -50,6 +50,7 @@ export const translations = {
       passwordLowercase: 'One lowercase letter',
       passwordNumber: 'One number',
       passwordSpecial: 'One special character (@$!%*?&)',
+      preseaInvalid: 'Presea ID must be 3 digits.',
     },
     Sidebar: {
       dashboard: 'Dashboard',
@@ -679,6 +680,7 @@ export const translations = {
       supplierPortalPassword: 'Portal Password',
       specialEntryConditions: 'Special Entry Conditions',
       aiDescription: 'AI Business Summary',
+      clientePresea: 'Presea Client ID',
     },
     Table: {
       actions: {
@@ -1043,6 +1045,7 @@ export const translations = {
       passwordLowercase: 'Una letra minúscula',
       passwordNumber: 'Un número',
       passwordSpecial: 'Un carácter especial (@$!%*?&)',
+      preseaInvalid: 'El ID de Presea debe ser de 3 dígitos.',
     },
     Sidebar: {
       dashboard: 'Dashboard',
@@ -1558,7 +1561,7 @@ export const translations = {
       idClientStarfleet: 'ID Cliente Starfleet',
       userTerminalId: 'User Terminal ID (UUID)',
       userTerminal: 'Serial/Nickname',
-      type: 'Tipo',
+      type: 'Type',
       physicalStatus: 'Estado Físico',
       installationDate: 'Fecha Instalación',
       installationPlace: 'Lugar Instalación',
@@ -1672,6 +1675,7 @@ export const translations = {
       supplierPortalPassword: 'Password Portal',
       specialEntryConditions: 'Condiciones de Ingresos Especiales',
       aiDescription: 'Descripción AI del Negocio',
+      clientePresea: 'Nro Cliente Presea',
     },
     Table: {
       actions: {
