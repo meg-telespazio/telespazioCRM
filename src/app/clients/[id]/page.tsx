@@ -401,14 +401,15 @@ export default function ClientFormPage() {
                           )} />
                           <FormField control={form.control} name="legalName" render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="flex justify-between items-center">
-                                {t('Forms.legalName')}
-                                <Button type="button" variant="ghost" size="sm" className="h-4 p-0 text-primary text-[10px] uppercase font-bold" onClick={handleFindLegalName} disabled={isFindingLegalName || !form.watch('cuit')}>
-                                  {isFindingLegalName ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Search className="h-3 w-3 mr-1" />}
-                                  Buscar por Tax ID
-                                </Button>
-                              </FormLabel>
-                              <FormControl><Input placeholder="Razón Social Completa" {...field} className="bg-slate-50/50" /></FormControl>
+                              <FormLabel>{t('Forms.legalName')}</FormLabel>
+                              <FormControl>
+                                <div className="relative flex items-center">
+                                  <Input placeholder="Razón Social Completa" {...field} className="bg-slate-50/50 pr-10" />
+                                  <Button type="button" size="icon" variant="ghost" title="Completar con IA basado en el ID Tributario" className="absolute right-1 h-8 w-8 text-primary" onClick={handleFindLegalName} disabled={isFindingLegalName || !form.watch('cuit')}>
+                                    {isFindingLegalName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                  </Button>
+                                </div>
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
@@ -426,14 +427,15 @@ export default function ClientFormPage() {
                           )} />
                           <FormField control={form.control} name="cuit" render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="flex justify-between items-center">
-                                {t('Forms.cuit')}
-                                <Button type="button" variant="ghost" size="sm" className="h-4 p-0 text-primary text-[10px] uppercase font-bold" onClick={handleFindTaxId} disabled={isFindingTaxId || (!form.watch('legalName') && !form.watch('name'))}>
-                                  {isFindingTaxId ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Search className="h-3 w-3 mr-1" />}
-                                  Buscar por Nombre
-                                </Button>
-                              </FormLabel>
-                              <FormControl><Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} className="bg-slate-50/50" /></FormControl>
+                              <FormLabel>{t('Forms.cuit')}</FormLabel>
+                              <FormControl>
+                                <div className="relative flex items-center">
+                                    <Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} className="bg-slate-50/50 pr-10" />
+                                    <Button type="button" size="icon" variant="ghost" title="Buscar ID con IA basado en Nombre Comercial o Razón Social" className="absolute right-1 h-8 w-8 text-primary" onClick={handleFindTaxId} disabled={isFindingTaxId || (!form.watch('legalName') && !form.watch('name'))}>
+                                        {isFindingTaxId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                    </Button>
+                                </div>
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
