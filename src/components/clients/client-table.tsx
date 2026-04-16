@@ -114,6 +114,7 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
         Sector: row.original.sector,
         Tipo: t(`ClientType.${row.original.type}`),
         Estado: t(`Status.${row.original.status}`),
+        País: row.original.countryHQ ? t(`Countries.${row.original.countryHQ}`) : '-',
         Gerencia: row.original.management,
         Responsable: assignedUser?.displayName || 'Desconocido',
       };
@@ -134,6 +135,7 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
       case 'type': return 'Tipo';
       case 'sector': return 'Sector';
       case 'status': return 'Estado';
+      case 'countryHQ': return 'País';
       case 'assignedTo': return 'Responsable';
       default: return id;
     }
