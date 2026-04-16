@@ -72,7 +72,7 @@ const getFormSchema = (t: (key: string) => string) => {
       type: z.enum(['Acuerdo Marco', 'Locación de Servicios', 'Compraventa', 'Locación de Equipos', 'Comodato de Equipos']),
       status: z.enum(['activo', 'vencido', 'renovado', 'renovado automatico']),
       amount: z.coerce.number().min(0),
-      currency: z.enum(['USD', 'EUR', 'ARS']),
+      currency: z.string(),
       country: z.string().min(1),
       startDate: z.date(),
       durationMonths: z.coerce.number().min(1),
@@ -307,7 +307,7 @@ export default function ContractFormPage() {
 
   const contractTypes: ContractType[] = ['Acuerdo Marco', 'Locación de Servicios', 'Compraventa', 'Locación de Equipos', 'Comodato de Equipos'];
   const contractStatuses: ContractStatus[] = ['activo', 'vencido', 'renovado', 'renovado automatico'];
-  const currencyOptions: Contract['currency'][] = ['USD', 'EUR', 'ARS'];
+  const currencyOptions: string[] = configData?.currencies || ['USD', 'EUR', 'ARS'];
   const renewalTerms: ContractRenewalTerm[] = ['1 month', '2 months', '3 months', '12 months'];
   const noticePeriodOptions = [0, 30, 60, 90];
   const costCenterOptions = configData.costCenters || [];
@@ -457,7 +457,7 @@ export default function ContractFormPage() {
                         <FormLabel>{t('Contracts.currency')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>{currencyOptions.map(c => <SelectItem key={c} value={c}>{t(`Currencies.${c}`)}</SelectItem>)}</SelectContent>
+                          <SelectContent>{currencyOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>

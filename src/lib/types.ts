@@ -127,7 +127,7 @@ export type OpportunityAttachment = {
 };
 
 export type OpportunityRisk = 'C-Low' | 'B-Medium' | 'A-High';
-export type OpportunityType = 'New Logo' | 'New Business' | 'Ampliacion' | 'Renegociacion';
+export type OpportunityType = 'New Logo' | 'New Business' | 'Ampliacion' | 'Renegociacion' | 'Renovaciones';
 
 export type Opportunity = {
   id: string;
@@ -135,7 +135,7 @@ export type Opportunity = {
   title: string;
   clientId: string;
   value: number;
-  currency: 'USD' | 'EUR' | 'ARS';
+  currency: string;
   stage: 'Prospecting' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost' | 'Canceled' | 'Suspended';
   probability: number;
   closeDate: Date;
@@ -178,7 +178,7 @@ export type ProductOrService = {
   unitOfMeasure?: 'units' | 'meters' | 'kg' | 'liters' | 'GB';
   oneTimeCharge?: number;
   recurringCharge?: number;
-  currency?: 'USD' | 'EUR' | 'ARS';
+  currency?: string;
   isEditable: boolean;
   availableDiscounts?: number[];
   bundleItems?: Array<{ itemId: string; quantity: number }>;
@@ -221,7 +221,7 @@ export type Contract = {
   clientId: string;
   opportunityId?: string;
   amount: number;
-  currency: 'USD' | 'EUR' | 'ARS';
+  currency: string;
   type: ContractType;
   status: ContractStatus;
   startDate: Date;
@@ -270,7 +270,7 @@ export type PurchaseOrder = {
   emissionDate: Date;
   buyerId: string;
   amount: number;
-  currency: 'USD' | 'EUR' | 'ARS';
+  currency: string;
   status: PurchaseOrderStatus;
   contractId: string;
   idContractStarfleet?: string;
@@ -296,7 +296,7 @@ export type Service = {
   topUp: string;
   poId: string;
   equipmentId: string;
-  currency?: 'USD' | 'EUR' | 'ARS';
+  currency?: string;
   monthlyFee?: number;
   isTelespazioOwned: boolean;
   status: ServiceStatus;

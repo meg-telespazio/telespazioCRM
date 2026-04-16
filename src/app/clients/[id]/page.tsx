@@ -36,8 +36,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key, BadgeInfo, PhoneCall, Globe, Briefcase, Tag, Hash } from 'lucide-react';
+import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key, BadgeInfo, PhoneCall, Globe, Briefcase, Tag, Hash, Search } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
+import { fetchTaxIdFromLegalName, fetchLegalNameFromTaxId } from '@/ai/flows/company-info-flow';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -106,6 +107,8 @@ export default function ClientFormPage() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedImage, setCroppedAvatar] = useState<string | null>(null);
   const [isFindingLogo, setIsFindingLogo] = useState(false);
+  const [isFindingTaxId, setIsFindingTaxId] = useState(false);
+  const [isFindingLegalName, setIsFindingLegalName] = useState(false);
 
   // Fetch system config for dynamic dropdowns
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
@@ -259,6 +262,46 @@ export default function ClientFormPage() {
     }
   };
 
+  const handleFindTaxId = async () => {
+    const legalName = form.getValues('legalName') || form.getValues('name');
+    if (!legalName || legalName.length < 3) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Ingrese una Razón Social o Nombre válido primero.' });
+      return;
+    }
+    setIsFindingTaxId(true);
+    try {
+      const result = await fetchTaxIdFromLegalName({ legalName });
+      if (result.taxId) {
+        form.setValue('cuit', result.taxId, { shouldValidate: true });
+        toast({ variant: 'success', title: 'Éxito', description: 'ID Tributario encontrado' });
+      } else {
+        toast({ variant: 'destructive', title: 'No encontrado', description: result.error || 'No se pudo encontrar el ID Tributario' });
+      }
+    } finally {
+      setIsFindingTaxId(false);
+    }
+  };
+
+  const handleFindLegalName = async () => {
+    const taxId = form.getValues('cuit');
+    if (!taxId || taxId.length < 5) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Ingrese un ID Tributario válido primero.' });
+      return;
+    }
+    setIsFindingLegalName(true);
+    try {
+      const result = await fetchLegalNameFromTaxId({ taxId });
+      if (result.legalName) {
+        form.setValue('legalName', result.legalName, { shouldValidate: true });
+        toast({ variant: 'success', title: 'Éxito', description: 'Razón Social encontrada' });
+      } else {
+        toast({ variant: 'destructive', title: 'No encontrado', description: result.error || 'No se pudo encontrar la Razón Social' });
+      }
+    } finally {
+      setIsFindingLegalName(false);
+    }
+  };
+
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
     try {
@@ -358,7 +401,13 @@ export default function ClientFormPage() {
                           )} />
                           <FormField control={form.control} name="legalName" render={({ field }) => (
                             <FormItem>
-                              <FormLabel>{t('Forms.legalName')}</FormLabel>
+                              <FormLabel className="flex justify-between items-center">
+                                {t('Forms.legalName')}
+                                <Button type="button" variant="ghost" size="sm" className="h-4 p-0 text-primary text-[10px] uppercase font-bold" onClick={handleFindLegalName} disabled={isFindingLegalName || !form.watch('cuit')}>
+                                  {isFindingLegalName ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Search className="h-3 w-3 mr-1" />}
+                                  Buscar por Tax ID
+                                </Button>
+                              </FormLabel>
                               <FormControl><Input placeholder="Razón Social Completa" {...field} className="bg-slate-50/50" /></FormControl>
                               <FormMessage />
                             </FormItem>
@@ -377,7 +426,13 @@ export default function ClientFormPage() {
                           )} />
                           <FormField control={form.control} name="cuit" render={({ field }) => (
                             <FormItem>
-                              <FormLabel>{t('Forms.cuit')}</FormLabel>
+                              <FormLabel className="flex justify-between items-center">
+                                {t('Forms.cuit')}
+                                <Button type="button" variant="ghost" size="sm" className="h-4 p-0 text-primary text-[10px] uppercase font-bold" onClick={handleFindTaxId} disabled={isFindingTaxId || (!form.watch('legalName') && !form.watch('name'))}>
+                                  {isFindingTaxId ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Search className="h-3 w-3 mr-1" />}
+                                  Buscar por Nombre
+                                </Button>
+                              </FormLabel>
                               <FormControl><Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} className="bg-slate-50/50" /></FormControl>
                               <FormMessage />
                             </FormItem>

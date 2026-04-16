@@ -5,7 +5,7 @@ import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppHeader } from '@/components/layout/app-header';
-import type { ProductOrService } from '@/lib/types';
+import type { ProductOrService, SystemConfig } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, doc, query, where } from 'firebase/firestore';
 import {
@@ -55,7 +55,7 @@ const getFormSchema = (t: (key: string) => string) =>
     unitOfMeasure: z.enum(['units', 'meters', 'kg', 'liters', 'GB']).optional(),
     oneTimeCharge: z.coerce.number().min(0, t('Validation.itemChargeMin')).optional(),
     recurringCharge: z.coerce.number().min(0, t('Validation.itemChargeMin')).optional(),
-    currency: z.enum(['USD', 'EUR', 'ARS']).optional(),
+    currency: z.string().optional(),
     isEditable: z.boolean().default(false),
     availableDiscounts: z
       .string()
@@ -96,6 +96,9 @@ export default function ProductServiceFormPage() {
   const { data: itemData, loading: itemLoading } =
     useDoc<ProductOrService>(itemDocRef);
     
+  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
+  const { data: configData } = useDoc<SystemConfig>(configDocRef);
+
   const baseQuery = useMemo(() => (user ? where('createdBy', '==', user.uid) : null), [user]);
   const { data: allCatalogData, loading: catalogLoading } = useCollection<ProductOrService>(useMemo(() => baseQuery ? query(collection(firestore, 'productsAndServices'), baseQuery) : null, [firestore, baseQuery]));
 
@@ -238,7 +241,7 @@ export default function ProductServiceFormPage() {
 
   const statusOptions: ProductOrService['status'][] = ['active', 'inactive'];
   const unitOptions: ProductOrService['unitOfMeasure'][] = ['units', 'meters', 'kg', 'liters', 'GB'];
-  const currencyOptions: ProductOrService['currency'][] = ['USD', 'EUR', 'ARS'];
+  const currencyOptions: string[] = configData?.currencies || ['USD', 'EUR', 'ARS'];
   const typeOptions: ProductOrService['type'][] = ['product', 'service', 'bundle'];
 
   return (
@@ -329,7 +332,7 @@ export default function ProductServiceFormPage() {
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                                 {currencyOptions.map((currency) => (
-                                <SelectItem key={currency} value={currency}>{t(`Currencies.${currency}`)}</SelectItem>
+                                <SelectItem key={currency} value={currency}>{currency}</SelectItem>
                                 ))}
                             </SelectContent>
                             </Select>

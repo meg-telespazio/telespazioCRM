@@ -42,6 +42,7 @@ import { DataTablePagination } from '../ui/data-table-pagination';
 import { useRouter } from 'next/navigation';
 import { Search, ListFilter, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ClientBulkEditDialog } from './client-bulk-edit-dialog';
 
 type ClientTableProps = {
   data: Client[];
@@ -152,7 +153,11 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
             className="pl-10 h-10 bg-white border-slate-200 rounded-lg focus-visible:ring-primary focus-visible:ring-offset-0 text-xs"
           />
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <ClientBulkEditDialog
+            selectedClients={table.getFilteredSelectedRowModel().rows.map(r => r.original)}
+            onComplete={() => table.toggleAllRowsSelected(false)}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-600">
