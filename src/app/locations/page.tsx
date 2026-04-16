@@ -15,6 +15,8 @@ import { LocationsTable } from '@/components/locations/locations-table';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { LocationImporter } from '@/components/locations/location-importer';
+import { FileDown } from 'lucide-react';
 
 const LocationsMap = dynamic(
   () => import('@/components/locations/locations-map').then(mod => mod.LocationsMap), {
@@ -31,6 +33,7 @@ export default function GlobalLocationsPage() {
 
   const [focusedLocation, setFocusedLocation] = useState<Location | null>(null);
   const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [isImporterOpen, setIsImporterOpen] = useState(false);
 
   const locationsQuery = useMemo(() => {
     if (!user) return null;
@@ -99,10 +102,16 @@ export default function GlobalLocationsPage() {
             </div>
           )}
           {!isIngeniero && (
-            <Button size="sm" onClick={() => router.push('/locations/new')}>
-              <PlusCircle className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('Locations.add')}</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsImporterOpen(true)}>
+                <FileDown className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Importar</span>
+              </Button>
+              <Button size="sm" onClick={() => router.push('/locations/new')}>
+                <PlusCircle className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('Locations.add')}</span>
+              </Button>
+            </div>
           )}
         </div>
       </AppHeader>
@@ -148,6 +157,11 @@ export default function GlobalLocationsPage() {
           </div>
         )}
       </main>
+      <LocationImporter 
+        isOpen={isImporterOpen} 
+        onOpenChange={setIsImporterOpen} 
+        allClients={clients || []} 
+      />
     </div>
   );
 }
