@@ -192,6 +192,32 @@ export const columns = (
       ),
     },
     {
+      accessorKey: 'countryHQ',
+      meta: { className: "hidden lg:table-cell text-center" },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8 w-full justify-center"
+        >
+          PAÍS
+          <ArrowUpDown className="ml-2 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const country = row.original.countryHQ;
+        return country ? (
+          <div className="flex justify-center">
+            <span className="text-[11px] font-medium text-slate-600">{t(`Countries.${country}`)}</span>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <span className="text-[11px] text-slate-400 italic font-medium">-</span>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: 'assignedTo',
       meta: { className: "hidden md:table-cell" },
       header: ({ column }) => (

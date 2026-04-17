@@ -274,12 +274,17 @@ export default function ClientFormPage() {
       if (result.taxId) {
         form.setValue('cuit', result.taxId, { shouldValidate: true });
         toast({ variant: 'success', title: 'Éxito', description: 'ID Tributario encontrado' });
+<<<<<<< HEAD
       } else if (result.error) {
         let msg = result.error;
         if (msg.includes('429') || msg.includes('credits are depleted')) {
           msg = "Créditos de IA agotados. Por favor revise su facturación en AI Studio.";
         }
         toast({ variant: 'destructive', title: 'Error de IA', description: msg });
+=======
+      } else {
+        toast({ variant: 'destructive', title: 'No encontrado', description: result.error || 'No se pudo encontrar el ID Tributario' });
+>>>>>>> cc5aafd32a571d0728597f9460554f46174ac7e4
       }
     } finally {
       setIsFindingTaxId(false);
@@ -298,12 +303,17 @@ export default function ClientFormPage() {
       if (result.legalName) {
         form.setValue('legalName', result.legalName, { shouldValidate: true });
         toast({ variant: 'success', title: 'Éxito', description: 'Razón Social encontrada' });
+<<<<<<< HEAD
       } else if (result.error) {
         let msg = result.error;
         if (msg.includes('429') || msg.includes('credits are depleted')) {
           msg = "Créditos de IA agotados. Por favor revise su facturación en AI Studio.";
         }
         toast({ variant: 'destructive', title: 'Error de IA', description: msg });
+=======
+      } else {
+        toast({ variant: 'destructive', title: 'No encontrado', description: result.error || 'No se pudo encontrar la Razón Social' });
+>>>>>>> cc5aafd32a571d0728597f9460554f46174ac7e4
       }
     } finally {
       setIsFindingLegalName(false);

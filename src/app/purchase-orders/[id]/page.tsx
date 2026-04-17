@@ -31,7 +31,7 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   emissionDate: z.date(),
   buyerId: z.string().min(1, t('Validation.fieldRequired')),
   amount: z.coerce.number().min(0),
-  currency: z.enum(['USD', 'EUR', 'ARS']),
+  currency: z.string().min(1, t('Validation.fieldRequired')),
   status: z.enum(['pending', 'approved', 'canceled', 'received']),
   contractId: z.string().min(1, t('Validation.fieldRequired')),
   idContractStarfleet: z.string().optional(),
@@ -51,6 +51,8 @@ export default function POFormPage() {
 
   const [mounted, setMounted] = useState(false);
   const [isEmissionDateOpen, setEmissionDateOpen] = useState(false);
+  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
+  const { data: systemConfig } = useDoc<any>(configDocRef);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -244,8 +246,21 @@ export default function POFormPage() {
                     <FormField control={form.control} name="currency" render={({ field }) => (
                       <FormItem><FormLabel>{t('Forms.currency')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                        <SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="ARS">ARS</SelectItem></SelectContent></Select></FormItem>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar moneda..."/></SelectTrigger></FormControl>
+                        <SelectContent>
+                          {systemConfig?.currencies ? (
+                            systemConfig.currencies.map((curr: string) => (
+                              <SelectItem key={curr} value={curr}>{curr}</SelectItem>
+                            ))
+                          ) : (
+                            <>
+                              <SelectItem value="USD">USD</SelectItem>
+                              <SelectItem value="EUR">EUR</SelectItem>
+                              <SelectItem value="ARS">ARS</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select><FormMessage /></FormItem>
                     )} />
                   </div>
                   <FormField control={form.control} name="status" render={({ field }) => (

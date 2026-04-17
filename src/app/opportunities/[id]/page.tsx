@@ -94,7 +94,7 @@ const getFormSchema = (t: (key: string) => string) => {
       title: z.string().min(2, t('Validation.titleMin')),
       clientId: z.string().min(1, t('Validation.selectClient')),
       value: z.coerce.number().min(0, t('Validation.valuePositive')),
-      currency: z.enum(['USD', 'EUR', 'ARS']),
+      currency: z.string(),
       stage: z.enum([
         'Prospecting',
         'Proposal',
@@ -132,7 +132,7 @@ const getFormSchema = (t: (key: string) => string) => {
       // New Fields
       risk: z.enum(['C-Low', 'B-Medium', 'A-High']),
       isPlanned: z.boolean().default(false),
-      opportunityType: z.enum(['New Logo', 'New Business', 'Ampliacion', 'Renegociacion']),
+      opportunityType: z.enum(['New Logo', 'New Business', 'Ampliacion', 'Renegociacion', 'Renovaciones']),
       projectManagerEmail: z.string().email().optional().or(z.literal('')),
       contractReferenceId: z.string().optional().or(z.literal('')),
       grossMarginPercentage: z.coerce.number().min(0).max(100),
@@ -536,10 +536,10 @@ export default function OpportunityFormPage() {
   }
 
   const riskOptions: OpportunityRisk[] = ['C-Low', 'B-Medium', 'A-High'];
-  const typeOptions: OpportunityType[] = ['New Logo', 'New Business', 'Ampliacion', 'Renegociacion'];
+  const typeOptions: OpportunityType[] = ['New Logo', 'New Business', 'Ampliacion', 'Renegociacion', 'Renovaciones'];
   const stages = ['Prospecting', 'Proposal', 'Negotiation', 'Won', 'Lost', 'Canceled', 'Suspended'];
   const contractMonthsOptions = [12, 24, 36];
-  const currencyOptions: Opportunity['currency'][] = ['USD', 'EUR', 'ARS'];
+  const currencyOptions: string[] = configData?.currencies || ['USD', 'EUR', 'ARS'];
 
   const pageIsLoading =
     userLoading ||
@@ -830,7 +830,7 @@ export default function OpportunityFormPage() {
                         <FormLabel>{t('Table.currency')}</FormLabel>
                         <Select onValueChange={(value) => { const oldCurrency = field.value; field.onChange(value); convertCurrency(oldCurrency, value); }} value={field.value} disabled={isLocked}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>{currencyOptions.map((currency) => <SelectItem key={currency} value={currency}>{t(`Currencies.${currency}`)}</SelectItem>)}</SelectContent>
+                          <SelectContent>{currencyOptions.map((currency) => <SelectItem key={currency} value={currency}>{currency}</SelectItem>)}</SelectContent>
                         </Select><FormMessage />
                       </FormItem>
                     )} />

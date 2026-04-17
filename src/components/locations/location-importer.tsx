@@ -20,6 +20,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
+  Building2,
 } from 'lucide-react';
 import {
   Select,
@@ -37,7 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { Location, LocationType, LocationStatus } from '@/lib/types';
+import type { Location, Client, LocationType, LocationStatus } from '@/lib/types';
 import { z } from 'zod';
 import {
   Tooltip,
@@ -46,20 +47,24 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { useFirestore, useUser } from '@/firebase';
+import { addLocation } from '@/lib/firestore/locations';
+import { Label } from '../ui/label';
 
-type ImporterStep = 'upload' | 'map' | 'preview' | 'import';
+type ImporterStep = 'client-selection' | 'upload' | 'map' | 'preview' | 'importing';
+
 type LocationField = keyof Omit<
   Location,
-  'id' | 'publicId' | 'createdAt' | 'createdBy' | 'clientId'
+  'id' | 'publicId' | 'clientId' | 'createdAt' | 'updatedAt' | 'createdBy' | 'management' | 'assignedTo'
 >;
-
-const locationTypes: LocationType[] = ['branch', 'headquarters', 'warehouse', 'office', 'property', 'field'];
-const statusOptions: LocationStatus[] = ['active', 'suspended'];
 
 const REQUIRED_FIELDS: LocationField[] = [
   'name',
   'type',
   'status',
+];
+
+const OPTIONAL_FIELDS: LocationField[] = [
   'streetName',
   'streetNumber',
   'city',
@@ -68,8 +73,9 @@ const REQUIRED_FIELDS: LocationField[] = [
   'postalCode',
   'latitude',
   'longitude',
+  'notes',
 ];
-const OPTIONAL_FIELDS: LocationField[] = ['notes'];
+
 const ALL_FIELDS = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS];
 
 type ValidatedRow = {
@@ -82,36 +88,37 @@ type ValidatedRow = {
 type LocationImporterProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  clientId: string;
-  locations: Location[];
+  allClients: Client[];
 };
 
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
     name: z.string().min(1, t('Validation.nameMin')),
-    type: z.enum(locationTypes, { required_error: t('Validation.fieldRequired') }),
-    status: z.enum(statusOptions, { required_error: t('Validation.fieldRequired') }),
-    streetName: z.string().min(1, t('Validation.fieldRequired')),
-    streetNumber: z.string().min(1, t('Validation.fieldRequired')),
-    city: z.string().min(1, t('Validation.fieldRequired')),
-    province: z.string().min(1, t('Validation.fieldRequired')),
-    country: z.string().min(1, t('Validation.fieldRequired')),
-    postalCode: z.string().min(1, t('Validation.fieldRequired')),
-    latitude: z.coerce.number({ invalid_type_error: t('Validation.isNumber') }),
-    longitude: z.coerce.number({ invalid_type_error: t('Validation.isNumber') }),
+    type: z.enum(['branch', 'headquarters', 'warehouse', 'office', 'property', 'field']),
+    status: z.enum(['active', 'suspended']),
+    streetName: z.string().optional(),
+    streetNumber: z.string().optional(),
+    city: z.string().optional(),
+    province: z.string().optional(),
+    country: z.string().optional(),
+    postalCode: z.string().optional(),
+    latitude: z.coerce.number().optional().or(z.literal(0)),
+    longitude: z.coerce.number().optional().or(z.literal(0)),
     notes: z.string().optional(),
   });
 
 export function LocationImporter({
   isOpen,
   onOpenChange,
-  clientId,
-  locations,
+  allClients,
 }: LocationImporterProps) {
   const { t } = useI18n();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
-  const [step, setStep] = useState<ImporterStep>('upload');
+  const [step, setStep] = useState<ImporterStep>('client-selection');
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
@@ -121,9 +128,11 @@ export function LocationImporter({
   );
   const [validatedData, setValidatedData] = useState<ValidatedRow[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
   const resetState = () => {
-    setStep('upload');
+    setStep('client-selection');
+    setSelectedClientId('');
     setFile(null);
     setError(null);
     setCsvHeaders([]);
@@ -131,6 +140,7 @@ export function LocationImporter({
     setMapping({} as any);
     setValidatedData([]);
     setIsProcessing(false);
+    setImportProgress(0);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -197,21 +207,21 @@ export function LocationImporter({
   };
 
   const getFieldLabel = (field: LocationField) => {
-    const keyMap: Record<LocationField, string> = {
-      name: 'Locations.name',
-      type: 'Locations.type',
-      status: 'Locations.status',
-      streetName: 'Locations.streetName',
-      streetNumber: 'Locations.streetNumber',
-      city: 'Locations.city',
-      province: 'Locations.province',
-      country: 'Locations.country',
-      postalCode: 'Locations.postalCode',
-      latitude: 'Locations.latitude',
-      longitude: 'Locations.longitude',
-      notes: 'Locations.notes',
-    };
-    return t(keyMap[field] || field);
+    switch(field) {
+        case 'name': return 'Nombre de Locación';
+        case 'type': return 'Tipo';
+        case 'status': return 'Estado';
+        case 'streetName': return 'Calle';
+        case 'streetNumber': return 'Altura';
+        case 'city': return 'Ciudad';
+        case 'province': return 'Provincia/Estado';
+        case 'country': return 'País';
+        case 'postalCode': return 'Código Postal';
+        case 'latitude': return 'Latitud';
+        case 'longitude': return 'Longitud';
+        case 'notes': return 'Notas';
+        default: return field;
+    }
   };
 
   const handleValidateData = () => {
@@ -220,9 +230,7 @@ export function LocationImporter({
     );
     if (missingMappings.length > 0) {
       setError(
-        t('Importer.error.missingMapping', {
-          fields: missingMappings.map(getFieldLabel).join(', '),
-        })
+        `Faltan mapear campos obligatorios: ${missingMappings.map(getFieldLabel).join(', ')}`
       );
       return;
     }
@@ -231,9 +239,6 @@ export function LocationImporter({
     setError(null);
 
     setTimeout(() => {
-      const seenInFile = new Map<string, number>();
-      const existingNames = new Set(locations.map((loc) => loc.name.toLowerCase()));
-
       const results: ValidatedRow[] = csvData.map((rawRow, index) => {
         const rowResult: ValidatedRow = {
           data: {},
@@ -242,13 +247,30 @@ export function LocationImporter({
           originalIndex: index + 2,
         };
 
-        const locationObject: any = { clientId };
+        const locationObject: any = {};
         for (const field of ALL_FIELDS) {
-          const csvHeader = mapping[field as keyof typeof mapping];
-          if (csvHeader && csvHeader !== 'unmapped' && rawRow[csvHeader] !== undefined) {
+          const csvHeader = mapping[field];
+          if (
+            csvHeader &&
+            csvHeader !== 'unmapped' &&
+            rawRow[csvHeader] !== undefined
+          ) {
             locationObject[field] = rawRow[csvHeader];
           }
         }
+        
+        // Basic normalization for status and type
+        if (locationObject.status) {
+            const s = String(locationObject.status).toLowerCase();
+            if (s.includes('act')) locationObject.status = 'active';
+            else if (s.includes('susp')) locationObject.status = 'suspended';
+        }
+        if (locationObject.type) {
+            const tVal = String(locationObject.type).toLowerCase();
+            if (tVal.includes('base') || tVal.includes('branch')) locationObject.type = 'branch';
+            else if (tVal.includes('hq') || tVal.includes('central')) locationObject.type = 'headquarters';
+        }
+
         rowResult.data = locationObject;
 
         const parsed = formSchema.safeParse(locationObject);
@@ -257,35 +279,10 @@ export function LocationImporter({
           rowResult.status = 'invalid';
           parsed.error.errors.forEach((err) => {
             rowResult.errors.push(
-              t('Importer.error.invalidField', {
-                field: getFieldLabel(err.path[0] as LocationField),
-                message: err.message,
-              })
+              `${getFieldLabel(err.path[0] as LocationField)}: ${err.message}`
             );
           });
-        } else {
-          const { name: cleanName } = parsed.data;
-          
-          if (cleanName) {
-            const lowerCaseName = cleanName.toLowerCase();
-            if (seenInFile.has(lowerCaseName)) {
-              rowResult.status = 'invalid';
-              rowResult.errors.push(
-                t('Importer.error.duplicateInFile', {
-                  field: getFieldLabel('name'),
-                  row: seenInFile.get(lowerCaseName),
-                })
-              );
-            } else {
-              seenInFile.set(lowerCaseName, rowResult.originalIndex);
-            }
-
-            if (existingNames.has(lowerCaseName)) {
-              rowResult.status = 'invalid';
-              rowResult.errors.push(t('Importer.error.duplicateInDB', { field: getFieldLabel('name') }));
-            }
-          }
-        }
+        } 
 
         return rowResult;
       });
@@ -295,21 +292,83 @@ export function LocationImporter({
       setStep('preview');
     }, 100);
   };
+
+  const handleImport = async () => {
+    if (!user || !firestore || !selectedClientId) return;
+    
+    setIsProcessing(true);
+    setStep('importing');
+    
+    const validRows = validatedData.filter(r => r.status === 'valid');
+    let imported = 0;
+    
+    for (const row of validRows) {
+        try {
+            await addLocation(firestore, user.uid, {
+                ...(row.data as any),
+                clientId: selectedClientId,
+            });
+            imported++;
+            setImportProgress(Math.round((imported / validRows.length) * 100));
+        } catch (e) {
+            console.error("Failed to import row", row, e);
+        }
+    }
+    
+    setIsProcessing(false);
+    onOpenChange(false);
+    resetState();
+  };
   
   const validRowCount = useMemo(() => validatedData.filter(r => r.status === 'valid').length, [validatedData]);
   const invalidRowCount = useMemo(() => validatedData.filter(r => r.status === 'invalid').length, [validatedData]);
 
   const renderContent = () => {
+    if (step === 'importing') {
+        return (
+            <div className="flex flex-col items-center justify-center space-y-4 py-16 text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <h3 className="text-lg font-semibold">Importando locaciones...</h3>
+              <p className="text-muted-foreground">Procesando {importProgress}% ({validRowCount} registros)</p>
+            </div>
+        );
+    }
     if (isProcessing) {
       return (
         <div className="flex flex-col items-center justify-center space-y-4 py-16 text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <h3 className="text-lg font-semibold">{t('Importer.importingTitle')}</h3>
-          <p className="text-muted-foreground">{t('Importer.importingDescription')}</p>
+          <h3 className="text-lg font-semibold">Procesando datos...</h3>
         </div>
       );
     }
     switch (step) {
+      case 'client-selection':
+        return (
+          <div className="py-8 space-y-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="rounded-full bg-blue-50 p-4">
+                    <Building2 className="h-10 w-10 text-blue-600" />
+                </div>
+                <div>
+                   <h3 className="text-lg font-semibold">Seleccionar Cliente</h3>
+                   <p className="text-sm text-muted-foreground">Las locaciones importadas se asignarán a este cliente.</p>
+                </div>
+            </div>
+            <div className="max-w-md mx-auto space-y-2">
+                <Label>Cliente</Label>
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Seleccione un cliente..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                        {allClients.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+          </div>
+        );
       case 'upload':
         return (
           <div className="py-8">
@@ -318,15 +377,15 @@ export function LocationImporter({
                 <FileUp className="h-10 w-10 text-secondary-foreground" />
               </div>
               <p className="text-muted-foreground">
-                {t('Importer.uploadPrompt')}
+                Seleccione un archivo CSV o Excel (.xlsx) con las locaciones.
               </p>
               <Button asChild>
-                <label htmlFor="csv-upload" className="cursor-pointer">
-                  {t('Importer.uploadButton')}
+                <label htmlFor="loc-csv-upload" className="cursor-pointer">
+                  Subir Archivo
                 </label>
               </Button>
               <input
-                id="csv-upload"
+                id="loc-csv-upload"
                 type="file"
                 accept=".csv, .xlsx, .xls"
                 className="sr-only"
@@ -335,7 +394,7 @@ export function LocationImporter({
               {error && (
                 <Alert variant="destructive" className="mt-4 text-left">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>{t('Auth.registerFailedTitle')}</AlertTitle>
+                  <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -349,8 +408,8 @@ export function LocationImporter({
               <Table>
                 <TableHeader className="sticky top-0 bg-muted/50">
                   <TableRow>
-                    <TableHead>{t('Importer.appField')}</TableHead>
-                    <TableHead>{t('Importer.csvColumn')}</TableHead>
+                    <TableHead>Campo del Sistema</TableHead>
+                    <TableHead>Columna del Archivo</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -365,7 +424,7 @@ export function LocationImporter({
                               variant="outline"
                               className="ml-2 border-primary text-primary"
                             >
-                              {t('Importer.required')}
+                              Requerido
                             </Badge>
                           )}
                         </TableCell>
@@ -381,12 +440,12 @@ export function LocationImporter({
                           >
                             <SelectTrigger>
                               <SelectValue
-                                placeholder={t('Importer.unmapped')}
+                                placeholder="No mapeado"
                               />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="unmapped">
-                                {t('Importer.unmapped')}
+                                No mapeado
                               </SelectItem>
                               {csvHeaders.map((header) => (
                                 <SelectItem key={header} value={header}>
@@ -405,7 +464,7 @@ export function LocationImporter({
             {error && (
               <Alert variant="destructive" className="text-left">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>{t('Auth.registerFailedTitle')}</AlertTitle>
+                <AlertTitle>Error de validación</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -414,24 +473,33 @@ export function LocationImporter({
       case 'preview':
         return (
           <div className='space-y-4'>
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('Importer.validationSummary')}</CardTitle>
-                </CardHeader>
-                <CardContent className='space-y-2'>
-                    <p className='text-green-600'>{t('Importer.readyForImport', {count: validRowCount})}</p>
-                    <p className='text-destructive'>{t('Importer.recordsWithErrors', {count: invalidRowCount})}</p>
-                </CardContent>
-            </Card>
-            <div className="max-h-[50vh] overflow-y-auto rounded-lg border">
+            <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-green-50/50 border-green-100">
+                    <CardHeader className="py-3 px-4">
+                        <CardTitle className="text-sm font-medium text-green-700">Registros Válidos</CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-0 px-4 pb-3">
+                        <span className="text-2xl font-bold text-green-700">{validRowCount}</span>
+                    </CardContent>
+                </Card>
+                <Card className="bg-red-50/50 border-red-100">
+                    <CardHeader className="py-3 px-4">
+                        <CardTitle className="text-sm font-medium text-red-700">Registros con Error</CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-0 px-4 pb-3">
+                        <span className="text-2xl font-bold text-red-700">{invalidRowCount}</span>
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="max-h-[40vh] overflow-y-auto rounded-lg border">
               <TooltipProvider>
                 <Table>
                   <TableHeader className="sticky top-0 bg-muted/50">
                     <TableRow>
-                      <TableHead>{t('Importer.previewTable.status')}</TableHead>
-                      <TableHead>{t('Locations.name')}</TableHead>
-                      <TableHead>{t('Locations.streetName')}</TableHead>
-                      <TableHead>{t('Locations.city')}</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Ciudad</TableHead>
+                      <TableHead>País</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -439,23 +507,23 @@ export function LocationImporter({
                       <TableRow key={i}>
                         <TableCell>
                           {row.status === 'valid' ? (
-                            <Badge variant='default' className='bg-green-600'>{t('Importer.importStatus.valid')}</Badge>
+                            <Badge variant='default' className='bg-green-600 font-bold'>OK</Badge>
                           ) : (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Badge variant="destructive">{t('Importer.importStatus.invalid')}</Badge>
+                                <Badge variant="destructive" className="font-bold cursor-help">ERROR</Badge>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <ul className="list-disc pl-4">
+                                <ul className="list-disc pl-4 text-xs">
                                   {row.errors.map((err, i) => <li key={i}>{err}</li>)}
                                 </ul>
                               </TooltipContent>
                             </Tooltip>
                           )}
                         </TableCell>
-                        <TableCell>{row.data.name || '-'}</TableCell>
-                        <TableCell>{row.data.streetName || '-'}</TableCell>
-                        <TableCell>{row.data.city || '-'}</TableCell>
+                        <TableCell className="text-xs">{row.data.name || '-'}</TableCell>
+                        <TableCell className="text-xs">{row.data.city || '-'}</TableCell>
+                        <TableCell className="text-xs">{row.data.country || '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -465,53 +533,7 @@ export function LocationImporter({
           </div>
         );
       default:
-        return <p>WIP</p>;
-    }
-  };
-
-  const renderFooter = () => {
-    if (step === 'map') {
-      return (
-        <div className="flex w-full justify-between">
-          <Button variant="outline" onClick={() => resetState() && setStep('upload')}>
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            {t('Importer.backButton')}
-          </Button>
-          <Button onClick={handleValidateData}>
-            {t('Importer.nextButton')}
-            <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      );
-    }
-     if (step === 'preview') {
-      return (
-        <div className="flex w-full justify-between">
-          <Button variant="outline" onClick={() => setStep('map')}>
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            {t('Importer.backButton')}
-          </Button>
-          <Button onClick={() => {}} disabled={validRowCount === 0}>
-            {t('Importer.importButton')}
-          </Button>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const getStepTitle = () => {
-    switch (step) {
-      case 'upload':
-        return t('Importer.step1Title');
-      case 'map':
-        return t('Importer.step2Title');
-      case 'preview':
-        return t('Importer.step3Title');
-      case 'import':
-        return t('Importer.step4Title');
-      default:
-        return t('Importer.locationTitle');
+        return null;
     }
   };
 
@@ -519,11 +541,53 @@ export function LocationImporter({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{t('Importer.locationTitle')}</DialogTitle>
-          <DialogDescription>{getStepTitle()}</DialogDescription>
+          <DialogTitle>Importar Locaciones</DialogTitle>
+          <DialogDescription>
+            Sigue los pasos para importar locaciones masivamente.
+          </DialogDescription>
         </DialogHeader>
+
         {renderContent()}
-        <DialogFooter className="pt-4">{renderFooter()}</DialogFooter>
+
+        <DialogFooter className="pt-4">
+            <div className="flex w-full justify-between items-center">
+                {step === 'client-selection' ? (
+                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                ) : (
+                    <Button variant="outline" onClick={() => {
+                        if (step === 'upload') setStep('client-selection');
+                        else if (step === 'map') setStep('upload');
+                        else if (step === 'preview') setStep('map');
+                    }}>
+                        <ChevronLeft className="mr-2 h-4 w-4" /> Atrás
+                    </Button>
+                )}
+
+                {step === 'client-selection' && (
+                    <Button onClick={() => setStep('upload')} disabled={!selectedClientId}>
+                        Siguiente <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                )}
+                
+                {step === 'upload' && file && (
+                     <Button onClick={() => setStep('map')}>
+                        Configurar Mapeo <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                )}
+
+                {step === 'map' && (
+                    <Button onClick={handleValidateData}>
+                        Validar Datos <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                )}
+                
+                {step === 'preview' && (
+                    <Button onClick={handleImport} disabled={validRowCount === 0} className="bg-green-600 hover:bg-green-700 text-white font-bold">
+                        {isProcessing ? 'Importando...' : `Importar ${validRowCount} Locaciones`}
+                    </Button>
+                )}
+            </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
