@@ -562,7 +562,13 @@ export default function ClientFormPage() {
                           <FormLabel>{t('Forms.costCenter')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder="..." /></SelectTrigger></FormControl>
-                            <SelectContent>{costCenterOptions.map(cc => <SelectItem key={cc.id} value={cc.id}>{cc.id}</SelectItem>)}</SelectContent>
+                            <SelectContent>
+                              {costCenterOptions.map(cc => (
+                                <SelectItem key={cc.id} value={cc.id}>
+                                  <span className="text-[10px] uppercase font-bold">{cc.id} - {cc.name}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
                           </Select><FormMessage />
                         </FormItem>
                       )} />
