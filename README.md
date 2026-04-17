@@ -30,10 +30,21 @@ git commit -m "Descripción de tus cambios"
 git push origin main
 ```
 
-### Si es la primera vez que bajas el proyecto
-```bash
-git clone https://github.com/meg-telespazio/telespazioCRM.git
-```
+### 🆘 Solución a Errores Comunes
+
+#### Error: [rejected] main -> main (fetch first)
+Este error significa que hay cambios en GitHub que no tienes localmente.
+1. Ejecuta: `git pull origin main`
+2. Si hay conflictos, resuélvelos en los archivos, guarda y haz commit.
+3. Vuelve a intentar: `git push -u origin main`
+
+#### Error de Autenticación (PAT)
+Si la terminal te pide contraseña y falla, recuerda que debes usar un **Personal Access Token**:
+1. Genera un **Token (Classic)** en GitHub (Settings > Developer Settings).
+2. Dale permisos de `repo`.
+3. Úsalo como contraseña cuando la terminal te lo solicite.
+
+---
 
 ## 📦 Despliegue en Vercel
 
@@ -51,14 +62,6 @@ Obtén estos valores en la Consola de Firebase > Configuración del Proyecto > G
 ### 2. Variable de IA (Genkit)
 Necesaria para el buscador de logos y reportes inteligentes. Obtén tu clave en [Google AI Studio](https://aistudio.google.com/):
 - `GOOGLE_GENAI_API_KEY`
-
----
-
-## 🆘 Solución a Errores de Autenticación (PAT)
-Si la terminal te pide contraseña y falla, recuerda que debes usar un **Personal Access Token**:
-1. Genera un **Token (Classic)** en GitHub (Settings > Developer Settings).
-2. Dale permisos de `repo`.
-3. Úsalo como contraseña cuando la terminal te lo solicite.
 
 ---
 Desarrollado para **Telespazio Argentina**.

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -19,8 +20,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.6.0 - AI Credit Depletion Error Handling
-const APP_VERSION = '1.6.0'; 
+// VERSIÓN 1.6.1 - Git Troubleshooting Update
+const APP_VERSION = '1.6.1'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
