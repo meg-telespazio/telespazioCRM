@@ -32,11 +32,17 @@ git push origin main
 
 ### 🆘 Solución a Errores Comunes
 
+#### Error: fatal: Need to specify how to reconcile divergent branches
+Este error ocurre cuando Git no sabe si debe mezclar (merge) o sobreescribir (rebase) los cambios. 
+**Solución:**
+1. Ejecuta: `git config pull.rebase false`
+2. Luego ejecuta: `git pull origin main`
+
 #### Error: [rejected] main -> main (fetch first)
 Este error significa que hay cambios en GitHub que no tienes localmente.
 1. Ejecuta: `git pull origin main`
 2. Si hay conflictos, resuélvelos en los archivos, guarda y haz commit.
-3. Vuelve a intentar: `git push -u origin main`
+3. Vuelve a intentar: `git push origin main`
 
 #### Error de Autenticación (PAT)
 Si la terminal te pide contraseña y falla, recuerda que debes usar un **Personal Access Token**:
