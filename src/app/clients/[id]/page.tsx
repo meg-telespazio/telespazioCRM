@@ -36,8 +36,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AvatarCropper } from '@/components/profile/avatar-cropper';
-import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key, BadgeInfo, PhoneCall, Globe, Briefcase, Tag, Hash } from 'lucide-react';
+import { Building, Camera, Linkedin, Loader2, Wand2, ShieldAlert, ChevronRight, ExternalLink, Key, BadgeInfo, PhoneCall, Globe, Briefcase, Tag, Hash, Search } from 'lucide-react';
 import { findAndFetchLogo } from '@/ai/flows/find-logo-flow';
+import { fetchTaxIdFromLegalName, fetchLegalNameFromTaxId } from '@/ai/flows/company-info-flow';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
@@ -106,6 +107,8 @@ export default function ClientFormPage() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [croppedImage, setCroppedAvatar] = useState<string | null>(null);
   const [isFindingLogo, setIsFindingLogo] = useState(false);
+  const [isFindingTaxId, setIsFindingTaxId] = useState(false);
+  const [isFindingLegalName, setIsFindingLegalName] = useState(false);
 
   // Fetch system config for dynamic dropdowns
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
@@ -259,6 +262,54 @@ export default function ClientFormPage() {
     }
   };
 
+  const handleFindTaxId = async () => {
+    const legalName = form.getValues('legalName') || form.getValues('name');
+    if (!legalName || legalName.length < 3) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Ingrese una Razón Social o Nombre válido primero.' });
+      return;
+    }
+    setIsFindingTaxId(true);
+    try {
+      const result = await fetchTaxIdFromLegalName({ legalName });
+      if (result.taxId) {
+        form.setValue('cuit', result.taxId, { shouldValidate: true });
+        toast({ variant: 'success', title: 'Éxito', description: 'ID Tributario encontrado' });
+      } else if (result.error) {
+        let msg = result.error;
+        if (msg.includes('429') || msg.includes('credits are depleted')) {
+          msg = "Créditos de IA agotados. Por favor revise su facturación en AI Studio.";
+        }
+        toast({ variant: 'destructive', title: 'Error de IA', description: msg });
+      }
+    } finally {
+      setIsFindingTaxId(false);
+    }
+  };
+
+  const handleFindLegalName = async () => {
+    const taxId = form.getValues('cuit');
+    if (!taxId || taxId.length < 5) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Ingrese un ID Tributario válido primero.' });
+      return;
+    }
+    setIsFindingLegalName(true);
+    try {
+      const result = await fetchLegalNameFromTaxId({ taxId });
+      if (result.legalName) {
+        form.setValue('legalName', result.legalName, { shouldValidate: true });
+        toast({ variant: 'success', title: 'Éxito', description: 'Razón Social encontrada' });
+      } else if (result.error) {
+        let msg = result.error;
+        if (msg.includes('429') || msg.includes('credits are depleted')) {
+          msg = "Créditos de IA agotados. Por favor revise su facturación en AI Studio.";
+        }
+        toast({ variant: 'destructive', title: 'Error de IA', description: msg });
+      }
+    } finally {
+      setIsFindingLegalName(false);
+    }
+  };
+
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
     try {
@@ -359,7 +410,14 @@ export default function ClientFormPage() {
                           <FormField control={form.control} name="legalName" render={({ field }) => (
                             <FormItem>
                               <FormLabel>{t('Forms.legalName')}</FormLabel>
-                              <FormControl><Input placeholder="Razón Social Completa" {...field} className="bg-slate-50/50" /></FormControl>
+                              <FormControl>
+                                <div className="relative flex items-center">
+                                  <Input placeholder="Razón Social Completa" {...field} className="bg-slate-50/50 pr-10" />
+                                  <Button type="button" size="icon" variant="ghost" title="Completar con IA basado en el ID Tributario" className="absolute right-1 h-8 w-8 text-primary" onClick={handleFindLegalName} disabled={isFindingLegalName || !form.watch('cuit')}>
+                                    {isFindingLegalName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                  </Button>
+                                </div>
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
@@ -378,7 +436,14 @@ export default function ClientFormPage() {
                           <FormField control={form.control} name="cuit" render={({ field }) => (
                             <FormItem>
                               <FormLabel>{t('Forms.cuit')}</FormLabel>
-                              <FormControl><Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} className="bg-slate-50/50" /></FormControl>
+                              <FormControl>
+                                <div className="relative flex items-center">
+                                    <Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} className="bg-slate-50/50 pr-10" />
+                                    <Button type="button" size="icon" variant="ghost" title="Buscar ID con IA basado en Nombre Comercial o Razón Social" className="absolute right-1 h-8 w-8 text-primary" onClick={handleFindTaxId} disabled={isFindingTaxId || (!form.watch('legalName') && !form.watch('name'))}>
+                                        {isFindingTaxId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                                    </Button>
+                                </div>
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
@@ -493,11 +558,7 @@ export default function ClientFormPage() {
                           <FormLabel>{t('Forms.costCenter')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder="..." /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {costCenterOptions.map(cc => (
-                                <SelectItem key={cc.id} value={cc.id}>{cc.id} - {cc.name}</SelectItem>
-                              ))}
-                            </SelectContent>
+                            <SelectContent>{costCenterOptions.map(cc => <SelectItem key={cc.id} value={cc.id}>{cc.id}</SelectItem>)}</SelectContent>
                           </Select><FormMessage />
                         </FormItem>
                       )} />

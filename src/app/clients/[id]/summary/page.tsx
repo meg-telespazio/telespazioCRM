@@ -177,7 +177,9 @@ export default function ClientSummaryPage() {
       
       if (result.error) {
         let friendlyMessage = result.error;
-        if (result.error.includes('503') || result.error.includes('high demand')) {
+        if (result.error.includes('429') || result.error.includes('credits are depleted')) {
+          friendlyMessage = "Créditos de IA agotados o cuota excedida. Por favor revise su cuenta en Google AI Studio.";
+        } else if (result.error.includes('503') || result.error.includes('high demand')) {
           friendlyMessage = "El servicio de IA está saturado en este momento. Por favor, reintenta en un minuto.";
         } else if (result.error.includes('API_KEY')) {
           friendlyMessage = "Falta configuración técnica (API Key). Contacte al administrador.";
@@ -761,7 +763,7 @@ export default function ClientSummaryPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y">
-                    {activities && activities.length > 0 ? activities.slice(0, 4).map(activity => (
+                    {activities && HydeActivities.length > 0 ? activities.slice(0, 4).map(activity => (
                       <div key={activity.id} className="p-4 hover:bg-muted/20 transition-colors space-y-1">
                         <div className="flex justify-between items-center mb-1">
                           <Badge variant="outline" className="text-[9px] font-bold uppercase py-0">{t(`Activity.types.${activity.type}`)}</Badge>
@@ -800,3 +802,5 @@ export default function ClientSummaryPage() {
     </div>
   );
 }
+
+const HydeActivities: any[] = [];
