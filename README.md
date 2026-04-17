@@ -14,7 +14,28 @@ Sistema integral de gestión de relaciones con clientes (CRM) diseñado específ
 - **Ciclo de Ventas Completo**: Oportunidades, Contratos, POs y Servicios.
 - **Logística e Inventario**: Gestión de Kits (Equipos) y Locaciones mapeadas.
 
-## 🛠️ Despliegue en Vercel
+## 🛠️ Comandos de Terminal (Git)
+
+Para mantener tu código sincronizado con GitHub, usa estos comandos en tu terminal:
+
+### Bajar la última versión de GitHub
+```bash
+git pull origin main
+```
+
+### Subir tus cambios locales a GitHub
+```bash
+git add .
+git commit -m "Descripción de tus cambios"
+git push origin main
+```
+
+### Si es la primera vez que bajas el proyecto
+```bash
+git clone https://github.com/meg-telespazio/telespazioCRM.git
+```
+
+## 📦 Despliegue en Vercel
 
 Para que el proyecto funcione en Vercel, debes configurar las siguientes **Environment Variables**:
 
@@ -31,32 +52,13 @@ Obtén estos valores en la Consola de Firebase > Configuración del Proyecto > G
 Necesaria para el buscador de logos y reportes inteligentes. Obtén tu clave en [Google AI Studio](https://aistudio.google.com/):
 - `GOOGLE_GENAI_API_KEY`
 
-### 3. Seguridad (Opcional para Dev, Recomendado para Prod)
-- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`: Clave de sitio para Firebase App Check (reCAPTCHA Enterprise).
-
 ---
 
-## 📦 Instrucciones para GitHub
-
-Para vincular este proyecto con el repositorio de Telespazio, abre una terminal en la carpeta del proyecto y ejecuta:
-
-### Opción A: Si es la primera vez que subes el código
-```bash
-git init
-git add .
-git commit -m "Initial commit: Sistema CRM T-Track completo con endurecimiento de seguridad"
-git remote add origin https://github.com/meg-telespazio/telespazioCRM.git
-git branch -M main
-git push -u origin main
-```
-
-### 🆘 Solución a Errores de Autenticación (ECONNREFUSED)
-Si recibes errores de "Missing or invalid credentials" o "ECONNREFUSED" al hacer push, es probable que el puente de autenticación del IDE se haya desconectado. Para solucionarlo:
-
-1. Genera un **Personal Access Token (PAT)** en GitHub (Settings > Developer Settings > Tokens Classic) con permisos de `repo`.
-2. Actualiza la URL remota en tu terminal usando el token:
-   `git remote set-url origin https://TU_USUARIO:TU_TOKEN@github.com/meg-telespazio/telespazioCRM.git`
-3. Intenta el push nuevamente: `git push -u origin main`
+## 🆘 Solución a Errores de Autenticación (PAT)
+Si la terminal te pide contraseña y falla, recuerda que debes usar un **Personal Access Token**:
+1. Genera un **Token (Classic)** en GitHub (Settings > Developer Settings).
+2. Dale permisos de `repo`.
+3. Úsalo como contraseña cuando la terminal te lo solicite.
 
 ---
 Desarrollado para **Telespazio Argentina**.
