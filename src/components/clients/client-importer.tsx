@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import type { Client, TaxIdType } from '@/lib/types';
+import type { Client } from '@/lib/types';
 import { z } from 'zod';
 import {
   Tooltip,
@@ -104,21 +104,21 @@ type ClientImporterProps = {
 
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
-    name: z.string().min(1, t('Validation.nameMin')),
-    legalName: z.string().min(1, t('Validation.fieldRequired')),
+    name: z.coerce.string().min(1, t('Validation.nameMin')),
+    legalName: z.coerce.string().min(1, t('Validation.fieldRequired')),
     taxIdType: z.enum(['CUIT', 'RUT_CL', 'RUC_PE', 'CNPJ', 'RUT_CO', 'NIT_CR', 'EIN_US', 'OTHER']),
     cuit: z
-      .string()
+      .coerce.string()
       .transform((val) => val.replace(/\D/g, ''))
       .refine((val) => val.length >= 8, {
         message: t('Validation.taxIdInvalid'),
       }),
     // Opcionales
     email: z.string().email().optional().or(z.literal('')),
-    phone: z.string().optional().or(z.literal('')),
+    phone: z.coerce.string().optional().or(z.literal('')),
     website: z.string().url().optional().or(z.literal('')),
-    sector: z.string().optional().or(z.literal('')),
-    subsector: z.string().optional().or(z.literal('')),
+    sector: z.coerce.string().optional().or(z.literal('')),
+    subsector: z.coerce.string().optional().or(z.literal('')),
     status: z.enum(['active', 'suspended', 'canceled']).default('active'),
     type: z.enum(['client', 'prospect']).default('client'),
   });
@@ -484,7 +484,6 @@ export function ClientImporter({
                 <CardContent className="p-3 pt-0">
                   <span className="text-2xl font-bold text-amber-700">{validatedData.filter(r => r.status === 'duplicate').length}</span>
                 </CardContent>
-              </Card>
               <Card className="bg-red-50 border-red-100">
                 <CardHeader className="p-3">
                   <CardTitle className="text-xs text-red-700 uppercase">Con Error</CardTitle>
