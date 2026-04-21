@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useI18n } from '@/firebase/client-provider';
-import type { Client } from '@/lib/types';
+import type { Client, UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,16 +22,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Settings2 } from 'lucide-react';
+import { Settings2, UserCheck } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 interface ClientBulkEditDialogProps {
   selectedClients: Client[];
+  users: UserProfile[];
   onComplete: () => void;
 }
 
 export function ClientBulkEditDialog({
   selectedClients,
+  users,
   onComplete,
 }: ClientBulkEditDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,14 +44,21 @@ export function ClientBulkEditDialog({
 
   const [status, setStatus] = useState<string>('no_change');
   const [type, setType] = useState<string>('no_change');
+  const [assignedTo, setAssignedTo] = useState<string>('no_change');
 
   const count = selectedClients.length;
+
+  const validExecutives = useMemo(() => {
+    return users
+      .filter(u => u.role === 'ejecutivo' || u.role === 'admin')
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [users]);
 
   if (count === 0) return null;
 
   const handleUpdate = async () => {
     if (!firestore) return;
-    if (status === 'no_change' && type === 'no_change') {
+    if (status === 'no_change' && type === 'no_change' && assignedTo === 'no_change') {
       setIsOpen(false);
       return;
     }
@@ -61,6 +70,7 @@ export function ClientBulkEditDialog({
       const updates: any = {};
       if (status !== 'no_change') updates.status = status;
       if (type !== 'no_change') updates.type = type;
+      if (assignedTo !== 'no_change') updates.assignedTo = assignedTo;
 
       const promises = selectedClients.map((client) => {
         const docRef = doc(firestore, 'clients', client.id);
@@ -83,6 +93,7 @@ export function ClientBulkEditDialog({
       // Reset dropdowns
       setStatus('no_change');
       setType('no_change');
+      setAssignedTo('no_change');
     } catch (error: any) {
       console.error('Error updating clients', error);
       toast({
@@ -144,6 +155,26 @@ export function ClientBulkEditDialog({
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="executive" className="flex items-center gap-2">
+                <UserCheck className="h-3 w-3" />
+                Reasignar Ejecutivo Responsable
+              </Label>
+              <Select value={assignedTo} onValueChange={setAssignedTo}>
+                <SelectTrigger id="executive">
+                  <SelectValue placeholder="Sin cambios" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no_change">-- Sin cambios --</SelectItem>
+                  {validExecutives.map(u => (
+                    <SelectItem key={u.uid} value={u.uid}>
+                      {u.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <DialogFooter>
@@ -152,7 +183,7 @@ export function ClientBulkEditDialog({
             </Button>
             <Button
               onClick={handleUpdate}
-              disabled={isUpdating || (status === 'no_change' && type === 'no_change')}
+              disabled={isUpdating || (status === 'no_change' && type === 'no_change' && assignedTo === 'no_change')}
             >
               {isUpdating ? 'Actualizando...' : 'Aplicar cambios'}
             </Button>

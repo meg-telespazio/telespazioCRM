@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -158,6 +157,7 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
         <div className="flex items-center gap-2">
           <ClientBulkEditDialog
             selectedClients={table.getFilteredSelectedRowModel().rows.map(r => r.original)}
+            users={users}
             onComplete={() => table.toggleAllRowsSelected(false)}
           />
           <DropdownMenu>
