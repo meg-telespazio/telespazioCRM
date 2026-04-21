@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -23,6 +22,7 @@ import {
   HardDrive,
   Settings as SettingsIcon,
   ClipboardList,
+  Inbox,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -199,6 +199,7 @@ export function AppNavbar() {
       { href: '/purchase-orders', label: t('Sidebar.pos'), icon: ShoppingCart, permission: 'showPos' },
       { href: '/services', label: t('Sidebar.services'), icon: Zap, permission: 'showServices' },
       { href: '/equipment', label: t('Sidebar.equipment'), icon: HardDrive, permission: 'showEquipment' },
+      { href: '/quote-requests', label: 'Solicitudes Externas', icon: Inbox },
     ];
 
     return items.filter(item => !item.permission || canSeeMenu(item.permission as any));

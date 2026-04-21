@@ -19,5 +19,10 @@ export async function addQuoteRequest(
     createdAt: serverTimestamp(),
   };
 
+  // Convert Date objects to Firestore timestamps if needed
+  if (fullData.approxImplementationDate instanceof Date) {
+    // Already handled by Firestore
+  }
+
   return addDoc(collectionRef, fullData);
 }

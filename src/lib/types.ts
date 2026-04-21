@@ -503,12 +503,32 @@ export type ServiceOrderComment = {
 
 export type QuoteRequest = {
   id: string;
-  fullName: string;
   companyName: string;
-  email: string;
-  phone: string;
-  sector: string;
-  requirements: string;
+  legalName: string;
+  taxIdType: TaxIdType;
+  taxId: string;
+  country: 'Argentina' | 'Brazil' | 'Chile' | 'Colombia' | 'CostaRica' | 'Peru';
+  address: {
+    streetName: string;
+    streetNumber: string;
+    city: string;
+    province: string;
+    country: string;
+    postalCode: string;
+  };
+  contact: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+  };
+  description: string;
+  quantity: number;
+  usage: 'movil' | 'fijo';
+  usageLocation: string;
+  dataCapacityGb: number;
+  approxImplementationDate?: Date;
+  discoverySource: 'web' | 'linkedin' | 'referencia' | 'otro';
   status: 'pending' | 'reviewed' | 'converted';
   createdAt: Date;
 };

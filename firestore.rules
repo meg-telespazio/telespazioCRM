@@ -208,7 +208,8 @@ service cloud.firestore {
     // --- Public Quote Requests ---
     match /quoteRequests/{requestId} {
       allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow read: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
   }
 }
