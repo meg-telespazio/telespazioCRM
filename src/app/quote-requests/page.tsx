@@ -1,22 +1,34 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { AppHeader } from '@/components/layout/app-header';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { QuoteRequest } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { Mail, Phone, Globe, MessageSquare, MapPin, Calendar, Database, User } from 'lucide-react';
+import { es, enUS } from 'date-fns/locale';
+import { 
+  Mail, 
+  Phone, 
+  Globe, 
+  MessageSquare, 
+  MapPin, 
+  Calendar, 
+  Database, 
+  User, 
+  Zap, 
+  Building2 
+} from 'lucide-react';
 
 export default function QuoteRequestsPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'es' ? es : enUS;
 
   const requestsQuery = useMemo(() => {
     if (!user) return null;
@@ -82,7 +94,7 @@ export default function QuoteRequestsPage() {
                       <div className="flex items-center justify-between">
                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Requerimiento Técnico</span>
                          <span className="text-[10px] text-muted-foreground bg-slate-100 px-2 py-0.5 rounded italic">
-                            Recibido: {req.createdAt ? format(req.createdAt, 'PPp') : '...'}
+                            Recibido: {req.createdAt ? format(req.createdAt, 'PPp', { locale: dateLocale }) : '...'}
                          </span>
                       </div>
                       
@@ -145,7 +157,3 @@ export default function QuoteRequestsPage() {
     </div>
   );
 }
-
-const Building2 = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg>
-);
