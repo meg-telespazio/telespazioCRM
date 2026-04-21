@@ -1037,7 +1037,7 @@ export const translations = {
       itemNameMin: 'El nombre del ítem debe tener al menos 2 caracteres.',
       itemChargeMin: 'El cargo debe ser 0 o más.',
       passwordMin: 'La contraseña debe tener al menos 8 caracteres.',
-      passwordPattern: 'La contraseña debe incluir másuculas, minúsculas, números y caracteres especiales.',
+      passwordPattern: 'La contraseña debe incluir mayúsculas, minúsculas, números y caracteres especiales.',
       passwordsDontMatch: 'Las contraseñas no coinciden.',
       humanCheck: 'La verificación humana es obligatoria.',
       humanCheckError: 'Respuesta incorrecta. Intenta de nuevo.',

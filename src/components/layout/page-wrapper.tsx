@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.6.9 - Bulk Edit Reassignment
-const APP_VERSION = '1.6.9'; 
+// VERSIÓN 1.7.0 - Public Quote Support
+const APP_VERSION = '1.7.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -31,7 +31,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
   const { canSeeMenu, isLoading: permissionsLoading } = usePermissions();
   const [isMfaModalOpen, setIsMfaModalOpen] = useState(false);
 
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/cotizacion';
   const isUnauthorizedPage = pathname === '/unauthorized';
 
   // Lógica de actualización forzada para PWA
@@ -70,7 +70,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
   // Guardia de Rutas Dinámica basada en la Matriz
   useEffect(() => {
-    if (loading || permissionsLoading || !user || isAuthPage || isUnauthorizedPage) return;
+    if (loading || permissionsLoading || !user || isPublicPage || isUnauthorizedPage) return;
 
     // Mapa de rutas a permisos de menú
     const routePermissionMap: Record<string, any> = {
@@ -97,11 +97,11 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
         router.replace('/unauthorized');
       }
     }
-  }, [pathname, user, loading, permissionsLoading, canSeeMenu, router, isAuthPage, isUnauthorizedPage]);
+  }, [pathname, user, loading, permissionsLoading, canSeeMenu, router, isPublicPage, isUnauthorizedPage]);
 
   // MFA Enforcement
   useEffect(() => {
-    if (!loading && user && !isAuthPage && !isUnauthorizedPage) {
+    if (!loading && user && !isPublicPage && !isUnauthorizedPage) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
       const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
@@ -116,9 +116,9 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
         setIsMfaModalOpen(false);
       }
     }
-  }, [user, loading, pathname, auth.currentUser, router, isAuthPage, isUnauthorizedPage]);
+  }, [user, loading, pathname, auth.currentUser, router, isPublicPage, isUnauthorizedPage]);
 
-  if (isAuthPage || isUnauthorizedPage) {
+  if (isPublicPage || isUnauthorizedPage) {
     return <main>{children}</main>;
   }
 

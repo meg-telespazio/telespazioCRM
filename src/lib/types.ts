@@ -500,3 +500,15 @@ export type ServiceOrderComment = {
   timestamp: Date;
   statusChange?: ServiceOrderStatus;
 };
+
+export type QuoteRequest = {
+  id: string;
+  fullName: string;
+  companyName: string;
+  email: string;
+  phone: string;
+  sector: string;
+  requirements: string;
+  status: 'pending' | 'reviewed' | 'converted';
+  createdAt: Date;
+};
