@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.6.5 - Cost Center UI Update
-const APP_VERSION = '1.6.5'; 
+// VERSIÓN 1.6.6 - Bulk Importer Optimization
+const APP_VERSION = '1.6.6'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

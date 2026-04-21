@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -20,6 +19,9 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 import {
   Select,
@@ -37,7 +39,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { Client } from '@/lib/types';
+import { Progress } from '@/components/ui/progress';
+import type { Client, TaxIdType } from '@/lib/types';
 import { z } from 'zod';
 import {
   Tooltip,
@@ -46,29 +49,51 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { useUser, useFirestore } from '@/firebase';
+import { addClient } from '@/lib/firestore/clients';
 
-type ImporterStep = 'upload' | 'map' | 'preview' | 'import';
+type ImporterStep = 'upload' | 'map' | 'preview' | 'importing' | 'results';
+
 type ClientField = keyof Omit<
   Client,
-  'id' | 'publicId' | 'createdAt' | 'createdBy'
+  'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'createdBy'
 >;
 
+// Solo estos 4 campos son obligatorios según requerimiento
 const REQUIRED_FIELDS: ClientField[] = [
   'name',
+  'legalName',
+  'taxIdType',
   'cuit',
+];
+
+const OPTIONAL_FIELDS: ClientField[] = [
   'email',
   'phone',
+  'website',
+  'sector',
+  'subsector',
+  'holding',
+  'countryHQ',
+  'costCenterId',
+  'notes',
   'status',
-  'industry',
+  'type'
 ];
-const OPTIONAL_FIELDS: ClientField[] = ['website', 'notes'];
+
 const ALL_FIELDS = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS];
 
 type ValidatedRow = {
   data: Partial<Client>;
-  status: 'valid' | 'invalid';
+  status: 'valid' | 'duplicate' | 'invalid';
   errors: string[];
   originalIndex: number;
+};
+
+type ImportResults = {
+  success: number;
+  duplicates: number;
+  errors: number;
 };
 
 type ClientImporterProps = {
@@ -80,18 +105,22 @@ type ClientImporterProps = {
 const getFormSchema = (t: (key: string) => string) =>
   z.object({
     name: z.string().min(1, t('Validation.nameMin')),
-    website: z.string().url().optional().or(z.literal('')),
-    email: z.string().email(),
-    phone: z.string().min(1, t('Validation.phoneMin')),
+    legalName: z.string().min(1, t('Validation.fieldRequired')),
+    taxIdType: z.enum(['CUIT', 'RUT_CL', 'RUC_PE', 'CNPJ', 'RUT_CO', 'NIT_CR', 'EIN_US', 'OTHER']),
     cuit: z
       .string()
       .transform((val) => val.replace(/\D/g, ''))
-      .refine((val) => val.length === 11, {
-        message: t('Validation.cuitInvalid'),
+      .refine((val) => val.length >= 8, {
+        message: t('Validation.taxIdInvalid'),
       }),
-    status: z.enum(['active', 'suspended', 'canceled']),
-    industry: z.string().min(1, t('Validation.selectIndustry')),
-    notes: z.string().optional(),
+    // Opcionales
+    email: z.string().email().optional().or(z.literal('')),
+    phone: z.string().optional().or(z.literal('')),
+    website: z.string().url().optional().or(z.literal('')),
+    sector: z.string().optional().or(z.literal('')),
+    subsector: z.string().optional().or(z.literal('')),
+    status: z.enum(['active', 'suspended', 'canceled']).default('active'),
+    type: z.enum(['client', 'prospect']).default('client'),
   });
 
 export function ClientImporter({
@@ -100,6 +129,8 @@ export function ClientImporter({
   clients,
 }: ClientImporterProps) {
   const { t } = useI18n();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const formSchema = useMemo(() => getFormSchema(t), [t]);
 
   const [step, setStep] = useState<ImporterStep>('upload');
@@ -112,6 +143,8 @@ export function ClientImporter({
   );
   const [validatedData, setValidatedData] = useState<ValidatedRow[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [results, setResults] = useState<ImportResults>({ success: 0, duplicates: 0, errors: 0 });
 
   const resetState = () => {
     setStep('upload');
@@ -122,6 +155,8 @@ export function ClientImporter({
     setMapping({} as any);
     setValidatedData([]);
     setIsProcessing(false);
+    setImportProgress(0);
+    setResults({ success: 0, duplicates: 0, errors: 0 });
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -188,16 +223,17 @@ export function ClientImporter({
   };
 
   const getFieldLabel = (field: ClientField) => {
-    const key = `Forms.${
-      field === 'name'
-        ? 'clientName'
-        : field === 'email'
-        ? 'clientEmail'
-        : field === 'phone'
-        ? 'clientPhone'
-        : field
-    }`;
-    return t(key);
+    switch(field) {
+      case 'name': return t('Forms.clientName');
+      case 'legalName': return t('Forms.legalName');
+      case 'taxIdType': return t('Forms.taxIdType');
+      case 'cuit': return t('Forms.cuit');
+      case 'email': return t('Auth.emailLabel');
+      case 'phone': return t('Auth.phoneLabel');
+      case 'sector': return t('Forms.sector');
+      case 'status': return t('Forms.status');
+      default: return field;
+    }
   };
 
   const handleValidateData = () => {
@@ -216,31 +252,32 @@ export function ClientImporter({
     setIsProcessing(true);
     setError(null);
 
-    // Using setTimeout to allow UI to update to show "processing" state
     setTimeout(() => {
-      const seenInFile: { cuit: Record<string, number>; name: Record<string, number> } = { cuit: {}, name: {} };
+      const seenInFile = new Set<string>();
       const existingCuits = new Set(clients.map((c) => c.cuit));
-      const existingNames = new Set(clients.map((c) => c.name.toLowerCase()));
 
       const results: ValidatedRow[] = csvData.map((rawRow, index) => {
         const rowResult: ValidatedRow = {
           data: {},
           status: 'valid',
           errors: [],
-          originalIndex: index + 2, // +2 because of header row and 0-based index
+          originalIndex: index + 2,
         };
 
         const clientObject: any = {};
         for (const field of ALL_FIELDS) {
           const csvHeader = mapping[field];
-          if (
-            csvHeader &&
-            csvHeader !== 'unmapped' &&
-            rawRow[csvHeader] !== undefined
-          ) {
+          if (csvHeader && csvHeader !== 'unmapped' && rawRow[csvHeader] !== undefined) {
             clientObject[field] = rawRow[csvHeader];
           }
         }
+
+        // Valores por defecto
+        if (!clientObject.status) clientObject.status = 'active';
+        if (!clientObject.type) clientObject.type = 'client';
+        if (!clientObject.management) clientObject.management = user?.management || 'Satellite Communications';
+        if (!clientObject.assignedTo) clientObject.assignedTo = user?.uid || '';
+
         rowResult.data = clientObject;
 
         const parsed = formSchema.safeParse(clientObject);
@@ -256,47 +293,20 @@ export function ClientImporter({
             );
           });
         } else {
-          // It's safe to use parsed.data now
-          const { cuit: cleanCuit, name: cleanName } = parsed.data;
+          const cleanCuit = parsed.data.cuit;
 
-          // Check duplicates in file (only if not the placeholder cuit)
-          if (cleanCuit && cleanCuit !== '00000000000') {
-            if (seenInFile.cuit[cleanCuit]) {
-              rowResult.status = 'invalid';
-              rowResult.errors.push(
-                t('Importer.error.duplicateInFile', {
-                  field: 'CUIT',
-                  row: seenInFile.cuit[cleanCuit],
-                })
-              );
-            } else {
-              seenInFile.cuit[cleanCuit] = rowResult.originalIndex;
-            }
-          }
-          if (cleanName) {
-            const lowerCaseName = cleanName.toLowerCase();
-             if (seenInFile.name[lowerCaseName]) {
-              rowResult.status = 'invalid';
-              rowResult.errors.push(
-                t('Importer.error.duplicateInFile', {
-                  field: t('Forms.clientName'),
-                  row: seenInFile.name[lowerCaseName],
-                })
-              );
-            } else {
-              seenInFile.name[lowerCaseName] = rowResult.originalIndex;
-            }
-          }
-
-
-          // Check duplicates in DB
-          if (cleanCuit && cleanCuit !== '00000000000' && existingCuits.has(cleanCuit)) {
+          // Check duplicados en archivo
+          if (seenInFile.has(cleanCuit)) {
             rowResult.status = 'invalid';
-            rowResult.errors.push(t('Importer.error.duplicateInDB', { field: 'CUIT' }));
+            rowResult.errors.push(t('Importer.error.duplicateInFile', { field: 'ID Tributario', row: 'anterior' }));
+          } else {
+            seenInFile.add(cleanCuit);
           }
-           if (cleanName && existingNames.has(cleanName.toLowerCase())) {
-            rowResult.status = 'invalid';
-            rowResult.errors.push(t('Importer.error.duplicateInDB', { field: t('Forms.clientName') }));
+
+          // Check duplicados en DB
+          if (existingCuits.has(cleanCuit)) {
+            rowResult.status = 'duplicate';
+            rowResult.errors.push(t('Importer.error.duplicateInDB', { field: 'ID Tributario' }));
           }
         }
 
@@ -308,20 +318,51 @@ export function ClientImporter({
       setStep('preview');
     }, 100);
   };
+
+  const handleImport = async () => {
+    if (!user || !firestore) return;
+    
+    setIsProcessing(true);
+    setStep('importing');
+    
+    const rowsToImport = validatedData.filter(r => r.status === 'valid');
+    const totalToImport = rowsToImport.length;
+    
+    let success = 0;
+    let errors = 0;
+    let duplicates = validatedData.filter(r => r.status === 'duplicate').length;
+    
+    for (let i = 0; i < totalToImport; i++) {
+      const row = rowsToImport[i];
+      try {
+        // Forzamos la asignación al usuario actual
+        const dataToSave = {
+          ...row.data,
+          assignedTo: user.uid,
+          management: user.management || 'Satellite Communications',
+        };
+        
+        await addClient(firestore, user.uid, dataToSave as any);
+        success++;
+      } catch (e) {
+        console.error("Error importing row:", e);
+        errors++;
+      }
+      setImportProgress(Math.round(((i + 1) / totalToImport) * 100));
+    }
+    
+    setResults({ 
+      success, 
+      duplicates, 
+      errors: errors + validatedData.filter(r => r.status === 'invalid').length 
+    });
+    setStep('results');
+    setIsProcessing(false);
+  };
   
   const validRowCount = useMemo(() => validatedData.filter(r => r.status === 'valid').length, [validatedData]);
-  const invalidRowCount = useMemo(() => validatedData.filter(r => r.status === 'invalid').length, [validatedData]);
 
   const renderContent = () => {
-    if (isProcessing) {
-      return (
-        <div className="flex flex-col items-center justify-center space-y-4 py-16 text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <h3 className="text-lg font-semibold">{t('Importer.importingTitle')}</h3>
-          <p className="text-muted-foreground">{t('Importer.importingDescription')}</p>
-        </div>
-      );
-    }
     switch (step) {
       case 'upload':
         return (
@@ -348,7 +389,7 @@ export function ClientImporter({
               {error && (
                 <Alert variant="destructive" className="mt-4 text-left">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>{t('Auth.registerFailedTitle')}</AlertTitle>
+                  <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -418,7 +459,7 @@ export function ClientImporter({
             {error && (
               <Alert variant="destructive" className="text-left">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>{t('Auth.registerFailedTitle')}</AlertTitle>
+                <AlertTitle>Faltan Mapeos</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -427,24 +468,40 @@ export function ClientImporter({
       case 'preview':
         return (
           <div className='space-y-4'>
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('Importer.validationSummary')}</CardTitle>
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="bg-green-50 border-green-100">
+                <CardHeader className="p-3">
+                  <CardTitle className="text-xs text-green-700 uppercase">Listos</CardTitle>
                 </CardHeader>
-                <CardContent className='space-y-2'>
-                    <p className='text-green-600'>{t('Importer.readyForImport', {count: validRowCount})}</p>
-                    <p className='text-destructive'>{t('Importer.recordsWithErrors', {count: invalidRowCount})}</p>
+                <CardContent className="p-3 pt-0">
+                  <span className="text-2xl font-bold text-green-700">{validRowCount}</span>
                 </CardContent>
-            </Card>
-            <div className="max-h-[50vh] overflow-y-auto rounded-lg border">
+              </Card>
+              <Card className="bg-amber-50 border-amber-100">
+                <CardHeader className="p-3">
+                  <CardTitle className="text-xs text-amber-700 uppercase">Duplicados</CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                  <span className="text-2xl font-bold text-amber-700">{validatedData.filter(r => r.status === 'duplicate').length}</span>
+                </CardContent>
+              </Card>
+              <Card className="bg-red-50 border-red-100">
+                <CardHeader className="p-3">
+                  <CardTitle className="text-xs text-red-700 uppercase">Con Error</CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                  <span className="text-2xl font-bold text-red-700">{validatedData.filter(r => r.status === 'invalid').length}</span>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="max-h-[40vh] overflow-y-auto rounded-lg border">
               <TooltipProvider>
                 <Table>
                   <TableHeader className="sticky top-0 bg-muted/50">
                     <TableRow>
-                      <TableHead>{t('Importer.previewTable.status')}</TableHead>
+                      <TableHead>Estado</TableHead>
                       <TableHead>{t('Forms.clientName')}</TableHead>
                       <TableHead>{t('Forms.cuit')}</TableHead>
-                      <TableHead>{t('Forms.clientEmail')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -452,23 +509,29 @@ export function ClientImporter({
                       <TableRow key={i}>
                         <TableCell>
                           {row.status === 'valid' ? (
-                            <Badge variant='default' className='bg-green-600'>{t('Importer.importStatus.valid')}</Badge>
+                            <Badge variant='default' className='bg-green-600 font-bold'>OK</Badge>
+                          ) : row.status === 'duplicate' ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200 font-bold cursor-help">DUP</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent><p>{row.errors[0]}</p></TooltipContent>
+                            </Tooltip>
                           ) : (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Badge variant="destructive">{t('Importer.importStatus.invalid')}</Badge>
+                                <Badge variant="destructive" className="font-bold cursor-help">ERR</Badge>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <ul className="list-disc pl-4">
-                                  {row.errors.map((err, i) => <li key={i}>{err}</li>)}
+                                <ul className="list-disc pl-4 text-xs">
+                                  {row.errors.map((err, idx) => <li key={idx}>{err}</li>)}
                                 </ul>
                               </TooltipContent>
                             </Tooltip>
                           )}
                         </TableCell>
-                        <TableCell>{row.data.name || '-'}</TableCell>
-                        <TableCell>{row.data.cuit || '-'}</TableCell>
-                        <TableCell>{row.data.email || '-'}</TableCell>
+                        <TableCell className="text-xs">{row.data.name || '-'}</TableCell>
+                        <TableCell className="text-xs font-mono">{row.data.cuit || '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -477,54 +540,56 @@ export function ClientImporter({
             </div>
           </div>
         );
+      case 'importing':
+        return (
+          <div className="flex flex-col items-center justify-center space-y-6 py-12 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <div className="space-y-2 w-full max-w-xs">
+              <h3 className="text-lg font-semibold">Importando Clientes...</h3>
+              <Progress value={importProgress} className="h-2" />
+              <p className="text-xs text-muted-foreground">{importProgress}% completado</p>
+            </div>
+          </div>
+        );
+      case 'results':
+        return (
+          <div className="space-y-6 py-4 text-center">
+            <div className="flex justify-center">
+              <div className="rounded-full bg-green-100 p-4">
+                <CheckCircle2 className="h-12 w-12 text-green-600" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold">Importación Finalizada</h3>
+              <p className="text-sm text-muted-foreground">Resumen de la operación:</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                <div className="flex items-center justify-center gap-2 mb-1 text-green-700">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-xs font-bold uppercase">Éxito</span>
+                </div>
+                <span className="text-3xl font-black text-green-700">{results.success}</span>
+              </div>
+              <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+                <div className="flex items-center justify-center gap-2 mb-1 text-amber-700">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-xs font-bold uppercase">Duplicados</span>
+                </div>
+                <span className="text-3xl font-black text-amber-700">{results.duplicates}</span>
+              </div>
+              <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                <div className="flex items-center justify-center gap-2 mb-1 text-red-700">
+                  <XCircle className="h-4 w-4" />
+                  <span className="text-xs font-bold uppercase">Fallidos</span>
+                </div>
+                <span className="text-3xl font-black text-red-700">{results.errors}</span>
+              </div>
+            </div>
+          </div>
+        );
       default:
-        return <p>WIP</p>;
-    }
-  };
-
-  const renderFooter = () => {
-    if (step === 'map') {
-      return (
-        <div className="flex w-full justify-between">
-          <Button variant="outline" onClick={() => resetState() && setStep('upload')}>
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            {t('Importer.backButton')}
-          </Button>
-          <Button onClick={handleValidateData}>
-            {t('Importer.nextButton')}
-            <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      );
-    }
-     if (step === 'preview') {
-      return (
-        <div className="flex w-full justify-between">
-          <Button variant="outline" onClick={() => setStep('map')}>
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            {t('Importer.backButton')}
-          </Button>
-          <Button onClick={() => {}} disabled={validRowCount === 0}>
-            {t('Importer.importButton')}
-          </Button>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const getStepTitle = () => {
-    switch (step) {
-      case 'upload':
-        return t('Importer.step1Title');
-      case 'map':
-        return t('Importer.step2Title');
-      case 'preview':
-        return t('Importer.step3Title');
-      case 'import':
-        return t('Importer.step4Title');
-      default:
-        return t('Importer.clientTitle');
+        return null;
     }
   };
 
@@ -533,12 +598,54 @@ export function ClientImporter({
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>{t('Importer.clientTitle')}</DialogTitle>
-          <DialogDescription>{getStepTitle()}</DialogDescription>
+          <DialogDescription>
+            {step === 'upload' && 'Paso 1: Seleccionar archivo CSV o Excel'}
+            {step === 'map' && 'Paso 2: Vincular columnas del archivo con campos de Telespazio'}
+            {step === 'preview' && 'Paso 3: Validar datos y duplicados'}
+            {step === 'importing' && 'Paso 4: Procesando registros...'}
+            {step === 'results' && 'Informe Final de Importación'}
+          </DialogDescription>
         </DialogHeader>
 
         {renderContent()}
 
-        <DialogFooter className="pt-4">{renderFooter()}</DialogFooter>
+        <DialogFooter className="pt-4">
+          <div className="flex w-full justify-between items-center">
+            {step === 'upload' && <Button variant="outline" onClick={() => onOpenChange(false)}>Cerrar</Button>}
+            
+            {step === 'map' && (
+              <>
+                <Button variant="outline" onClick={() => setStep('upload')}>
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Volver
+                </Button>
+                <Button onClick={handleValidateData}>
+                  Siguiente <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </>
+            )}
+
+            {step === 'preview' && (
+              <>
+                <Button variant="outline" onClick={() => setStep('map')}>
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Atrás
+                </Button>
+                <Button 
+                  onClick={handleImport} 
+                  disabled={validRowCount === 0} 
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold"
+                >
+                  Importar {validRowCount} Registros
+                </Button>
+              </>
+            )}
+
+            {step === 'results' && (
+              <Button className="w-full" onClick={() => onOpenChange(false)}>
+                Finalizar y Volver
+              </Button>
+            )}
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
