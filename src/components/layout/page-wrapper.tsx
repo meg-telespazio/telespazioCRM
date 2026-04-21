@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.6.7 - Importer Type Coercion Optimization
-const APP_VERSION = '1.6.7'; 
+// VERSIÓN 1.6.8 - Build Failure Fix
+const APP_VERSION = '1.6.8'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

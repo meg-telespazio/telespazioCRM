@@ -59,7 +59,6 @@ type ClientField = keyof Omit<
   'id' | 'publicId' | 'createdAt' | 'updatedAt' | 'createdBy'
 >;
 
-// Solo estos 4 campos son obligatorios según requerimiento
 const REQUIRED_FIELDS: ClientField[] = [
   'name',
   'legalName',
@@ -113,7 +112,6 @@ const getFormSchema = (t: (key: string) => string) =>
       .refine((val) => val.length >= 8, {
         message: t('Validation.taxIdInvalid'),
       }),
-    // Opcionales
     email: z.string().email().optional().or(z.literal('')),
     phone: z.coerce.string().optional().or(z.literal('')),
     website: z.string().url().optional().or(z.literal('')),
@@ -272,7 +270,6 @@ export function ClientImporter({
           }
         }
 
-        // Valores por defecto
         if (!clientObject.status) clientObject.status = 'active';
         if (!clientObject.type) clientObject.type = 'client';
         if (!clientObject.management) clientObject.management = user?.management || 'Satellite Communications';
@@ -295,7 +292,6 @@ export function ClientImporter({
         } else {
           const cleanCuit = parsed.data.cuit;
 
-          // Check duplicados en archivo
           if (seenInFile.has(cleanCuit)) {
             rowResult.status = 'invalid';
             rowResult.errors.push(t('Importer.error.duplicateInFile', { field: 'ID Tributario', row: 'anterior' }));
@@ -303,7 +299,6 @@ export function ClientImporter({
             seenInFile.add(cleanCuit);
           }
 
-          // Check duplicados en DB
           if (existingCuits.has(cleanCuit)) {
             rowResult.status = 'duplicate';
             rowResult.errors.push(t('Importer.error.duplicateInDB', { field: 'ID Tributario' }));
@@ -335,7 +330,6 @@ export function ClientImporter({
     for (let i = 0; i < totalToImport; i++) {
       const row = rowsToImport[i];
       try {
-        // Forzamos la asignación al usuario actual
         const dataToSave = {
           ...row.data,
           assignedTo: user.uid,
@@ -484,6 +478,7 @@ export function ClientImporter({
                 <CardContent className="p-3 pt-0">
                   <span className="text-2xl font-bold text-amber-700">{validatedData.filter(r => r.status === 'duplicate').length}</span>
                 </CardContent>
+              </Card>
               <Card className="bg-red-50 border-red-100">
                 <CardHeader className="p-3">
                   <CardTitle className="text-xs text-red-700 uppercase">Con Error</CardTitle>
