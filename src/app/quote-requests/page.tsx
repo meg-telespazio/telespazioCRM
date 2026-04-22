@@ -32,7 +32,8 @@ import {
   ShieldCheck,
   AlertCircle,
   ExternalLink,
-  Loader2
+  Loader2,
+  UserCheck
 } from 'lucide-react';
 import { 
   markQuoteRequestAsRead, 
@@ -49,6 +50,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function QuoteRequestsPage() {
   const { user, loading: userLoading } = useUser();
@@ -60,6 +63,7 @@ export default function QuoteRequestsPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   // Data fetching
   const requestsQuery = useMemo(() => {
@@ -69,12 +73,24 @@ export default function QuoteRequestsPage() {
 
   const usersQuery = useMemo(() => query(collection(firestore, 'users')), [firestore]);
 
-  const { data: requests, loading: requestsLoading } = useCollection<QuoteRequest>(requestsQuery);
+  const { data: rawRequests, loading: requestsLoading } = useCollection<QuoteRequest>(requestsQuery);
   const { data: allUsers } = useCollection<UserProfile>(usersQuery);
 
+  const userMap = useMemo(() => {
+    const map = new Map<string, string>();
+    allUsers?.forEach(u => map.set(u.uid, u.displayName));
+    return map;
+  }, [allUsers]);
+
+  const requests = useMemo(() => {
+    if (!rawRequests) return [];
+    if (!showOnlyMine) return rawRequests;
+    return rawRequests.filter(r => r.assignedTo === user?.uid);
+  }, [rawRequests, showOnlyMine, user]);
+
   const selectedRequest = useMemo(() => 
-    requests?.find(r => r.id === selectedId), 
-  [requests, selectedId]);
+    rawRequests?.find(r => r.id === selectedId), 
+  [rawRequests, selectedId]);
 
   const executives = useMemo(() => 
     allUsers?.filter(u => u.role === 'ejecutivo' || u.role === 'admin')
@@ -129,48 +145,67 @@ export default function QuoteRequestsPage() {
       <main className="flex-1 flex overflow-hidden">
         {/* Left Column: List */}
         <div className="w-full md:w-1/3 lg:w-[400px] border-r bg-white flex flex-col">
-          <div className="p-4 border-b bg-slate-50/50">
+          <div className="p-4 border-b bg-slate-50/50 space-y-4">
              <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Peticiones Recientes</span>
                 <Badge variant="secondary" className="text-[10px]">{requests?.length || 0}</Badge>
              </div>
+             <div className="flex items-center justify-between bg-white p-2 rounded-lg border shadow-sm">
+                <Label htmlFor="mine-filter-quotes" className="text-[10px] font-bold uppercase cursor-pointer">Solo mis pedidos</Label>
+                <Switch 
+                  id="mine-filter-quotes" 
+                  checked={showOnlyMine} 
+                  onCheckedChange={setShowOnlyMine}
+                />
+             </div>
           </div>
           <div className="flex-1 overflow-y-auto divide-y">
-            {requests?.map((req) => (
-              <div 
-                key={req.id} 
-                onClick={() => setSelectedId(req.id)}
-                className={cn(
-                  "p-4 cursor-pointer transition-all hover:bg-slate-50 relative group",
-                  selectedId === req.id ? "bg-red-50/50 border-r-4 border-r-primary" : "",
-                  !req.isRead && "bg-blue-50/30"
-                )}
-              >
-                {!req.isRead && (
-                  <div className="absolute top-4 right-4 h-2 w-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                )}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-400">
-                      {format(req.createdAt, 'dd MMM', { locale: dateLocale })}
-                    </span>
-                    {req.status === 'converted' && (
-                       <Badge variant="outline" className="text-[8px] h-4 bg-green-50 text-green-700 border-green-200">CONVERTIDO</Badge>
+            {requests?.map((req) => {
+              const assignedName = req.assignedTo ? userMap.get(req.assignedTo) : null;
+              return (
+                <div 
+                  key={req.id} 
+                  onClick={() => setSelectedId(req.id)}
+                  className={cn(
+                    "p-4 cursor-pointer transition-all hover:bg-slate-50 relative group",
+                    selectedId === req.id ? "bg-red-50/50 border-r-4 border-r-primary" : "",
+                    !req.isRead && "bg-blue-50/30"
+                  )}
+                >
+                  {!req.isRead && (
+                    <div className="absolute top-4 right-4 h-2 w-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  )}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {format(req.createdAt, 'dd MMM', { locale: dateLocale })}
+                      </span>
+                      {req.status === 'converted' && (
+                         <Badge variant="outline" className="text-[8px] h-4 bg-green-50 text-green-700 border-green-200">CONVERTIDO</Badge>
+                      )}
+                    </div>
+                    <h4 className={cn("text-sm truncate pr-4", !req.isRead ? "font-bold text-slate-900" : "font-medium text-slate-700")}>
+                      {req.companyName}
+                    </h4>
+                    <p className="text-xs text-muted-foreground line-clamp-1">
+                      {req.contact.firstName} {req.contact.lastName} • {req.usageLocation}
+                    </p>
+                    
+                    {assignedName && (
+                      <div className="flex items-center gap-1.5 mt-2 text-[10px] font-bold text-primary bg-primary/5 w-fit px-2 py-0.5 rounded">
+                        <UserCheck className="h-3 w-3" />
+                        {assignedName.toUpperCase()}
+                      </div>
                     )}
-                  </div>
-                  <h4 className={cn("text-sm truncate pr-4", !req.isRead ? "font-bold text-slate-900" : "font-medium text-slate-700")}>
-                    {req.companyName}
-                  </h4>
-                  <p className="text-xs text-muted-foreground line-clamp-1">
-                    {req.contact.firstName} {req.contact.lastName} • {req.usageLocation}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className="text-[9px] h-4 uppercase">{req.usage}</Badge>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase">{req.country}</span>
+
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary" className="text-[9px] h-4 uppercase">{req.usage}</Badge>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">{req.country}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {requests?.length === 0 && (
               <div className="p-8 text-center space-y-3">
                 <Inbox className="h-10 w-10 mx-auto text-slate-200" />
