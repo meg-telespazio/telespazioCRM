@@ -530,5 +530,9 @@ export type QuoteRequest = {
   approxImplementationDate?: Date;
   discoverySource: 'web' | 'linkedin' | 'referencia' | 'otro';
   status: 'pending' | 'reviewed' | 'converted';
+  assignedTo?: string; // Executive UID
+  isRead?: boolean;
+  convertedClientId?: string;
+  convertedOpportunityId?: string;
   createdAt: Date;
 };
