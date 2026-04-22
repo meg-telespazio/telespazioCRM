@@ -74,18 +74,23 @@ export function AlertsTicker({ opportunities, contracts, activities }: AlertsTic
       }
     });
 
-    // Actividades Vencidas
+    // Actividades Vencidas (Solo si no han sido atendidas post-vencimiento)
     activities.forEach(a => {
       if (a.dueDate && isBefore(a.dueDate, today)) {
-        list.push({
-          id: a.id,
-          type: 'activity',
-          title: a.description,
-          date: a.dueDate,
-          status: 'overdue',
-          link: `/clients/${a.clientId}/activity`,
-          label: t('Dashboard.alerts.overdueActivity')
-        });
+        const lastActionDate = a.updatedAt || a.createdAt;
+        const isHandled = lastActionDate > a.dueDate;
+
+        if (!isHandled) {
+          list.push({
+            id: a.id,
+            type: 'activity',
+            title: a.description,
+            date: a.dueDate,
+            status: 'overdue',
+            link: `/clients/${a.clientId}/activity`,
+            label: t('Dashboard.alerts.overdueActivity')
+          });
+        }
       }
     });
 

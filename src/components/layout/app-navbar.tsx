@@ -177,7 +177,13 @@ export function AppNavbar() {
       !isBefore(c.endDate, today) && isBefore(c.endDate, soonThreshold)
     ).length;
 
-    const overdueActivities = activities.filter(a => a.dueDate && isBefore(a.dueDate, today)).length;
+    const overdueActivities = activities.filter(a => {
+      if (!a.dueDate) return false;
+      const isPastDue = isBefore(a.dueDate, today);
+      const lastActionDate = a.updatedAt || a.createdAt;
+      const isHandled = lastActionDate > a.dueDate;
+      return isPastDue && !isHandled;
+    }).length;
 
     return overdueOpps + overdueContracts + expiringSoonContracts + overdueActivities;
   }, [opportunities, contracts, activities]);
