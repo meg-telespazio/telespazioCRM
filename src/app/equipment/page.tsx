@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState, useEffect } from 'react';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useRouter, redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,46 +61,53 @@ export default function EquipmentPage() {
     direction: 'asc' 
   });
 
-  // Data fetching
-  const eqQuery = useMemo(() => {
-    if (!user) return null;
+  // Guard: Only load if user and their management area is ready
+  const canLoadData = !userLoading && !!user && (user.role === 'admin' || !!user.management);
+
+  useEffect(() => {
+    if (!userLoading && !user) redirect('/login');
+  }, [user, userLoading]);
+
+  // Data fetching - Using useMemoFirebase for stability
+  const eqQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'equipment');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   
   const { data: equipment, loading: eqLoading } = useCollection<Equipment>(eqQuery);
 
-  const servicesQuery = useMemo(() => {
-    if (!user) return null;
+  const servicesQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'services');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   const { data: services } = useCollection<Service>(servicesQuery);
 
-  const posQuery = useMemo(() => {
-    if (!user) return null;
+  const posQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'purchaseOrders');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   const { data: pos } = useCollection<PurchaseOrder>(posQuery);
 
-  const contractsQuery = useMemo(() => {
-    if (!user) return null;
+  const contractsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'contracts');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
 
-  const clientsQuery = useMemo(() => {
-    if (!user) return null;
+  const clientsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   const { data: clients } = useCollection<Client>(clientsQuery);
 
   // Maps for context lookup
@@ -182,7 +189,7 @@ export default function EquipmentPage() {
     }
   };
 
-  if (userLoading || eqLoading) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
+  if (userLoading || (eqLoading && eqQuery !== null)) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   const isIngeniero = user?.role === 'ingeniero';
 

@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -159,39 +158,42 @@ export default function ServicesPage() {
   const [bulkPoId, setBulkPoId] = useState<string>('');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
+  // Guard: Only load if user and their management area is ready
+  const canLoadData = !userLoading && !!user && (user.role === 'admin' || !!user.management);
+
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
   }, [user, userLoading]);
 
   // Data fetching - Services filtered by management
-  const servicesQuery = useMemo(() => {
-    if (!user) return null;
+  const servicesQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'services');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
-  const posQuery = useMemo(() => {
-    if (!user) return null;
+  const posQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'purchaseOrders');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
-  const contractsQuery = useMemo(() => {
-    if (!user) return null;
+  const contractsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'contracts');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
   // Client filtering by role for selection
-  const clientsQuery = useMemo(() => {
-    if (!user) return null;
+  const clientsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
   const { data: services, loading: servicesLoading } = useCollection<Service>(servicesQuery);
   const { data: pos } = useCollection<PurchaseOrder>(posQuery);

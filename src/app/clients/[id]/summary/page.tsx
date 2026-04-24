@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
 import type { Client, Contact, Opportunity, Activity, Contract, PurchaseOrder, Service, Equipment } from '@/lib/types';
@@ -47,6 +47,9 @@ export default function ClientSummaryPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
 
+  // Guard for data loading
+  const canLoadData = !userLoading && !!user && (user.role === 'admin' || !!user.management);
+
   // State
   const [previewFile, setPreviewFile] = useState<{url: string, name: string, type: string} | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -54,63 +57,63 @@ export default function ClientSummaryPage() {
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   // Data fetching
-  const clientDocRef = useMemo(() => firestore ? doc(firestore, 'clients', clientId) : null, [firestore, clientId]);
+  const clientDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'clients', clientId) : null, [firestore, clientId]);
   const { data: client, loading: clientLoading } = useDoc<Client>(clientDocRef);
 
-  const contractsQuery = useMemo(() => {
-    if (!user || !clientId) return null;
+  const contractsQuery = useMemoFirebase(() => {
+    if (!canLoadData || !clientId) return null;
     const ref = collection(firestore, 'contracts');
-    if (user.role === 'admin') return query(ref, where('clientId', '==', clientId));
-    return query(ref, where('clientId', '==', clientId), where('management', '==', user.management));
-  }, [user, clientId, firestore]);
+    if (user?.role === 'admin') return query(ref, where('clientId', '==', clientId));
+    return query(ref, where('clientId', '==', clientId), where('management', '==', user?.management));
+  }, [canLoadData, clientId, user?.role, user?.management, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
 
-  const opportunitiesQuery = useMemo(() => {
-    if (!user || !clientId || user.role === 'ingeniero') return null;
+  const opportunitiesQuery = useMemoFirebase(() => {
+    if (!canLoadData || !clientId || user?.role === 'ingeniero') return null;
     const ref = collection(firestore, 'opportunities');
-    if (user.role === 'admin') return query(ref, where('clientId', '==', clientId));
-    return query(ref, where('clientId', '==', clientId), where('management', '==', user.management));
-  }, [user, clientId, firestore]);
+    if (user?.role === 'admin') return query(ref, where('clientId', '==', clientId));
+    return query(ref, where('clientId', '==', clientId), where('management', '==', user?.management));
+  }, [canLoadData, clientId, user?.role, user?.management, firestore]);
   const { data: opportunities } = useCollection<Opportunity>(opportunitiesQuery);
 
-  const posQuery = useMemo(() => {
-    if (!user) return null;
+  const posQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'purchaseOrders');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   const { data: allPos } = useCollection<PurchaseOrder>(posQuery);
 
-  const servicesQuery = useMemo(() => {
-    if (!user) return null;
+  const servicesQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'services');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   const { data: allServices } = useCollection<Service>(servicesQuery);
 
-  const equipQuery = useMemo(() => {
-    if (!user) return null;
+  const equipQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'equipment');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   const { data: allEquip } = useCollection<Equipment>(equipQuery);
 
-  const contactsQuery = useMemo(() => {
-    if (!user || !clientId) return null;
+  const contactsQuery = useMemoFirebase(() => {
+    if (!canLoadData || !clientId) return null;
     const ref = collection(firestore, 'contacts');
-    if (user.role === 'admin') return query(ref, where('clientId', '==', clientId));
-    return query(ref, where('clientId', '==', clientId), where('management', '==', user.management));
-  }, [user, clientId, firestore]);
+    if (user?.role === 'admin') return query(ref, where('clientId', '==', clientId));
+    return query(ref, where('clientId', '==', clientId), where('management', '==', user?.management));
+  }, [canLoadData, clientId, user?.role, user?.management, firestore]);
   const { data: contacts } = useCollection<Contact>(contactsQuery);
 
-  const activitiesQuery = useMemo(() => {
-    if (!user || !clientId || user.role === 'ingeniero') return null;
+  const activitiesQuery = useMemoFirebase(() => {
+    if (!canLoadData || !clientId || user?.role === 'ingeniero') return null;
     const ref = collection(firestore, 'activities');
-    if (user.role === 'admin') return query(ref, where('clientId', '==', clientId));
-    return query(ref, where('clientId', '==', clientId), where('management', '==', user.management));
-  }, [user, clientId, firestore]);
+    if (user?.role === 'admin') return query(ref, where('clientId', '==', clientId));
+    return query(ref, where('clientId', '==', clientId), where('management', '==', user?.management));
+  }, [canLoadData, clientId, user?.role, user?.management, firestore]);
   const { data: activities } = useCollection<Activity>(activitiesQuery);
 
   // Calculations for MRR and Services
@@ -449,7 +452,7 @@ export default function ClientSummaryPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-amber-700 uppercase tracking-tight">Negocios Abiertos</p>
-                <p className="text-2xl font-bold text-amber-900">{opportunities?.filter(o => !['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage)).length || 0}</p>
+                <p className="text-2xl font-bold">{opportunities?.filter(o => !['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage)).length || 0}</p>
               </div>
             </CardContent>
           </Card>
@@ -763,7 +766,7 @@ export default function ClientSummaryPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y">
-                    {activities && HydeActivities.length > 0 ? activities.slice(0, 4).map(activity => (
+                    {activities && activities.length > 0 ? activities.slice(0, 4).map(activity => (
                       <div key={activity.id} className="p-4 hover:bg-muted/20 transition-colors space-y-1">
                         <div className="flex justify-between items-center mb-1">
                           <Badge variant="outline" className="text-[9px] font-bold uppercase py-0">{t(`Activity.types.${activity.type}`)}</Badge>
@@ -802,5 +805,3 @@ export default function ClientSummaryPage() {
     </div>
   );
 }
-
-const HydeActivities: any[] = [];

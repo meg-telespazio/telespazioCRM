@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState, useEffect } from 'react';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useRouter, redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import type { Activity, Client, UserProfile, ActivityType, Contact } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -31,42 +31,38 @@ export default function AllActivitiesPage() {
   const dateLocale = locale === 'es' ? es : enUS;
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
-  const activitiesQuery = useMemo(() => {
-    if (!user) return null;
+  // Guard: Only load if user and their management area is ready
+  const canLoadData = !userLoading && !!user && (user.role === 'admin' || !!user.management);
+
+  useEffect(() => {
+    if (!userLoading && !user) redirect('/login');
+  }, [user, userLoading]);
+
+  const activitiesQuery = useMemoFirebase(() => {
+    if (!canLoadData || user?.role === 'ingeniero') return null;
     const ref = collection(firestore, 'activities');
-    
-    if (user.role === 'admin') {
-      return query(ref);
-    }
-    
-    if (user.role === 'ingeniero') {
-      return null;
-    }
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
-    return query(
-      ref,
-      where('management', '==', user.management)
-    );
-  }, [user, firestore]);
-
-  const clientsQuery = useMemo(() => {
-    if (!user) return null;
+  const clientsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
   
-  const usersQuery = useMemo(() => {
-    if (!user) return null;
+  const usersQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     return collection(firestore, 'users');
-  }, [user, firestore]);
+  }, [canLoadData, firestore]);
 
-  const contactsQuery = useMemo(() => {
-    if (!user) return null;
+  const contactsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'contacts');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    if (user?.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user?.management));
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
   const { data: activitiesData, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
   const { data: clients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
