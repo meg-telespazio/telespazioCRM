@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.7.8 - Robust Rules and Form Sync
-const APP_VERSION = '1.7.8'; 
+// VERSIÓN 1.7.9 - Dinamismo total en permisos y sincronización de perfiles
+const APP_VERSION = '1.7.9'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

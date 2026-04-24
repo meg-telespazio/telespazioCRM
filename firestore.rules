@@ -22,7 +22,10 @@ service cloud.firestore {
       let path = /databases/$(database)/documents/systemConfig/globals;
       let userData = getUserData();
       let role = userData.get('role', 'ejecutivo');
-      return exists(path) ? get(path).data.permissionsMatrix[role] : null;
+      // Verificamos si la matriz existe y tiene el rol definido
+      return exists(path) && get(path).data.permissionsMatrix.keys().contains(role) 
+        ? get(path).data.permissionsMatrix[role] 
+        : null;
     }
 
     function isAdmin() {
@@ -31,7 +34,13 @@ service cloud.firestore {
 
     function hasPermission(module, action) {
       let perms = getPermissions();
-      return isAdmin() || (isAuthenticated() && perms != null && perms.modules.get(module, {}).get(action, false) == true);
+      // Un usuario tiene permiso si es Admin O si la matriz dinámica lo autoriza explícitamente
+      return isAdmin() || (
+        isAuthenticated() && 
+        perms != null && 
+        perms.modules.keys().contains(module) && 
+        perms.modules[module].get(action, false) == true
+      );
     }
 
     function isSameManagement(data) {
