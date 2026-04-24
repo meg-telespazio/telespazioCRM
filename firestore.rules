@@ -37,7 +37,7 @@ service cloud.firestore {
       return isAdmin() || (
         isAuthenticated() && 
         perms != null && 
-        perms.modules.keys().contains(module) &&
+        module in perms.modules &&
         perms.modules[module].get(action, false) == true
       );
     }
