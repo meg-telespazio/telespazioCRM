@@ -36,23 +36,23 @@ const activityIcons: Record<ActivityType, React.ElementType> = {
 type RecentActivitiesProps = {
   activities: Activity[];
   clients: Client[];
+  contacts: Contact[];
 };
 
 export function RecentActivities({
   activities,
   clients,
+  contacts,
 }: RecentActivitiesProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
   const firestore = useFirestore();
   const dateLocale = locale === 'es' ? es : enUS;
 
-  // We need users and contacts to resolve mentions in dashboard
+  // We need users to resolve mentions in dashboard
   const usersQuery = useMemo(() => query(collection(firestore, 'users')), [firestore]);
-  const contactsQuery = useMemo(() => query(collection(firestore, 'contacts')), [firestore]);
   
   const { data: users } = useCollection<UserProfile>(usersQuery);
-  const { data: contacts } = useCollection<Contact>(contactsQuery);
 
   const recentActivities = useMemo(() => {
     return [...(activities || [])]

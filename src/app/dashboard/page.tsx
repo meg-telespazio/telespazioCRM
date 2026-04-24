@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const { t, currency: displayCurrency } = useI18n();
   const firestore = useFirestore();
 
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
 
   // Perfil de usuario y config del sistema
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
@@ -206,6 +206,7 @@ export default function DashboardPage() {
               <RecentActivities
                 activities={filteredData.activities}
                 clients={filteredData.clients}
+                contacts={filteredData.contacts}
               />
             )}
           </div>
