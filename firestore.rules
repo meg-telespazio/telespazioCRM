@@ -45,8 +45,7 @@ service cloud.firestore {
     // Aislamiento de datos por gerencia
     function isSameManagement(data) {
       let userMgt = getUserData().get('management', 'Satellite Communications');
-      let docMgt = data.get('management', 'Satellite Communications');
-      return isAdmin() || (userMgt != '' && docMgt == userMgt);
+      return isAdmin() || (userMgt != '' && data.management == userMgt);
     }
 
     function isOwner(data) {
