@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { redirect, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
@@ -28,19 +28,20 @@ export default function OpportunitiesPage() {
   const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
-  const oppsQuery = useMemo(() => {
-    if (!user || user.role === 'ingeniero') return null;
-    const ref = collection(firestore, 'opportunities');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+  const canLoadData = !userLoading && !!user && (!!user.management || user.role === 'admin');
+  const managementFilter = user?.role === 'admin' ? null : user?.management;
 
-  const clientsQuery = useMemo(() => {
-    if (!user) return null;
+  const oppsQuery = useMemoFirebase(() => {
+    if (!canLoadData || user?.role === 'ingeniero') return null;
+    const ref = collection(firestore, 'opportunities');
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [user, firestore, canLoadData, managementFilter]);
+
+  const clientsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
-    if (user.role === 'admin') return query(ref);
-    return query(ref, where('management', '==', user.management));
-  }, [user, firestore]);
+    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
+  }, [user, firestore, canLoadData, managementFilter]);
 
   const { data: opportunitiesData, loading: opportunitiesLoading } = useCollection<Opportunity>(oppsQuery);
   const { data: clientsData, loading: clientsLoading } = useCollection<Client>(clientsQuery);
@@ -64,7 +65,7 @@ export default function OpportunitiesPage() {
 
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
-    if (user?.role === 'ingeniero') redirect('/dashboard');
+    if (user && user.role === 'ingeniero') redirect('/dashboard');
   }, [user, userLoading]);
 
   const handleEditOpportunity = (opportunity: Opportunity) => {
@@ -122,7 +123,7 @@ export default function OpportunitiesPage() {
         </div>
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {(opportunitiesLoading && oppsQuery !== null) || clientsLoading ? (
+        {(!canLoadData || opportunitiesLoading || clientsLoading) ? (
            <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-96 w-full" /></div>
         ) : user?.role === 'ingeniero' ? (
           <div className="text-center py-20 text-muted-foreground">No tienes permisos para ver este módulo.</div>

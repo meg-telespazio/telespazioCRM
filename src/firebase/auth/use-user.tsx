@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
@@ -36,19 +35,23 @@ export const useUser = () => {
   const user: AppUser | null = useMemo(() => {
     if (!authUser) return null;
     
-    const isAdmin = authUser.email === ADMIN_EMAIL;
+    const isSuperAdmin = authUser.email === ADMIN_EMAIL;
     
+    // We return null if the profile is still loading to prevent partial/incorrect identity states
+    // However, for the SuperAdmin we can bypass since the rules handle it by email token
+    if (profileLoading && !isSuperAdmin) return null;
+
     return {
       ...authUser,
       ...userProfile,
-      role: isAdmin ? 'admin' : (userProfile?.role || 'ejecutivo'),
-      management: userProfile?.management || 'Satellite Communications',
+      role: isSuperAdmin ? 'admin' : (userProfile?.role || null),
+      management: userProfile?.management || null,
       displayName: userProfile?.displayName || authUser.displayName,
       photoURL: userProfile?.photoURL || authUser.photoURL,
       email: authUser.email,
       uid: authUser.uid,
     };
-  }, [authUser, userProfile]);
+  }, [authUser, userProfile, profileLoading]);
 
   const loading = authLoading || (!!authUser && profileLoading);
 

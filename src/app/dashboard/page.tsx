@@ -28,8 +28,8 @@ export default function DashboardPage() {
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
-  // Bandera crítica: Solo cargamos datos si el usuario tiene su gerencia definida
-  const canLoadData = !!user?.management || user?.role === 'admin';
+  // Bandera crítica: Solo cargamos datos si el usuario está completamente listo y tiene su gerencia definida
+  const canLoadData = !userLoading && !!user && (!!user.management || user.role === 'admin');
   const managementFilter = user?.role === 'admin' ? null : user?.management;
 
   // Base queries con memoización para evitar re-renders y errores de permisos por cambios de instancia
