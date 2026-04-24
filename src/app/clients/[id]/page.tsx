@@ -218,10 +218,13 @@ export default function ClientFormPage() {
       setTimeout(() => {
         isInitialLoad.current = false;
       }, 500);
-    } else if (isNew) {
+    } else if (isNew && user && isInitialLoad.current) {
+      // For new clients, ensure executive and management are set correctly once user is loaded
+      form.setValue('assignedTo', user.uid);
+      form.setValue('management', user.management || 'Satellite Communications');
       isInitialLoad.current = false;
     }
-  }, [clientData, form, isNew]);
+  }, [clientData, form, isNew, user]);
 
   useEffect(() => {
     if (!userLoading && !user) {

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -20,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.7.6 - Fixed Mobile Charts & Legend
-const APP_VERSION = '1.7.6'; 
+// VERSIÓN 1.7.7 - Auto-populate Executive
+const APP_VERSION = '1.7.7'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
