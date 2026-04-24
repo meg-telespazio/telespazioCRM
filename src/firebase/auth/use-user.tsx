@@ -9,8 +9,6 @@ import type { UserProfile } from '@/lib/types';
 // This will be the new user object type throughout the app
 export type AppUser = AuthUser & Partial<UserProfile>;
 
-const ADMIN_EMAIL = 'mariano.gonzalez@telespazio.com';
-
 export const useUser = () => {
   const auth = useAuth();
   const firestore = useFirestore();
@@ -36,12 +34,10 @@ export const useUser = () => {
   const user: AppUser | null = useMemo(() => {
     if (!authUser) return null;
     
-    const isAdmin = authUser.email === ADMIN_EMAIL;
-    
     return {
       ...authUser,
       ...userProfile,
-      role: isAdmin ? 'admin' : (userProfile?.role || 'ejecutivo'),
+      role: userProfile?.role || 'ejecutivo',
       management: userProfile?.management || 'Satellite Communications',
       displayName: userProfile?.displayName || authUser.displayName,
       photoURL: userProfile?.photoURL || authUser.photoURL,

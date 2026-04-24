@@ -13,7 +13,7 @@ service firebase.storage {
 
     // Helper: Verificar si es Administrador
     function isAdmin() {
-      return request.auth != null && (request.auth.token.email == 'mariano.gonzalez@telespazio.com' || getUserData().role == 'admin');
+      return request.auth != null && (request.auth.token.superAdmin == true || getUserData().role == 'admin');
     }
 
     // Helper: Verificar si el usuario pertenece a la misma gerencia que un documento de Firestore

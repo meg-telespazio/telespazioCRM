@@ -10,7 +10,7 @@ service cloud.firestore {
 
     // El Super Admin tiene bypass total.
     function isSuperAdmin() {
-      return isAuthenticated() && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
+      return isAuthenticated() && request.auth.token.superAdmin == true;
     }
 
     // Función optimizada para obtener los datos del usuario logueado
