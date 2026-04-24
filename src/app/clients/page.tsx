@@ -92,13 +92,13 @@ export default function ClientsPage() {
       <AppHeader title={t('Pages.clients')}>
         <div className="flex items-center gap-4">
           {isEjecutivo && (
-            <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+            <div className="flex items-center gap-2.5 bg-muted/50 px-3 py-1.5 rounded-full border border-border/60 shadow-sm">
               <Switch 
                 id="mine-filter" 
                 checked={showOnlyMine} 
                 onCheckedChange={setShowOnlyMine} 
               />
-              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer">
+              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
                 {t('Actions.showOnlyMine')}
               </Label>
             </div>
