@@ -9,6 +9,7 @@ import type { Client, UserProfile, SystemConfig, TaxIdType } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { addClient, updateClient } from '@/lib/firestore/clients';
+import { encrypt, decrypt } from '@/lib/crypto';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -210,7 +211,7 @@ export default function ClientFormPage() {
         type: clientData.type || 'client',
         supplierPortalUrl: clientData.supplierPortalUrl || '',
         supplierPortalUser: clientData.supplierPortalUser || '',
-        supplierPortalPassword: clientData.supplierPortalPassword || '',
+        supplierPortalPassword: clientData.supplierPortalPassword ? decrypt(clientData.supplierPortalPassword) : '',
       });
       setCroppedAvatar(clientData.logoURL || null);
       
@@ -328,7 +329,11 @@ export default function ClientFormPage() {
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
     try {
-      const dataToSave: Partial<Client> = { ...values, logoURL: croppedImage || null };
+      const dataToSave: Partial<Client> = { 
+        ...values, 
+        logoURL: croppedImage || null,
+        supplierPortalPassword: values.supplierPortalPassword ? encrypt(values.supplierPortalPassword) : ''
+      };
       if (isNew) {
         await addClient(firestore, user.uid, dataToSave as any);
         toast({ variant: 'success', title: t('Actions.saveSuccess') });
