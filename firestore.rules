@@ -20,7 +20,8 @@ service cloud.firestore {
 
     function getPermissions() {
       let path = /databases/$(database)/documents/systemConfig/globals;
-      let role = getUserData().get('role', 'ejecutivo');
+      let userData = getUserData();
+      let role = userData.get('role', 'ejecutivo');
       return exists(path) ? get(path).data.permissionsMatrix[role] : null;
     }
 
@@ -30,13 +31,13 @@ service cloud.firestore {
 
     function hasPermission(module, action) {
       let perms = getPermissions();
-      return isAdmin() || (isAuthenticated() && perms != null && perms.modules[module][action] == true);
+      return isAdmin() || (isAuthenticated() && perms != null && perms.modules.get(module, {}).get(action, false) == true);
     }
 
     function isSameManagement(data) {
       let userMgt = getUserData().get('management', '');
       let docMgt = data.get('management', '');
-      return isAdmin() || docMgt == userMgt;
+      return isAdmin() || (userMgt != '' && docMgt == userMgt);
     }
 
     function isOwner(data) {
@@ -107,7 +108,7 @@ service cloud.firestore {
 
     match /clients/{clientId} {
       allow read: if hasPermission('clients', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('clients', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('clients', 'create') && (isAdmin() || (request.resource.data.get('management', '') != '' && request.resource.data.get('management', '') == getUserData().get('management', '')));
       allow update: if hasPermission('clients', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('clients', 'delete') && canModify(resource.data); 
     }
@@ -115,11 +116,8 @@ service cloud.firestore {
     match /contacts/{contactId} {
       allow read: if hasPermission('contacts', 'view') && isSameManagement(resource.data);
       allow create: if hasPermission('contacts', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
-      allow update: if hasPermission('contacts', 'edit') && canModify(rowSource(resource.data));
-      allow delete: if hasPermission('contacts', 'delete') && canModify(rowSource(resource.data));
-      
-      // Helper interno para contactos ya que a veces no traen management directo
-      function rowSource(d) { return d; }
+      allow update: if hasPermission('contacts', 'edit') && canModify(resource.data);
+      allow delete: if hasPermission('contacts', 'delete') && canModify(resource.data);
     }
 
     match /locations/{locationId} {
