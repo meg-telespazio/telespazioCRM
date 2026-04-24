@@ -231,6 +231,7 @@ export function ProfileForm() {
   ];
 
   const isGlobalAdmin = user?.email === 'mariano.gonzalez@telespazio.com';
+  const isAdmin = user?.role === 'admin';
   const canEditPermissions = isGlobalAdmin;
 
   return (
@@ -355,11 +356,14 @@ export function ProfileForm() {
               name="position"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Profile.position')}</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    {t('Profile.position')}
+                    {!isAdmin && <ShieldAlert className="h-3 w-3 text-muted-foreground" />}
+                  </FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
-                    disabled={isSaving}
+                    disabled={isSaving || !isAdmin}
                   >
                     <FormControl>
                       <SelectTrigger>
