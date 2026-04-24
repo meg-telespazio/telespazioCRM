@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -19,8 +20,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.7.5 - Enhanced Quote Inbox
-const APP_VERSION = '1.7.5'; 
+// VERSIÓN 1.7.6 - Fixed Mobile Charts & Legend
+const APP_VERSION = '1.7.6'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

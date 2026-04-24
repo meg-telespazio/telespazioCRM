@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/chart';
 import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const COLORS = [
   'hsl(var(--chart-1))',
@@ -30,6 +31,7 @@ const COLORS = [
 
 export function ClientsSectorChart({ clients }: { clients: Client[] }) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const chartData = useMemo(() => {
     const sectors: Record<string, number> = {};
@@ -76,17 +78,18 @@ export function ClientsSectorChart({ clients }: { clients: Client[] }) {
         <CardDescription>Participación por industria</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-          <ResponsiveContainer width="100%" height={300}>
+        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
+          <ResponsiveContainer width="100%" height={isMobile ? 400 : 350}>
             <PieChart>
               <Pie
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
+                innerRadius={45}
                 outerRadius={80}
                 paddingAngle={5}
                 dataKey="value"
+                label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -110,9 +113,9 @@ export function ClientsSectorChart({ clients }: { clients: Client[] }) {
                 }}
               />
               <Legend 
-                layout="vertical" 
-                align="right" 
-                verticalAlign="middle"
+                layout={isMobile ? "horizontal" : "vertical"} 
+                align={isMobile ? "center" : "right"} 
+                verticalAlign={isMobile ? "bottom" : "middle"}
                 formatter={(value) => <span className="text-[10px] uppercase font-bold text-slate-600">{value}</span>}
               />
             </PieChart>
