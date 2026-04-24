@@ -200,10 +200,11 @@ export default function ClientSummaryPage() {
     }
   };
 
+  const isLoading = userLoading || clientLoading;
   const isIngeniero = user?.role === 'ingeniero';
   
-  const isOwner = user?.uid === client.assignedTo || user?.uid === client.createdBy;
-  const isManagerOrAdmin = user?.role === 'admin' || (user?.role === 'gerente' && user?.management === client.management);
+  const isOwner = user?.uid === client?.assignedTo || user?.uid === client?.createdBy;
+  const isManagerOrAdmin = user?.role === 'admin' || (user?.role === 'gerente' && user?.management === client?.management);
   const canModify = isManagerOrAdmin || isOwner;
 
   if (isLoading) return <div className="p-6 space-y-6"><Skeleton className="h-48" /><Skeleton className="h-96" /></div>;
@@ -771,7 +772,7 @@ export default function ClientSummaryPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y">
-                    {activities && HydeActivities.length > 0 ? activities.slice(0, 4).map(activity => (
+                    {activities && activities.length > 0 ? activities.slice(0, 4).map(activity => (
                       <div key={activity.id} className="p-4 hover:bg-muted/20 transition-colors space-y-1">
                         <div className="flex justify-between items-center mb-1">
                           <Badge variant="outline" className="text-[9px] font-bold uppercase py-0">{t(`Activity.types.${activity.type}`)}</Badge>
