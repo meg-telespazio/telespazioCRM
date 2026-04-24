@@ -13,36 +13,36 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
     }
 
+    // Función optimizada para obtener los datos del usuario logueado
     function getUserData() {
       let path = /databases/$(database)/documents/users/$(request.auth.uid);
       return exists(path) ? get(path).data : {};
     }
 
-    function getPermissions() {
+    // Función optimizada para obtener permisos desde la matriz global
+    function getRolePermissions() {
       let path = /databases/$(database)/documents/systemConfig/globals;
       let userData = getUserData();
       let role = userData.get('role', 'ejecutivo');
-      // Verificamos si la matriz existe y tiene el rol definido
-      return exists(path) && get(path).data.permissionsMatrix.keys().contains(role) 
-        ? get(path).data.permissionsMatrix[role] 
-        : null;
+      return exists(path) ? get(path).data.permissionsMatrix[role] : null;
     }
 
     function isAdmin() {
       return isSuperAdmin() || (isAuthenticated() && getUserData().get('role', '') == 'admin');
     }
 
+    // Validación de permisos dinámicos contra la matriz en systemConfig
     function hasPermission(module, action) {
-      let perms = getPermissions();
-      // Un usuario tiene permiso si es Admin O si la matriz dinámica lo autoriza explícitamente
+      let perms = getRolePermissions();
       return isAdmin() || (
         isAuthenticated() && 
         perms != null && 
-        perms.modules.keys().contains(module) && 
+        perms.modules.keys().contains(module) &&
         perms.modules[module].get(action, false) == true
       );
     }
 
+    // Aislamiento de datos por gerencia
     function isSameManagement(data) {
       let userMgt = getUserData().get('management', '');
       let docMgt = data.get('management', '');

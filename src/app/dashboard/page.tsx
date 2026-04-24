@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { StatsCards } from '@/components/dashboard/stats-cards';
@@ -25,53 +24,56 @@ export default function DashboardPage() {
 
   const [showOnlyMine, setShowOnlyMine] = useState(false);
 
+  // Perfil de usuario y config del sistema
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
+  // Bandera crítica: Solo cargamos datos si el usuario tiene su gerencia definida
+  const canLoadData = !!user?.management || user?.role === 'admin';
   const managementFilter = user?.role === 'admin' ? null : user?.management;
 
-  // Base queries
-  const opportunitiesQuery = useMemo(() => {
-    if (!user || user.role === 'ingeniero') return null;
+  // Base queries con memoización para evitar re-renders y errores de permisos por cambios de instancia
+  const opportunitiesQuery = useMemoFirebase(() => {
+    if (!canLoadData || user?.role === 'ingeniero') return null;
     const ref = collection(firestore, 'opportunities');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, user, managementFilter]);
+  }, [firestore, managementFilter, canLoadData, user?.role]);
 
-  const contractsQuery = useMemo(() => {
-    if (!user) return null;
+  const contractsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'contracts');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, user, managementFilter]);
+  }, [firestore, managementFilter, canLoadData]);
 
-  const clientsQuery = useMemo(() => {
-    if (!user) return null;
+  const clientsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, user, managementFilter]);
+  }, [firestore, managementFilter, canLoadData]);
 
-  const contactsQuery = useMemo(() => {
-    if (!user) return null;
+  const contactsQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'contacts');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, user, managementFilter]);
+  }, [firestore, managementFilter, canLoadData]);
 
-  const activitiesQuery = useMemo(() => {
-    if (!user) return null;
+  const activitiesQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'activities');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, user, managementFilter]);
+  }, [firestore, managementFilter, canLoadData]);
 
-  const servicesQuery = useMemo(() => {
-    if (!user) return null;
+  const servicesQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'services');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, user, managementFilter]);
+  }, [firestore, managementFilter, canLoadData]);
 
-  const equipmentQuery = useMemo(() => {
-    if (!user) return null;
+  const equipmentQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
     const ref = collection(firestore, 'equipment');
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, user, managementFilter]);
+  }, [firestore, managementFilter, canLoadData]);
 
   // Data fetching
   const { data: rawOpportunities, loading: opportunitiesLoading } = useCollection<Opportunity>(opportunitiesQuery);
@@ -82,8 +84,10 @@ export default function DashboardPage() {
   const { data: rawServices, loading: servicesLoading } = useCollection<Service>(servicesQuery);
   const { data: rawEquipment, loading: equipmentLoading } = useCollection<Equipment>(equipmentQuery);
 
-  // Filtering logic
+  // Filtrado local adicional para el dashboard
   const filteredData = useMemo(() => {
+    if (!canLoadData) return { opportunities: [], contracts: [], clients: [], contacts: [], activities: [], services: [], equipment: [] };
+
     const isEjecutivo = user?.role === 'ejecutivo';
     const filterByOwner = isEjecutivo && showOnlyMine;
 
@@ -98,7 +102,7 @@ export default function DashboardPage() {
       services: (rawServices || []).filter(filterFn),
       equipment: (rawEquipment || []).filter(filterFn),
     };
-  }, [rawOpportunities, rawContracts, rawClients, rawContacts, rawActivities, rawServices, rawEquipment, showOnlyMine, user]);
+  }, [rawOpportunities, rawContracts, rawClients, rawContacts, rawActivities, rawServices, rawEquipment, showOnlyMine, user, canLoadData]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -115,6 +119,7 @@ export default function DashboardPage() {
   }
 
   const pageIsLoading =
+    !canLoadData ||
     (opportunitiesLoading && opportunitiesQuery !== null) ||
     (contractsLoading && contractsQuery !== null) ||
     clientsLoading ||
