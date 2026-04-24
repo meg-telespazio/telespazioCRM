@@ -23,7 +23,7 @@ export default function ClientsPage() {
   const router = useRouter();
 
   const [isImporterOpen, setImporterOpen] = useState(false);
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
 
   // Filter clients by permission
   const clientsQuery = useMemo(() => {

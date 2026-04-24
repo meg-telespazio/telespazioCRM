@@ -317,6 +317,14 @@ export default function ClientFormPage() {
     }
   };
 
+  const canModify = useMemo(() => {
+    if (isNew) return true;
+    if (!clientData || !user) return false;
+    if (user.role === 'admin') return true;
+    if (user.role === 'gerente' && user.management === clientData.management) return true;
+    return user.uid === clientData.assignedTo || user.uid === clientData.createdBy;
+  }, [isNew, clientData, user]);
+
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
     try {
@@ -666,7 +674,7 @@ export default function ClientFormPage() {
 
                 <div className="flex items-center justify-end gap-4 pt-4">
                   <Button type="button" variant="outline" size="lg" onClick={() => router.back()} className="h-12 px-8">{t('Auth.cancelLabel')}</Button>
-                  <Button type="submit" size="lg" className="h-12 px-12 shadow-lg">{t('Forms.saveClient')}</Button>
+                  <Button type="submit" size="lg" className="h-12 px-12 shadow-lg" disabled={!canModify}>{t('Forms.saveClient')}</Button>
                 </div>
               </form>
             </Form>

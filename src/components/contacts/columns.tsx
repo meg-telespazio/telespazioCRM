@@ -210,7 +210,7 @@ export const columns = (
       const isIngeniero = user?.role === 'ingeniero';
       
       const isOwner = user?.uid === contact.assignedTo || user?.uid === contact.createdBy;
-      const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+      const isManagerOrAdmin = user?.role === 'admin' || (user?.role === 'gerente' && user?.management === contact.management);
       const canModify = isManagerOrAdmin || isOwner;
 
       return (
@@ -225,24 +225,24 @@ export const columns = (
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
               
-              {!isIngeniero && canModify ? (
-                <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(contact)}>
+              {!isIngeniero && (
+                <DropdownMenuItem 
+                  className="text-[11px]" 
+                  onClick={() => onEdit(contact)}
+                  disabled={!canModify}
+                >
                   <Edit className="mr-2 h-3.5 w-3.5" />
                   <span>{t('Actions.editContact')}</span>
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem className="text-[11px]" onClick={() => router.push(`/contacts/${contact.id}`)}>
-                  <MoreHorizontal className="mr-2 h-3.5 w-3.5" />
-                  <span>{t('Activity.view')}</span>
-                </DropdownMenuItem>
               )}
 
-              {!isIngeniero && canModify && (
+              {!isIngeniero && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive text-[11px]"
                     onClick={() => onDelete(contact.id)}
+                    disabled={!canModify}
                   >
                     {t('Actions.deleteContact')}
                   </DropdownMenuItem>

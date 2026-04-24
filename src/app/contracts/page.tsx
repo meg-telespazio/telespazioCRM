@@ -21,7 +21,7 @@ export default function ContractsPage() {
   const router = useRouter();
   const { t } = useI18n();
 
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
 
   const contractsQuery = useMemo(() => {
     if (!user) return null;

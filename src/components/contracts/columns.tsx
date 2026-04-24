@@ -211,7 +211,7 @@ export const columns = (
       const isIngeniero = user?.role === 'ingeniero';
       
       const isOwner = user?.uid === contract.assignedTo || user?.uid === contract.createdBy;
-      const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+      const isManagerOrAdmin = user?.role === 'admin' || (user?.role === 'gerente' && user?.management === contract.management);
       const canModify = isManagerOrAdmin || isOwner;
 
       return (
@@ -226,10 +226,16 @@ export const columns = (
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
               
-              <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(contract)}>
-                {canModify && !isIngeniero ? <Edit className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
-                <span>{canModify && !isIngeniero ? t('Actions.editContract') : t('Activity.view')}</span>
-              </DropdownMenuItem>
+              {!isIngeniero && (
+                <DropdownMenuItem 
+                  className="text-[11px]" 
+                  onClick={() => onEdit(contract)}
+                  disabled={!canModify}
+                >
+                  <Edit className="mr-2 h-3.5 w-3.5" />
+                  <span>{t('Actions.editContract')}</span>
+                </DropdownMenuItem>
+              )}
 
               {!isIngeniero && (
                 <>
@@ -240,12 +246,13 @@ export const columns = (
                 </>
               )}
 
-              {!isIngeniero && canModify && (
+              {!isIngeniero && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive text-[11px]"
                     onClick={() => onDelete(contract.id)}
+                    disabled={!canModify}
                   >
                     <span>{t('Actions.deleteContract')}</span>
                   </DropdownMenuItem>

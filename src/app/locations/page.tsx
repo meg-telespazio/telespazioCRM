@@ -32,7 +32,7 @@ export default function GlobalLocationsPage() {
   const firestore = useFirestore();
 
   const [focusedLocation, setFocusedLocation] = useState<Location | null>(null);
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
   const [isImporterOpen, setIsImporterOpen] = useState(false);
 
   const locationsQuery = useMemo(() => {

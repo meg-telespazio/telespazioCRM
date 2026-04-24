@@ -296,6 +296,15 @@ export default function ContractFormPage() {
   };
 
   const pageIsLoading = !mounted || userLoading || clientsLoading || contactsLoading || catalogLoading || (contractLoading && !isNew) || !configData;
+
+  const canModify = useMemo(() => {
+    if (isNew) return true;
+    if (!contractData || !user) return false;
+    if (user.role === 'admin') return true;
+    if (user.role === 'gerente' && user.management === contractData.management) return true;
+    return user.uid === contractData.assignedTo || user.uid === contractData.createdBy;
+  }, [isNew, contractData, user]);
+
   if (pageIsLoading) {
     return (
       <div className="flex flex-1 flex-col">
@@ -705,7 +714,7 @@ export default function ContractFormPage() {
 
               <div className="flex items-center justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" />{t('Auth.cancelLabel')}</Button>
-                <Button type="submit"><Save className="mr-2 h-4 w-4" />{t('Contracts.save')}</Button>
+                <Button type="submit" disabled={!canModify}><Save className="mr-2 h-4 w-4" />{t('Contracts.save')}</Button>
               </div>
             </form>
           </Form>

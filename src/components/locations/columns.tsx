@@ -178,7 +178,7 @@ export const columns = (
       const isIngeniero = user?.role === 'ingeniero';
       
       const isOwner = user?.uid === location.assignedTo || user?.uid === location.createdBy;
-      const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+      const isManagerOrAdmin = user?.role === 'admin' || (user?.role === 'gerente' && user?.management === location.management);
       const canModify = isManagerOrAdmin || isOwner;
 
       return (
@@ -196,9 +196,12 @@ export const columns = (
               Ver en mapa
             </DropdownMenuItem>
             
-            <DropdownMenuItem onClick={() => onEdit(location)}>
-              {canModify && !isIngeniero ? <Edit className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-              {canModify && !isIngeniero ? t('Actions.editLocation') : t('Activity.view')}
+            <DropdownMenuItem 
+              onClick={() => onEdit(location)}
+              disabled={!canModify || isIngeniero}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              {t('Actions.editLocation')}
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -207,17 +210,14 @@ export const columns = (
               {t('Actions.copyLocationId')}
             </DropdownMenuItem>
             
-            {!isIngeniero && canModify && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => onDelete(location.id)}
-                >
-                  {t('Actions.deleteLocation')}
-                </DropdownMenuItem>
-              </>
-            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => onDelete(location.id)}
+              disabled={!canModify || isIngeniero}
+            >
+              {t('Actions.deleteLocation')}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );

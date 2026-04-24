@@ -249,7 +249,7 @@ export const columns = (
         
         // Un ejecutivo solo puede editar/borrar si es el dueño o creador
         const isOwner = user?.uid === client.assignedTo || user?.uid === client.createdBy;
-        const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+        const isManagerOrAdmin = user?.role === 'admin' || (user?.role === 'gerente' && user?.management === client.management);
         const canModify = isManagerOrAdmin || isOwner;
 
         return (
@@ -268,8 +268,12 @@ export const columns = (
                   <span>{t('Actions.viewSummary')}</span>
                 </DropdownMenuItem>
                 
-                {!isIngeniero && canModify && (
-                  <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(client)}>
+                {!isIngeniero && (
+                  <DropdownMenuItem 
+                    className="text-[11px]" 
+                    onClick={() => onEdit(client)}
+                    disabled={!canModify}
+                  >
                     <FileText className="mr-2 h-3.5 w-3.5" />
                     <span>{t('Actions.editClient')}</span>
                   </DropdownMenuItem>
@@ -291,12 +295,13 @@ export const columns = (
                   <span>{t('Locations.view')}</span>
                 </DropdownMenuItem>
                 
-                {!isIngeniero && canModify && (
+                {!isIngeniero && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-destructive text-[11px]"
                       onClick={() => onDelete(client.id)}
+                      disabled={!canModify}
                     >
                       {t('Actions.deleteClient')}
                     </DropdownMenuItem>

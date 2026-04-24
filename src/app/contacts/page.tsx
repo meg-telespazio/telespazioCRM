@@ -27,7 +27,7 @@ export default function ContactsPage() {
   const [isImporterOpen, setImporterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [clientFilter, setClientFilter] = useState('all');
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
 
   const contactsQuery = useMemo(() => {
     if (!user) return null;

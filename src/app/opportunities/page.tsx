@@ -23,7 +23,7 @@ export default function OpportunitiesPage() {
   const { t, currency: displayCurrency } = useI18n();
   const { toast } = useToast();
 
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
 
   const configDocRef = useMemo(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
