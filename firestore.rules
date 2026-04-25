@@ -198,7 +198,12 @@ service cloud.firestore {
     }
 
     match /counters/{counterId} {
-      allow get, update, create: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (request.resource.data.count == resource.data.count + 1)
+      );
       allow list, delete: if isSuperAdmin();
     }
 
