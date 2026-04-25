@@ -16,9 +16,17 @@ export const useUser = () => {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setAuthUser(user);
       setAuthLoading(false);
+      
+      if (user) {
+        // Sync Firebase auth state to a cookie for Next.js Middleware
+        const token = await user.getIdToken();
+        document.cookie = `__session=${token}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Lax`;
+      } else {
+        document.cookie = '__session=; path=/; max-age=0';
+      }
     });
     return () => unsubscribe();
   }, [auth]);
