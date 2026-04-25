@@ -11,9 +11,12 @@ export const fetchTaxIdFromLegalName = ai.defineFlow(
     outputSchema: z.object({ taxId: z.string().nullable(), error: z.string().optional() }),
   },
   async ({ legalName }) => {
+    // Sanitize input to prevent prompt injection
+    const safeLegalName = legalName.replace(/["\n\r]/g, '').substring(0, 200);
+
     try {
       const { text } = await ai.generate({
-        prompt: `Busca en internet (si fuera necesario o en tu conocimiento) cuál es el número de identificación tributaria (como el CUIT en Argentina o RUT/RUC) para la empresa con razón social: "${legalName}". Devuelve ÚNICAMENTE los números, sin guiones ni espacios. Si no estás seguro o no lo encuentras, responde exactamente la palabra NULL.`,
+        prompt: `Busca en internet (si fuera necesario o en tu conocimiento) cuál es el número de identificación tributaria (como el CUIT en Argentina o RUT/RUC) para la empresa con razón social: "${safeLegalName}". Devuelve ÚNICAMENTE los números, sin guiones ni espacios. Si no estás seguro o no lo encuentras, responde exactamente la palabra NULL.`,
       });
       
       const cleanText = text.trim();
@@ -37,9 +40,12 @@ export const fetchLegalNameFromTaxId = ai.defineFlow(
     outputSchema: z.object({ legalName: z.string().nullable(), error: z.string().optional() }),
   },
   async ({ taxId }) => {
+    // Sanitize input to prevent prompt injection
+    const safeTaxId = taxId.replace(/["\n\r]/g, '').substring(0, 50);
+
     try {
       const { text } = await ai.generate({
-        prompt: `Busca utilizando el número de identificación tributaria (CUIT, RUT, etc): "${taxId}". Devuelve ÚNICAMENTE la razón social o nombre legal completo de la empresa. Si no lo encuentras, responde exactamente la palabra NULL.`,
+        prompt: `Busca utilizando el número de identificación tributaria (CUIT, RUT, etc): "${safeTaxId}". Devuelve ÚNICAMENTE la razón social o nombre legal completo de la empresa. Si no lo encuentras, responde exactamente la palabra NULL.`,
       });
       
       const cleanText = text.trim();

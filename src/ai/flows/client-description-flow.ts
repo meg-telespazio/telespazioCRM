@@ -15,7 +15,14 @@ export type ClientDescriptionInput = z.infer<typeof ClientDescriptionInputSchema
 
 export async function generateClientAiDescription(input: ClientDescriptionInput): Promise<{ description?: string; error?: string }> {
   try {
-    const result = await clientDescriptionFlow(input);
+    // Sanitize inputs to prevent prompt injection
+    const sanitizedInput = {
+      name: input.name.replace(/["\n\r]/g, '').substring(0, 200),
+      website: input.website?.replace(/["\n\r]/g, '').substring(0, 200),
+      sector: input.sector?.replace(/["\n\r]/g, '').substring(0, 200),
+    };
+
+    const result = await clientDescriptionFlow(sanitizedInput);
     return { description: result };
   } catch (e: any) {
     console.error("Genkit Flow Error:", e);
