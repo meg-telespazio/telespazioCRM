@@ -15,18 +15,25 @@ export const useUser = () => {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const [superAdmin, setSuperAdmin] = useState(false);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setAuthUser(user);
-      setAuthLoading(false);
-      
       if (user) {
+        // Obtener custom claims antes de liberar el estado de carga
+        const tokenResult = await user.getIdTokenResult();
+        setSuperAdmin(!!tokenResult.claims.superAdmin);
+        setAuthUser(user);
+        
         // Sync Firebase auth state to a cookie for Next.js Middleware
         const token = await user.getIdToken();
         document.cookie = `__session=${token}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Lax`;
       } else {
+        setSuperAdmin(false);
+        setAuthUser(null);
         document.cookie = '__session=; path=/; max-age=0';
       }
+      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, [auth]);
@@ -45,7 +52,7 @@ export const useUser = () => {
     return {
       ...authUser,
       ...userProfile,
-      role: userProfile?.role || 'ejecutivo',
+      role: superAdmin ? 'admin' : (userProfile?.role || 'ejecutivo'),
       management: userProfile?.management || 'Satellite Communications',
       displayName: userProfile?.displayName || authUser.displayName,
       photoURL: userProfile?.photoURL || authUser.photoURL,
