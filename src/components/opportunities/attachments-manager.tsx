@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useStorage } from '@/firebase';
+import { useStorage, useUser } from '@/firebase';
 import { uploadFile, deleteFile } from '@/lib/storage';
 import { useParams } from 'next/navigation';
 
@@ -27,6 +27,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const { t } = useI18n();
   const { toast } = useToast();
   const storage = useStorage();
+  const { user } = useUser();
   const { control } = useFormContext();
 
   const { fields, append, remove } = useFieldArray({
@@ -42,9 +43,11 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
-    if (!files || disabled) return;
+    if (!files || disabled || !user) return;
 
-    const folderId = opportunityId === 'new' ? `temp-${Date.now()}` : opportunityId;
+    // Si la oportunidad es nueva, usamos una carpeta temporal basada en el UID del usuario
+    // para cumplir con las reglas de seguridad de Storage (temp-{uid})
+    const folderId = (opportunityId === 'new' || !opportunityId) ? `temp-${user.uid}` : opportunityId;
 
     for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -70,7 +73,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
           title: 'Error de subida', 
           description: error.message === 'PERMISSION_DENIED' 
             ? 'Permiso denegado por el servidor.' 
-            : 'Error de red o configuración.' 
+            : 'Error al intentar guardar el archivo.' 
         });
       } finally {
         setUploadingFiles(prev => {
@@ -80,7 +83,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         });
       }
     }
-  }, [append, disabled, opportunityId, storage, toast]);
+  }, [append, disabled, opportunityId, storage, toast, user]);
 
   const handleDelete = async (index: number, attachment: any) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;

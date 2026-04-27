@@ -6,42 +6,72 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Helper: Obtener datos del usuario desde Firestore
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function getUserData() {
       return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Helper: Verificar si es Administrador
     function isAdmin() {
-      return request.auth != null && (request.auth.token.email == 'mariano.gonzalez@telespazio.com' || getUserData().role == 'admin');
+      return isAuthenticated() && (
+        request.auth.token.email == 'mariano.gonzalez@telespazio.com' || 
+        getUserData().role == 'admin'
+      );
     }
 
-    // Helper: Verificar si el usuario pertenece a la misma gerencia que un documento de Firestore
-    function hasManagementAccess(targetManagement) {
-      return getUserData().management == targetManagement;
+    function isGerente() {
+      return isAdmin() || (isAuthenticated() && getUserData().role == 'gerente');
+    }
+
+    // Helper para verificar acceso a un documento de Firestore por Gerencia
+    function hasManagementAccess(docData) {
+      return isAdmin() || (isAuthenticated() && getUserData().management == docData.management);
+    }
+
+    // Helper para verificar si es dueño (Ejecutivo)
+    function isOwner(docData) {
+      return docData.assignedTo == request.auth.uid || docData.createdBy == request.auth.uid;
+    }
+
+    // Regla combinada para archivos vinculados a entidades de Firestore
+    function canAccessEntityFile(collection, entityId) {
+      let docPath = /databases/(default)/documents/$(collection)/$(entityId);
+      return exists(docPath) && (
+        isAdmin() || 
+        (isGerente() && hasManagementAccess(get(docPath).data)) || 
+        (hasManagementAccess(get(docPath).data) && isOwner(get(docPath).data))
+      );
     }
 
     // --- Reglas por Carpeta ---
 
-    // Contratos: Solo Admin o personal de la misma gerencia del contrato
     match /contracts/{contractId}/{allPaths=**} {
       allow read, write: if isAdmin() || 
-        (request.auth != null && hasManagementAccess(firestore.get(/databases/(default)/documents/contracts/$(contractId)).data.management));
+        (isAuthenticated() && (contractId == 'temp-' + request.auth.uid || canAccessEntityFile('contracts', contractId)));
     }
 
-    // Oportunidades: Solo Admin o personal de la misma gerencia de la oportunidad
     match /opportunities/{opportunityId}/{allPaths=**} {
       allow read, write: if isAdmin() || 
-        (request.auth != null && hasManagementAccess(firestore.get(/databases/(default)/documents/opportunities/$(opportunityId)).data.management));
+        (isAuthenticated() && (opportunityId == 'temp-' + request.auth.uid || canAccessEntityFile('opportunities', opportunityId)));
     }
 
-    // Logos de Clientes y Avatares: Lectura pública (o autenticada), escritura por dueños/admin
+    match /service_orders/{soId}/{allPaths=**} {
+      allow read, write: if isAdmin() || 
+        (isAuthenticated() && (soId == 'temp-' + request.auth.uid || canAccessEntityFile('service_orders', soId)));
+    }
+
     match /users/{userId}/avatar {
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
       allow write: if isAdmin() || request.auth.uid == userId;
     }
     
-    // Regla de respaldo: Cualquier otro acceso requiere ser Admin
+    match /clients/{clientId}/logo {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || canAccessEntityFile('clients', clientId);
+    }
+
     match /{allPaths=**} {
       allow read, write: if isAdmin();
     }

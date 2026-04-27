@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useCallback } from 'react';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useStorage, useFirestore } from '@/firebase';
+import { useStorage, useFirestore, useUser } from '@/firebase';
 import { uploadFile, deleteFile } from '@/lib/storage';
 import { updateDoc, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
@@ -30,6 +29,7 @@ export function SOAttachmentsManager({ soId, attachments = [], disabled }: SOAtt
   const { toast } = useToast();
   const storage = useStorage();
   const firestore = useFirestore();
+  const { user } = useUser();
 
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>({});
@@ -39,7 +39,10 @@ export function SOAttachmentsManager({ soId, attachments = [], disabled }: SOAtt
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
-    if (!files || disabled || !soId) return;
+    if (!files || disabled || !soId || !user) return;
+
+    // Lógica para carpetas temporales seguras (temp-{uid})
+    const folderId = (soId === 'new' || !soId) ? `temp-${user.uid}` : soId;
 
     for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -51,21 +54,29 @@ export function SOAttachmentsManager({ soId, attachments = [], disabled }: SOAtt
       setUploadingFiles(prev => ({ ...prev, [fileId]: 1 }));
 
       try {
-        const path = `service_orders/${soId}/${fileId}`;
+        const path = `service_orders/${folderId}/${fileId}`;
         const attachment = await uploadFile(storage, path, file, (progress) => {
           setUploadingFiles(prev => ({ ...prev, [fileId]: Math.max(1, progress) }));
         });
 
         // Update Firestore directly since this is an independent manager
-        const soRef = doc(firestore, 'service_orders', soId);
-        await updateDoc(soRef, {
-          attachments: arrayUnion(attachment)
-        });
+        if (soId !== 'new') {
+          const soRef = doc(firestore, 'service_orders', soId);
+          await updateDoc(soRef, {
+            attachments: arrayUnion(attachment)
+          });
+        }
 
         toast({ variant: 'success', title: 'Archivo cargado', description: file.name });
       } catch (error: any) {
         console.error('Upload error:', error);
-        toast({ variant: 'destructive', title: 'Error de subida', description: 'Error al intentar guardar el archivo.' });
+        toast({ 
+          variant: 'destructive', 
+          title: 'Error de subida', 
+          description: error.message === 'PERMISSION_DENIED' 
+            ? 'Permiso denegado por el servidor.' 
+            : 'Error al intentar guardar el archivo.' 
+        });
       } finally {
         setUploadingFiles(prev => {
           const next = { ...prev };
@@ -74,7 +85,7 @@ export function SOAttachmentsManager({ soId, attachments = [], disabled }: SOAtt
         });
       }
     }
-  }, [disabled, soId, storage, firestore, toast]);
+  }, [disabled, soId, storage, firestore, toast, user]);
 
   const handleDelete = async (attachment: OpportunityAttachment) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
