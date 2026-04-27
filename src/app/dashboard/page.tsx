@@ -62,10 +62,13 @@ export default function DashboardPage() {
     const ref = collection(firestore, 'activities');
     
     // Ejecutivos solo ven sus propias actividades por query (y por reglas)
-    if (user?.role === 'ejecutivo') return query(ref, where('assignedTo', '==', user.uid));
+    // IMPORTANTE: Incluir management para evitar error de permisos en listado
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData, user?.role, user?.uid]);
+  }, [firestore, managementFilter, canLoadData, user?.role, user?.uid, user?.management]);
 
   const servicesQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
