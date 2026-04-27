@@ -23,7 +23,6 @@ service cloud.firestore {
     }
 
     // Validación de permisos dinámicos contra la matriz en systemConfig
-    // Si la matriz no existe (primer inicio), permitimos 'view' por defecto para no bloquear.
     function hasPermission(module, action) {
       return isAdmin() || (
         isAuthenticated() && (
@@ -172,8 +171,19 @@ service cloud.firestore {
     }
 
     match /activities/{activityId} {
-      allow read: if hasPermission('activities', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('activities', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow read: if hasPermission('activities', 'view') && (
+        isAdmin() || (
+          isSameManagement(resource.data) && (
+            getUserData().get('role', '') == 'gerente' || resource.data.get('assignedTo', '') == request.auth.uid
+          )
+        )
+      );
+      allow create: if hasPermission('activities', 'create') && (
+        isAdmin() || (
+          request.resource.data.get('management', '') == getUserData().get('management', '') &&
+          request.resource.data.get('assignedTo', '') == request.auth.uid
+        )
+      );
       allow update: if hasPermission('activities', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('activities', 'delete') && canModify(resource.data);
 

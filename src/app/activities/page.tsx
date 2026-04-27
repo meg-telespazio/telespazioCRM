@@ -41,9 +41,16 @@ export default function AllActivitiesPage() {
   const activitiesQuery = useMemoFirebase(() => {
     if (!canLoadData || user?.role === 'ingeniero') return null;
     const ref = collection(firestore, 'activities');
+    
+    // Admin ve todo
     if (user?.role === 'admin') return query(ref);
+    
+    // Ejecutivo solo ve sus propios clientes
+    if (user?.role === 'ejecutivo') return query(ref, where('assignedTo', '==', user.uid));
+    
+    // Otros (Gerente) ven lo de su gerencia
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
 
   const clientsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;

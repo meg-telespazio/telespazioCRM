@@ -60,8 +60,12 @@ export default function DashboardPage() {
   const activitiesQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'activities');
+    
+    // Ejecutivos solo ven sus propias actividades por query (y por reglas)
+    if (user?.role === 'ejecutivo') return query(ref, where('assignedTo', '==', user.uid));
+    
     return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData]);
+  }, [firestore, managementFilter, canLoadData, user?.role, user?.uid]);
 
   const servicesQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
@@ -206,6 +210,7 @@ export default function DashboardPage() {
               <RecentActivities
                 activities={filteredData.activities}
                 clients={filteredData.clients}
+                contacts={filteredData.contacts}
               />
             )}
           </div>

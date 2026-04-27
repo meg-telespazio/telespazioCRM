@@ -85,9 +85,22 @@ export default function ClientActivityPage() {
   const activitiesQuery = useMemo(() => {
     if (!user || !firestore) return null;
     const ref = collection(firestore, 'activities');
+    
+    // Admin ve todo el historial del cliente
     if (user.role === 'admin') {
       return query(ref, where('clientId', '==', clientId));
     }
+    
+    // Ejecutivos solo ven sus propias actividades con este cliente
+    if (user.role === 'ejecutivo') {
+      return query(
+        ref,
+        where('clientId', '==', clientId),
+        where('assignedTo', '==', user.uid)
+      );
+    }
+
+    // Otros (Gerente) ven actividades de su gerencia para este cliente
     return query(
       ref,
       where('clientId', '==', clientId),
