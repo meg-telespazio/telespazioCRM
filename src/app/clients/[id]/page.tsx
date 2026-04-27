@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppHeader } from '@/components/layout/app-header';
@@ -123,7 +123,15 @@ export default function ClientFormPage() {
   const { data: clientData, loading: clientLoading } =
     useDoc<Client>(clientDocRef);
 
-  const { data: allClients } = useCollection<Client>(useMemo(() => (firestore ? collection(firestore, 'clients') : null), [firestore]));
+  // Consulta filtrada para holdings: fundamental para evitar errores de permisos
+  const clientsForHoldingsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'clients');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
+
+  const { data: allClients } = useCollection<Client>(clientsForHoldingsQuery);
   const { data: allUsers } = useCollection<UserProfile>(useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore]));
 
   const holdings = useMemo(() => {

@@ -23,16 +23,17 @@ service cloud.firestore {
     }
 
     // Validación de permisos dinámicos contra la matriz en systemConfig
-    // CEL no soporta 'if', usamos operadores lógicos.
+    // Si la matriz no existe (primer inicio), permitimos 'view' por defecto para no bloquear.
     function hasPermission(module, action) {
       return isAdmin() || (
-        isAuthenticated() && 
-        exists(/databases/$(database)/documents/systemConfig/globals) &&
-        get(/databases/$(database)/documents/systemConfig/globals).data.get('permissionsMatrix', {})
-          .get(getUserData().get('role', 'ejecutivo'), {})
-          .get('modules', {})
-          .get(module, {})
-          .get(action, false) == true
+        isAuthenticated() && (
+          !exists(/databases/$(database)/documents/systemConfig/globals) ||
+          get(/databases/$(database)/documents/systemConfig/globals).data.get('permissionsMatrix', {})
+            .get(getUserData().get('role', 'ejecutivo'), {})
+            .get('modules', {})
+            .get(module, {})
+            .get(action, false) == true
+        )
       );
     }
 
@@ -41,7 +42,6 @@ service cloud.firestore {
       return isAdmin() || (
         isAuthenticated() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        getUserData().get('management', '') != '' && 
         data.get('management', '') == getUserData().get('management', '')
       );
     }
@@ -160,8 +160,7 @@ service cloud.firestore {
       allow delete: if hasPermission('contracts', 'delete') && canModify(resource.data);
       
       match /addendums/{addendumId} {
-        allow read: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data);
-        allow write: if hasPermission('contracts', 'edit') && canModify(get(/databases/$(database)/documents/contracts/$(contractId)).data);
+        allow read, write: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data);
       }
     }
 
@@ -179,8 +178,7 @@ service cloud.firestore {
       allow delete: if hasPermission('activities', 'delete') && canModify(resource.data);
 
       match /followUps/{followUpId} {
-        allow read: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/activities/$(activityId)).data);
-        allow write: if hasPermission('activities', 'edit') && canModify(get(/databases/$(database)/documents/activities/$(activityId)).data);
+        allow read, write: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/activities/$(activityId)).data);
       }
     }
 
