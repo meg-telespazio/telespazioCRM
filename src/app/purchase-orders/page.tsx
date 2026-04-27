@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useMemo, useEffect } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter, redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
@@ -25,24 +24,33 @@ export default function PurchaseOrdersPage() {
     if (!userLoading && !user) redirect('/login');
   }, [user, userLoading]);
 
-  const posQuery = useMemo(() => {
+  const posQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'purchaseOrders');
     if (user.role === 'admin') return query(ref);
+    if (user.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
-  const contractsQuery = useMemo(() => {
+  const contractsQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'contracts');
     if (user.role === 'admin') return query(ref);
+    if (user.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
-  const clientsQuery = useMemo(() => {
+  const clientsQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
+    if (user.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 

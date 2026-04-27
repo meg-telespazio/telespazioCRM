@@ -165,35 +165,46 @@ export default function ServicesPage() {
     if (!userLoading && !user) redirect('/login');
   }, [user, userLoading]);
 
-  // Data fetching - Services filtered by management
+  // Data fetching - Services filtered by management and assignedTo for Executives
   const servicesQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'services');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
 
   const posQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'purchaseOrders');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
 
   const contractsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'contracts');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
 
-  // Client filtering by role for selection
   const clientsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
 
   const { data: services, loading: servicesLoading } = useCollection<Service>(servicesQuery);
   const { data: pos } = useCollection<PurchaseOrder>(posQuery);
@@ -491,18 +502,6 @@ export default function ServicesPage() {
           </div>
         )}
       </main>
-
-      <Dialog open={bulkMode !== null} onOpenChange={() => setBulkMode(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{t('Actions.bulkActions')}</DialogTitle><DialogDescription>{t('Services.bulkUpdateServicesDesc', { count: selectedIds.length })}</DialogDescription></DialogHeader>
-          <div className="grid gap-4 py-4">
-            {bulkMode === 'plan' && <Input value={bulkPlan} onChange={(e) => setBulkPlan(e.target.value)} placeholder="Nuevo Plan..." />}
-            {bulkMode === 'price' && <div className="flex gap-2"><Input type="number" value={bulkFee} onChange={(e) => setBulkFee(e.target.value)} placeholder="Nuevo Abono..." /><Select value={bulkCurrency} onValueChange={(v:any) => setBulkCurrency(v)}><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="ARS">ARS</SelectItem></SelectContent></Select></div>}
-            {bulkMode === 'po' && <Select value={bulkPoId} onValueChange={setBulkPoId}><SelectTrigger><SelectValue placeholder="PO de destino..." /></SelectTrigger><SelectContent>{pos?.map(po => <SelectItem key={po.id} value={po.id}>{po.poNumber}</SelectItem>)}</SelectContent></Select>}
-          </div>
-          <DialogFooter><Button variant="outline" onClick={() => setBulkMode(null)}>{t('Auth.cancelLabel')}</Button><Button onClick={handleBulkUpdate} disabled={isBulkUpdating}>{isBulkUpdating && <Loader2 className="animate-spin mr-2 h-4 w-4" />}{t('Forms.save')}</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <ServiceImporter 
         isOpen={isImporterOpen} 

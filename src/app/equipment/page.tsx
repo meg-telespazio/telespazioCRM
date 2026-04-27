@@ -68,13 +68,16 @@ export default function EquipmentPage() {
     if (!userLoading && !user) redirect('/login');
   }, [user, userLoading]);
 
-  // Data fetching - Using useMemoFirebase for stability
+  // Data fetching - Equipment filtered by management and assignedTo for Executives
   const eqQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'equipment');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
   
   const { data: equipment, loading: eqLoading } = useCollection<Equipment>(eqQuery);
 
@@ -82,32 +85,44 @@ export default function EquipmentPage() {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'services');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
   const { data: services } = useCollection<Service>(servicesQuery);
 
   const posQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'purchaseOrders');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
   const { data: pos } = useCollection<PurchaseOrder>(posQuery);
 
   const contractsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'contracts');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
   const { data: contracts } = useCollection<Contract>(contractsQuery);
 
   const clientsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
     if (user?.role === 'admin') return query(ref);
+    if (user?.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, firestore]);
+  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
   const { data: clients } = useCollection<Client>(clientsQuery);
 
   // Maps for context lookup

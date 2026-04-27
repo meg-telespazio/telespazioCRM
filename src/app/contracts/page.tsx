@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { redirect, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,6 @@ import { collection, query, where } from 'firebase/firestore';
 import { deleteContract } from '@/lib/firestore/contracts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ContractTable } from '@/components/contracts/contract-table';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 export default function ContractsPage() {
   const { user, loading: userLoading } = useUser();
@@ -21,19 +19,23 @@ export default function ContractsPage() {
   const router = useRouter();
   const { t } = useI18n();
 
-  const [showOnlyMine, setShowOnlyMine] = useState(true);
-
-  const contractsQuery = useMemo(() => {
+  const contractsQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'contracts');
     if (user.role === 'admin') return query(ref);
+    if (user.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
-  const clientsQuery = useMemo(() => {
+  const clientsQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     if (user.role === 'admin') return query(ref);
+    if (user.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
     return query(ref, where('management', '==', user.management));
   }, [firestore, user]);
 
@@ -42,18 +44,12 @@ export default function ContractsPage() {
 
   const contracts = useMemo(() => {
     if (!contractsData) return [];
-    
-    let filtered = contractsData;
-    if (showOnlyMine && user?.role === 'ejecutivo') {
-      filtered = filtered.filter(c => c.assignedTo === user.uid);
-    }
-
-    return [...filtered].sort((a, b) => {
+    return [...contractsData].sort((a, b) => {
       const dateA = a.updatedAt || a.createdAt;
       const dateB = b.updatedAt || b.createdAt;
       return dateB.getTime() - dateA.getTime();
     });
-  }, [contractsData, showOnlyMine, user]);
+  }, [contractsData]);
 
   const clients = useMemo(() => {
     if (!clientsData) return [];
@@ -90,31 +86,16 @@ export default function ContractsPage() {
 
   const pageIsLoading = contractsLoading || clientsLoading;
   const isIngeniero = user?.role === 'ingeniero';
-  const isEjecutivo = user?.role === 'ejecutivo';
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.contracts')}>
-        <div className="flex items-center gap-4">
-          {isEjecutivo && (
-            <div className="flex items-center gap-2.5 bg-muted/50 px-3 py-1.5 rounded-full border border-border/60 shadow-sm">
-              <Switch 
-                id="mine-filter" 
-                checked={showOnlyMine} 
-                onCheckedChange={setShowOnlyMine} 
-              />
-              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-                {t('Actions.showOnlyMine')}
-              </Label>
-            </div>
-          )}
-          {!isIngeniero && (
-            <Button size="sm" onClick={handleAddNew}>
-              <PlusCircle className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('Pages.addContract')}</span>
-            </Button>
-          )}
-        </div>
+        {!isIngeniero && (
+          <Button size="sm" onClick={handleAddNew}>
+            <PlusCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('Pages.addContract')}</span>
+          </Button>
+        )}
       </AppHeader>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {pageIsLoading ? (

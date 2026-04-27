@@ -24,18 +24,8 @@ service cloud.firestore {
       return isAdmin() || (isAuthenticated() && getUserData().get('role', '') == 'gerente');
     }
 
-    // Validación de permisos dinámicos contra la matriz en systemConfig
-    function hasPermission(module, action) {
-      return isAdmin() || (
-        isAuthenticated() && (
-          !exists(/databases/$(database)/documents/systemConfig/globals) ||
-          get(/databases/$(database)/documents/systemConfig/globals).data.get('permissionsMatrix', {})
-            .get(getUserData().get('role', 'ejecutivo'), {})
-            .get('modules', {})
-            .get(module, {})
-            .get(action, false) == true
-        )
-      );
+    function isOwner(data) {
+      return data.get('assignedTo', '') == request.auth.uid || data.get('createdBy', '') == request.auth.uid;
     }
 
     function isSameManagement(data) {
@@ -45,8 +35,9 @@ service cloud.firestore {
       );
     }
 
-    function isOwner(data) {
-      return data.get('assignedTo', '') == request.auth.uid || data.get('createdBy', '') == request.auth.uid;
+    // Regla de lectura restrictiva para Ejecutivos
+    function canReadRecord(data) {
+      return isAdmin() || isGerente() || (isSameManagement(data) && isOwner(data));
     }
 
     function canModify(data) {
@@ -67,7 +58,7 @@ service cloud.firestore {
     }
     
     match /service_orders/{soId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if (isAdmin() || isGerente()) || (isAuthenticated() && request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if isAdmin() || isGerente() || (request.auth.uid == resource.data.eeccId || request.auth.uid == resource.data.pmAssignedId);
       allow delete: if isAdmin();
@@ -110,49 +101,49 @@ service cloud.firestore {
     }
 
     match /clients/{clientId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data); 
     }
 
     match /contacts/{contactId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);
     }
 
     match /locations/{locationId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);
     }
 
     match /opportunities/{opportunityId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);
     }
 
     match /purchaseOrders/{poId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);
     }
 
     match /services/{serviceId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);
     }
 
     match /contracts/{contractId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);
@@ -163,14 +154,14 @@ service cloud.firestore {
     }
 
     match /equipment/{equipmentId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data);
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if isAdmin();
     }
 
     match /activities/{activityId} {
-      allow read: if isAuthenticated() && isSameManagement(resource.data) && (isGerente() || isOwner(resource.data));
+      allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { redirect, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,6 @@ import { collection, query, where } from 'firebase/firestore';
 import { deleteClient } from '@/lib/firestore/clients';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClientImporter } from '@/components/clients/client-importer';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 export default function ClientsPage() {
   const { user, loading: userLoading } = useUser();
@@ -23,17 +21,21 @@ export default function ClientsPage() {
   const router = useRouter();
 
   const [isImporterOpen, setImporterOpen] = useState(false);
-  const [showOnlyMine, setShowOnlyMine] = useState(true);
 
   // Filter clients by permission
-  const clientsQuery = useMemo(() => {
+  const clientsQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     
     // El administrador ve todo el universo de clientes
     if (user.role === 'admin') return query(ref);
     
-    // Todos los demás roles (Gerente, Ejecutivo, Ingeniero) ven los clientes de su propia gerencia
+    // Ejecutivo solo ve sus propios clientes
+    if (user.role === 'ejecutivo') {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
+
+    // Gerente e Ingeniero ven los clientes de su propia gerencia
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
@@ -46,18 +48,12 @@ export default function ClientsPage() {
 
   const clients = useMemo(() => {
     if (!clientsData) return [];
-    
-    let filtered = clientsData;
-    if (showOnlyMine && user?.role === 'ejecutivo') {
-      filtered = filtered.filter(c => c.assignedTo === user.uid);
-    }
-
-    return [...filtered].sort((a, b) => {
+    return [...clientsData].sort((a, b) => {
       const dateA = a.updatedAt || a.createdAt;
       const dateB = b.updatedAt || b.createdAt;
       return dateB.getTime() - dateA.getTime();
     });
-  }, [clientsData, showOnlyMine, user]);
+  }, [clientsData]);
 
   const users = useMemo(() => usersData || [], [usersData]);
 
@@ -85,24 +81,11 @@ export default function ClientsPage() {
 
   const isLoading = clientsLoading || usersLoading;
   const isIngeniero = user?.role === 'ingeniero';
-  const isEjecutivo = user?.role === 'ejecutivo';
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <AppHeader title={t('Pages.clients')}>
         <div className="flex items-center gap-4">
-          {isEjecutivo && (
-            <div className="flex items-center gap-2.5 bg-muted/50 px-3 py-1.5 rounded-full border border-border/60 shadow-sm">
-              <Switch 
-                id="mine-filter" 
-                checked={showOnlyMine} 
-                onCheckedChange={setShowOnlyMine} 
-              />
-              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-                {t('Actions.showOnlyMine')}
-              </Label>
-            </div>
-          )}
           {!isIngeniero && (
             <>
               <Button variant="outline" size="sm" onClick={() => setImporterOpen(true)}>
