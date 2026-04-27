@@ -13,39 +13,37 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
     }
 
-    // Función optimizada para obtener los datos del usuario logueado
+    // Función para obtener datos del usuario de forma segura
     function getUserData() {
-      let path = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(path) ? get(path).data : {};
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isAdmin() {
-      return isSuperAdmin() || (isAuthenticated() && getUserData().get('role', '') == 'admin');
+      return isSuperAdmin() || (isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().get('role', '') == 'admin');
     }
 
     // Validación de permisos dinámicos contra la matriz en systemConfig
+    // CEL no soporta 'if', usamos operadores lógicos.
     function hasPermission(module, action) {
-      if (isAdmin()) { return true; }
-      if (!isAuthenticated()) { return false; }
-      
-      let configPath = /databases/$(database)/documents/systemConfig/globals;
-      if (!exists(configPath)) { return false; }
-      
-      let permsMatrix = get(configPath).data.get('permissionsMatrix', {});
-      let userRole = getUserData().get('role', 'ejecutivo');
-      let rolePerms = permsMatrix.get(userRole, {});
-      let modules = rolePerms.get('modules', {});
-      let moduleActions = modules.get(module, {});
-      
-      return moduleActions.get(action, false) == true;
+      return isAdmin() || (
+        isAuthenticated() && 
+        exists(/databases/$(database)/documents/systemConfig/globals) &&
+        get(/databases/$(database)/documents/systemConfig/globals).data.get('permissionsMatrix', {})
+          .get(getUserData().get('role', 'ejecutivo'), {})
+          .get('modules', {})
+          .get(module, {})
+          .get(action, false) == true
+      );
     }
 
     // Aislamiento de datos por gerencia
     function isSameManagement(data) {
-      if (isAdmin()) { return true; }
-      let userMgt = getUserData().get('management', '');
-      let docMgt = data.get('management', '');
-      return userMgt != '' && docMgt == userMgt;
+      return isAdmin() || (
+        isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().get('management', '') != '' && 
+        data.get('management', '') == getUserData().get('management', '')
+      );
     }
 
     function isOwner(data) {
@@ -89,7 +87,6 @@ service cloud.firestore {
       }
     }
 
-    // Notificaciones y Correo
     match /mail/{mailId} {
       allow create: if isAuthenticated();
       allow read, update, delete: if false; 
