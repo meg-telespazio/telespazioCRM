@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.9.4 - Privacy Lockdown for Executives
-const APP_VERSION = '1.9.4'; 
+// VERSIÓN 1.9.5 - Contact Security Inheritance Fix
+const APP_VERSION = '1.9.5'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
