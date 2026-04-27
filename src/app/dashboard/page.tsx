@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const { t, currency: displayCurrency } = useI18n();
   const firestore = useFirestore();
 
-  const [showOnlyMine, setShowOnlyMine] = useState(true);
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   // Perfil de usuario y config del sistema
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
@@ -136,13 +136,13 @@ export default function DashboardPage() {
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Dashboard.title')}>
         {isEjecutivo && (
-          <div className="flex items-center gap-2.5 bg-muted/50 px-3 py-1.5 rounded-full border border-border/60 shadow-sm">
+          <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
             <Switch 
               id="mine-filter-dashboard" 
               checked={showOnlyMine} 
               onCheckedChange={setShowOnlyMine} 
             />
-            <Label htmlFor="mine-filter-dashboard" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+            <Label htmlFor="mine-filter-dashboard" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer text-white">
               {t('Actions.showOnlyMine')}
             </Label>
           </div>
@@ -206,7 +206,6 @@ export default function DashboardPage() {
               <RecentActivities
                 activities={filteredData.activities}
                 clients={filteredData.clients}
-                contacts={filteredData.contacts}
               />
             )}
           </div>
