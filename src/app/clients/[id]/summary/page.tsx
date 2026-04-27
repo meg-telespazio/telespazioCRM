@@ -452,7 +452,7 @@ export default function ClientSummaryPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-amber-700 uppercase tracking-tight">Negocios Abiertos</p>
-                <p className="text-2xl font-bold">{opportunities?.filter(o => !['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage)).length || 0}</p>
+                <p className="text-2xl font-bold text-amber-900">{opportunities?.filter(o => !['Won', 'Lost', 'Canceled', 'Suspended'].includes(o.stage)).length || 0}</p>
               </div>
             </CardContent>
           </Card>
