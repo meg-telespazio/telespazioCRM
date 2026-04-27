@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/chart';
 import type { Client } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const COLORS = [
   'hsl(var(--chart-1))',
@@ -31,7 +30,6 @@ const COLORS = [
 
 export function ClientsSectorChart({ clients }: { clients: Client[] }) {
   const { t } = useI18n();
-  const isMobile = useIsMobile();
 
   const chartData = useMemo(() => {
     const sectors: Record<string, number> = {};
@@ -78,15 +76,15 @@ export function ClientsSectorChart({ clients }: { clients: Client[] }) {
         <CardDescription>Participación por industria</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[350px] w-full">
-          <ResponsiveContainer width="100%" height={isMobile ? 400 : 350}>
+        <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
+          <ResponsiveContainer width="100%" height={400}>
             <PieChart>
               <Pie
                 data={chartData}
                 cx="50%"
-                cy="50%"
-                innerRadius={45}
-                outerRadius={80}
+                cy="45%"
+                innerRadius={60}
+                outerRadius={85}
                 paddingAngle={5}
                 dataKey="value"
                 label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
@@ -113,10 +111,11 @@ export function ClientsSectorChart({ clients }: { clients: Client[] }) {
                 }}
               />
               <Legend 
-                layout={isMobile ? "horizontal" : "vertical"} 
-                align={isMobile ? "center" : "right"} 
-                verticalAlign={isMobile ? "bottom" : "middle"}
-                formatter={(value) => <span className="text-[10px] uppercase font-bold text-slate-600">{value}</span>}
+                layout="horizontal" 
+                align="center" 
+                verticalAlign="bottom"
+                wrapperStyle={{ paddingTop: '20px' }}
+                formatter={(value) => <span className="text-[9px] uppercase font-bold text-slate-600 leading-tight">{value}</span>}
               />
             </PieChart>
           </ResponsiveContainer>
