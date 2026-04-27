@@ -44,6 +44,12 @@ function initializeFirebase(config: FirebaseOptions) {
     // Initialize App Check only if key is valid and in browser
     if (typeof window !== 'undefined') {
       const recaptchaKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      
+      // Habilitar Debug Token en desarrollo para evitar errores 400
+      if (process.env.NODE_ENV === 'development') {
+        (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      }
+
       if (recaptchaKey && recaptchaKey !== '6Lc_dummy_site_key') {
         try {
           initializeAppCheck(firebaseApp, {
