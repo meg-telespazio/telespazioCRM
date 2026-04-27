@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 1.9.2 - Executive Dashboard Restriction & Permission Patch
-const APP_VERSION = '1.9.2'; 
+// VERSIÓN 1.9.3 - Dashboard permission stabilization patch
+const APP_VERSION = '1.9.3'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

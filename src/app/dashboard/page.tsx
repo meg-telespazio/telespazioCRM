@@ -30,11 +30,10 @@ export default function DashboardPage() {
 
   // Bandera crítica: Solo cargamos datos si el usuario está completamente listo y tiene su gerencia definida
   const canLoadData = !userLoading && !!user && (!!user.management || user.role === 'admin');
-  const managementFilter = user?.role === 'admin' ? null : user?.management;
   const isEjecutivo = user?.role === 'ejecutivo';
 
-  // Base queries con memoización para evitar re-renders y errores de permisos por cambios de instancia
-  // Para Ejecutivos, SIEMPRE filtramos por assignedTo en el Dashboard para evitar errores de reglas
+  // Base queries con memoización para evitar re-renders y errores de permisos
+  // Para Ejecutivos, SIEMPRE filtramos por assignedTo y management en el Dashboard para cumplir las reglas
   const opportunitiesQuery = useMemoFirebase(() => {
     if (!canLoadData || user?.role === 'ingeniero') return null;
     const ref = collection(firestore, 'opportunities');
@@ -42,7 +41,7 @@ export default function DashboardPage() {
     if (isEjecutivo) {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
-    return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user?.management));
   }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const contractsQuery = useMemoFirebase(() => {
@@ -52,7 +51,7 @@ export default function DashboardPage() {
     if (isEjecutivo) {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
-    return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user?.management));
   }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const clientsQuery = useMemoFirebase(() => {
@@ -62,7 +61,7 @@ export default function DashboardPage() {
     if (isEjecutivo) {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
-    return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user?.management));
   }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const contactsQuery = useMemoFirebase(() => {
@@ -72,21 +71,17 @@ export default function DashboardPage() {
     if (isEjecutivo) {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
-    return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user?.management));
   }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const activitiesQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'activities');
-    
     if (user?.role === 'admin') return query(ref);
-    
-    // Ejecutivos solo ven sus propias actividades por query (y por reglas)
     if (isEjecutivo) {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
-    
-    return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user?.management));
   }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const servicesQuery = useMemoFirebase(() => {
@@ -96,7 +91,7 @@ export default function DashboardPage() {
     if (isEjecutivo) {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
-    return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user?.management));
   }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const equipmentQuery = useMemoFirebase(() => {
@@ -106,7 +101,7 @@ export default function DashboardPage() {
     if (isEjecutivo) {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
-    return query(ref, where('management', '==', user.management));
+    return query(ref, where('management', '==', user?.management));
   }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   // Query para cargar todos los usuarios (usado en componentes de visualización)
@@ -120,7 +115,7 @@ export default function DashboardPage() {
   const { data: rawContracts, loading: contractsLoading } = useCollection<Contract>(contractsQuery);
   const { data: rawClients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
   const { data: rawContacts, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
-  const { data: rawActivities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
+  const { data: rawActivities, loading: activitiesLoading } = useCollection<Activity>(rawActivitiesQuery);
   const { data: rawServices, loading: servicesLoading } = useCollection<Service>(servicesQuery);
   const { data: rawEquipment, loading: equipmentLoading } = useCollection<Equipment>(equipmentQuery);
   const { data: allUsers } = useCollection<UserProfile>(usersQuery);
@@ -129,7 +124,7 @@ export default function DashboardPage() {
   const filteredData = useMemo(() => {
     if (!canLoadData) return { opportunities: [], contracts: [], clients: [], contacts: [], activities: [], services: [], equipment: [] };
 
-    // Si es ejecutivo, las queries ya vienen filtradas, no hace falta filterFn
+    // Si es ejecutivo, las queries ya vienen filtradas por management + assignedTo
     if (isEjecutivo) {
       return {
         opportunities: rawOpportunities || [],

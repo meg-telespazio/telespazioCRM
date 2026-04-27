@@ -95,7 +95,7 @@ export default function AllActivitiesPage() {
     // Admin ve todo
     if (user?.role === 'admin') return query(ref);
     
-    // Ejecutivo solo ve sus propios clientes (IMPORTANTE: Debe incluir management para las reglas)
+    // Ejecutivo solo ve sus propios clientes (Filtrando por management + assignedTo)
     if (user?.role === 'ejecutivo') {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
