@@ -75,7 +75,7 @@ export default function DashboardPage() {
   }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const activitiesQuery = useMemoFirebase(() => {
-    if (!canLoadData) return null;
+    if (!canLoadData || user?.role === 'ingeniero') return null;
     const ref = collection(firestore, 'activities');
     if (user?.role === 'admin') return query(ref);
     if (isEjecutivo) {
@@ -115,7 +115,7 @@ export default function DashboardPage() {
   const { data: rawContracts, loading: contractsLoading } = useCollection<Contract>(contractsQuery);
   const { data: rawClients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
   const { data: rawContacts, loading: contactsLoading } = useCollection<Contact>(contactsQuery);
-  const { data: rawActivities, loading: activitiesLoading } = useCollection<Activity>(rawActivitiesQuery);
+  const { data: rawActivities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
   const { data: rawServices, loading: servicesLoading } = useCollection<Service>(servicesQuery);
   const { data: rawEquipment, loading: equipmentLoading } = useCollection<Equipment>(equipmentQuery);
   const { data: allUsers } = useCollection<UserProfile>(usersQuery);
