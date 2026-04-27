@@ -5,6 +5,8 @@ import { LoginForm } from '@/components/auth/login-form';
 import { useI18n } from '@/firebase/client-provider';
 import Image from 'next/image';
 
+const APP_VERSION = '1.9.7';
+
 export default function LoginPage() {
   const { t } = useI18n();
 
@@ -42,6 +44,15 @@ export default function LoginPage() {
       >
         <LoginForm />
       </AuthFormCard>
+
+      <div className="mt-8 text-center space-y-1 opacity-70">
+        <p className="text-white text-[10px] font-bold uppercase tracking-widest">
+          © {new Date().getFullYear()} Todos los derechos reservados
+        </p>
+        <p className="text-white text-[10px] font-medium uppercase">
+          Telespazio Argentina S.A. - T-track Sales version: {APP_VERSION}
+        </p>
+      </div>
     </div>
   );
 }
