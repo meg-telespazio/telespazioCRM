@@ -153,6 +153,14 @@ export default function LocationFormPage() {
 
     const pageIsLoading = userLoading || clientsLoading || (locationLoading && !isNew);
 
+    const canModify = useMemo(() => {
+        if (isNew) return true;
+        if (!locationData || !user) return false;
+        if (user.role === 'admin') return true;
+        if (user.role === 'gerente' && user.management === locationData.management) return true;
+        return user.uid === locationData.assignedTo || user.uid === locationData.createdBy;
+    }, [isNew, locationData, user]);
+
     if (pageIsLoading) {
         return (
             <div className="flex flex-1 flex-col">
@@ -243,7 +251,7 @@ export default function LocationFormPage() {
                                     <ArrowLeft className="mr-2 h-4 w-4" />
                                     {t('Actions.back')}
                                 </Button>
-                                <Button type="submit" disabled={form.formState.isSubmitting}>
+                                <Button type="submit" disabled={form.formState.isSubmitting || !canModify}>
                                     {form.formState.isSubmitting ? t('App.loading') : t('Locations.save')}
                                 </Button>
                              </div>

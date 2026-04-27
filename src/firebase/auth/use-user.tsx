@@ -17,8 +17,16 @@ export const useUser = () => {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setAuthUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setAuthUser(user);
+        // Sync Firebase auth state to a cookie for Next.js Middleware
+        const token = await user.getIdToken();
+        document.cookie = `__session=${token}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Lax`;
+      } else {
+        setAuthUser(null);
+        document.cookie = '__session=; path=/; max-age=0';
+      }
       setAuthLoading(false);
     });
     return () => unsubscribe();
@@ -37,8 +45,8 @@ export const useUser = () => {
     
     const isSuperAdmin = authUser.email === ADMIN_EMAIL;
     
-    // We return null if the profile is still loading to prevent partial/incorrect identity states
-    // However, for the SuperAdmin we can bypass since the rules handle it by email token
+    // Regresamos null si el perfil aún está cargando para evitar estados de identidad parciales
+    // excepto si es SuperAdmin, que ya tiene bypass por reglas de email
     if (profileLoading && !isSuperAdmin) return null;
 
     return {

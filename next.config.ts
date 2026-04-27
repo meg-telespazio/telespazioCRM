@@ -29,9 +29,11 @@ const withPWA = withPWAInit({
   }
 });
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://www.google.com https://www.googletagmanager.com;
+    script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://apis.google.com https://www.gstatic.com https://www.google.com https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com;
     img-src 'self' blob: data: https://images.unsplash.com https://picsum.photos https://logo.clearbit.com https://*.tile.openstreetmap.org https://firebasestorage.googleapis.com https://placehold.co https://www.google.com https://*.firebasestorage.app;
     font-src 'self' https://fonts.gstatic.com;
@@ -117,7 +119,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: '*',
+            value: 'https://t-track-nu.vercel.app',
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -138,6 +140,14 @@ const nextConfig: NextConfig = {
           {
             key: 'Vary',
             value: 'Origin',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
           },
         ],
       },

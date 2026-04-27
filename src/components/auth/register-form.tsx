@@ -28,7 +28,8 @@ const getFormSchema = (t: (key: string) => string) =>
   z.object({
     firstName: z.string().min(2, t('Validation.firstNameMin')),
     lastName: z.string().min(2, t('Validation.lastNameMin')),
-    email: z.string().email(t('Validation.invalidEmail')),
+    email: z.string().email(t('Validation.invalidEmail'))
+      .refine(email => email.endsWith('@telespazio.com'), 'Solo se permiten emails corporativos @telespazio.com'),
     phone: z.string().min(10, t('Validation.phoneMin')),
     management: z.enum(['Satellite Communications', 'GeoInformacion'], {
       required_error: t('Validation.fieldRequired'),

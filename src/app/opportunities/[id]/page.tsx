@@ -344,6 +344,14 @@ export default function OpportunityFormPage() {
     return ['Won', 'Lost', 'Canceled', 'Suspended'].includes(opportunityData.stage);
   }, [isNew, opportunityData]);
 
+  const canModify = useMemo(() => {
+    if (isNew) return true;
+    if (!opportunityData || !user) return false;
+    if (user.role === 'admin') return true;
+    if (user.role === 'gerente' && user.management === opportunityData.management) return true;
+    return user.uid === opportunityData.assignedTo || user.uid === opportunityData.createdBy;
+  }, [isNew, opportunityData, user]);
+
   const selectedCatalogItem = useMemo(() => {
     if (!adderState.selectedCatalogItemId || !catalogItems) return null;
     return catalogItems.find(
@@ -996,7 +1004,7 @@ export default function OpportunityFormPage() {
               {/* Footer de Acciones */}
               <div className="flex items-center justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.back()}>{t('Auth.cancelLabel')}</Button>
-                <Button type="submit" disabled={isLocked}>{t('Forms.saveOpportunity')}</Button>
+                <Button type="submit" disabled={isLocked || !canModify}>{t('Forms.saveOpportunity')}</Button>
               </div>
             </form>
           </Form>

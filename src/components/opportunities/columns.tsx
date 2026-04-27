@@ -227,7 +227,7 @@ export const columns = (
         const { user } = useUser();
         
         const isOwner = user?.uid === opportunity.assignedTo || user?.uid === opportunity.createdBy;
-        const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'gerente';
+        const isManagerOrAdmin = user?.role === 'admin' || (user?.role === 'gerente' && user?.management === opportunity.management);
         const canModify = isManagerOrAdmin || isOwner;
 
         return (
@@ -242,9 +242,13 @@ export const columns = (
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel className="text-[10px]">{t('Actions.title')}</DropdownMenuLabel>
                 
-                <DropdownMenuItem className="text-[11px]" onClick={() => onEdit(opportunity)}>
-                  {canModify ? <Edit className="mr-2 h-3.5 w-3.5" /> : <Eye className="mr-2 h-3.5 w-3.5" />}
-                  <span>{canModify ? t('Actions.editOpportunity') : t('Activity.view')}</span>
+                <DropdownMenuItem 
+                  className="text-[11px]" 
+                  onClick={() => onEdit(opportunity)}
+                  disabled={!canModify}
+                >
+                  <Edit className="mr-2 h-3.5 w-3.5" />
+                  <span>{t('Actions.editOpportunity')}</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem className="text-[11px]" onClick={() => onDuplicate(opportunity)}>
@@ -252,18 +256,15 @@ export const columns = (
                   <span>Duplicar Negocio</span>
                 </DropdownMenuItem>
                 
-                {canModify && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive text-[11px]"
-                      onClick={() => onDelete(opportunity.id)}
-                    >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />
-                      {t('Actions.deleteOpportunity')}
-                    </DropdownMenuItem>
-                  </>
-                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive text-[11px]"
+                  onClick={() => onDelete(opportunity.id)}
+                  disabled={!canModify}
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                  {t('Actions.deleteOpportunity')}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

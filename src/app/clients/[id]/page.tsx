@@ -9,6 +9,7 @@ import type { Client, UserProfile, SystemConfig, TaxIdType } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, doc, query, where } from 'firebase/firestore';
 import { addClient, updateClient } from '@/lib/firestore/clients';
+import { encrypt, decrypt } from '@/lib/crypto';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -210,7 +211,7 @@ export default function ClientFormPage() {
         type: clientData.type || 'client',
         supplierPortalUrl: clientData.supplierPortalUrl || '',
         supplierPortalUser: clientData.supplierPortalUser || '',
-        supplierPortalPassword: clientData.supplierPortalPassword || '',
+        supplierPortalPassword: clientData.supplierPortalPassword ? decrypt(clientData.supplierPortalPassword) : '',
       });
       setCroppedAvatar(clientData.logoURL || null);
       
@@ -317,10 +318,22 @@ export default function ClientFormPage() {
     }
   };
 
+  const canModify = useMemo(() => {
+    if (isNew) return true;
+    if (!clientData || !user) return false;
+    if (user.role === 'admin') return true;
+    if (user.role === 'gerente' && user.management === clientData.management) return true;
+    return user.uid === clientData.assignedTo || user.uid === clientData.createdBy;
+  }, [isNew, clientData, user]);
+
   async function onSubmit(values: ClientFormData) {
     if (!user) return;
     try {
-      const dataToSave: Partial<Client> = { ...values, logoURL: croppedImage || null };
+      const dataToSave: Partial<Client> = { 
+        ...values, 
+        logoURL: croppedImage || null,
+        supplierPortalPassword: values.supplierPortalPassword ? encrypt(values.supplierPortalPassword) : ''
+      };
       if (isNew) {
         await addClient(firestore, user.uid, dataToSave as any);
         toast({ variant: 'success', title: t('Actions.saveSuccess') });
@@ -666,7 +679,7 @@ export default function ClientFormPage() {
 
                 <div className="flex items-center justify-end gap-4 pt-4">
                   <Button type="button" variant="outline" size="lg" onClick={() => router.back()} className="h-12 px-8">{t('Auth.cancelLabel')}</Button>
-                  <Button type="submit" size="lg" className="h-12 px-12 shadow-lg">{t('Forms.saveClient')}</Button>
+                  <Button type="submit" size="lg" className="h-12 px-12 shadow-lg" disabled={!canModify}>{t('Forms.saveClient')}</Button>
                 </div>
               </form>
             </Form>

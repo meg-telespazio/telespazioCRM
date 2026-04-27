@@ -27,7 +27,7 @@ export default function ContactsPage() {
   const [isImporterOpen, setImporterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [clientFilter, setClientFilter] = useState('all');
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
 
   const contactsQuery = useMemo(() => {
     if (!user) return null;
@@ -117,13 +117,13 @@ export default function ContactsPage() {
       <AppHeader title={t('Pages.contacts')}>
         <div className="flex items-center gap-4">
           {isEjecutivo && (
-            <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
+            <div className="flex items-center gap-2.5 bg-muted/50 px-3 py-1.5 rounded-full border border-border/60 shadow-sm">
               <Switch 
                 id="mine-filter" 
                 checked={showOnlyMine} 
                 onCheckedChange={setShowOnlyMine} 
               />
-              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer">
+              <Label htmlFor="mine-filter" className="text-[10px] font-bold uppercase tracking-tighter cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
                 {t('Actions.showOnlyMine')}
               </Label>
             </div>

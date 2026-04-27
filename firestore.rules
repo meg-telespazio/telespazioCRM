@@ -10,7 +10,7 @@ service cloud.firestore {
 
     // El Super Admin tiene bypass total.
     function isSuperAdmin() {
-      return isAuthenticated() && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
+      return isAuthenticated() && request.auth.token.superAdmin == true;
     }
 
     // Función optimizada para obtener los datos del usuario logueado
@@ -37,16 +37,15 @@ service cloud.firestore {
       return isAdmin() || (
         isAuthenticated() && 
         perms != null && 
-        perms.modules.keys().contains(module) &&
+        module in perms.modules &&
         perms.modules[module].get(action, false) == true
       );
     }
 
     // Aislamiento de datos por gerencia
     function isSameManagement(data) {
-      let userMgt = getUserData().get('management', '');
-      let docMgt = data.get('management', '');
-      return isAdmin() || (userMgt != '' && docMgt == userMgt);
+      let userMgt = getUserData().get('management', 'Satellite Communications');
+      return isAdmin() || (userMgt != '' && data.management == userMgt);
     }
 
     function isOwner(data) {
@@ -63,7 +62,7 @@ service cloud.firestore {
       allow list: if isAuthenticated();
       allow get: if isAuthenticated();
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow create: if isAuthenticated() && (request.resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (request.resource.data.uid == request.auth.uid || isAdmin()) && request.auth.token.email.matches('.*@telespazio\\.com$');
       
       match /reports/{reportId} {
         allow read, write: if isAuthenticated() && request.auth.uid == userId;
@@ -72,7 +71,7 @@ service cloud.firestore {
     
     match /service_orders/{soId} {
       allow read: if hasPermission('serviceOrders', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('serviceOrders', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('serviceOrders', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('serviceOrders', 'edit') && (isAdmin() || getUserData().get('role', '') == 'gerente' || 
         (request.auth.uid == resource.data.eeccId || request.auth.uid == resource.data.pmAssignedId));
       allow delete: if hasPermission('serviceOrders', 'delete') && isAdmin();
@@ -117,49 +116,49 @@ service cloud.firestore {
 
     match /clients/{clientId} {
       allow read: if hasPermission('clients', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('clients', 'create') && (isAdmin() || (request.resource.data.get('management', '') != '' && request.resource.data.get('management', '') == getUserData().get('management', '')));
+      allow create: if hasPermission('clients', 'create') && (isAdmin() || (request.resource.data.get('management', '') != '' && request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications')));
       allow update: if hasPermission('clients', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('clients', 'delete') && canModify(resource.data); 
     }
 
     match /contacts/{contactId} {
       allow read: if hasPermission('contacts', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('contacts', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('contacts', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('contacts', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('contacts', 'delete') && canModify(resource.data);
     }
 
     match /locations/{locationId} {
       allow read: if hasPermission('locations', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('locations', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('locations', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('locations', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('locations', 'delete') && canModify(resource.data);
     }
 
     match /opportunities/{opportunityId} {
       allow read: if hasPermission('opportunities', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('opportunities', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('opportunities', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('opportunities', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('opportunities', 'delete') && canModify(resource.data);
     }
 
     match /purchaseOrders/{poId} {
       allow read: if hasPermission('purchaseOrders', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('purchaseOrders', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('purchaseOrders', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('purchaseOrders', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('purchaseOrders', 'delete') && canModify(resource.data);
     }
 
     match /services/{serviceId} {
       allow read: if hasPermission('services', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('services', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('services', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('services', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('services', 'delete') && canModify(resource.data);
     }
 
     match /contracts/{contractId} {
       allow read: if hasPermission('contracts', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('contracts', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('contracts', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('contracts', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('contracts', 'delete') && canModify(resource.data);
       
@@ -171,14 +170,14 @@ service cloud.firestore {
 
     match /equipment/{equipmentId} {
       allow read: if hasPermission('equipment', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('equipment', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('equipment', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('equipment', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('equipment', 'delete') && canModify(resource.data);
     }
 
     match /activities/{activityId} {
       allow read: if hasPermission('activities', 'view') && isSameManagement(resource.data);
-      allow create: if hasPermission('activities', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow create: if hasPermission('activities', 'create') && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', 'Satellite Communications'));
       allow update: if hasPermission('activities', 'edit') && canModify(resource.data);
       allow delete: if hasPermission('activities', 'delete') && canModify(resource.data);
 
@@ -199,7 +198,12 @@ service cloud.firestore {
     }
 
     match /counters/{counterId} {
-      allow get, update, create: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (request.resource.data.count == resource.data.count + 1)
+      );
       allow list, delete: if isSuperAdmin();
     }
 

@@ -168,6 +168,14 @@ export default function ContactFormPage() {
 
     const pageIsLoading = userLoading || clientsLoading || (contactLoading && !isNew);
 
+    const canModify = useMemo(() => {
+        if (isNew) return true;
+        if (!contactData || !user) return false;
+        if (user.role === 'admin') return true;
+        if (user.role === 'gerente' && user.management === contactData.management) return true;
+        return user.uid === contactData.assignedTo || user.uid === contactData.createdBy;
+    }, [isNew, contactData, user]);
+
     if (pageIsLoading) {
         return (
             <div className="flex flex-1 flex-col">
@@ -410,7 +418,7 @@ export default function ContactFormPage() {
                                     <ArrowLeft className="mr-2 h-4 w-4" />
                                     {t('Importer.backButton')}
                                 </Button>
-                                <Button type="submit" disabled={form.formState.isSubmitting}>
+                                <Button type="submit" disabled={form.formState.isSubmitting || !canModify}>
                                     {form.formState.isSubmitting ? t('App.loading') : t('Forms.saveContact')}
                                 </Button>
                              </div>

@@ -205,6 +205,10 @@ export default function ClientSummaryPage() {
 
   const isLoading = userLoading || clientLoading;
   const isIngeniero = user?.role === 'ingeniero';
+  
+  const isOwner = user?.uid === client?.assignedTo || user?.uid === client?.createdBy;
+  const isManagerOrAdmin = user?.role === 'admin' || (user?.role === 'gerente' && user?.management === client?.management);
+  const canModify = isManagerOrAdmin || isOwner;
 
   if (isLoading) return <div className="p-6 space-y-6"><Skeleton className="h-48" /><Skeleton className="h-96" /></div>;
   if (!client) return <div className="p-12 text-center"><p>Client not found.</p></div>;
@@ -228,7 +232,12 @@ export default function ClientSummaryPage() {
                 {t('Actions.generatePreBilling')}
               </Button>
             )}
-            <Button onClick={() => router.push(`/clients/${clientId}`)}><Edit className="mr-2 h-4 w-4" />{t('Actions.editClient')}</Button>
+            <Button 
+              onClick={() => router.push(`/clients/${clientId}`)}
+              disabled={!canModify}
+            >
+              <Edit className="mr-2 h-4 w-4" />{t('Actions.editClient')}
+            </Button>
           </>
         )}
       </AppHeader>
