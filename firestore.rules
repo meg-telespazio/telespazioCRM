@@ -41,7 +41,7 @@ service cloud.firestore {
     }
 
     function canModify(data) {
-      return isAdmin() || (isSameManagement(data) && (getUserData().get('role', '') == 'gerente' || isOwner(data)));
+      return isAdmin() || (isSameManagement(data) && (isGerente() || isOwner(data)));
     }
 
     // --- Reglas por Colección ---

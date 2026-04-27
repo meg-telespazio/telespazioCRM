@@ -4,7 +4,6 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  getDoc,
   serverTimestamp,
   runTransaction,
   type Firestore,
@@ -32,31 +31,28 @@ export async function addContact(
   uid: string,
   contactData: ContactData
 ) {
-  // 1. Obtener datos del cliente para heredar campos de seguridad
   const clientRef = doc(firestore, 'clients', contactData.clientId);
-  const clientSnap = await getDoc(clientRef);
-  
-  if (!clientSnap.exists()) {
-    throw new Error('El cliente asociado no existe.');
-  }
-  
-  const clientData = clientSnap.data() as Client;
-
   const counterRef = doc(firestore, 'counters', 'contacts');
   const contactCollectionRef = collection(firestore, CONTACTS_COLLECTION);
 
   try {
     await runTransaction(firestore, async (transaction) => {
+      // 1. Obtener datos del cliente para heredar seguridad
+      const clientSnap = await transaction.get(clientRef);
+      if (!clientSnap.exists()) {
+        throw new Error('El cliente asociado no existe.');
+      }
+      const clientData = clientSnap.data() as Client;
+
+      // 2. Obtener y actualizar contador
       const counterDoc = await transaction.get(counterRef);
-      
       const currentCount = counterDoc.data()?.count || 0;
       const newCount = currentCount + 1;
 
       const publicId = `CT-${String(newCount).padStart(7, '0')}`;
-      
       const newContactRef = doc(contactCollectionRef);
       
-      // Construir objeto final con campos de seguridad heredados
+      // 3. Construir objeto final con herencia de management y assignedTo
       const data = {
         ...cleanData(contactData),
         publicId,
@@ -70,14 +66,16 @@ export async function addContact(
       transaction.set(newContactRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Contact creation transaction failed: ", error);
-    const permissionError = new FirestorePermissionError({
-      path: `/${CONTACTS_COLLECTION} or /counters/contacts`,
-      operation: 'create',
-      requestResourceData: contactData,
-    });
-    errorEmitter.emit('permission-error', permissionError);
+    if (error.code === 'permission-denied') {
+      const permissionError = new FirestorePermissionError({
+        path: `/${CONTACTS_COLLECTION} or /counters/contacts`,
+        operation: 'create',
+        requestResourceData: contactData,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    }
     throw error;
   }
 }
@@ -93,22 +91,26 @@ export function updateContact(
     updatedAt: serverTimestamp(),
   };
   updateDoc(contactRef, data).catch((serverError) => {
-    const permissionError = new FirestorePermissionError({
-      path: contactRef.path,
-      operation: 'update',
-      requestResourceData: data,
-    });
-    errorEmitter.emit('permission-error', permissionError);
+    if (serverError.code === 'permission-denied') {
+      const permissionError = new FirestorePermissionError({
+        path: contactRef.path,
+        operation: 'update',
+        requestResourceData: data,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    }
   });
 }
 
 export function deleteContact(firestore: Firestore, contactId: string) {
   const contactRef = doc(firestore, CONTACTS_COLLECTION, contactId);
   deleteDoc(contactRef).catch((serverError) => {
-    const permissionError = new FirestorePermissionError({
-      path: contactRef.path,
-      operation: 'delete',
-    });
-    errorEmitter.emit('permission-error', permissionError);
+    if (serverError.code === 'permission-denied') {
+      const permissionError = new FirestorePermissionError({
+        path: contactRef.path,
+        operation: 'delete',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    }
   });
 }
