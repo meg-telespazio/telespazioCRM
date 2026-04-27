@@ -17,14 +17,12 @@ import {
 } from '@/components/ui/table';
 import type { Activity, Client, ActivityType, UserProfile, Contact } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { useFirestore, useCollection } from '@/firebase';
 import { formatDistanceToNow } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { Phone, Calendar, Mail, MessageSquare } from 'lucide-react';
 import { RenderWithMentions } from '../activity/render-with-mentions';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
-import { collection, query } from 'firebase/firestore';
 
 const activityIcons: Record<ActivityType, React.ElementType> = {
   call: Phone,
@@ -37,22 +35,18 @@ type RecentActivitiesProps = {
   activities: Activity[];
   clients: Client[];
   contacts: Contact[];
+  users: UserProfile[];
 };
 
 export function RecentActivities({
   activities,
   clients,
   contacts,
+  users,
 }: RecentActivitiesProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const firestore = useFirestore();
   const dateLocale = locale === 'es' ? es : enUS;
-
-  // We need users to resolve mentions in dashboard
-  const usersQuery = useMemo(() => query(collection(firestore, 'users')), [firestore]);
-  
-  const { data: users } = useCollection<UserProfile>(usersQuery);
 
   const recentActivities = useMemo(() => {
     return [...(activities || [])]
@@ -111,7 +105,7 @@ export function RecentActivities({
                           {t(`Activity.types.${activity.type}`)}
                         </p>
                         <div className="text-sm text-muted-foreground line-clamp-2">
-                          <RenderWithMentions text={activity.description} users={users || []} contacts={contacts || []} />
+                          <RenderWithMentions text={activity.description} users={users} contacts={contacts} />
                         </div>
                       </div>
                     </div>
@@ -128,6 +122,13 @@ export function RecentActivities({
                 </TableRow>
               );
             })}
+            {recentActivities.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground italic">
+                  {t('Activity.noActivitiesTitle')}
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

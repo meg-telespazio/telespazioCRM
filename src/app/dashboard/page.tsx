@@ -8,7 +8,7 @@ import { StatsCards } from '@/components/dashboard/stats-cards';
 import { OpportunitiesChart } from '@/components/dashboard/opportunities-chart';
 import { RecentOpportunities } from '@/components/dashboard/recent-opportunities';
 import { useI18n } from '@/firebase/client-provider';
-import type { Opportunity, Client, Contact, Activity, SystemConfig, Contract, Service, Equipment } from '@/lib/types';
+import type { Opportunity, Client, Contact, Activity, SystemConfig, Contract, Service, Equipment, UserProfile } from '@/lib/types';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RecentActivities } from '@/components/dashboard/recent-activities';
@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const { t, currency: displayCurrency } = useI18n();
   const firestore = useFirestore();
 
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const [showOnlyMine, setShowOnlyMine] = useState(true);
 
   // Perfil de usuario y config del sistema
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
@@ -31,56 +31,89 @@ export default function DashboardPage() {
   // Bandera crítica: Solo cargamos datos si el usuario está completamente listo y tiene su gerencia definida
   const canLoadData = !userLoading && !!user && (!!user.management || user.role === 'admin');
   const managementFilter = user?.role === 'admin' ? null : user?.management;
+  const isEjecutivo = user?.role === 'ejecutivo';
 
   // Base queries con memoización para evitar re-renders y errores de permisos por cambios de instancia
+  // Para Ejecutivos, SIEMPRE filtramos por assignedTo en el Dashboard para evitar errores de reglas
   const opportunitiesQuery = useMemoFirebase(() => {
     if (!canLoadData || user?.role === 'ingeniero') return null;
     const ref = collection(firestore, 'opportunities');
-    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData, user?.role]);
+    if (user?.role === 'admin') return query(ref);
+    if (isEjecutivo) {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const contractsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'contracts');
-    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData]);
+    if (user?.role === 'admin') return query(ref);
+    if (isEjecutivo) {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const clientsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
-    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData]);
+    if (user?.role === 'admin') return query(ref);
+    if (isEjecutivo) {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const contactsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'contacts');
-    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData]);
+    if (user?.role === 'admin') return query(ref);
+    if (isEjecutivo) {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const activitiesQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'activities');
     
+    if (user?.role === 'admin') return query(ref);
+    
     // Ejecutivos solo ven sus propias actividades por query (y por reglas)
-    // IMPORTANTE: Incluir management para evitar error de permisos en listado
-    if (user?.role === 'ejecutivo') {
+    if (isEjecutivo) {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
     
-    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData, user?.role, user?.uid, user?.management]);
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const servicesQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'services');
-    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData]);
+    if (user?.role === 'admin') return query(ref);
+    if (isEjecutivo) {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
 
   const equipmentQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'equipment');
-    return managementFilter ? query(ref, where('management', '==', managementFilter)) : query(ref);
-  }, [firestore, managementFilter, canLoadData]);
+    if (user?.role === 'admin') return query(ref);
+    if (isEjecutivo) {
+      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+    }
+    return query(ref, where('management', '==', user.management));
+  }, [firestore, canLoadData, user?.role, user?.uid, user?.management, isEjecutivo]);
+
+  // Query para cargar todos los usuarios (usado en componentes de visualización)
+  const usersQuery = useMemoFirebase(() => {
+    if (!canLoadData) return null;
+    return collection(firestore, 'users');
+  }, [firestore, canLoadData]);
 
   // Data fetching
   const { data: rawOpportunities, loading: opportunitiesLoading } = useCollection<Opportunity>(opportunitiesQuery);
@@ -90,15 +123,27 @@ export default function DashboardPage() {
   const { data: rawActivities, loading: activitiesLoading } = useCollection<Activity>(activitiesQuery);
   const { data: rawServices, loading: servicesLoading } = useCollection<Service>(servicesQuery);
   const { data: rawEquipment, loading: equipmentLoading } = useCollection<Equipment>(equipmentQuery);
+  const { data: allUsers } = useCollection<UserProfile>(usersQuery);
 
-  // Filtrado local adicional para el dashboard
+  // Filtrado local adicional para el dashboard (solo para Admin/Gerente que no tienen filtro en query)
   const filteredData = useMemo(() => {
     if (!canLoadData) return { opportunities: [], contracts: [], clients: [], contacts: [], activities: [], services: [], equipment: [] };
 
-    const isEjecutivo = user?.role === 'ejecutivo';
-    const filterByOwner = isEjecutivo && showOnlyMine;
+    // Si es ejecutivo, las queries ya vienen filtradas, no hace falta filterFn
+    if (isEjecutivo) {
+      return {
+        opportunities: rawOpportunities || [],
+        contracts: rawContracts || [],
+        clients: rawClients || [],
+        contacts: rawContacts || [],
+        activities: rawActivities || [],
+        services: rawServices || [],
+        equipment: rawEquipment || [],
+      };
+    }
 
-    const filterFn = (item: any) => !filterByOwner || item.assignedTo === user?.uid;
+    // Para Admin/Gerente, aplicamos el switch de "Ver solo mis registros" si está activo
+    const filterFn = (item: any) => !showOnlyMine || item.assignedTo === user?.uid;
 
     return {
       opportunities: (rawOpportunities || []).filter(filterFn),
@@ -109,7 +154,7 @@ export default function DashboardPage() {
       services: (rawServices || []).filter(filterFn),
       equipment: (rawEquipment || []).filter(filterFn),
     };
-  }, [rawOpportunities, rawContracts, rawClients, rawContacts, rawActivities, rawServices, rawEquipment, showOnlyMine, user, canLoadData]);
+  }, [rawOpportunities, rawContracts, rawClients, rawContacts, rawActivities, rawServices, rawEquipment, showOnlyMine, user, canLoadData, isEjecutivo]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -137,12 +182,11 @@ export default function DashboardPage() {
     !configData;
 
   const isIngeniero = user?.role === 'ingeniero';
-  const isEjecutivo = user?.role === 'ejecutivo';
 
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Dashboard.title')}>
-        {isEjecutivo && (
+        {user?.role !== 'admin' && (
           <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
             <Switch 
               id="mine-filter-dashboard" 
@@ -214,6 +258,7 @@ export default function DashboardPage() {
                 activities={filteredData.activities}
                 clients={filteredData.clients}
                 contacts={filteredData.contacts}
+                users={allUsers || []}
               />
             )}
           </div>
