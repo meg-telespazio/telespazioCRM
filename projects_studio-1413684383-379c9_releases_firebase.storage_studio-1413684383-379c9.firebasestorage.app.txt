@@ -1,0 +1,81 @@
+rules_version = '2';
+
+// REGLAS DE SEGURIDAD PARA STORAGE - TELESPAZIO CRM
+// Implementa aislamiento por gerencia y protección de documentos críticos.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'mariano.gonzalez@telespazio.com' || 
+        getUserData().role == 'admin'
+      );
+    }
+
+    function isGerente() {
+      return isAdmin() || (isAuthenticated() && getUserData().role == 'gerente');
+    }
+
+    // Helper para verificar acceso a un documento de Firestore por Gerencia
+    function hasManagementAccess(docData) {
+      return isAdmin() || (isAuthenticated() && getUserData().management == docData.management);
+    }
+
+    // Helper para verificar si es dueño (Ejecutivo)
+    function isOwner(docData) {
+      return docData.assignedTo == request.auth.uid || docData.createdBy == request.auth.uid;
+    }
+
+    // Regla combinada para archivos vinculados a entidades de Firestore
+    function canAccessEntityFile(collection, entityId) {
+      let docPath = /databases/(default)/documents/$(collection)/$(entityId);
+      // Si el documento no existe (caso de subida previa al guardado final),
+      // confiamos en la regla de carpeta temporal temp-{uid} definida en el match.
+      return exists(docPath) && (
+        isAdmin() || 
+        (isGerente() && hasManagementAccess(get(docPath).data)) || 
+        (hasManagementAccess(get(docPath).data) && isOwner(get(docPath).data))
+      );
+    }
+
+    // --- Reglas por Carpeta ---
+
+    match /contracts/{contractId}/{allPaths=**} {
+      allow read, write: if isAdmin() || 
+        (isAuthenticated() && (contractId == 'temp-' + request.auth.uid || canAccessEntityFile('contracts', contractId)));
+    }
+
+    match /opportunities/{opportunityId}/{allPaths=**} {
+      allow read, write: if isAdmin() || 
+        (isAuthenticated() && (opportunityId == 'temp-' + request.auth.uid || canAccessEntityFile('opportunities', opportunityId)));
+    }
+
+    match /service_orders/{soId}/{allPaths=**} {
+      allow read, write: if isAdmin() || 
+        (isAuthenticated() && (soId == 'temp-' + request.auth.uid || canAccessEntityFile('service_orders', soId)));
+    }
+
+    match /users/{userId}/avatar {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || request.auth.uid == userId;
+    }
+    
+    match /clients/{clientId}/logo {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || canAccessEntityFile('clients', clientId);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

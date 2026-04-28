@@ -206,6 +206,9 @@ export default function SystemSettingsPage() {
           <Button variant="secondary" size="sm" asChild>
             <Link href="/settings/system">{t('Settings.system')}</Link>
           </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/settings/usage">Consumos y Costos</Link>
+          </Button>
         </div>
         <Button onClick={handleSave} disabled={saving} className="ml-4">
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

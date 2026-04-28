@@ -255,6 +255,9 @@ export default function UsersManagementPage() {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/settings/system">{t('Settings.system')}</Link>
           </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/settings/usage">Consumos y Costos</Link>
+          </Button>
         </div>
         <Button onClick={() => setIsAddUserOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />

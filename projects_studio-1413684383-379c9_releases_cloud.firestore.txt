@@ -1,0 +1,215 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helpers de Autenticación y Perfil ---
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || (isAuthenticated() && getUserData().get('role', '') == 'admin');
+    }
+
+    function isGerente() {
+      return isAdmin() || (isAuthenticated() && getUserData().get('role', '') == 'gerente');
+    }
+
+    function isOwner(data) {
+      return data.get('assignedTo', '') == request.auth.uid || data.get('createdBy', '') == request.auth.uid;
+    }
+
+    function isSameManagement(data) {
+      return isAdmin() || (
+        isAuthenticated() &&
+        data.get('management', '') == getUserData().get('management', '')
+      );
+    }
+
+    // Regla de lectura restrictiva para Ejecutivos
+    function canReadRecord(data) {
+      return isAdmin() || isGerente() || (isSameManagement(data) && isOwner(data));
+    }
+
+    function canModify(data) {
+      return isAdmin() || (isSameManagement(data) && (isGerente() || isOwner(data)));
+    }
+
+    // --- Reglas por Colección ---
+
+    match /users/{userId} {
+      allow list: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && (request.resource.data.uid == request.auth.uid || isAdmin());
+      
+      match /reports/{reportId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
+    }
+    
+    match /service_orders/{soId} {
+      allow read: if canReadRecord(resource.data);
+      allow create: if (isAdmin() || isGerente()) || (isAuthenticated() && request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if isAdmin() || isGerente() || (request.auth.uid == resource.data.eeccId || request.auth.uid == resource.data.pmAssignedId);
+      allow delete: if isAdmin();
+
+      match /items/{itemId} {
+        allow read: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/service_orders/$(soId)).data);
+        allow write: if isAdmin() || isGerente() || 
+          (request.auth.uid == get(/databases/$(database)/documents/service_orders/$(soId)).data.eeccId || 
+           request.auth.uid == get(/databases/$(database)/documents/service_orders/$(soId)).data.pmAssignedId);
+      }
+
+      match /comments/{commentId} {
+        allow read: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/service_orders/$(soId)).data);
+        allow create: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/service_orders/$(soId)).data);
+      }
+    }
+
+    match /mail/{mailId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if false; 
+    }
+
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated() && resource.data.toEmail == request.auth.token.email;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.toEmail == request.auth.token.email;
+      allow delete: if isAdmin();
+    }
+
+    match /accessRequests/{requestId} {
+      allow create: if true;
+      allow read: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid; 
+      allow update, delete: if false; 
+    }
+
+    match /clients/{clientId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if canModify(resource.data); 
+    }
+
+    match /contacts/{contactId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if canModify(resource.data);
+    }
+
+    match /locations/{locationId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if canModify(resource.data);
+    }
+
+    match /opportunities/{opportunityId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if canModify(resource.data);
+    }
+
+    match /purchaseOrders/{poId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if canModify(resource.data);
+    }
+
+    match /services/{serviceId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if canModify(resource.data);
+    }
+
+    match /contracts/{contractId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if canModify(resource.data);
+      
+      match /addendums/{addendumId} {
+      	allow list: if isAuthenticated();
+        allow read, write: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data);
+      }
+    }
+
+    match /equipment/{equipmentId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /activities/{activityId} {
+    	allow list: if isAuthenticated();
+      allow read: if canReadRecord(resource.data);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
+      allow update: if canModify(resource.data);
+      allow delete: if canModify(resource.data);
+
+      match /followUps/{followUpId} {
+      	allow list: if isAuthenticated();
+        allow read, write: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/activities/$(activityId)).data);
+      }
+    }
+
+    match /productsAndServices/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isGerente();
+    }
+
+    match /holdings/{holdingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isGerente();
+    }
+
+    match /counters/{counterId} {
+      allow get, update, create: if isAuthenticated();
+      allow list, delete: if isSuperAdmin();
+    }
+
+    match /systemConfig/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /exchangeRateHistory/{historyId} {
+      allow read, write: if isAdmin();
+    }
+    
+    match /quoteRequests/{requestId} {
+      allow create: if true;
+      allow read: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+  }
+}
