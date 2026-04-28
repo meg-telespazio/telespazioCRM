@@ -9,6 +9,7 @@ import type { Client, Contact, Opportunity, ProductOrService, Contract, Purchase
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { Bot, Send, Loader2, Sparkles, Database, FileSpreadsheet, Trash2, History } from 'lucide-react';
 import { processReportQuery } from '@/ai/flows/report-ai-flow';
 import { runReportEngine } from '@/lib/reports-engine';
@@ -29,7 +30,7 @@ type ChatMessage = {
 
 const SCHEMA_DESCRIPTION = `
 Entities and Fields:
-- clients: name, cuit, sector, subsector, status, holding, countryHQ
+- clients: name, cuit, sector, subsector, status, holding, countryHQ. Sectors commonly used: Agriculture, Mining, Energy, Construction, Manufacturing, Retail, Transportation, Technology, Finance, Healthcare, Government.
 - contacts: name, position, area
 - opportunities: title, stage, value, currency, probability, closeDate, risk
 - contracts: publicId, type, status, amount, currency, startDate, endDate
