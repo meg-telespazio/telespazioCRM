@@ -58,8 +58,13 @@ export function RecentActivities({
       .slice(0, 5);
   }, [activities]);
 
-  const getClientName = (clientId: string) => {
-    return clients.find((c) => c.id === clientId)?.name || 'Unknown Client';
+  const getClientName = (activity: any) => {
+    // Manejar variaciones en el nombre del campo del documento
+    const id = activity.clientId || activity.client_id;
+    if (!id) return 'Unknown Client';
+    
+    const client = clients.find((c) => c.id === id);
+    return client?.name || 'Unknown Client';
   };
 
   return (
@@ -89,11 +94,13 @@ export function RecentActivities({
             {recentActivities.map((activity) => {
               const Icon = activityIcons[activity.type] || MessageSquare;
               const displayDate = activity.updatedAt || activity.createdAt;
+              const clientId = activity.clientId || (activity as any).client_id;
+              
               return (
                 <TableRow
                   key={activity.id}
                   onClick={() =>
-                    router.push(`/clients/${activity.clientId}/activity`)
+                    clientId && router.push(`/clients/${clientId}/activity`)
                   }
                   className="cursor-pointer"
                 >
@@ -111,7 +118,7 @@ export function RecentActivities({
                     </div>
                   </TableCell>
                   <TableCell className="truncate max-w-24 sm:max-w-xs">
-                    {getClientName(activity.clientId)}
+                    {getClientName(activity)}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatDistanceToNow(displayDate, {

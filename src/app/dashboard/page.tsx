@@ -228,7 +228,7 @@ export default function DashboardPage() {
               ) : (
                 <OpportunitiesChart 
                   opportunities={filteredData.opportunities} 
-                  clients={filteredData.clients} 
+                  clients={rawClients || []} 
                   exchangeRates={configData?.exchangeRates || []}
                   displayCurrency={displayCurrency}
                 />
@@ -251,8 +251,8 @@ export default function DashboardPage() {
             ) : (
               <RecentActivities
                 activities={filteredData.activities}
-                clients={filteredData.clients}
-                contacts={filteredData.contacts}
+                clients={rawClients || []}
+                contacts={rawContacts || []}
                 users={allUsers || []}
               />
             )}
@@ -261,7 +261,7 @@ export default function DashboardPage() {
             {!isIngeniero && !pageIsLoading && (
               <RecentOpportunities
                 opportunities={filteredData.opportunities}
-                clients={filteredData.clients}
+                clients={rawClients || []}
                 exchangeRates={configData?.exchangeRates || []}
                 displayCurrency={displayCurrency}
               />

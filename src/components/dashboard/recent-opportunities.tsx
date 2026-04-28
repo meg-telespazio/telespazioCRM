@@ -57,11 +57,16 @@ export function RecentOpportunities({ opportunities, clients, exchangeRates, dis
   };
 
   const recentOpportunities = [...opportunities]
-    .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
+    .sort((a, b) => {
+      const dateA = a.updatedAt || a.createdAt;
+      const dateB = b.updatedAt || b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    })
     .slice(0, 5);
 
   const getClientName = (clientId: string) => {
-    return clients.find((c) => c.id === clientId)?.name || 'Unknown Client';
+    const client = clients.find((c) => c.id === clientId);
+    return client?.name || 'Unknown Client';
   };
 
   return (
