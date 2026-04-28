@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -12,8 +11,10 @@ import {
   query,
   where,
   getDocs,
+  writeBatch,
+  getDoc,
 } from 'firebase/firestore';
-import type { Client, ManagementArea } from '@/lib/types';
+import type { Client, ManagementArea, UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { logAuditAction } from './audit';
@@ -40,8 +41,6 @@ export async function addClient(
   const clientCollectionRef = collection(firestore, CLIENTS_COLLECTION);
   const cleanIdValue = clientData.cuit;
 
-  // Check for duplicates within the same type or globally if preferred
-  // For safety across regions, we check global string value
   if (cleanIdValue && cleanIdValue !== '00000000000' && cleanIdValue !== '-') {
     const q = query(clientCollectionRef, where('cuit', '==', cleanIdValue));
     const querySnapshot = await getDocs(q);
@@ -92,6 +91,77 @@ export async function addClient(
       requestResourceData: clientData,
     });
     errorEmitter.emit('permission-error', permissionError);
+    throw error;
+  }
+}
+
+/**
+ * Reasigna un cliente y TODAS sus entidades relacionadas a un nuevo responsable.
+ * Esto incluye contactos, locaciones, oportunidades, contratos, POs, servicios y equipos.
+ */
+export async function reassignClient(
+  firestore: Firestore,
+  clientId: string,
+  newOwnerId: string,
+  newManagement: ManagementArea
+) {
+  const batch = writeBatch(firestore);
+  const updatedAt = serverTimestamp();
+  const updateFields = { assignedTo: newOwnerId, management: newManagement, updatedAt };
+
+  // 1. Cliente
+  batch.update(doc(firestore, 'clients', clientId), updateFields);
+
+  // 2. Entidades vinculadas directamente por clientId
+  const directEntities = ['contacts', 'locations', 'opportunities', 'activities', 'contracts'];
+  
+  for (const coll of directEntities) {
+    const q = query(collection(firestore, coll), where('clientId', '==', clientId));
+    const snap = await getDocs(q);
+    snap.forEach(d => batch.update(d.ref, updateFields));
+  }
+
+  // 3. Entidades vinculadas jerárquicamente (Contrato -> PO -> Service -> Equipment)
+  const contractsQuery = query(collection(firestore, 'contracts'), where('clientId', '==', clientId));
+  const contractsSnap = await getDocs(contractsQuery);
+  
+  for (const contractDoc of contractsSnap.docs) {
+    const contractId = contractDoc.id;
+    
+    // Purchase Orders
+    const posQuery = query(collection(firestore, 'purchaseOrders'), where('contractId', '==', contractId));
+    const posSnap = await getDocs(posQuery);
+    
+    for (const poDoc of posSnap.docs) {
+      const poId = poDoc.id;
+      batch.update(poDoc.ref, updateFields);
+
+      // Services
+      const servicesQuery = query(collection(firestore, 'services'), where('poId', '==', poId));
+      const servicesSnap = await getDocs(servicesQuery);
+      
+      for (const serviceDoc of servicesSnap.docs) {
+        const serviceId = serviceDoc.id;
+        batch.update(serviceDoc.ref, updateFields);
+
+        // Equipment (linked to service)
+        const equipmentQuery = query(collection(firestore, 'equipment'), where('currentServiceId', '==', serviceId));
+        const equipmentSnap = await getDocs(equipmentQuery);
+        equipmentSnap.forEach(eqDoc => batch.update(eqDoc.ref, updateFields));
+      }
+    }
+  }
+
+  try {
+    await batch.commit();
+    logAuditAction(firestore, {
+      action: 'update',
+      collection: CLIENTS_COLLECTION,
+      docId: clientId,
+      details: `Reasignación masiva a ${newOwnerId} (${newManagement})`
+    });
+  } catch (error: any) {
+    console.error("Cascade reassignment failed:", error);
     throw error;
   }
 }

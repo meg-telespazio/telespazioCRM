@@ -5,7 +5,7 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useI18n } from '@/firebase/client-provider';
-import type { Client, UserProfile } from '@/lib/types';
+import type { Client, UserProfile, ManagementArea } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,8 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Settings2, UserCheck } from 'lucide-react';
+import { Settings2, UserCheck, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { reassignClient } from '@/lib/firestore/clients';
 
 interface ClientBulkEditDialogProps {
   selectedClients: Client[];
@@ -67,24 +68,45 @@ export function ClientBulkEditDialog({
     let successCount = 0;
 
     try {
-      const updates: any = {};
-      if (status !== 'no_change') updates.status = status;
-      if (type !== 'no_change') updates.type = type;
-      if (assignedTo !== 'no_change') updates.assignedTo = assignedTo;
+      // Si hay cambio de responsable, usamos la lógica de reasignación en cascada
+      if (assignedTo !== 'no_change') {
+        const newExec = users.find(u => u.uid === assignedTo);
+        if (!newExec) throw new Error("Nuevo responsable no encontrado.");
 
-      const promises = selectedClients.map((client) => {
-        const docRef = doc(firestore, 'clients', client.id);
-        return updateDoc(docRef, updates).then(() => {
+        for (const client of selectedClients) {
+          // Primero actualizamos el responsable con la cascada
+          await reassignClient(firestore, client.id, assignedTo, newExec.management as ManagementArea);
+          
+          // Luego aplicamos otros cambios masivos si existen
+          const extraUpdates: any = {};
+          if (status !== 'no_change') extraUpdates.status = status;
+          if (type !== 'no_change') extraUpdates.type = type;
+
+          if (Object.keys(extraUpdates).length > 0) {
+            await updateDoc(doc(firestore, 'clients', client.id), extraUpdates);
+          }
           successCount++;
-        });
-      });
+        }
+      } else {
+        // Solo cambios de estado/tipo (Update normal)
+        const updates: any = {};
+        if (status !== 'no_change') updates.status = status;
+        if (type !== 'no_change') updates.type = type;
 
-      await Promise.allSettled(promises);
+        const promises = selectedClients.map((client) => {
+          const docRef = doc(firestore, 'clients', client.id);
+          return updateDoc(docRef, updates).then(() => {
+            successCount++;
+          });
+        });
+
+        await Promise.allSettled(promises);
+      }
 
       toast({
         variant: 'success',
         title: 'Actualización completada',
-        description: `Se actualizaron ${successCount} clientes correctamente.`,
+        description: `Se procesaron ${successCount} clientes con éxito.`,
       });
 
       setIsOpen(false);
@@ -122,7 +144,7 @@ export function ClientBulkEditDialog({
           <DialogHeader>
             <DialogTitle>Ajustes Masivos</DialogTitle>
             <DialogDescription>
-              Aplica cambios a {count} cliente{count !== 1 ? 's' : ''} seleccionado{count !== 1 ? 's' : ''}. Deja en "Sin cambios" las propiedades que no desees modificar.
+              Aplica cambios a {count} cliente{count !== 1 ? 's' : ''}. El cambio de responsable reasignará automáticamente todos los contactos, oportunidades y contratos vinculados.
             </DialogDescription>
           </DialogHeader>
 
@@ -159,7 +181,7 @@ export function ClientBulkEditDialog({
             <div className="space-y-2">
               <Label htmlFor="executive" className="flex items-center gap-2">
                 <UserCheck className="h-3 w-3" />
-                Reasignar Ejecutivo Responsable
+                Traspasar a Nuevo Responsable
               </Label>
               <Select value={assignedTo} onValueChange={setAssignedTo}>
                 <SelectTrigger id="executive">
@@ -185,7 +207,7 @@ export function ClientBulkEditDialog({
               onClick={handleUpdate}
               disabled={isUpdating || (status === 'no_change' && type === 'no_change' && assignedTo === 'no_change')}
             >
-              {isUpdating ? 'Actualizando...' : 'Aplicar cambios'}
+              {isUpdating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Procesando...</> : 'Aplicar cambios'}
             </Button>
           </DialogFooter>
         </DialogContent>
