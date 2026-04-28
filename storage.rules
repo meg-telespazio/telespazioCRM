@@ -35,11 +35,15 @@ service firebase.storage {
       return docData.assignedTo == request.auth.uid || docData.createdBy == request.auth.uid;
     }
 
-    // Regla combinada para archivos vinculados a entidades de Firestore
-    function canAccessEntityFile(collection, entityId) {
+    // Helper para LECTURA de archivos vinculados a entidades
+    function canReadEntityFile(collection, entityId) {
       let docPath = /databases/(default)/documents/$(collection)/$(entityId);
-      // Si el documento no existe (caso de subida previa al guardado final),
-      // confiamos en la regla de carpeta temporal temp-{uid} definida en el match.
+      return exists(docPath) && (isAdmin() || hasManagementAccess(get(docPath).data));
+    }
+
+    // Helper para ESCRITURA (subir/borrar) de archivos vinculados a entidades
+    function canModifyEntityFile(collection, entityId) {
+      let docPath = /databases/(default)/documents/$(collection)/$(entityId);
       return exists(docPath) && (
         isAdmin() || 
         (isGerente() && hasManagementAccess(get(docPath).data)) || 
@@ -50,18 +54,18 @@ service firebase.storage {
     // --- Reglas por Carpeta ---
 
     match /contracts/{contractId}/{allPaths=**} {
-      allow read, write: if isAdmin() || 
-        (isAuthenticated() && (contractId == 'temp-' + request.auth.uid || canAccessEntityFile('contracts', contractId)));
+      allow read: if isAdmin() || (isAuthenticated() && canReadEntityFile('contracts', contractId));
+      allow write: if isAdmin() || (isAuthenticated() && (contractId == 'temp-' + request.auth.uid || canModifyEntityFile('contracts', contractId)));
     }
 
     match /opportunities/{opportunityId}/{allPaths=**} {
-      allow read, write: if isAdmin() || 
-        (isAuthenticated() && (opportunityId == 'temp-' + request.auth.uid || canAccessEntityFile('opportunities', opportunityId)));
+      allow read: if isAdmin() || (isAuthenticated() && canReadEntityFile('opportunities', opportunityId));
+      allow write: if isAdmin() || (isAuthenticated() && (opportunityId == 'temp-' + request.auth.uid || canModifyEntityFile('opportunities', opportunityId)));
     }
 
     match /service_orders/{soId}/{allPaths=**} {
-      allow read, write: if isAdmin() || 
-        (isAuthenticated() && (soId == 'temp-' + request.auth.uid || canAccessEntityFile('service_orders', soId)));
+      allow read: if isAdmin() || (isAuthenticated() && canReadEntityFile('service_orders', soId));
+      allow write: if isAdmin() || (isAuthenticated() && (soId == 'temp-' + request.auth.uid || canModifyEntityFile('service_orders', soId)));
     }
 
     match /users/{userId}/avatar {
@@ -71,7 +75,7 @@ service firebase.storage {
     
     match /clients/{clientId}/logo {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || canAccessEntityFile('clients', clientId);
+      allow write: if isAdmin() || canReadEntityFile('clients', clientId);
     }
 
     match /{allPaths=**} {

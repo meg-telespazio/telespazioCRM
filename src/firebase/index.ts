@@ -41,28 +41,26 @@ function initializeFirebase(config: FirebaseOptions) {
       console.error('Error setting auth persistence:', err);
     });
 
-    // Initialize App Check only if key is valid and in browser
-    if (typeof window !== 'undefined') {
-      const recaptchaKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-      
-      // Habilitar Debug Token en desarrollo para evitar errores 400
-      if (process.env.NODE_ENV === 'development') {
-        (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-      }
-
-      if (recaptchaKey && recaptchaKey !== '6Lc_dummy_site_key') {
-        try {
-          initializeAppCheck(firebaseApp, {
-            provider: new ReCaptchaEnterpriseProvider(recaptchaKey),
-            isTokenAutoRefreshEnabled: true,
-          });
-        } catch (e) {
-          console.warn('App Check initialization failed:', e);
-        }
-      } else {
-        console.info('App Check bypassed: No valid NEXT_PUBLIC_RECAPTCHA_SITE_KEY found.');
-      }
-    }
+    // TODO: App Check temporalmente deshabilitado.
+    // El backend de reCAPTCHA Enterprise no está configurado y genera errores 400.
+    // Para rehabilitar: configurar el backend en Google Cloud Console y descomentar el bloque.
+    //
+    // if (typeof window !== 'undefined') {
+    //   const recaptchaKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    //   if (process.env.NODE_ENV === 'development') {
+    //     (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    //   }
+    //   if (recaptchaKey && recaptchaKey !== '6Lc_dummy_site_key') {
+    //     try {
+    //       initializeAppCheck(firebaseApp, {
+    //         provider: new ReCaptchaEnterpriseProvider(recaptchaKey),
+    //         isTokenAutoRefreshEnabled: true,
+    //       });
+    //     } catch (e) {
+    //       console.warn('App Check initialization failed:', e);
+    //     }
+    //   }
+    // }
   }
   return { firebaseApp, auth, firestore, storage };
 }

@@ -35,9 +35,9 @@ service cloud.firestore {
       );
     }
 
-    // Regla de lectura restrictiva para Ejecutivos
+    // Regla de lectura restrictiva por Gerencia
     function canReadRecord(data) {
-      return isAdmin() || isGerente() || (isSameManagement(data) && isOwner(data));
+      return isAdmin() || isSameManagement(data);
     }
 
     function canModify(data) {
@@ -101,6 +101,7 @@ service cloud.firestore {
     }
 
     match /clients/{clientId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
@@ -108,6 +109,7 @@ service cloud.firestore {
     }
 
     match /contacts/{contactId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
@@ -115,6 +117,7 @@ service cloud.firestore {
     }
 
     match /locations/{locationId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
@@ -122,6 +125,7 @@ service cloud.firestore {
     }
 
     match /opportunities/{opportunityId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
@@ -129,6 +133,7 @@ service cloud.firestore {
     }
 
     match /purchaseOrders/{poId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
@@ -136,6 +141,7 @@ service cloud.firestore {
     }
 
     match /services/{serviceId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
@@ -143,17 +149,20 @@ service cloud.firestore {
     }
 
     match /contracts/{contractId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);
       
       match /addendums/{addendumId} {
+        allow list: if isAuthenticated();
         allow read, write: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/contracts/$(contractId)).data);
       }
     }
 
     match /equipment/{equipmentId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
@@ -161,12 +170,14 @@ service cloud.firestore {
     }
 
     match /activities/{activityId} {
+      allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
       allow create: if isAuthenticated() && (isAdmin() || request.resource.data.get('management', '') == getUserData().get('management', ''));
       allow update: if canModify(resource.data);
       allow delete: if canModify(resource.data);
 
       match /followUps/{followUpId} {
+        allow list: if isAuthenticated();
         allow read, write: if isAuthenticated() && isSameManagement(get(/databases/$(database)/documents/activities/$(activityId)).data);
       }
     }
