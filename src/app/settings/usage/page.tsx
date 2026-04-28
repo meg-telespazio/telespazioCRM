@@ -13,6 +13,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Activity, Database, Server, Zap, AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getAuth } from 'firebase/auth';
+import { Separator } from '@/components/ui/separator';
 
 export default function UsageMetricsPage() {
   const { t } = useI18n();
@@ -101,6 +102,17 @@ export default function UsageMetricsPage() {
         
         {/* KPIs Resumen */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-primary/50 bg-primary/5">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-bold text-primary">Costo Total Estimado</CardTitle>
+              <Zap className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary">${(summary.totalEstimatedCost || 0).toFixed(2)}</div>
+              <p className="text-xs text-primary/80">Incluye IA, Firestore y Storage</p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Lecturas Firestore (30d)</CardTitle>
@@ -108,7 +120,7 @@ export default function UsageMetricsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{(summary.totalReads || 0).toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Documentos leídos</p>
+              <p className="text-xs text-muted-foreground">Est. ${(summary.firestoreReadCost || 0).toFixed(4)}</p>
             </CardContent>
           </Card>
           
@@ -119,7 +131,7 @@ export default function UsageMetricsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{(summary.totalWrites || 0).toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Documentos creados/editados</p>
+              <p className="text-xs text-muted-foreground">Est. ${(summary.firestoreWriteCost || 0).toFixed(4)}</p>
             </CardContent>
           </Card>
 
@@ -130,21 +142,41 @@ export default function UsageMetricsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{(summary.currentStorageGB || 0).toFixed(2)} GB</div>
-              <p className="text-xs text-muted-foreground">Total almacenado</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/50 bg-primary/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-bold text-primary">Costo IA (Gemini)</CardTitle>
-              <Zap className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">${(summary.aiCost || 0).toFixed(4)}</div>
-              <p className="text-xs text-primary/80">{(summary.aiTokens || 0).toLocaleString()} tokens procesados</p>
+              <p className="text-xs text-muted-foreground">Est. ${(summary.storageCost || 0).toFixed(4)}/mes</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Desglose de Costos IA */}
+        <Card className="border-amber-200 bg-amber-50/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-md flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-600" />
+              Consumo Detallado de IA (Gemini)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-8">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Tokens Totales</p>
+                <p className="text-xl font-bold">{(summary.aiTokens || 0).toLocaleString()}</p>
+              </div>
+              <Separator orientation="vertical" className="hidden md:block h-10" />
+              <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Costo Acumulado IA</p>
+                <p className="text-xl font-bold text-amber-700">${(summary.aiCost || 0).toFixed(4)}</p>
+              </div>
+              <div className="flex-1" />
+              <div className="bg-white/50 p-3 rounded-lg border border-amber-100 flex items-center gap-3">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <p className="text-[10px] text-amber-800 leading-tight">
+                  Los costos de IA se calculan en tiempo real basándose en los tokens procesados.<br/>
+                  Firestore y Storage son estimaciones basadas en precios de lista.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

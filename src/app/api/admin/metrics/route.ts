@@ -110,16 +110,35 @@ export async function GET(request: Request) {
       console.warn("No ai metrics found yet");
     }
 
+    // Precios estimados (USD)
+    const COST_READ = 0.06 / 100000; // $0.06 por 100k
+    const COST_WRITE = 0.18 / 100000; // $0.18 por 100k
+    const COST_STORAGE_GB_MONTH = 0.026; // $0.026 por GB/mes
+
+    const totalReads = chartData.reduce((acc, d) => acc + (d.reads || 0), 0);
+    const totalWrites = chartData.reduce((acc, d) => acc + (d.writes || 0), 0);
+    const currentStorageGB = chartData.length > 0 ? chartData[chartData.length - 1].storageBytes : 0;
+    
+    // Cálculo de costos estimados
+    const firestoreReadCost = totalReads * COST_READ;
+    const firestoreWriteCost = totalWrites * COST_WRITE;
+    const storageCost = currentStorageGB * COST_STORAGE_GB_MONTH; // Simplificado a un mes
+    const totalEstimatedCost = firestoreReadCost + firestoreWriteCost + storageCost + aiCost;
+
     return NextResponse.json({
       success: true,
       data: {
         daily: chartData,
         summary: {
-          totalReads: chartData.reduce((acc, d) => acc + (d.reads || 0), 0),
-          totalWrites: chartData.reduce((acc, d) => acc + (d.writes || 0), 0),
-          currentStorageGB: chartData.length > 0 ? chartData[chartData.length - 1].storageBytes : 0,
+          totalReads,
+          totalWrites,
+          currentStorageGB,
           aiTokens,
           aiCost,
+          firestoreReadCost,
+          firestoreWriteCost,
+          storageCost,
+          totalEstimatedCost
         }
       }
     });
