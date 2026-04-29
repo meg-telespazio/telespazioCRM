@@ -81,27 +81,59 @@ export function runReportEngine(config: ReportConfig, collectionsMap: any) {
     });
   }
 
-  // 3. Handle Aggregations & Grouping
-  if (config.aggregations?.length && config.groupBy && config.groupBy !== 'none') {
-    const groups = new Map<string, any>();
-    const [groupSource, groupField] = config.groupBy.split('.');
+  // 3. Handle Aggregations
+  if (config.aggregations?.length) {
+    // Case A: Aggregation with Grouping
+    if (config.groupBy && config.groupBy !== 'none') {
+      const groups = new Map<string, any>();
+      const [groupSource, groupField] = config.groupBy.split('.');
 
-    filtered.forEach((row: any) => {
-      const groupValue = row[groupSource]?.[groupField];
-      const groupKey = groupValue !== undefined && groupValue !== null ? String(groupValue) : 'N/A';
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, { _key: groupKey, _records: [] });
-      }
-      groups.get(groupKey)._records.push(row);
-    });
+      filtered.forEach((row: any) => {
+        const groupValue = row[groupSource]?.[groupField];
+        const groupKey = groupValue !== undefined && groupValue !== null ? String(groupValue) : 'N/A';
+        if (!groups.has(groupKey)) {
+          groups.set(groupKey, { _key: groupKey, _records: [] });
+        }
+        groups.get(groupKey)._records.push(row);
+      });
 
-    const finalData = Array.from(groups.values()).map(group => {
-      const aggregatedRow: any = {};
-      aggregatedRow[config.groupBy!] = group._key;
+      const finalData = Array.from(groups.values()).map(group => {
+        const aggregatedRow: any = {};
+        aggregatedRow[config.groupBy!] = group._key;
 
-      config.aggregations!.forEach(agg => {
+        config.aggregations!.forEach(agg => {
+          const [aggSource, aggField] = agg.field.split('.');
+          const numericValues = group._records
+            .map((r: any) => r[aggSource]?.[aggField])
+            .filter((v: any) => v !== undefined && v !== null && !isNaN(Number(v)))
+            .map((v: any) => Number(v));
+          
+          let result = 0;
+          if (agg.type === 'sum') result = numericValues.reduce((a: number, b: number) => a + b, 0);
+          else if (agg.type === 'avg') result = numericValues.length ? numericValues.reduce((a: number, b: number) => a + b, 0) / numericValues.length : 0;
+          else if (agg.type === 'count') result = group._records.length;
+
+          aggregatedRow[`${agg.field}_${agg.type}`] = result;
+        });
+        return aggregatedRow;
+      });
+
+      const finalColumns = [
+        { accessorKey: config.groupBy, header: config.groupBy },
+        ...config.aggregations.map(agg => ({
+          accessorKey: `${agg.field}_${agg.type}`,
+          header: `${agg.type.toUpperCase()}(${agg.field})`
+        }))
+      ];
+
+      return { data: finalData, columns: finalColumns };
+    } 
+    // Case B: Global Aggregation (No grouping)
+    else {
+      const aggregatedRow: any = { _isSummary: true };
+      config.aggregations.forEach(agg => {
         const [aggSource, aggField] = agg.field.split('.');
-        const numericValues = group._records
+        const numericValues = filtered
           .map((r: any) => r[aggSource]?.[aggField])
           .filter((v: any) => v !== undefined && v !== null && !isNaN(Number(v)))
           .map((v: any) => Number(v));
@@ -109,22 +141,18 @@ export function runReportEngine(config: ReportConfig, collectionsMap: any) {
         let result = 0;
         if (agg.type === 'sum') result = numericValues.reduce((a: number, b: number) => a + b, 0);
         else if (agg.type === 'avg') result = numericValues.length ? numericValues.reduce((a: number, b: number) => a + b, 0) / numericValues.length : 0;
-        else if (agg.type === 'count') result = group._records.length;
+        else if (agg.type === 'count') result = filtered.length;
 
         aggregatedRow[`${agg.field}_${agg.type}`] = result;
       });
-      return aggregatedRow;
-    });
 
-    const finalColumns = [
-      { accessorKey: config.groupBy, header: config.groupBy },
-      ...config.aggregations.map(agg => ({
+      const finalColumns = config.aggregations.map(agg => ({
         accessorKey: `${agg.field}_${agg.type}`,
         header: `${agg.type.toUpperCase()}(${agg.field})`
-      }))
-    ];
+      }));
 
-    return { data: finalData, columns: finalColumns };
+      return { data: [aggregatedRow], columns: finalColumns };
+    }
   }
 
   // 4. Default detail view
