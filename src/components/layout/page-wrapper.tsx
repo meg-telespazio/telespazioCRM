@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.1.1 - AI Analyst Optimization
-const APP_VERSION = '2.1.1'; 
+// VERSIÓN 2.2.0 - AI Security & Metrics Update
+const APP_VERSION = '2.2.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -34,7 +34,6 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
   const isPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/cotizacion';
   const isUnauthorizedPage = pathname === '/unauthorized';
 
-  // Lógica de actualización forzada para PWA
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -68,11 +67,9 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
     handleUpdate();
   }, []);
 
-  // Guardia de Rutas Dinámica basada en la Matriz
   useEffect(() => {
     if (loading || permissionsLoading || !user || isPublicPage || isUnauthorizedPage) return;
 
-    // Mapa de rutas a permisos de menú
     const routePermissionMap: Record<string, any> = {
       '/opportunities': 'showOpportunities',
       '/products-and-services': 'showCatalog',
@@ -87,19 +84,16 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       '/service-orders': 'showServiceOrders',
     };
 
-    // Encontrar si la ruta actual (o su padre) requiere permiso
     const matchedRoute = Object.keys(routePermissionMap).find(route => pathname.startsWith(route));
     
     if (matchedRoute) {
       const permissionKey = routePermissionMap[matchedRoute];
       if (!canSeeMenu(permissionKey)) {
-        console.warn(`Acceso denegado a ${pathname}. Redirigiendo a unauthorized...`);
         router.replace('/unauthorized');
       }
     }
   }, [pathname, user, loading, permissionsLoading, canSeeMenu, router, isPublicPage, isUnauthorizedPage]);
 
-  // MFA Enforcement
   useEffect(() => {
     if (!loading && user && !isPublicPage && !isUnauthorizedPage) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;

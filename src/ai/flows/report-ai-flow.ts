@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview AI Flow to generate report configurations based on natural language queries.
+ * @fileOverview AI Flow robusto para reportes con validación de seguridad y lógica cuantitativa.
  */
 
 import { ai } from '@/ai/genkit';
@@ -13,7 +13,7 @@ const MessageSchema = z.object({
 
 const ReportConfigSchema = z.object({
   primaryDataSource: z.enum(['clients', 'contacts', 'opportunities', 'productsAndServices', 'contracts', 'purchaseOrders', 'services', 'equipment', 'activities', 'locations']),
-  fields: z.array(z.string()).describe('List of fields to show in the report, format: "collection.field" (e.g., "clients.name")'),
+  fields: z.array(z.string()).describe('List of fields to show, format: "collection.field"'),
   filters: z.array(z.object({
     field: z.string(),
     operator: z.enum(['contains', 'equals', 'not_equals', 'gt', 'lt', 'gte', 'lte', 'is', 'is_not', 'is_not_empty']),
@@ -23,22 +23,26 @@ const ReportConfigSchema = z.object({
     field: z.string(),
     direction: z.enum(['asc', 'desc']),
   })),
-  groupBy: z.string().optional().describe('Field to group data by if aggregations are used (e.g., "clients.name")'),
+  groupBy: z.string().optional().describe('Field to group by if aggregations are used'),
   aggregations: z.array(z.object({
-    field: z.string().describe('Field to aggregate, format: "collection.field"'),
+    field: z.string(),
     type: z.enum(['sum', 'avg', 'count']),
   })).optional(),
 });
 
 const ReportAIInputSchema = z.object({
   messages: z.array(MessageSchema),
-  schemaContext: z.string().describe('The database entities and properties schema.'),
+  schemaContext: z.string(),
+  userRole: z.string(),
+  userManagement: z.string(),
+  permissionsMatrix: z.any(), // Recibe la matriz de roles de systemConfig/globals
 });
 
 const ReportAIOutputSchema = z.object({
-  type: z.enum(['question', 'config']),
-  text: z.string().describe('A friendly message explaining what the AI found or asking for details.'),
+  type: z.enum(['question', 'config', 'unauthorized', 'greeting']),
+  text: z.string().describe('Respuesta conversacional para el usuario.'),
   config: ReportConfigSchema.optional(),
+  summary: z.string().optional().describe('Breve resumen de la interacción actual para el historial.'),
 });
 
 export type ReportAIInput = z.infer<typeof ReportAIInputSchema>;
@@ -52,36 +56,36 @@ const prompt = ai.definePrompt({
   name: 'reportAIPrompt',
   input: { schema: ReportAIInputSchema },
   output: { schema: ReportAIOutputSchema },
-  prompt: `You are an expert data analyst for T-Track CRM. 
-Your job is to translate natural language user requests into a structured report configuration.
+  prompt: `Eres el Analista de Datos Inteligente del CRM T-Track de Telespazio.
 
-SCHEMA CONTEXT (Crucial for field names):
+DATOS DEL USUARIO:
+- Rol: {{{userRole}}}
+- Gerencia: {{{userManagement}}}
+- Matriz de Permisos: {{{permissionsMatrix}}}
+
+CONTEXTO DE LA BASE DE DATOS:
 {{{schemaContext}}}
 
-MAPPING HINTS FOR SECTORS:
-- "Banca" or "Bancos" matches sector: "Finance"
-- "Oil & Gas" or "Petroleo" matches sector: "Energy"
-- "Mineria" matches sector: "Mining"
-- "Retail" or "Comercio" matches sector: "Retail"
+REGLAS CRÍTICAS DE OPERACIÓN:
+1. VALIDACIÓN DE ACCESO: Antes de procesar, revisa si el rol del usuario tiene permiso "view" para el módulo solicitado en la matriz. Si no tiene acceso, responde con type: "unauthorized" y el texto: "Lo siento, según mi configuración no tengo acceso a esa información para tu perfil."
+2. LÓGICA CUANTITATIVA: Si la pregunta es sobre cantidades, totales o promedios (ej: "¿Cuántos clientes?", "¿Cuál es el MRR?"):
+   - Usa obligatoriamente 'aggregations' en la config.
+   - NO devuelvas un listado de campos detallado.
+   - En el campo 'text', responde solo el resultado (que procesará el motor) y pregunta: "¿Quieres ver el detalle de estos registros?".
+3. FILTROS DE SEGURIDAD AUTOMÁTICOS: 
+   - Si el rol es 'ejecutivo', asume siempre un filtro automático donde 'assignedTo' es el ID del usuario (esto lo maneja el motor, pero tenlo en cuenta para no prometer datos ajenos).
+   - Siempre usa el operador 'contains' para textos para evitar fallos por mayúsculas.
+4. INTERACCIÓN: 
+   - Siempre sé amable y profesional.
+   - Al final de cada respuesta con datos, pregunta: "¿Necesitas ayuda con algo más?".
+   - Si el usuario se despide o no pide nada más, responde con type: "greeting" y un saludo cordial.
+5. HISTORIAL: Genera siempre un 'summary' de lo que hiciste en esta interacción para guardarlo en la base.
 
-RELATIONSHIP RULES (How to join tables):
-1. 'services' (Installed base) MUST link to 'purchaseOrders' via 'poId'.
-2. 'purchaseOrders' link to 'contracts' via 'contractId'.
-3. 'contracts' link to 'clients' via 'clientId'.
-4. 'equipment' (Hardware) link to 'services' via 'currentServiceId'.
-5. 'contacts' link to 'clients' via 'clientId'.
-6. 'opportunities' link to 'clients' via 'clientId'.
+MAPPING DE SECTORES:
+- "Banca" -> "Finance"
+- "Petroleo/Gas" -> "Energy"
 
-CRITICAL INSTRUCTIONS:
-1. QUANTITATIVE QUESTIONS (TOTALS/COUNTS): If the user asks for a quantity (e.g., "¿Cuántos?", "cantidad de", "total de"), ALWAYS use 'aggregations' (usually type 'count') and do NOT return a detailed list of fields. The goal is to provide a single number or a summary table.
-2. ASK FOR DETAIL: After providing a count or a total, always include in the 'text' field a question asking if the user would like to see the full detailed list of those records.
-3. BE CONVERSATIONAL & DETAILED: Do NOT generate a 'config' immediately if the request is ambiguous.
-4. DATA SOURCE CHOICE: If the user wants totals or metrics about services (like monthly fees), ALWAYS use 'services' as the primaryDataSource.
-5. FUZZY SEARCH: ALWAYS use 'contains' operator for text fields like 'clients.sector' or 'clients.name' to avoid case-sensitivity issues.
-6. FILTERS: When filtering by a client name, the field is 'clients.name'.
-7. LANGUAGE: Always respond in the same language the user is using (usually Spanish).
-
-MESSAGES:
+MENSAJES ANTERIORES:
 {{#each messages}}
 {{role}}: {{content}}
 {{/each}}`,

@@ -5,7 +5,7 @@ import { LoginForm } from '@/components/auth/login-form';
 import { useI18n } from '@/firebase/client-provider';
 import Image from 'next/image';
 
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 
 export default function LoginPage() {
   const { t } = useI18n();
@@ -13,7 +13,6 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-destructive p-4">
       <div className="text-center mb-6 flex flex-col items-center">
-        {/* Logo de la app arriba - Reducido de tamaño */}
         <Image
           src="/img/logoLarge.png"
           alt="T-Track Logo"
@@ -23,8 +22,6 @@ export default function LoginPage() {
           className="mb-6 drop-shadow-xl"
           style={{ height: 'auto', objectFit: 'contain' }}
         />
-        
-        {/* Logo corporativo blanco abajo */}
         <Image
           src="/img/logoBlancoChico.png"
           alt="Telespazio Logo"

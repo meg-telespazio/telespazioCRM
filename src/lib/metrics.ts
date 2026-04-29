@@ -1,29 +1,44 @@
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/firebase';
+import type { Firestore } from 'firebase/firestore';
 
-// Precios estimados (USD por 1M tokens) - Ajustar según modelo usado
+// Precios estimados (USD por 1M tokens) para Gemini 2.5 Flash
 const PRICING = {
-  'gemini-1.5-pro': { input: 3.5, output: 10.5 },
-  'gemini-1.5-flash': { input: 0.075, output: 0.30 },
-  'default': { input: 1.0, output: 3.0 }
+  input: 0.10,  // $0.10 por millón de tokens
+  output: 0.40, // $0.40 por millón de tokens
 };
 
-export async function logAiUsage(model: string, inputTokens: number, outputTokens: number, userId: string) {
+/**
+ * Estima tokens y registra el uso de IA para auditoría de costos.
+ */
+export async function logAiUsage(
+  firestore: Firestore,
+  model: string,
+  input: string,
+  output: string,
+  userId: string
+) {
   try {
-    const modelPricing = (PRICING as any)[model] || PRICING.default;
-    const cost = ((inputTokens / 1000000) * modelPricing.input) + ((outputTokens / 1000000) * modelPricing.output);
+    // Estimación rápida: ~4 caracteres por token
+    const inputTokens = Math.ceil(input.length / 4);
+    const outputTokens = Math.ceil(output.length / 4);
+    const totalTokens = inputTokens + outputTokens;
 
-    await addDoc(collection(db, 'system_metrics'), {
+    const cost = ((inputTokens / 1000000) * PRICING.input) + ((outputTokens / 1000000) * PRICING.output);
+
+    await addDoc(collection(firestore, 'system_metrics'), {
       type: 'ai_usage',
       model,
       inputTokens,
       outputTokens,
-      totalTokens: inputTokens + outputTokens,
-      cost,
+      totalTokens,
+      estimatedCost: cost,
       userId,
       timestamp: serverTimestamp()
     });
+    
+    return { totalTokens, estimatedCost: cost };
   } catch (error) {
     console.error('Error logging AI usage:', error);
+    return null;
   }
 }
