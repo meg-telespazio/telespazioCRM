@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.2.0 - AI Security & Metrics Update
-const APP_VERSION = '2.2.0'; 
+// VERSIÓN 2.2.1 - AI Metrics Permission Patch
+const APP_VERSION = '2.2.1'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

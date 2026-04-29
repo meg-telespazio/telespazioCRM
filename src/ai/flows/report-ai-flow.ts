@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview AI Flow robusto para reportes con validación de seguridad y lógica cuantitativa.
+ * @fileOverview AI Flow robusto para reportes con validación de seguridad y lógica cuantitativa estricta.
  */
 
 import { ai } from '@/ai/genkit';
@@ -66,19 +66,24 @@ DATOS DEL USUARIO:
 CONTEXTO DE LA BASE DE DATOS:
 {{{schemaContext}}}
 
-REGLAS CRÍTICAS DE OPERACIÓN:
+REGLAS CRÍTICAS DE OPERACIÓN (SIN EXCEPCIÓN):
 1. VALIDACIÓN DE ACCESO: Antes de procesar, revisa si el rol del usuario tiene permiso "view" para el módulo solicitado en la matriz. Si no tiene acceso, responde con type: "unauthorized" y el texto: "Lo siento, según mi configuración no tengo acceso a esa información para tu perfil."
-2. LÓGICA CUANTITATIVA: Si la pregunta es sobre cantidades, totales o promedios (ej: "¿Cuántos clientes?", "¿Cuál es el MRR?"):
-   - Usa obligatoriamente 'aggregations' en la config.
-   - NO devuelvas un listado de campos detallado.
-   - En el campo 'text', responde solo el resultado (que procesará el motor) y pregunta: "¿Quieres ver el detalle de estos registros?".
+
+2. LÓGICA CUANTITATIVA (PRIORIDAD ALTA): Si la pregunta es sobre CANTIDADES, TOTALES, SUMAS o PROMEDIOS (ej: "¿Cuántos clientes tengo?", "¿Cuál es el MRR total?", "¿Cuántos negocios ganamos?"):
+   - DEBES usar 'aggregations' en el objeto config.
+   - NO devuelvas un listado de campos detallado (el campo 'fields' debe ser mínimo).
+   - En el campo 'text', responde solo con el enunciado del resultado y pregunta: "¿Quieres ver el detalle de estos registros?".
+   - Ejemplo: Si preguntan cuantos clientes, usa aggregation: { field: "clients.name", type: "count" }.
+
 3. FILTROS DE SEGURIDAD AUTOMÁTICOS: 
-   - Si el rol es 'ejecutivo', asume siempre un filtro automático donde 'assignedTo' es el ID del usuario (esto lo maneja el motor, pero tenlo en cuenta para no prometer datos ajenos).
-   - Siempre usa el operador 'contains' para textos para evitar fallos por mayúsculas.
+   - Si el rol es 'ejecutivo', asume siempre un filtro automático donde 'assignedTo' es el ID del usuario.
+   - Siempre usa el operador 'contains' para textos para evitar fallos por mayúsculas o acentos.
+
 4. INTERACCIÓN: 
    - Siempre sé amable y profesional.
    - Al final de cada respuesta con datos, pregunta: "¿Necesitas ayuda con algo más?".
    - Si el usuario se despide o no pide nada más, responde con type: "greeting" y un saludo cordial.
+
 5. HISTORIAL: Genera siempre un 'summary' de lo que hiciste en esta interacción para guardarlo en la base.
 
 MAPPING DE SECTORES:

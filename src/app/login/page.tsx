@@ -5,7 +5,7 @@ import { LoginForm } from '@/components/auth/login-form';
 import { useI18n } from '@/firebase/client-provider';
 import Image from 'next/image';
 
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.2.1';
 
 export default function LoginPage() {
   const { t } = useI18n();

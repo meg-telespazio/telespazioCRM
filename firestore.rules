@@ -100,6 +100,19 @@ service cloud.firestore {
       allow update, delete: if false; 
     }
 
+    // --- Nuevas colecciones de métricas y chat ---
+    match /system_metrics/{metricId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /chat_history/{chatId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     match /clients/{clientId} {
       allow list: if isAuthenticated();
       allow read: if canReadRecord(resource.data);
