@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { useI18n } from '@/firebase/client-provider';
@@ -10,19 +10,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
-import { Activity, Database, Server, Zap, AlertCircle, Loader2 } from 'lucide-react';
+import { Activity, Database, Server, Zap, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getAuth } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
+import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function UsageMetricsPage() {
   const { t } = useI18n();
   const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<any>(null);
+  const [isClearingChat, setIsClearingChat] = useState(false);
 
   useEffect(() => {
     async function fetchMetrics() {
@@ -57,6 +62,28 @@ export default function UsageMetricsPage() {
       fetchMetrics();
     }
   }, [user, userLoading]);
+
+  const handleClearChatHistory = async () => {
+    if (!window.confirm('¿Estás seguro de que quieres borrar todo el historial de chat del asistente? Esta acción es irreversible.')) return;
+    
+    setIsClearingChat(true);
+    try {
+      const chatRef = collection(firestore, 'chat_history');
+      const snap = await getDocs(chatRef);
+      const batch = writeBatch(firestore);
+      
+      snap.forEach((d) => {
+        batch.delete(d.ref);
+      });
+
+      await batch.commit();
+      toast({ variant: 'success', title: 'Historial borrado', description: 'Se ha vaciado la colección de chat_history.' });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error al borrar', description: e.message });
+    } finally {
+      setIsClearingChat(false);
+    }
+  };
 
   if (userLoading || loading) {
     return (
@@ -100,6 +127,25 @@ export default function UsageMetricsPage() {
 
       <main className="flex-1 p-4 sm:p-6 pb-24 space-y-6 animate-in fade-in duration-300">
         
+        {/* Herramientas de Mantenimiento */}
+        <Card className="border-slate-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold uppercase tracking-wider">Mantenimiento del Sistema</CardTitle>
+          </CardHeader>
+          <CardContent className="flex gap-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-destructive border-destructive hover:bg-destructive/5"
+              onClick={handleClearChatHistory}
+              disabled={isClearingChat}
+            >
+              {isClearingChat ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Vaciar Historial de Chats (Asistente)
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* KPIs Resumen */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-primary/50 bg-primary/5">
@@ -144,7 +190,7 @@ export default function UsageMetricsPage() {
               <div className="text-2xl font-bold">{(summary.currentStorageGB || 0).toFixed(2)} GB</div>
               <p className="text-xs text-muted-foreground">Est. ${(summary.storageCost || 0).toFixed(4)}/mes</p>
             </CardContent>
-          </Card>
+          </div>
         </div>
 
         {/* Desglose de Costos IA */}
