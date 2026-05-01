@@ -51,58 +51,6 @@ export default function AIReportsPage() {
   const configDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: systemConfig } = useDoc<SystemConfig>(configDocRef);
 
-  // Queries base filtradas por Gerencia para pasarle datos al agente
-  const getQ = (name: string) => {
-    if (!user) return null;
-    const ref = collection(firestore, name);
-    return user.role === 'admin' ? query(ref) : query(ref, where('management', '==', user.management));
-  };
-
-  const { data: clients } = useCollection<Client>(getQ('clients'));
-  const { data: contacts } = useCollection<Contact>(getQ('contacts'));
-  const { data: opportunities } = useCollection<Opportunity>(getQ('opportunities'));
-  const { data: ps } = useCollection<ProductOrService>(getQ('productsAndServices'));
-  const { data: contracts } = useCollection<Contract>(getQ('contracts'));
-  const { data: pos } = useCollection<PurchaseOrder>(getQ('purchaseOrders'));
-  const { data: services } = useCollection<Service>(getQ('services'));
-  const { data: equipment } = useCollection<Equipment>(getQ('equipment'));
-  const { data: activities } = useCollection<Activity>(getQ('activities'));
-  const { data: locations } = useCollection<Location>(getQ('locations'));
-
-  // Preparar datos ligeros para el agente — solo campos del schema, sin datos pesados
-  const slimCollection = (collectionName: string, data: any[] | undefined) => {
-    if (!data || data.length === 0) return [];
-    const schema = CRM_COLLECTIONS[collectionName];
-    // Campos a conservar: los definidos en el schema + id + clientId
-    const keepFields = schema 
-      ? [...Object.keys(schema.fields), 'id'] 
-      : ['id', 'name', 'status', 'type', 'management', 'assignedTo'];
-    
-    // Limitar a 500 registros por colección
-    const capped = data.slice(0, 500);
-    
-    return capped.map((item: any) => {
-      const slim: any = {};
-      for (const key of keepFields) {
-        const val = item[key];
-        if (val === undefined || val === null) continue;
-        if (typeof val === 'function') continue;
-        // Convertir Timestamps/Dates a string corto
-        if (val instanceof Date) {
-          slim[key] = val.toISOString().split('T')[0];
-        } else if (typeof val === 'object' && 'seconds' in val) {
-          slim[key] = new Date(val.seconds * 1000).toISOString().split('T')[0];
-        } else if (typeof val === 'object' && !Array.isArray(val)) {
-          // Omitir objetos anidados complejos (subcolecciones, refs, etc.)
-          continue;
-        } else {
-          slim[key] = val;
-        }
-      }
-      return slim;
-    });
-  };
-
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -119,27 +67,13 @@ export default function AIReportsPage() {
     setIsAiLoading(true);
 
     try {
-      // Preparar datos ligeros
-      const collectionsData: Record<string, any[]> = {
-        clients: slimCollection('clients', clients),
-        contacts: slimCollection('contacts', contacts),
-        opportunities: slimCollection('opportunities', opportunities),
-        productsAndServices: slimCollection('productsAndServices', ps),
-        contracts: slimCollection('contracts', contracts),
-        purchaseOrders: slimCollection('purchaseOrders', pos),
-        services: slimCollection('services', services),
-        equipment: slimCollection('equipment', equipment),
-        activities: slimCollection('activities', activities),
-        locations: slimCollection('locations', locations),
-      };
-
       const response = await processReportQuery({
         messages: newMessages.slice(-8).map(m => ({ role: m.role, content: m.content })),
-        userRole: user.role,
+        userRole: user.role || 'ejecutivo',
         userId: user.uid,
         userManagement: user.management || '',
         permissionsMatrix: systemConfig.permissionsMatrix || {},
-        collectionsData,
+        collectionsData: {},
       });
 
       // Registro de métricas

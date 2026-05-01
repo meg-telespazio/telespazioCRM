@@ -9,19 +9,27 @@ import { z } from 'genkit';
 import { CRM_COLLECTIONS, MODULE_TO_COLLECTION, generateSchemaContext } from '@/ai/knowledge/crm-data-schema';
 import type { PermissionsMatrix, UserRole } from '@/lib/types';
 
-// --- Contexto compartido por las tools (inyectado por el flow) ---
-// Usamos un patrón de "context injection" donde el flow setea estos valores
-// antes de invocar al LLM, y las tools los leen.
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getFirebaseConfig } from '@/firebase/config';
+
+// --- Contexto compartido por las tools ---
 let _toolContext: {
   userRole: UserRole;
   userId: string;
   userManagement: string;
   permissionsMatrix: PermissionsMatrix;
-  collectionsData: Record<string, any[]>;
 } | null = null;
 
-export function setToolContext(ctx: typeof _toolContext) {
+let _cachedCollections: Record<string, any[]> = {};
+
+export function resetCollectionCache() {
+  _cachedCollections = {};
+}
+
+export function setToolContext(ctx: any) {
   _toolContext = ctx;
+  _cachedCollections = {}; // Reset cache on each new context/request
 }
 
 function getCtx() {
@@ -29,8 +37,43 @@ function getCtx() {
   return _toolContext;
 }
 
-// --- Helpers de seguridad ---
+function getDbOnServer() {
+  const config = getFirebaseConfig();
+  const app = getApps().length > 0 ? getApp() : initializeApp(config);
+  return getFirestore(app);
+}
 
+async function fetchCollectionOnServer(collName: string): Promise<any[]> {
+  if (_cachedCollections[collName]) {
+    return _cachedCollections[collName];
+  }
+  try {
+    const db = getDbOnServer();
+    const colRef = collection(db, collName);
+    const snap = await getDocs(colRef);
+    const data = snap.docs.map(doc => {
+      const d = doc.data();
+      const clean: any = { id: doc.id };
+      for (const [k, v] of Object.entries(d)) {
+        if (v && typeof v === 'object' && 'seconds' in v) {
+          clean[k] = new Date(v.seconds * 1000).toISOString().split('T')[0];
+        } else if (v instanceof Date) {
+          clean[k] = v.toISOString().split('T')[0];
+        } else {
+          clean[k] = v;
+        }
+      }
+      return clean;
+    });
+    _cachedCollections[collName] = data;
+    return data;
+  } catch (error) {
+    console.error(`Error fetching collection ${collName} on server:`, error);
+    return [];
+  }
+}
+
+// --- Helpers de seguridad ---
 function userCanViewModule(moduleName: string): boolean {
   const ctx = getCtx();
   const perms = ctx.permissionsMatrix?.[ctx.userRole];
@@ -42,13 +85,15 @@ function applySecurityFilters(data: any[]): any[] {
   const ctx = getCtx();
   if (ctx.userRole === 'admin') return data;
 
+  // Gerente o cualquier otro rol no admin ve todo de su gerencia
   let filtered = data.filter((item: any) =>
-    item.management === ctx.userManagement || !item.management
+    item.management === ctx.userManagement
   );
 
-  if (ctx.userRole === 'ejecutivo') {
+  // Ejecutivo e ingeniero ven solo lo asignado a ellos
+  if (ctx.userRole === 'ejecutivo' || ctx.userRole === 'ingeniero') {
     filtered = filtered.filter((item: any) =>
-      item.assignedTo === ctx.userId || !item.assignedTo
+      item.assignedTo === ctx.userId
     );
   }
 
@@ -166,7 +211,7 @@ export const queryCollectionTool = ai.defineTool(
     }
 
     // 3. Obtener datos con filtros de seguridad
-    let data = ctx.collectionsData[collName] || [];
+    let data = await fetchCollectionOnServer(collName);
     data = applySecurityFilters(data);
 
     // 4. Aplicar filtros del usuario
@@ -213,7 +258,7 @@ export const queryCollectionTool = ai.defineTool(
 
     // 7. Enrich con clientes si se pide
     if (enrichWithClients && collName !== 'clients') {
-      const clientsData = ctx.collectionsData['clients'] || [];
+      const clientsData = await fetchCollectionOnServer('clients');
       const clientMap = new Map(clientsData.map((c: any) => [c.id, c]));
       data = data.map((item: any) => {
         const client = clientMap.get(item.clientId);
@@ -292,7 +337,7 @@ export const aggregateCollectionTool = ai.defineTool(
       return { success: false, message: `No tienes permisos para acceder al módulo "${moduleName}".`, totalRecords: 0, results: [], columns: [] };
     }
 
-    let data = ctx.collectionsData[collName] || [];
+    let data = await fetchCollectionOnServer(collName);
     data = applySecurityFilters(data);
 
     // Aplicar filtros
