@@ -104,7 +104,7 @@ export async function GET(request: Request) {
       aiDocs.forEach(doc => {
         const d = doc.data();
         aiTokens += (d.totalTokens || 0);
-        aiCost += (d.cost || 0);
+        aiCost += (d.cost || d.estimatedCost || 0);
       });
     } catch (e) {
       console.warn("No ai metrics found yet");

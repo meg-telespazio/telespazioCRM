@@ -32,6 +32,7 @@ export async function logAiUsage(
       outputTokens,
       totalTokens,
       estimatedCost: cost,
+      cost: cost,
       userId,
       timestamp: serverTimestamp()
     });
