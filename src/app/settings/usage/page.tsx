@@ -190,7 +190,7 @@ export default function UsageMetricsPage() {
               <div className="text-2xl font-bold">{(summary.currentStorageGB || 0).toFixed(2)} GB</div>
               <p className="text-xs text-muted-foreground">Est. ${(summary.storageCost || 0).toFixed(4)}/mes</p>
             </CardContent>
-          </div>
+          </Card>
         </div>
 
         {/* Desglose de Costos IA */}

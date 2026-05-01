@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview Genkit Tools para el agente de reportes.
  * Cada tool ejecuta lógica de acceso a datos con seguridad aplicada en código.
