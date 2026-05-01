@@ -1,18 +1,17 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { AppHeader } from '@/components/layout/app-header';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, where, addDoc, serverTimestamp, orderBy, doc, limit } from 'firebase/firestore';
+import { collection, query, where, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import type { Client, Contact, Opportunity, ProductOrService, Contract, PurchaseOrder, Service, Equipment, Activity, Location, SystemConfig } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Bot, Send, Loader2, Sparkles, Database, History, Download, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Bot, Send, Loader2, Sparkles, Database, History, ShieldAlert, AlertCircle, HelpCircle } from 'lucide-react';
 import { processReportQuery } from '@/ai/flows/report-ai-flow';
-import { runReportEngine } from '@/lib/reports-engine';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { ReportResultTable } from '@/components/reports/report-result-table';
@@ -29,19 +28,9 @@ type ChatMessage = {
   };
   isError?: boolean;
   isUnauthorized?: boolean;
+  isOffTopic?: boolean;
+  isClarification?: boolean;
 };
-
-const SCHEMA_DESCRIPTION = `
-- clients: name, cuit, sector, subsector, status, holding, countryHQ
-- contacts: name, position, area
-- opportunities: title, stage, value, currency, probability, closeDate, risk, opportunityType
-- contracts: publicId, type, status, amount, currency, startDate, endDate, costCenterId
-- purchaseOrders: poNumber, amount, currency, status, emissionDate
-- services: serviceNickname, serviceLineNumber, servicePlan, monthlyFee, currency, status
-- equipment: userTerminal, id, type, physicalStatus
-- activities: type, description, isPriority, dueDate
-- locations: name, type, city, province, country
-`;
 
 export default function AIReportsPage() {
   const { user, loading: userLoading } = useUser();
@@ -51,7 +40,7 @@ export default function AIReportsPage() {
   
   const [messages, setMessages] = useState<ChatMessage[]>([{
     role: 'model',
-    content: 'Hola. Soy tu asistente analítico de Telespazio. Puedo ayudarte con estadísticas de facturación, estado de contratos o prospección de negocios. ¿Qué necesitas consultar?'
+    content: 'Hola. Soy T-Track AI, tu asistente analítico de Telespazio. Puedo ayudarte con estadísticas de clientes, oportunidades, contratos, servicios y más. ¿Qué necesitas consultar?'
   }]);
   const [input, setInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -61,7 +50,7 @@ export default function AIReportsPage() {
   const configDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: systemConfig } = useDoc<SystemConfig>(configDocRef);
 
-  // Queries base filtradas por Gerencia para el motor local
+  // Queries base filtradas por Gerencia para pasarle datos al agente
   const getQ = (name: string) => {
     if (!user) return null;
     const ref = collection(firestore, name);
@@ -79,8 +68,23 @@ export default function AIReportsPage() {
   const { data: activities } = useCollection<Activity>(getQ('activities'));
   const { data: locations } = useCollection<Location>(getQ('locations'));
 
-  const collectionsMap = {
-    clients, contacts, opportunities, productsAndServices: ps, contracts, purchaseOrders: pos, services, equipment, activities, locations
+  // Preparar datos serializables para el agente (sin funciones ni objetos complejos)
+  const serializeCollection = (data: any[] | undefined) => {
+    if (!data) return [];
+    return data.map((item: any) => {
+      const clean: any = {};
+      for (const [key, value] of Object.entries(item)) {
+        if (typeof value === 'function') continue;
+        if (value instanceof Date) {
+          clean[key] = value.toISOString().split('T')[0];
+        } else if (value && typeof value === 'object' && 'seconds' in (value as any)) {
+          clean[key] = new Date((value as any).seconds * 1000).toISOString().split('T')[0];
+        } else {
+          clean[key] = value;
+        }
+      }
+      return clean;
+    });
   };
 
   useEffect(() => {
@@ -99,41 +103,51 @@ export default function AIReportsPage() {
     setIsAiLoading(true);
 
     try {
+      // Preparar datos serializables
+      const collectionsData: Record<string, any[]> = {
+        clients: serializeCollection(clients),
+        contacts: serializeCollection(contacts),
+        opportunities: serializeCollection(opportunities),
+        productsAndServices: serializeCollection(ps),
+        contracts: serializeCollection(contracts),
+        purchaseOrders: serializeCollection(pos),
+        services: serializeCollection(services),
+        equipment: serializeCollection(equipment),
+        activities: serializeCollection(activities),
+        locations: serializeCollection(locations),
+      };
+
       const response = await processReportQuery({
-        messages: newMessages.slice(-6).map(m => ({ role: m.role, content: m.content })),
-        schemaContext: SCHEMA_DESCRIPTION,
+        messages: newMessages.slice(-8).map(m => ({ role: m.role, content: m.content })),
         userRole: user.role,
+        userId: user.uid,
         userManagement: user.management || '',
-        permissionsMatrix: systemConfig.permissionsMatrix || {}
+        permissionsMatrix: systemConfig.permissionsMatrix || {},
+        collectionsData,
       });
 
-      // Registro de métricas y costos
+      // Registro de métricas
       await logAiUsage(firestore, 'gemini-2.5-flash', userText, response.text, user.uid);
 
-      if (response.type === 'unauthorized') {
-        setMessages(prev => [...prev, {
-          role: 'model',
-          content: response.text,
-          isUnauthorized: true
-        }]);
-        setIsAiLoading(false);
-        return;
+      // Construir mensaje de respuesta
+      const botMessage: ChatMessage = {
+        role: 'model',
+        content: response.text,
+        isUnauthorized: response.type === 'unauthorized',
+        isOffTopic: response.type === 'off_topic',
+        isClarification: response.type === 'clarification',
+      };
+
+      // Si hay datos tabulares
+      if (response.data && response.data.length > 0 && response.columns) {
+        botMessage.data = {
+          results: response.data,
+          columns: response.columns.map(col => ({ accessorKey: col, header: col })),
+          isQuantitative: response.isQuantitative || false,
+        };
       }
 
-      let dataResults = undefined;
-      if (response.type === 'config' && response.config) {
-        const processed = runReportEngine(response.config, collectionsMap);
-        if (processed) {
-          const isQuantitative = (response.config.aggregations || []).length > 0;
-          dataResults = {
-            results: processed.data,
-            columns: processed.columns,
-            isQuantitative
-          };
-        }
-      }
-
-      // Guardar en el historial de Firestore
+      // Guardar en historial
       if (response.summary) {
         await addDoc(collection(firestore, 'chat_history'), {
           userId: user.uid,
@@ -144,16 +158,12 @@ export default function AIReportsPage() {
         });
       }
 
-      setMessages(prev => [...prev, {
-        role: 'model',
-        content: response.text,
-        data: dataResults
-      }]);
+      setMessages(prev => [...prev, botMessage]);
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Error de IA', description: e.message });
       setMessages(prev => [...prev, {
         role: 'model',
-        content: 'Lo siento, ocurrió un error procesando tu solicitud.',
+        content: 'Lo siento, ocurrió un error procesando tu solicitud. Por favor intenta de nuevo.',
         isError: true
       }]);
     } finally {
@@ -171,8 +181,8 @@ export default function AIReportsPage() {
             <Sparkles className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-bold">Asistente Analítico</h2>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">IA Con acceso a datos en tiempo real</p>
+            <h2 className="text-xl font-bold">T-Track AI</h2>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Asistente analítico con acceso a datos en tiempo real</p>
           </div>
         </div>
       }>
@@ -205,9 +215,13 @@ export default function AIReportsPage() {
                       ? "bg-slate-900 text-white rounded-tr-none" 
                       : "bg-white text-slate-700 rounded-tl-none border border-slate-200",
                     msg.isError && "border-destructive text-destructive bg-destructive/5",
-                    msg.isUnauthorized && "border-amber-400 bg-amber-50 text-amber-900"
+                    msg.isUnauthorized && "border-amber-400 bg-amber-50 text-amber-900",
+                    msg.isOffTopic && "border-blue-300 bg-blue-50 text-blue-900",
+                    msg.isClarification && "border-violet-300 bg-violet-50 text-violet-900"
                   )}>
                     {msg.isUnauthorized && <ShieldAlert className="h-4 w-4 mb-2" />}
+                    {msg.isOffTopic && <AlertCircle className="h-4 w-4 mb-2" />}
+                    {msg.isClarification && <HelpCircle className="h-4 w-4 mb-2" />}
                     {msg.content}
                   </div>
                 </div>
@@ -220,7 +234,7 @@ export default function AIReportsPage() {
                             <div className="p-6 bg-primary/5 text-center">
                                <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Resultado de Análisis</p>
                                <div className="text-4xl font-black text-slate-900">
-                                  {msg.data.results[0][msg.data.columns[0].accessorKey]?.toLocaleString() || '0'}
+                                  {Object.values(msg.data.results[0])?.[0]?.toLocaleString?.() || '0'}
                                </div>
                             </div>
                          ) : (
@@ -247,7 +261,7 @@ export default function AIReportsPage() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
                 <div className="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm">
-                  <span className="text-xs text-muted-foreground italic">Validando accesos y procesando datos...</span>
+                  <span className="text-xs text-muted-foreground italic">Analizando datos y verificando permisos...</span>
                 </div>
               </div>
             )}
@@ -258,7 +272,7 @@ export default function AIReportsPage() {
         <div className="p-4 sm:p-8 bg-white border-t mt-auto shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
           <div className="relative max-w-4xl mx-auto">
             <Input 
-              placeholder="Ej: ¿Cuál es la facturación total en USD este mes?"
+              placeholder="Ej: ¿Cuántos clientes activos tenemos? ¿Cuál es la facturación total en USD?"
               className="h-14 pl-6 pr-24 text-base rounded-2xl border-2 border-slate-100 focus-visible:ring-primary focus-visible:ring-offset-0 transition-all bg-slate-50"
               value={input}
               onChange={(e) => setInput(e.target.value)}

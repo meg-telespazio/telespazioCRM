@@ -1,111 +1,152 @@
 'use server';
 /**
- * @fileOverview AI Flow robusto para reportes con validación de seguridad y lógica cuantitativa estricta.
+ * @fileOverview Agente AI de reportes rediseñado con Genkit Tools.
+ * El LLM usa tools para consultar datos con seguridad aplicada en código.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import {
+  setToolContext,
+  getAvailableModulesTool,
+  getSchemaInfoTool,
+  queryCollectionTool,
+  aggregateCollectionTool,
+} from '@/ai/tools/report-tools';
+import type { PermissionsMatrix, UserRole } from '@/lib/types';
+
+// --- Schemas ---
 
 const MessageSchema = z.object({
   role: z.enum(['user', 'model']),
   content: z.string(),
 });
 
-const ReportConfigSchema = z.object({
-  primaryDataSource: z.enum(['clients', 'contacts', 'opportunities', 'productsAndServices', 'contracts', 'purchaseOrders', 'services', 'equipment', 'activities', 'locations']),
-  fields: z.array(z.string()).describe('List of fields to show, format: "collection.field"'),
-  filters: z.array(z.object({
-    field: z.string(),
-    operator: z.enum(['contains', 'equals', 'not_equals', 'gt', 'lt', 'gte', 'lte', 'is', 'is_not', 'is_not_empty']),
-    value: z.any(),
-  })),
-  sorting: z.array(z.object({
-    field: z.string(),
-    direction: z.enum(['asc', 'desc']),
-  })),
-  groupBy: z.string().optional().describe('Field to group by if aggregations are used'),
-  aggregations: z.array(z.object({
-    field: z.string(),
-    type: z.enum(['sum', 'avg', 'count']),
-  })).optional(),
-});
-
 const ReportAIInputSchema = z.object({
   messages: z.array(MessageSchema),
-  schemaContext: z.string(),
   userRole: z.string(),
+  userId: z.string(),
   userManagement: z.string(),
-  permissionsMatrix: z.any(), // Recibe la matriz de roles de systemConfig/globals
+  permissionsMatrix: z.any(),
+  collectionsData: z.any().describe('Datos de colecciones cargados en el frontend'),
 });
 
 const ReportAIOutputSchema = z.object({
-  type: z.enum(['question', 'config', 'unauthorized', 'greeting']),
-  text: z.string().describe('Respuesta conversacional para el usuario.'),
-  config: ReportConfigSchema.optional(),
-  summary: z.string().optional().describe('Breve resumen de la interacción actual para el historial.'),
+  type: z.enum(['answer', 'unauthorized', 'off_topic', 'clarification']).describe('Tipo de respuesta'),
+  text: z.string().describe('Respuesta conversacional para el usuario'),
+  data: z.array(z.any()).optional().describe('Datos tabulares para mostrar en tabla'),
+  columns: z.array(z.string()).optional().describe('Columnas de la tabla de datos'),
+  isQuantitative: z.boolean().optional().describe('Si es un resultado numérico/agregado'),
+  summary: z.string().optional().describe('Resumen de la interacción para el historial'),
 });
 
 export type ReportAIInput = z.infer<typeof ReportAIInputSchema>;
 export type ReportAIOutput = z.infer<typeof ReportAIOutputSchema>;
 
-export async function processReportQuery(input: ReportAIInput): Promise<ReportAIOutput> {
-  return reportAIFlow(input);
-}
+// --- System prompt ---
 
-const prompt = ai.definePrompt({
-  name: 'reportAIPrompt',
-  input: { schema: ReportAIInputSchema },
-  output: { schema: ReportAIOutputSchema },
-  prompt: `Eres el Analista de Datos Inteligente del CRM T-Track de Telespazio.
+const SYSTEM_PROMPT = `Eres el Analista de Datos del CRM T-Track de Telespazio. Tu nombre es T-Track AI.
 
-DATOS DEL USUARIO:
-- Rol: {{{userRole}}}
-- Gerencia: {{{userManagement}}}
-- Matriz de Permisos: {{{permissionsMatrix}}}
+REGLAS DE OPERACIÓN OBLIGATORIAS:
 
-CONTEXTO DE LA BASE DE DATOS:
-{{{schemaContext}}}
+1. SCOPE: Solo respondes preguntas relacionadas con reportes y análisis de datos del CRM (clientes, contactos, oportunidades, contratos, órdenes de compra, servicios, equipos, actividades, ubicaciones y catálogo de productos). Si te preguntan sobre cualquier otro tema, responde con type "off_topic" y explica amablemente que solo puedes ayudar con análisis de datos del CRM.
 
-REGLAS CRÍTICAS DE OPERACIÓN (SIN EXCEPCIÓN):
-1. VALIDACIÓN DE ACCESO: Antes de procesar, revisa si el rol del usuario tiene permiso "view" para el módulo solicitado en la matriz. Si no tiene acceso, responde con type: "unauthorized" y el texto: "Lo siento, según mi configuración no tengo acceso a esa información para tu perfil."
+2. SEGURIDAD: 
+   - Antes de consultar cualquier dato, usa la tool "getAvailableModules" para verificar qué módulos puede ver el usuario.
+   - Si el usuario pide datos de un módulo al que no tiene acceso, responde con type "unauthorized" y dile que esa información no está disponible para su perfil.
+   - NUNCA intentes acceder a datos sin verificar permisos primero.
 
-2. LÓGICA CUANTITATIVA (PRIORIDAD ALTA): Si la pregunta es sobre CANTIDADES, TOTALES, SUMAS o PROMEDIOS:
-   - DEBES usar 'aggregations' en el objeto config.
-   - En el campo 'text', responde solo con el enunciado del resultado y pregunta: "¿Quieres ver el detalle de estos registros?".
-   - Ejemplo: Si preguntan cuantos clientes, usa aggregation: { field: "clients.name", type: "count" }.
+3. COMPRENSIÓN:
+   - Si la pregunta es ambigua o no queda claro qué datos quiere el usuario, responde con type "clarification" y pide más detalles.
+   - Sugiere opciones concretas: "¿Te refieres a clientes activos? ¿De qué sector?"
+   
+4. CONSULTAS:
+   - Usa "getSchemaInfo" para entender la estructura de datos antes de consultar.
+   - Usa "queryCollection" para obtener registros detallados.
+   - Usa "aggregateCollection" para cálculos (sumas, promedios, conteos).
+   - Siempre pregunta si el usuario quiere ver más detalle o exportar.
 
-3. FILTROS DE SEGURIDAD AUTOMÁTICOS: 
-   - SI el rol es 'ejecutivo': DEBES aplicar SIEMPRE un filtro donde 'assignedTo' sea exactamente igual al ID del usuario actual.
-   - SI el rol es 'admin' o 'gerente': NO apliques filtros de 'assignedTo' automáticamente; muestra los datos de toda la gerencia (gerente) o todo el sistema (admin) a menos que te pidan "mis clientes".
-   - Siempre usa el operador 'contains' para filtros de texto como nombres de clientes o sectores para evitar fallos por mayúsculas.
+5. MAPEO DE TÉRMINOS (el usuario habla en español, los datos están en inglés):
+   - "Banca", "Banco", "Financiero" → sector "Finance"
+   - "Petróleo", "Gas", "Oil & Gas", "Energía" → sector "Energy"
+   - "Minería", "Litio" → sector "Mining"
+   - "Agro", "Campo" → sector "Agriculture"
+   - "Ganado", "Won" → stage "Won"
+   - "Perdido" → stage "Lost"
+   - "Prospección" → stage "Prospecting"
+   - "Negociación" → stage "Negotiation"
+   - "Propuesta" → stage "Proposal"
 
-4. MAPPING DE SECTORES:
-   - "Banca", "Banco" -> "Finance"
-   - "Petroleo", "Gas", "Oil & Gas", "Combustibles", "Energía" -> "Energy"
-   - "Minería", "Litio", "Metales" -> "Mining"
-   - "Agro", "Campo" -> "Agriculture"
+6. FORMATO:
+   - Sé conciso y profesional.
+   - Para resultados numéricos, formatea con separadores de miles.
+   - Para tablas, retorna los datos en el campo "data" con las columnas en "columns".
+   - Al final de cada respuesta con datos, pregunta "¿Necesitas algo más?".
 
-5. INTERACCIÓN: 
-   - Siempre sé amable y profesional.
-   - Al final de cada respuesta con datos, pregunta: "¿Necesitas ayuda con algo más?".
-   - Si el usuario se despide o no pide nada más, responde con type: "greeting" y un saludo cordial.
+7. HISTORIAL:
+   - Siempre genera un "summary" breve de lo que hiciste.`;
 
-6. HISTORIAL: Genera siempre un 'summary' de lo que hiciste en esta interacción para guardarlo en la base.
+// --- Flow principal ---
 
-MENSAJES ANTERIORES:
-{{#each messages}}
-{{role}}: {{content}}
-{{/each}}`,
-});
-
-const reportAIFlow = ai.defineFlow(
+const reportAgentFlow = ai.defineFlow(
   {
-    name: 'reportAIFlow',
+    name: 'reportAgentFlow',
     inputSchema: ReportAIInputSchema,
     outputSchema: ReportAIOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    // Inyectar contexto para las tools
+    setToolContext({
+      userRole: input.userRole as UserRole,
+      userId: input.userId,
+      userManagement: input.userManagement,
+      permissionsMatrix: input.permissionsMatrix as PermissionsMatrix,
+      collectionsData: input.collectionsData || {},
+    });
+
+    // Construir historial de mensajes
+    const chatMessages = input.messages.map(m => ({
+      role: m.role as 'user' | 'model',
+      content: [{ text: m.content }],
+    }));
+
+    try {
+      const response = await ai.generate({
+        model: 'googleai/gemini-2.5-flash',
+        system: SYSTEM_PROMPT,
+        messages: chatMessages,
+        tools: [
+          getAvailableModulesTool,
+          getSchemaInfoTool,
+          queryCollectionTool,
+          aggregateCollectionTool,
+        ],
+        output: { schema: ReportAIOutputSchema },
+      });
+
+      const output = response.output;
+
+      if (output) {
+        return output;
+      }
+
+      // Fallback: si no hay output estructurado, construir desde el texto
+      return {
+        type: 'answer' as const,
+        text: response.text || 'No pude procesar tu consulta. ¿Podrías reformularla?',
+        summary: 'Respuesta generada sin estructura',
+      };
+    } catch (error: any) {
+      console.error('Report agent error:', error);
+      return {
+        type: 'answer' as const,
+        text: 'Ocurrió un error procesando tu consulta. Por favor intenta de nuevo.',
+        summary: `Error: ${error.message}`,
+      };
+    }
   }
 );
+
+export async function processReportQuery(input: ReportAIInput): Promise<ReportAIOutput> {
+  return reportAgentFlow(input);
+}
