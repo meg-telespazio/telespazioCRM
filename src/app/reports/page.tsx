@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Bot, Send, Loader2, Sparkles, Database, History, ShieldAlert, AlertCircle, HelpCircle } from 'lucide-react';
 import { processReportQuery } from '@/ai/flows/report-ai-flow';
+import { CRM_COLLECTIONS } from '@/ai/knowledge/crm-data-schema';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { ReportResultTable } from '@/components/reports/report-result-table';
@@ -68,22 +69,37 @@ export default function AIReportsPage() {
   const { data: activities } = useCollection<Activity>(getQ('activities'));
   const { data: locations } = useCollection<Location>(getQ('locations'));
 
-  // Preparar datos serializables para el agente (sin funciones ni objetos complejos)
-  const serializeCollection = (data: any[] | undefined) => {
-    if (!data) return [];
-    return data.map((item: any) => {
-      const clean: any = {};
-      for (const [key, value] of Object.entries(item)) {
-        if (typeof value === 'function') continue;
-        if (value instanceof Date) {
-          clean[key] = value.toISOString().split('T')[0];
-        } else if (value && typeof value === 'object' && 'seconds' in (value as any)) {
-          clean[key] = new Date((value as any).seconds * 1000).toISOString().split('T')[0];
+  // Preparar datos ligeros para el agente — solo campos del schema, sin datos pesados
+  const slimCollection = (collectionName: string, data: any[] | undefined) => {
+    if (!data || data.length === 0) return [];
+    const schema = CRM_COLLECTIONS[collectionName];
+    // Campos a conservar: los definidos en el schema + id + clientId
+    const keepFields = schema 
+      ? [...Object.keys(schema.fields), 'id'] 
+      : ['id', 'name', 'status', 'type', 'management', 'assignedTo'];
+    
+    // Limitar a 500 registros por colección
+    const capped = data.slice(0, 500);
+    
+    return capped.map((item: any) => {
+      const slim: any = {};
+      for (const key of keepFields) {
+        const val = item[key];
+        if (val === undefined || val === null) continue;
+        if (typeof val === 'function') continue;
+        // Convertir Timestamps/Dates a string corto
+        if (val instanceof Date) {
+          slim[key] = val.toISOString().split('T')[0];
+        } else if (typeof val === 'object' && 'seconds' in val) {
+          slim[key] = new Date(val.seconds * 1000).toISOString().split('T')[0];
+        } else if (typeof val === 'object' && !Array.isArray(val)) {
+          // Omitir objetos anidados complejos (subcolecciones, refs, etc.)
+          continue;
         } else {
-          clean[key] = value;
+          slim[key] = val;
         }
       }
-      return clean;
+      return slim;
     });
   };
 
@@ -103,18 +119,18 @@ export default function AIReportsPage() {
     setIsAiLoading(true);
 
     try {
-      // Preparar datos serializables
+      // Preparar datos ligeros
       const collectionsData: Record<string, any[]> = {
-        clients: serializeCollection(clients),
-        contacts: serializeCollection(contacts),
-        opportunities: serializeCollection(opportunities),
-        productsAndServices: serializeCollection(ps),
-        contracts: serializeCollection(contracts),
-        purchaseOrders: serializeCollection(pos),
-        services: serializeCollection(services),
-        equipment: serializeCollection(equipment),
-        activities: serializeCollection(activities),
-        locations: serializeCollection(locations),
+        clients: slimCollection('clients', clients),
+        contacts: slimCollection('contacts', contacts),
+        opportunities: slimCollection('opportunities', opportunities),
+        productsAndServices: slimCollection('productsAndServices', ps),
+        contracts: slimCollection('contracts', contracts),
+        purchaseOrders: slimCollection('purchaseOrders', pos),
+        services: slimCollection('services', services),
+        equipment: slimCollection('equipment', equipment),
+        activities: slimCollection('activities', activities),
+        locations: slimCollection('locations', locations),
       };
 
       const response = await processReportQuery({
