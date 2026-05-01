@@ -5,7 +5,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
 import {
   setToolContext,
   getAvailableModulesTool,
@@ -15,35 +14,23 @@ import {
 } from '@/ai/tools/report-tools';
 import type { PermissionsMatrix, UserRole } from '@/lib/types';
 
-// --- Schemas ---
+export type ReportAIInput = {
+  messages: { role: 'user' | 'model'; content: string }[];
+  userRole: string;
+  userId: string;
+  userManagement: string;
+  permissionsMatrix: any;
+  collectionsData: any;
+};
 
-const MessageSchema = z.object({
-  role: z.enum(['user', 'model']),
-  content: z.string(),
-});
-
-const ReportAIInputSchema = z.object({
-  messages: z.array(MessageSchema),
-  userRole: z.string(),
-  userId: z.string(),
-  userManagement: z.string(),
-  permissionsMatrix: z.any(),
-  collectionsData: z.any().describe('Datos de colecciones cargados en el frontend'),
-});
-
-const ReportAIOutputSchema = z.object({
-  type: z.enum(['answer', 'unauthorized', 'off_topic', 'clarification']).describe('Tipo de respuesta'),
-  text: z.string().describe('Respuesta conversacional para el usuario'),
-  data: z.array(z.any()).optional().describe('Datos tabulares para mostrar en tabla'),
-  columns: z.array(z.string()).optional().describe('Columnas de la tabla de datos'),
-  isQuantitative: z.boolean().optional().describe('Si es un resultado numérico/agregado'),
-  summary: z.string().optional().describe('Resumen de la interacción para el historial'),
-});
-
-export type ReportAIInput = z.infer<typeof ReportAIInputSchema>;
-export type ReportAIOutput = z.infer<typeof ReportAIOutputSchema>;
-
-// --- System prompt ---
+export type ReportAIOutput = {
+  type: 'answer' | 'unauthorized' | 'off_topic' | 'clarification';
+  text: string;
+  data?: any[];
+  columns?: string[];
+  isQuantitative?: boolean;
+  summary?: string;
+};
 
 const SYSTEM_PROMPT = `Eres el Analista de Datos del CRM T-Track de Telespazio. Tu nombre es T-Track AI.
 
@@ -77,76 +64,81 @@ REGLAS DE OPERACIÓN OBLIGATORIAS:
    - "Negociación" → stage "Negotiation"
    - "Propuesta" → stage "Proposal"
 
-6. FORMATO:
-   - Sé conciso y profesional.
-   - Para resultados numéricos, formatea con separadores de miles.
-   - Para tablas, retorna los datos en el campo "data" con las columnas en "columns".
-   - Al final de cada respuesta con datos, pregunta "¿Necesitas algo más?".
+6. FORMATO OBLIGATORIO DE RESPUESTA:
+   Para que el frontend pueda procesar tu respuesta correctamente, DEBES retornar ÚNICAMENTE un objeto JSON válido que siga la siguiente estructura. No incluyas explicaciones antes o después del JSON.
 
-7. HISTORIAL:
-   - Siempre genera un "summary" breve de lo que hiciste.`;
+   {
+     "type": "answer",
+     "text": "Aquí la respuesta conversacional para el usuario explicando los resultados de manera resumida y amigable",
+     "data": [ { "id": "1", "name": "Ejemplo" } ],
+     "columns": [ "id", "name" ],
+     "isQuantitative": false,
+     "summary": "Resumen breve para el historial"
+   }
 
-// --- Flow principal ---
-
-const reportAgentFlow = ai.defineFlow(
-  {
-    name: 'reportAgentFlow',
-    inputSchema: ReportAIInputSchema,
-    outputSchema: ReportAIOutputSchema,
-  },
-  async (input) => {
-    // Inyectar contexto para las tools
-    setToolContext({
-      userRole: input.userRole as UserRole,
-      userId: input.userId,
-      userManagement: input.userManagement,
-      permissionsMatrix: input.permissionsMatrix as PermissionsMatrix,
-      collectionsData: input.collectionsData || {},
-    });
-
-    // Construir historial de mensajes
-    const chatMessages = input.messages.map(m => ({
-      role: m.role as 'user' | 'model',
-      content: [{ text: m.content }],
-    }));
-
-    try {
-      const response = await ai.generate({
-        model: 'googleai/gemini-2.5-flash',
-        system: SYSTEM_PROMPT,
-        messages: chatMessages,
-        tools: [
-          getAvailableModulesTool,
-          getSchemaInfoTool,
-          queryCollectionTool,
-          aggregateCollectionTool,
-        ],
-        output: { schema: ReportAIOutputSchema },
-      });
-
-      const output = response.output;
-
-      if (output) {
-        return output;
-      }
-
-      // Fallback: si no hay output estructurado, construir desde el texto
-      return {
-        type: 'answer' as const,
-        text: response.text || 'No pude procesar tu consulta. ¿Podrías reformularla?',
-        summary: 'Respuesta generada sin estructura',
-      };
-    } catch (error: any) {
-      console.error('Report agent error:', error);
-      return {
-        type: 'answer' as const,
-        text: 'Ocurrió un error procesando tu consulta. Por favor intenta de nuevo.',
-        summary: `Error: ${error.message}`,
-      };
-    }
-  }
-);
+   - Si el resultado es un número o conteo, pon isQuantitative en true.
+   - No uses comillas dentro del texto que puedan romper el JSON.
+`;
 
 export async function processReportQuery(input: ReportAIInput): Promise<ReportAIOutput> {
-  return reportAgentFlow(input);
+  // Inyectar contexto para las tools
+  setToolContext({
+    userRole: input.userRole as UserRole,
+    userId: input.userId,
+    userManagement: input.userManagement,
+    permissionsMatrix: input.permissionsMatrix as PermissionsMatrix,
+    collectionsData: input.collectionsData || {},
+  });
+
+  // Construir historial de mensajes
+  const chatMessages = input.messages.map(m => ({
+    role: m.role as 'user' | 'model',
+    content: [{ text: m.content }],
+  }));
+
+  try {
+    const response = await ai.generate({
+      model: 'googleai/gemini-2.5-flash',
+      system: SYSTEM_PROMPT,
+      messages: chatMessages,
+      tools: [
+        getAvailableModulesTool,
+        getSchemaInfoTool,
+        queryCollectionTool,
+        aggregateCollectionTool,
+      ],
+    });
+
+    let jsonStr = response.text || '';
+    const match = jsonStr.match(/```json\s*([\s\S]*?)\s*```/) || jsonStr.match(/```\s*([\s\S]*?)\s*```/);
+    if (match) {
+      jsonStr = match[1];
+    }
+
+    try {
+      const output = JSON.parse(jsonStr.trim());
+      return {
+        type: output.type || 'answer',
+        text: output.text || 'Consulta procesada.',
+        data: output.data,
+        columns: output.columns,
+        isQuantitative: output.isQuantitative,
+        summary: output.summary,
+      };
+    } catch (parseError) {
+      console.warn('Error parsing JSON:', parseError, response.text);
+      return {
+        type: 'answer',
+        text: response.text || 'No pude procesar tu consulta. ¿Podrías reformularla?',
+        summary: 'Respuesta generada en texto plano'
+      };
+    }
+  } catch (error: any) {
+    console.error('Report agent error:', error);
+    return {
+      type: 'answer',
+      text: 'Ocurrió un error procesando tu consulta. Por favor intenta de nuevo.',
+      summary: `Error: ${error.message}`,
+    };
+  }
 }
