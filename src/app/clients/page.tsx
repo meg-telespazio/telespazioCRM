@@ -1,18 +1,26 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { redirect, useRouter } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Upload } from 'lucide-react';
+import { PlusCircle, Upload, Filter } from 'lucide-react';
 import { ClientTable } from '@/components/clients/client-table';
-import type { Client, UserProfile } from '@/lib/types';
+import type { Client, UserProfile, SystemConfig } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { deleteClient } from '@/lib/firestore/clients';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClientImporter } from '@/components/clients/client-importer';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function ClientsPage() {
   const { user, loading: userLoading } = useUser();
@@ -21,21 +29,22 @@ export default function ClientsPage() {
   const router = useRouter();
 
   const [isImporterOpen, setImporterOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'client' | 'prospect'>('all');
+  const [sectorFilter, setSectorFilter] = useState<string>('all');
+
+  // Fetch System Config for Sectors
+  const configDocRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
+  const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
   // Filter clients by permission
   const clientsQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'clients');
     
-    // El administrador ve todo el universo de clientes
     if (user.role === 'admin') return query(ref);
-    
-    // Ejecutivo solo ve sus propios clientes
     if (user.role === 'ejecutivo') {
       return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
     }
-
-    // Gerente e Ingeniero ven los clientes de su propia gerencia
     return query(ref, where('management', '==', user.management));
   }, [user, firestore]);
 
@@ -46,16 +55,22 @@ export default function ClientsPage() {
     useMemo(() => (firestore ? collection(firestore, 'users') : null), [firestore])
   );
 
-  const clients = useMemo(() => {
+  const filteredClients = useMemo(() => {
     if (!clientsData) return [];
-    return [...clientsData].sort((a, b) => {
+    
+    return clientsData.filter(client => {
+      const matchesType = typeFilter === 'all' || client.type === typeFilter;
+      const matchesSector = sectorFilter === 'all' || client.sector === sectorFilter;
+      return matchesType && matchesSector;
+    }).sort((a, b) => {
       const dateA = a.updatedAt || a.createdAt;
       const dateB = b.updatedAt || b.createdAt;
       return dateB.getTime() - dateA.getTime();
     });
-  }, [clientsData]);
+  }, [clientsData, typeFilter, sectorFilter]);
 
   const users = useMemo(() => usersData || [], [usersData]);
+  const sectorOptions = useMemo(() => (configData?.sectors || []).sort(), [configData]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -100,19 +115,60 @@ export default function ClientsPage() {
           )}
         </div>
       </AppHeader>
+
+      <div className="bg-white border-b px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <Tabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)} className="w-full sm:w-auto">
+            <TabsList className="bg-slate-100">
+              <TabsTrigger value="all" className="text-xs">{t('Table.all')}</TabsTrigger>
+              <TabsTrigger value="client" className="text-xs">{t('ClientType.client')}</TabsTrigger>
+              <TabsTrigger value="prospect" className="text-xs">{t('ClientType.prospect')}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="hidden sm:flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={sectorFilter} onValueChange={setSectorFilter}>
+              <SelectTrigger className="w-[200px] h-9 text-xs">
+                <SelectValue placeholder="Filtrar por sector..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los Sectores</SelectItem>
+                {sectorOptions.map(sector => (
+                  <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="sm:hidden w-full">
+           <Select value={sectorFilter} onValueChange={setSectorFilter}>
+              <SelectTrigger className="w-full h-9 text-xs">
+                <SelectValue placeholder="Sector..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los Sectores</SelectItem>
+                {sectorOptions.map(sector => (
+                  <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+        </div>
+      </div>
+
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {isLoading ? (
           <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-96 w-full" /></div>
         ) : (
           <ClientTable 
-            data={clients} 
+            data={filteredClients} 
             users={users} 
             onEdit={handleEditClient} 
             onDelete={handleDeleteClient} 
           />
         )}
       </main>
-      <ClientImporter isOpen={isImporterOpen} onOpenChange={setImporterOpen} clients={clients} />
+      <ClientImporter isOpen={isImporterOpen} onOpenChange={setImporterOpen} clients={filteredClients} />
     </div>
   );
 }

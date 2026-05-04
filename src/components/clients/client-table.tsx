@@ -59,7 +59,10 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
   
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({
+    sector: false,
+    subsector: false,
+  });
   const [rowSelection, setRowSelection] = React.useState({});
 
   React.useEffect(() => {
@@ -111,6 +114,7 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
         Nombre: row.original.name,
         'TAX ID': row.original.cuit,
         Sector: row.original.sector,
+        Subsector: row.original.subsector || '',
         Tipo: t(`ClientType.${row.original.type}`),
         Estado: t(`Status.${row.original.status}`),
         País: row.original.countryHQ ? t(`Countries.${row.original.countryHQ}`) : '-',
@@ -133,6 +137,7 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
       case 'cuit': return 'TAX ID';
       case 'type': return 'Tipo';
       case 'sector': return 'Sector';
+      case 'subsector': return 'Subsector';
       case 'status': return 'Estado';
       case 'countryHQ': return 'País';
       case 'assignedTo': return 'Responsable';
@@ -166,8 +171,8 @@ export function ClientTable({ data, users, onEdit, onDelete }: ClientTableProps)
                 <ListFilter className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground">Columnas</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground">Columnas Personalizadas</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {table.getAllColumns().filter(col => col.getCanHide()).map(column => (
                 <DropdownMenuCheckboxItem

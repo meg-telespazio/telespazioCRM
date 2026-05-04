@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -172,6 +171,36 @@ export const columns = (
           </div>
         )
       }
+    },
+    {
+      accessorKey: 'sector',
+      meta: { className: "hidden lg:table-cell" },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        >
+          SECTOR
+          <ArrowUpDown className="ml-2 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-[11px] text-slate-600 truncate block max-w-[100px]">{row.original.sector}</span>,
+    },
+    {
+      accessorKey: 'subsector',
+      meta: { className: "hidden xl:table-cell" },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="text-white hover:bg-red-800 font-bold text-[10px] uppercase tracking-wider h-8"
+        >
+          SUBSECTOR
+          <ArrowUpDown className="ml-2 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="text-[11px] text-slate-500 truncate block max-w-[100px]">{row.original.subsector || '-'}</span>,
     },
     {
       accessorKey: 'status',
