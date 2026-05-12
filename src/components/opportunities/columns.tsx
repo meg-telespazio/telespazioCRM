@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -21,6 +20,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { Opportunity, Client, ExchangeRate } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -132,11 +137,23 @@ export const columns = (
           <ArrowUpDown className="ml-2 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <span className="font-bold text-slate-700 text-[11px] truncate block max-w-[150px] sm:max-w-[200px]">
-          {row.original.title}
-        </span>
-      )
+      cell: ({ row }) => {
+        const title = row.original.title;
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="font-bold text-slate-700 text-[11px] truncate block max-w-[150px] sm:max-w-[200px] cursor-help">
+                  {title}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[300px] break-words">
+                <p className="text-xs font-semibold">{title}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      }
     },
     {
       accessorKey: 'clientId',
