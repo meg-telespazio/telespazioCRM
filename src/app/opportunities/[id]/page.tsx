@@ -32,7 +32,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer, Info, ShieldCheck, Briefcase, TrendingUp, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer, Info, ShieldCheck, Briefcase, TrendingUp, ChevronRight, Target, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -93,6 +93,7 @@ const getFormSchema = (t: (key: string) => string) => {
     .object({
       title: z.string().min(2, t('Validation.titleMin')),
       clientId: z.string().min(1, t('Validation.selectClient')),
+      salesforceId: z.string().optional().or(z.literal('')),
       value: z.coerce.number().min(0, t('Validation.valuePositive')),
       currency: z.string(),
       stage: z.enum([
@@ -141,7 +142,7 @@ const getFormSchema = (t: (key: string) => string) => {
     .superRefine((data, ctx) => {
       if (
         ['Lost', 'Canceled', 'Suspended'].includes(data.stage) &&
-        (!data.reason || data.reason.length < 10)
+        (!data.reason || data.reason.trim().length < 10)
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -252,6 +253,7 @@ export default function OpportunityFormPage() {
     defaultValues: {
       title: '',
       clientId: clientIdFromQuery || '',
+      salesforceId: '',
       value: 0,
       currency: 'USD',
       stage: 'Prospecting',
@@ -494,6 +496,7 @@ export default function OpportunityFormPage() {
           ? new Date(opportunityData.offerSentDate)
           : undefined,
         contactId: opportunityData.contactId || '',
+        salesforceId: opportunityData.salesforceId || '',
         lineItems: opportunityData.lineItems || [],
         attachments: opportunityData.attachments || [],
         generalDiscountPercentage:
@@ -613,13 +616,25 @@ export default function OpportunityFormPage() {
                     </div>
                   </div>
 
-                  <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('Dashboard.recentOpportunities.opportunityHeader')}</FormLabel>
-                      <FormControl><Input placeholder={t('Forms.opportunityTitlePlaceholder')} {...field} disabled={isLocked} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="title" render={({ field }) => (
+                      <FormItem className="md:col-span-1">
+                        <FormLabel>{t('Dashboard.recentOpportunities.opportunityHeader')}</FormLabel>
+                        <FormControl><Input placeholder={t('Forms.opportunityTitlePlaceholder')} {...field} disabled={isLocked} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="salesforceId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Target className="h-3 w-3" />
+                          Salesforce ID
+                        </FormLabel>
+                        <FormControl><Input placeholder="006..." {...field} disabled={isLocked} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="risk" render={({ field }) => (
@@ -814,6 +829,19 @@ export default function OpportunityFormPage() {
                       </FormItem>
                     )} />
                   </div>
+
+                  {['Lost', 'Canceled', 'Suspended'].includes(watchedStage) && (
+                    <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <FormField control={form.control} name="reason" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-destructive font-bold">{t('Forms.reason')}</FormLabel>
+                          <FormControl><Textarea placeholder={t('Forms.reasonPlaceholder')} {...field} className="border-destructive/30" /></FormControl>
+                          <FormDescription>Mínimo 10 caracteres.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

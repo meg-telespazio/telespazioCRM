@@ -134,6 +134,7 @@ export type Opportunity = {
   publicId: string;
   title: string;
   clientId: string;
+  salesforceId?: string;
   value: number;
   currency: string;
   stage: 'Prospecting' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost' | 'Canceled' | 'Suspended';
