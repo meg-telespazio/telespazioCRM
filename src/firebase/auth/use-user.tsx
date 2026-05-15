@@ -8,7 +8,7 @@ import type { UserProfile } from '@/lib/types';
 // This will be the new user object type throughout the app
 export type AppUser = AuthUser & Partial<UserProfile>;
 
-const ADMIN_EMAIL = 'mariano.gonzalez@telespazio.com';
+const ADMIN_EMAILS = ['mariano.gonzalez@telespazio.com', 'mariano.telespazio@gmail.com'];
 
 export const useUser = () => {
   const auth = useAuth();
@@ -43,7 +43,7 @@ export const useUser = () => {
   const user: AppUser | null = useMemo(() => {
     if (!authUser) return null;
     
-    const isSuperAdmin = authUser.email === ADMIN_EMAIL;
+    const isSuperAdmin = authUser.email ? ADMIN_EMAILS.includes(authUser.email) : false;
     
     // Regresamos null si el perfil aún está cargando para evitar estados de identidad parciales
     // excepto si es SuperAdmin, que ya tiene bypass por reglas de email

@@ -41,10 +41,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 
+const ALLOWED_GMAIL = 'mariano.telespazio@gmail.com';
+
 const newUserSchema = z.object({
   firstName: z.string().min(2),
   lastName: z.string().min(2),
-  email: z.string().email(),
+  email: z.string().email().refine(email => email.endsWith('@telespazio.com') || email === ALLOWED_GMAIL, 'Solo se permiten emails corporativos @telespazio.com'),
   password: z.string().min(8),
   role: z.enum(['admin', 'gerente', 'ejecutivo', 'ingeniero']),
   management: z.enum(['Satellite Communications', 'GeoInformacion']),
@@ -102,7 +104,7 @@ export default function UsersManagementPage() {
 
   useEffect(() => {
     if (config?.permissionsMatrix) {
-      // Sincronizar localMatrix si faltan claves nuevas (como showServiceOrders)
+      // Sincronizar localMatrix si faltan claves nuevas
       const currentMatrix = JSON.parse(JSON.stringify(config.permissionsMatrix)) as PermissionsMatrix;
       let needsSync = false;
 
@@ -354,28 +356,9 @@ export default function UsersManagementPage() {
                   </div>
                 </div>
                 <Button onClick={handleSaveMatrix} disabled={isSavingMatrix} className="gap-2">
-                  {isSavingMatrix ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {isSavingMatrix ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Guardar Matriz de Permisos
                 </Button>
-              </div>
-
-              {/* Bloque Informativo sobre Reglas Inmutables */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-4">
-                <div className="p-2 bg-amber-100 rounded-full h-fit">
-                  <Info className="h-5 w-5 text-amber-700" />
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-sm font-bold text-amber-900 uppercase tracking-tight">Reglas de Oro del Sistema (Filtros de Seguridad)</h4>
-                  <p className="text-xs text-amber-800 leading-relaxed">
-                    Independientemente de lo que se marque en esta matriz, el sistema siempre aplica las siguientes restricciones de seguridad:
-                  </p>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 list-disc pl-4 text-[11px] text-amber-800">
-                    <li><strong>Admin:</strong> Posee bypass total. Visualiza y edita todos los registros de ambas gerencias.</li>
-                    <li><strong>Gerente:</strong> Solo visualiza y gestiona datos pertenecientes a su propia gerencia (SatCom o GeoInfo).</li>
-                    <li><strong>Ejecutivo (Visibilidad):</strong> Visualiza todos los registros de su gerencia para evitar duplicados.</li>
-                    <li><strong>Ejecutivo (Modificación):</strong> Solo puede Editar o Borrar registros donde figure como "Responsable".</li>
-                  </ul>
-                </div>
               </div>
 
               {localMatrix && ROLES.map(role => (

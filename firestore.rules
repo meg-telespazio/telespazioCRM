@@ -9,7 +9,7 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      return isAuthenticated() && request.auth.token.email == 'mariano.gonzalez@telespazio.com';
+      return isAuthenticated() && (request.auth.token.email == 'mariano.gonzalez@telespazio.com' || request.auth.token.email == 'mariano.telespazio@gmail.com');
     }
 
     function getUserData() {
