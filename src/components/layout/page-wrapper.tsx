@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.2.1 - AI Metrics Permission Patch
-const APP_VERSION = '2.2.1'; 
+// VERSIÓN 2.4.0 - Auth Persistence & Cache Purge Patch
+const APP_VERSION = '2.4.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -41,7 +41,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       const savedVersion = localStorage.getItem('crm_app_version');
       
       if (savedVersion !== APP_VERSION) {
-        console.warn(`Nueva versión detectada (${APP_VERSION}). Actualizando aplicación...`);
+        console.warn(`Nueva versión detectada (${APP_VERSION}). Actualizando aplicación y limpiando caché...`);
         
         try {
           if ('caches' in window) {

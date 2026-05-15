@@ -5,7 +5,7 @@ import {
   type FirebaseApp,
   type FirebaseOptions,
 } from 'firebase/app';
-import { getAuth, setPersistence, browserSessionPersistence, type Auth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
@@ -36,8 +36,8 @@ function initializeFirebase(config: FirebaseOptions) {
     firestore = getFirestore(firebaseApp);
     storage = getStorage(firebaseApp);
 
-    // Configurar persistencia estricta de sesión
-    setPersistence(auth, browserSessionPersistence).catch((err) => {
+    // Cambiado a browserLocalPersistence para mayor estabilidad de sesión
+    setPersistence(auth, browserLocalPersistence).catch((err) => {
       console.error('Error setting auth persistence:', err);
     });
 
