@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink, ShieldAlert, MailCheck } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -38,7 +38,6 @@ export function MfaEnrollment() {
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isMfaActive, setIsMfaActive] = useState(false);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
-  const [isMethodDisabled, setIsMethodDisabled] = useState(false);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -120,23 +119,17 @@ export function MfaEnrollment() {
     }
 
     setIsLoading(true);
-    setIsMethodDisabled(false);
     try {
       const mfaSession = await multiFactor(auth.currentUser).getSession();
       const secret = await TotpMultiFactorGenerator.generateSecret(mfaSession);
       setTotpSecret(secret);
     } catch (error: any) {
       console.error("MFA Secret Generation Error:", error);
-      if (error.code === 'auth/operation-not-allowed') {
-        setIsMethodDisabled(true);
-        toast({ 
-          variant: 'destructive', 
-          title: 'Método No Habilitado', 
-          description: 'Falta activar el switch de MFA en la consola de Firebase.' 
-        });
-      } else {
-        toast({ variant: 'destructive', title: 'Error', description: error.message });
-      }
+      toast({ 
+        variant: 'destructive', 
+        title: 'Servicio no disponible', 
+        description: 'No se pudo iniciar la configuración. Por favor, reintente más tarde o contacte a soporte.' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -233,7 +226,7 @@ export function MfaEnrollment() {
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertTitle className="text-red-800 font-bold uppercase text-[10px]">Paso 1: Verificar tu Email</AlertTitle>
             <AlertDescription className="text-red-700 text-xs space-y-3">
-              <p>Firebase requiere que tu email esté verificado para habilitar el uso de aplicaciones como Google Authenticator.</p>
+              <p>Google requiere que tu email esté verificado antes de habilitar aplicaciones de autenticación por motivos de seguridad.</p>
               <Button 
                 onClick={handleSendVerification} 
                 disabled={isSendingVerification}
@@ -254,38 +247,6 @@ export function MfaEnrollment() {
           </TabsList>
 
           <TabsContent value="app" className="space-y-4 pt-4">
-            {isMethodDisabled && (
-              <Alert variant="destructive" className="bg-red-50 border-red-200 shadow-sm animate-in shake-1">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <div className="space-y-3">
-                  <AlertTitle className="font-black uppercase text-[10px] tracking-widest">ACTIVACIÓN REQUERIDA EN FIREBASE</AlertTitle>
-                  <AlertDescription className="text-xs space-y-4 leading-relaxed">
-                    <p>Sigue estos pasos en tu consola de Firebase para habilitar el método:</p>
-                    
-                    <div className="bg-white/50 p-3 rounded border border-red-100 space-y-3">
-                      <ol className="list-decimal pl-4 space-y-2 font-medium text-slate-700">
-                        <li>
-                          En la ventana que tienes abierta (**Mediante SMS**), haz clic en el switch **"Habilitar"** (arriba a la izquierda).
-                        </li>
-                        <li>
-                          Haz clic en el botón azul **"Guardar"**.
-                        </li>
-                        <li>
-                          Una vez guardado, se activará Identity Platform y aparecerá la opción de **"App de autenticación"** para activar.
-                        </li>
-                      </ol>
-                    </div>
-                    
-                    <Button variant="outline" className="w-full h-10 gap-2 border-red-200 text-red-700 font-bold bg-white" asChild>
-                      <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
-                        IR A LA CONSOLA <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </Button>
-                  </AlertDescription>
-                </div>
-              </Alert>
-            )}
-
             {!totpSecret ? (
               <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed">
                 <Smartphone className="h-12 w-12 mx-auto text-slate-300 mb-4" />
