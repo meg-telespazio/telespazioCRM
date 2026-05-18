@@ -16,10 +16,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink, ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Badge } from '../ui/badge';
 
 export function MfaEnrollment() {
   const auth = useAuth();
@@ -159,9 +160,17 @@ export function MfaEnrollment() {
     return (
       <Card className="mt-6 border-primary/20 bg-primary/5">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            <CardTitle>{t('Auth.mfaEnrollTitle')}</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              <CardTitle>{t('Auth.mfaEnrollTitle')}</CardTitle>
+            </div>
+            {user?.mfaEnforced && (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 gap-1 text-[10px]">
+                <ShieldAlert className="h-3 w-3" />
+                OBLIGATORIO POR ADMIN
+              </Badge>
+            )}
           </div>
           <CardDescription>{t('Auth.mfaEnrollDesc')}</CardDescription>
         </CardHeader>
@@ -180,9 +189,17 @@ export function MfaEnrollment() {
   return (
     <Card className="mt-6 border-primary/20 bg-primary/5">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          <CardTitle>{t('Auth.mfaEnrollTitle')}</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            <CardTitle>{t('Auth.mfaEnrollTitle')}</CardTitle>
+          </div>
+          {user?.mfaEnforced && (
+            <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 text-[10px]">
+              <ShieldAlert className="h-3 w-3" />
+              OBLIGATORIO
+            </Badge>
+          )}
         </div>
         <CardDescription>{t('Auth.mfaEnrollDesc')}</CardDescription>
       </CardHeader>
@@ -208,18 +225,22 @@ export function MfaEnrollment() {
               <Alert variant="destructive" className="bg-red-50 border-red-200">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle className="font-bold uppercase text-[10px]">Configuración de Firebase Requerida</AlertTitle>
-                <AlertDescription className="text-xs space-y-2">
-                  <p>El método de <strong>Authenticator App</strong> no está habilitado en tu consola.</p>
-                  <p className="font-bold underline">Pasos para activar:</p>
-                  <ol className="list-decimal pl-4 space-y-1">
-                    <li>Ve a <strong>Authentication</strong> &gt; <strong>Settings</strong> en Firebase Console.</li>
-                    <li>Selecciona <strong>Multi-factor authentication</strong> en el menú izquierdo.</li>
-                    <li>Habilita el interruptor general.</li>
-                    <li>Añade el método <strong>Authenticator app</strong>.</li>
-                  </ol>
+                <AlertDescription className="text-xs space-y-4">
+                  <p>El método de <strong>Authenticator App</strong> no está habilitado en la consola de tu proyecto.</p>
+                  
+                  <div className="space-y-1">
+                    <p className="font-bold underline">Pasos para el Administrador:</p>
+                    <ol className="list-decimal pl-4 space-y-1">
+                      <li>Ve a <strong>Authentication</strong> &gt; <strong>Settings</strong> en Firebase Console.</li>
+                      <li>Si no lo has hecho, haz clic en <strong>"Upgrade to Identity Platform"</strong>.</li>
+                      <li>Selecciona <strong>Multi-factor authentication</strong> en el menú izquierdo.</li>
+                      <li>Habilita el interruptor general y añade el método <strong>Authenticator app</strong>.</li>
+                    </ol>
+                  </div>
+                  
                   <Button variant="link" className="p-0 h-auto text-[10px] gap-1 text-red-700" asChild>
                     <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
-                      Abrir Consola <ExternalLink className="h-3 w-3" />
+                      Abrir Consola de Firebase <ExternalLink className="h-3 w-3" />
                     </a>
                   </Button>
                 </AlertDescription>

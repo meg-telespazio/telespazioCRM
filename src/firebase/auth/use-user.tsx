@@ -54,7 +54,7 @@ export const useUser = () => {
       ...authUser,
       ...userProfile,
       role: isSuperAdmin ? 'admin' : (userProfile?.role || 'ejecutivo'),
-      management: userProfile?.management || (isSuperAdmin ? 'Satellite Communications' : 'Satellite Communications'),
+      management: userProfile?.management || 'Satellite Communications',
       displayName: userProfile?.displayName || authUser.displayName,
       photoURL: userProfile?.photoURL || authUser.photoURL,
       email: authUser.email,
