@@ -17,11 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, Info } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
 
 export function MfaEnrollment() {
   const auth = useAuth();
@@ -38,6 +39,7 @@ export function MfaEnrollment() {
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isMfaActive, setIsMfaActive] = useState(false);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+  const [isMethodDisabled, setIsMethodDisabled] = useState(false);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -54,7 +56,7 @@ export function MfaEnrollment() {
         console.warn('Recaptcha initialization failed:', e);
       }
     }
-  }, [auth, auth.currentUser]);
+  }, [auth, auth.currentUser, recaptchaVerifier]);
 
   const handleSendVerification = async () => {
     if (!auth.currentUser) return;
@@ -123,22 +125,23 @@ export function MfaEnrollment() {
     }
 
     setIsLoading(true);
+    setIsMethodDisabled(false);
     try {
       const mfaUser = multiFactor(auth.currentUser);
       const mfaSession = await mfaUser.getSession();
       const secret = await TotpMultiFactorGenerator.generateSecret(mfaSession);
       setTotpSecret(secret);
     } catch (error: any) {
-      console.error("MFA Error:", error);
-      let msg = 'No se pudo iniciar la configuración. Intente de nuevo o contacte a soporte.';
+      console.error("MFA TOTP Error:", error);
       if (error.code === 'auth/operation-not-allowed') {
-        msg = 'El método de "App de autenticación" no está habilitado en la consola de Firebase. Contacte al administrador.';
+        setIsMethodDisabled(true);
+      } else {
+        toast({ 
+          variant: 'destructive', 
+          title: 'Error de Configuración', 
+          description: 'No se pudo iniciar el proceso. Intenta de nuevo.' 
+        });
       }
-      toast({ 
-        variant: 'destructive', 
-        title: 'Servicio no disponible', 
-        description: msg 
-      });
     } finally {
       setIsLoading(false);
     }
@@ -242,6 +245,16 @@ export function MfaEnrollment() {
                 {isSendingVerification ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <MailCheck className="h-3 w-3 mr-1" />}
                 Enviar enlace de verificación
               </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isMethodDisabled && (
+          <Alert className="mb-6 bg-amber-50 border-amber-200">
+            <Info className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 font-bold uppercase text-[10px]">Habilitación Requerida</AlertTitle>
+            <AlertDescription className="text-amber-700 text-xs leading-relaxed">
+              El método <strong>"App de autenticación"</strong> aún no está activo en este proyecto. Por favor, asegúrese de marcar la casilla correspondiente en el panel de MFA de la consola de Firebase y guardar los cambios. Una vez activo allí, podrá ver el QR aquí.
             </AlertDescription>
           </Alert>
         )}
