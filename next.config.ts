@@ -121,7 +121,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: 'https://t-track-nu.vercel.app',
+            value: '*',
           },
           {
             key: 'Access-Control-Allow-Methods',

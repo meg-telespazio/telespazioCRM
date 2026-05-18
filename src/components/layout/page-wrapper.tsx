@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.4.4 - MFA Console Guide Sync
-const APP_VERSION = '2.4.4'; 
+// VERSIÓN 2.4.5 - MFA Diagnostics & Permissive CORS
+const APP_VERSION = '2.4.5'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -100,7 +100,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
       const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
-      // Excepciones críticas de seguridad
+      // Excepciones críticas de seguridad (SuperAdmin bypass)
       const isBypassed = [
         'roxana.patrese@telespazio.com',
         'mariano.gonzalez@telespazio.com'

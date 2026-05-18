@@ -130,7 +130,7 @@ export function MfaEnrollment() {
       toast({ variant: 'default', title: 'Código QR Generado', description: 'Escanea el código con tu aplicación.' });
     } catch (error: any) {
       console.error("MFA Secret Generation Error:", error);
-      let errorMsg = 'No se pudo iniciar la configuración. ';
+      let errorMsg = `No se pudo iniciar la configuración. Código: [${error.code}]. `;
       if (error.code === 'auth/operation-not-allowed') {
         errorMsg += 'El método "Authenticator app" no está habilitado en la consola de Firebase del proyecto.';
       } else {
@@ -244,7 +244,7 @@ export function MfaEnrollment() {
                 variant="outline"
                 className="bg-white border-red-200 text-red-700 hover:bg-red-100 font-bold h-8"
               >
-                {isSendingVerification ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <MailCheck className="h-3 w-3 mr-2" />}
+                {isSendingVerification ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <MailCheck className="h-3 w-3 mr-1" />}
                 Enviar enlace de verificación
               </Button>
             </AlertDescription>
@@ -362,7 +362,6 @@ export function MfaEnrollment() {
             )}
           </TabsContent>
         </Tabs>
-        {/* Este contenedor es necesario para el reCAPTCHA invisible de Firebase */}
         <div id="recaptcha-container"></div>
       </CardContent>
     </Card>
