@@ -250,11 +250,11 @@ export function MfaEnrollment() {
         )}
 
         {isMethodDisabled && (
-          <Alert className="mb-6 bg-amber-50 border-amber-200">
+          <Alert className="mb-6 bg-amber-50 border-amber-200 animate-in shake-1">
             <Info className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800 font-bold uppercase text-[10px]">Habilitación Requerida</AlertTitle>
+            <AlertTitle className="text-amber-800 font-bold uppercase text-[10px]">Configuración de Servidor Requerida</AlertTitle>
             <AlertDescription className="text-amber-700 text-xs leading-relaxed">
-              El método <strong>"App de autenticación"</strong> aún no está activo en este proyecto. Por favor, asegúrese de marcar la casilla correspondiente en el panel de MFA de la consola de Firebase y guardar los cambios. Una vez activo allí, podrá ver el QR aquí.
+              El método <strong>"App de autenticación"</strong> aún no está activo en este proyecto. Por favor, asegúrate de marcar la casilla <strong>"App de autenticación"</strong> en la consola de Firebase (Sección Authentication &gt; Settings &gt; MFA) y guardar los cambios.
             </AlertDescription>
           </Alert>
         )}
