@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, Info } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, Info, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -250,11 +250,17 @@ export function MfaEnrollment() {
         )}
 
         {isMethodDisabled && (
-          <Alert className="mb-6 bg-amber-50 border-amber-200 animate-in shake-1">
-            <Info className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800 font-bold uppercase text-[10px]">Configuración de Servidor Requerida</AlertTitle>
-            <AlertDescription className="text-amber-700 text-xs leading-relaxed">
-              El método <strong>"App de autenticación"</strong> aún no está activo en este proyecto. Por favor, asegúrate de marcar la casilla <strong>"App de autenticación"</strong> en la consola de Firebase (Sección Authentication &gt; Settings &gt; MFA) y guardar los cambios.
+          <Alert className="mb-6 bg-amber-50 border-amber-200 animate-in slide-in-from-top-2">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 font-black uppercase text-[10px]">Configuración de Servidor Requerida</AlertTitle>
+            <AlertDescription className="text-amber-700 text-xs leading-relaxed space-y-2">
+              <p>El método <strong>"App de autenticación"</strong> no está activo en este proyecto. Un administrador debe habilitarlo en la consola:</p>
+              <ol className="list-decimal pl-4 space-y-1 font-medium">
+                <li>Ve a la pestaña <strong>"Configuración"</strong> (la 5ta pestaña en tu consola).</li>
+                <li>Menú izquierdo: <strong>"Autenticación de varios factores"</strong>.</li>
+                <li>Haz clic en <strong>"Configurar"</strong> o <strong>"Cambiar"</strong>.</li>
+                <li>Marca la casilla <strong>"App de autenticación"</strong> y guarda.</li>
+              </ol>
             </AlertDescription>
           </Alert>
         )}
