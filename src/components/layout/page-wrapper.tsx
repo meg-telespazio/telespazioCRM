@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.4.0 - Auth Persistence & Cache Purge Patch
-const APP_VERSION = '2.4.0'; 
+// VERSIÓN 2.4.1 - Auth DNS Bypass & Force Cache Purge
+const APP_VERSION = '2.4.1'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
