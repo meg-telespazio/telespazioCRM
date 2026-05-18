@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -35,6 +35,7 @@ export function MfaEnrollment() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMfaActive, setIsMfaActive] = useState(false);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+  const [isMethodDisabled, setIsMethodDisabled] = useState(false);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -99,12 +100,23 @@ export function MfaEnrollment() {
     }
 
     setIsLoading(true);
+    setIsMethodDisabled(false);
     try {
       const mfaSession = await multiFactor(auth.currentUser).getSession();
       const secret = await TotpMultiFactorGenerator.generateSecret(mfaSession);
       setTotpSecret(secret);
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      console.error("MFA Secret Generation Error:", error);
+      if (error.code === 'auth/operation-not-allowed') {
+        setIsMethodDisabled(true);
+        toast({ 
+          variant: 'destructive', 
+          title: 'Método No Habilitado', 
+          description: 'El método "Authenticator App" no está habilitado en la consola de Firebase. Por favor, contacte al administrador para activarlo en Identity Platform.' 
+        });
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -192,11 +204,22 @@ export function MfaEnrollment() {
           </TabsList>
 
           <TabsContent value="app" className="space-y-4 pt-4">
+            {isMethodDisabled && (
+              <Alert variant="destructive" className="bg-red-50 border-red-200">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle className="font-bold">Error de Configuración del Servidor</AlertTitle>
+                <AlertDescription className="text-xs">
+                  El método de "Authenticator App" (TOTP) no está habilitado en tu proyecto de Firebase. 
+                  Debes activarlo en la Consola de Firebase -> Authentication -> Settings -> Multi-factor authentication.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {!totpSecret ? (
               <div className="py-4 text-center">
                 <Smartphone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-sm text-muted-foreground mb-6">Usa aplicaciones como Google Authenticator o Authy para generar códigos de seguridad.</p>
-                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified}>
+                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified || isMethodDisabled}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Configurar Autenticador
                 </Button>
@@ -222,9 +245,10 @@ export function MfaEnrollment() {
                   <Input 
                     placeholder="123456" 
                     value={code} 
-                    onChange={(e) => setCode(e.target.value)} 
+                    onChange={(e) => setMfaCode(e.target.value)} 
                     disabled={isLoading}
                     className="text-center font-bold text-lg tracking-widest"
+                    maxLength={6}
                   />
                   <div className="flex flex-col gap-2">
                     <Button onClick={handleVerifyTotp} disabled={isLoading || code.length !== 6}>
