@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink, ShieldAlert, Settings } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink, ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -230,31 +230,28 @@ export function MfaEnrollment() {
               <Alert variant="destructive" className="bg-red-50 border-red-200 shadow-sm animate-in shake-1">
                 <AlertCircle className="h-5 w-5 text-red-600" />
                 <div className="space-y-3">
-                  <AlertTitle className="font-black uppercase text-[10px] tracking-widest">ACTIVACIÓN EN FIREBASE REQUERIDA</AlertTitle>
+                  <AlertTitle className="font-black uppercase text-[10px] tracking-widest">ACTIVACIÓN REQUERIDA (PASOS)</AlertTitle>
                   <AlertDescription className="text-xs space-y-4 leading-relaxed">
-                    <p>Identity Platform ya está activo en tu proyecto, pero falta habilitar el método específico de la App.</p>
+                    <p>Falta habilitar el método de autenticación en la consola para este proyecto:</p>
                     
                     <div className="bg-white/50 p-3 rounded border border-red-100 space-y-3">
-                      <p className="font-bold underline text-slate-800">Pasos a seguir en la Consola:</p>
+                      <p className="font-bold underline text-slate-800">Sigue estos pasos en Firebase:</p>
                       <ol className="list-decimal pl-4 space-y-2 font-medium text-slate-700">
                         <li>
-                          Ve a la pestaña <strong>"Método de acceso"</strong> (al lado de Usuarios).
+                          Haz clic en el botón <strong>"Cambiar"</strong> de la tarjeta de <em>MFA a través de SMS</em> que ves en la consola.
                         </li>
                         <li>
-                          Baja hasta el final de la página, sección <strong>"Autenticación de varios factores"</strong>.
+                          Habilita el interruptor general de MFA.
                         </li>
                         <li>
-                          Haz clic en <strong>"Configurar"</strong> o en el icono de edición.
-                        </li>
-                        <li>
-                          Habilita la opción <strong>"App de autenticación"</strong> y guarda.
+                          Asegúrate de marcar la casilla <strong>"App de autenticación"</strong> y guarda los cambios.
                         </li>
                       </ol>
                     </div>
                     
                     <Button variant="outline" className="w-full h-10 gap-2 border-red-200 text-red-700 font-bold bg-white" asChild>
                       <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
-                        ABRIR MÉTODOS DE ACCESO <ExternalLink className="h-3 w-3" />
+                        ABRIR FIREBASE CONSOLE <ExternalLink className="h-3 w-3" />
                       </a>
                     </Button>
                   </AlertDescription>

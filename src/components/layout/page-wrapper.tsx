@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.4.2 - MFA Enrollment Guide & Role Sync
-const APP_VERSION = '2.4.2'; 
+// VERSIÓN 2.4.3 - MFA Console Guide Sync
+const APP_VERSION = '2.4.3'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
