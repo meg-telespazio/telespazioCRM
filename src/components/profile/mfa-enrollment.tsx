@@ -250,18 +250,20 @@ export function MfaEnrollment() {
         )}
 
         {isMethodDisabled && (
-          <Alert className="mb-6 bg-amber-50 border-amber-200 animate-in slide-in-from-top-2">
-            <ShieldAlert className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800 font-black uppercase text-[10px]">Configuración de Servidor Requerida</AlertTitle>
-            <AlertDescription className="text-amber-700 text-xs leading-relaxed space-y-2">
-              <p>El método <strong>"App de autenticación"</strong> no está activo en este proyecto. Un administrador debe habilitarlo en la consola:</p>
-              <ol className="list-decimal pl-4 space-y-1 font-medium">
-                <li>Ve a la pestaña <strong>"Configuración"</strong> (la 5ta pestaña en tu consola).</li>
-                <li>Menú izquierdo: <strong>"Autenticación de varios factores"</strong>.</li>
-                <li>Haz clic en <strong>"Configurar"</strong> o <strong>"Cambiar"</strong>.</li>
-                <li>Marca la casilla <strong>"App de autenticación"</strong> y guarda.</li>
-              </ol>
-            </AlertDescription>
+          <Alert className="mb-6 bg-amber-50 border-amber-200 animate-in slide-in-from-top-2 shadow-inner">
+            <ShieldAlert className="h-5 w-5 text-amber-600" />
+            <div className="ml-2">
+              <AlertTitle className="text-amber-900 font-black uppercase text-xs mb-1">Acción Requerida en la Consola</AlertTitle>
+              <AlertDescription className="text-amber-800 text-xs leading-relaxed space-y-2">
+                <p>El método <strong>"App de autenticación"</strong> no ha sido activado en tu proyecto. Sigue estos pasos exactos:</p>
+                <ol className="list-decimal pl-4 space-y-1.5 font-medium">
+                  <li>Ve a la pestaña <strong>"Método de acceso"</strong> (la 2da pestaña en tu consola).</li>
+                  <li>Baja hasta el final a la sección <strong>"Autenticación de varios factores"</strong>.</li>
+                  <li>Haz clic en <strong>"Configurar"</strong> o <strong>"Cambiar"</strong>.</li>
+                  <li><strong>Marca la casilla</strong> "App de autenticación" y haz clic en <strong>Guardar</strong>.</li>
+                </ol>
+              </AlertDescription>
+            </div>
           </Alert>
         )}
 
