@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -31,7 +31,7 @@ export function MfaEnrollment() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationId, setVerificationId] = useState<string | null>(null);
   const [totpSecret, setTotpSecret] = useState<TotpSecret | null>(null);
-  const [code, setCode] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMfaActive, setIsMfaActive] = useState(false);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
@@ -70,15 +70,15 @@ export function MfaEnrollment() {
   };
 
   const handleVerifySms = async () => {
-    if (!auth.currentUser || !verificationId || !code) return;
+    if (!auth.currentUser || !verificationId || !mfaCode) return;
     setIsLoading(true);
     try {
-      const cred = PhoneAuthProvider.credential(verificationId, code);
+      const cred = PhoneAuthProvider.credential(verificationId, mfaCode);
       const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(cred);
       await multiFactor(auth.currentUser).enroll(multiFactorAssertion, 'SMS Phone');
       setIsMfaActive(true);
       setVerificationId(null);
-      setCode('');
+      setMfaCode('');
       toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está ahora protegida por SMS.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Verificación fallida', description: error.message });
@@ -112,7 +112,7 @@ export function MfaEnrollment() {
         toast({ 
           variant: 'destructive', 
           title: 'Método No Habilitado', 
-          description: 'El método "Authenticator App" no está habilitado en la consola de Firebase. Por favor, contacte al administrador para activarlo en Identity Platform.' 
+          description: 'Active "Authenticator App" en la consola de Firebase.' 
         });
       } else {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -123,14 +123,14 @@ export function MfaEnrollment() {
   };
 
   const handleVerifyTotp = async () => {
-    if (!auth.currentUser || !totpSecret || !code) return;
+    if (!auth.currentUser || !totpSecret || !mfaCode) return;
     setIsLoading(true);
     try {
-      const multiFactorAssertion = TotpMultiFactorGenerator.assertionForEnrollment(totpSecret, code);
+      const multiFactorAssertion = TotpMultiFactorGenerator.assertionForEnrollment(totpSecret, mfaCode);
       await multiFactor(auth.currentUser).enroll(multiFactorAssertion, 'Authenticator App');
       setIsMfaActive(true);
       setTotpSecret(null);
-      setCode('');
+      setMfaCode('');
       toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está protegida por la App de Autenticación.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Código Inválido', description: 'El código ingresado no es correcto.' });
@@ -207,10 +207,21 @@ export function MfaEnrollment() {
             {isMethodDisabled && (
               <Alert variant="destructive" className="bg-red-50 border-red-200">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle className="font-bold">Error de Configuración del Servidor</AlertTitle>
-                <AlertDescription className="text-xs">
-                  El método de "Authenticator App" (TOTP) no está habilitado en tu proyecto de Firebase. 
-                  Debes activarlo en la Consola de Firebase -> Authentication -> Settings -> Multi-factor authentication.
+                <AlertTitle className="font-bold uppercase text-[10px]">Configuración de Firebase Requerida</AlertTitle>
+                <AlertDescription className="text-xs space-y-2">
+                  <p>El método de <strong>Authenticator App</strong> no está habilitado en tu consola.</p>
+                  <p className="font-bold underline">Pasos para activar:</p>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Ve a <strong>Authentication</strong> &gt; <strong>Settings</strong> en Firebase Console.</li>
+                    <li>Selecciona <strong>Multi-factor authentication</strong> en el menú izquierdo.</li>
+                    <li>Habilita el interruptor general.</li>
+                    <li>Añade el método <strong>Authenticator app</strong>.</li>
+                  </ol>
+                  <Button variant="link" className="p-0 h-auto text-[10px] gap-1 text-red-700" asChild>
+                    <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
+                      Abrir Consola <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </Button>
                 </AlertDescription>
               </Alert>
             )}
@@ -244,14 +255,14 @@ export function MfaEnrollment() {
                   <p className="text-sm font-bold">{t('Auth.mfaAppStep2')}</p>
                   <Input 
                     placeholder="123456" 
-                    value={code} 
+                    value={mfaCode} 
                     onChange={(e) => setMfaCode(e.target.value)} 
                     disabled={isLoading}
                     className="text-center font-bold text-lg tracking-widest"
                     maxLength={6}
                   />
                   <div className="flex flex-col gap-2">
-                    <Button onClick={handleVerifyTotp} disabled={isLoading || code.length !== 6}>
+                    <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {t('Auth.mfaVerifyAndEnroll')}
                     </Button>
@@ -289,14 +300,14 @@ export function MfaEnrollment() {
                   <Label>{t('Auth.mfaCodeLabel')}</Label>
                   <Input 
                     placeholder="123456" 
-                    value={code} 
-                    onChange={(e) => setCode(e.target.value)} 
+                    value={mfaCode} 
+                    onChange={(e) => setMfaCode(e.target.value)} 
                     disabled={isLoading}
                     className="text-center font-bold text-lg tracking-widest"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Button onClick={handleVerifySms} disabled={isLoading || !code}>
+                  <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {t('Auth.mfaVerifyAndEnroll')}
                   </Button>
