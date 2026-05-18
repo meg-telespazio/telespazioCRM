@@ -10,7 +10,7 @@ import {
   RecaptchaVerifier,
   sendEmailVerification
 } from 'firebase/auth';
-import { useAuth, useUser, useFirestore } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,10 +51,10 @@ export function MfaEnrollment() {
         });
         setRecaptchaVerifier(verifier);
       } catch (e) {
-        console.warn('Recaptcha initialization skipped or failed:', e);
+        console.warn('Recaptcha initialization failed:', e);
       }
     }
-  }, [auth, auth.currentUser, recaptchaVerifier]);
+  }, [auth, auth.currentUser]);
 
   const handleSendVerification = async () => {
     if (!auth.currentUser) return;
@@ -102,7 +102,7 @@ export function MfaEnrollment() {
       setIsMfaActive(true);
       setVerificationId(null);
       setMfaCode('');
-      toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está ahora protegida por SMS.' });
+      toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está protegida por SMS.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Verificación fallida', description: error.message });
     } finally {
@@ -124,24 +124,20 @@ export function MfaEnrollment() {
 
     setIsLoading(true);
     try {
-      // Forzamos la obtención de una sesión fresca para evitar errores de token expirado
-      const mfaSession = await multiFactor(auth.currentUser).getSession();
+      const mfaUser = multiFactor(auth.currentUser);
+      const mfaSession = await mfaUser.getSession();
       const secret = await TotpMultiFactorGenerator.generateSecret(mfaSession);
       setTotpSecret(secret);
     } catch (error: any) {
-      console.error("MFA Error Detallado:", error);
-      let friendlyTitle = 'Servicio no disponible';
-      let friendlyMsg = 'No se pudo iniciar la configuración de seguridad. Por favor, intente de nuevo en unos minutos o contacte a soporte técnico.';
-      
+      console.error("MFA Error:", error);
+      let msg = 'No se pudo iniciar la configuración. Intente de nuevo o contacte a soporte.';
       if (error.code === 'auth/operation-not-allowed') {
-        friendlyTitle = 'Método no habilitado';
-        friendlyMsg = 'La autenticación por App no está permitida en este momento. Verifique la configuración del proyecto en la consola.';
+        msg = 'El método de "App de autenticación" no está habilitado en la consola de Firebase. Contacte al administrador.';
       }
-      
       toast({ 
         variant: 'destructive', 
-        title: friendlyTitle, 
-        description: `${friendlyMsg} [${error.code}]` 
+        title: 'Servicio no disponible', 
+        description: msg 
       });
     } finally {
       setIsLoading(false);
@@ -157,16 +153,16 @@ export function MfaEnrollment() {
       setIsMfaActive(true);
       setTotpSecret(null);
       setMfaCode('');
-      toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está protegida por la App de Autenticación.' });
+      toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está protegida por la App.' });
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Código Inválido', description: 'El código ingresado no es correcto o ha expirado.' });
+      toast({ variant: 'destructive', title: 'Código Inválido', description: 'El código ingresado no es correcto.' });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDisableMfa = async () => {
-    if (!auth.currentUser || !window.confirm('¿Estás seguro de que quieres desactivar la seguridad de doble factor?')) return;
+    if (!auth.currentUser || !window.confirm('¿Estás seguro de que quieres desactivar el MFA?')) return;
     setIsLoading(true);
     try {
       const mfaUser = multiFactor(auth.currentUser);
@@ -203,11 +199,8 @@ export function MfaEnrollment() {
           <div className="p-4 bg-green-100 rounded-full">
             <CheckCircle2 className="h-16 w-16 text-green-600" />
           </div>
-          <div className="space-y-1">
-            <p className="font-black text-xl text-green-700">{t('Auth.mfaActive')}</p>
-            <p className="text-xs text-muted-foreground italic">Protección activa mediante dispositivo de confianza.</p>
-          </div>
-          <Button variant="outline" className="mt-4 text-destructive border-destructive hover:bg-destructive/5" onClick={handleDisableMfa} disabled={isLoading}>
+          <p className="font-black text-xl text-green-700">{t('Auth.mfaActive')}</p>
+          <Button variant="outline" className="mt-4 text-destructive border-destructive" onClick={handleDisableMfa} disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('Auth.mfaDisable')}
           </Button>
@@ -237,14 +230,14 @@ export function MfaEnrollment() {
         {!auth.currentUser?.emailVerified && (
           <Alert variant="destructive" className="mb-6 bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertTitle className="text-red-800 font-bold uppercase text-[10px]">Paso 1: Verificar tu Email</AlertTitle>
+            <AlertTitle className="text-red-800 font-bold uppercase text-[10px]">Validación Requerida</AlertTitle>
             <AlertDescription className="text-red-700 text-xs space-y-3">
-              <p>Por seguridad, debes verificar tu email corporativo antes de habilitar aplicaciones de autenticación.</p>
+              <p>Debes verificar tu email corporativo antes de habilitar aplicaciones de autenticación.</p>
               <Button 
                 onClick={handleSendVerification} 
                 disabled={isSendingVerification}
                 variant="outline"
-                className="bg-white border-red-200 text-red-700 hover:bg-red-100 font-bold h-8"
+                className="bg-white border-red-200 text-red-700 font-bold h-8"
               >
                 {isSendingVerification ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <MailCheck className="h-3 w-3 mr-1" />}
                 Enviar enlace de verificación
@@ -263,8 +256,8 @@ export function MfaEnrollment() {
             {!totpSecret ? (
               <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed">
                 <QrCode className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa Google Authenticator o Microsoft Authenticator para generar códigos de seguridad.</p>
-                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified} className="h-11 px-8 font-bold shadow-sm">
+                <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa Google Authenticator o Microsoft Authenticator para generar códigos.</p>
+                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified} className="h-11 px-8 font-bold">
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Smartphone className="mr-2 h-4 w-4" />}
                   Generar Código QR
                 </Button>
@@ -279,14 +272,13 @@ export function MfaEnrollment() {
                   <div className="flex justify-center bg-white p-6 rounded-xl border-2 shadow-inner">
                     <QRCodeSVG 
                       value={totpSecret.generateQrCodeUrl(auth.currentUser?.email || '', 'T-Track Sales')} 
-                      size={240}
+                      size={220}
                       includeMargin={true}
-                      level="H"
                     />
                   </div>
-                  <div className="text-center space-y-1">
-                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">Clave Secreta (ingreso manual)</p>
-                    <code className="text-xs bg-slate-900 text-white px-3 py-2 rounded-md select-all font-mono border block mt-1 tracking-widest">{totpSecret.secretKey}</code>
+                  <div className="text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase font-black">Clave Manual</p>
+                    <code className="text-xs bg-slate-900 text-white px-3 py-2 rounded-md select-all block mt-1 tracking-widest">{totpSecret.secretKey}</code>
                   </div>
                 </div>
 
@@ -303,15 +295,10 @@ export function MfaEnrollment() {
                     className="text-center font-black text-2xl tracking-[0.5em] h-14 bg-slate-50 border-2"
                     maxLength={6}
                   />
-                  <div className="flex flex-col gap-2">
-                    <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6} className="h-12 text-md font-bold shadow-md">
-                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Verificar y Activar
-                    </Button>
-                    <Button variant="ghost" className="text-xs text-muted-foreground" onClick={() => setTotpSecret(null)}>
-                      {t('Actions.back')}
-                    </Button>
-                  </div>
+                  <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6} className="w-full h-12 font-bold shadow-md">
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Verificar y Activar
+                  </Button>
                 </div>
               </div>
             )}
@@ -324,22 +311,21 @@ export function MfaEnrollment() {
                   <Label className="text-xs font-bold uppercase text-slate-500">Número de Teléfono</Label>
                   <div className="flex gap-2">
                     <Input 
-                      placeholder="+54 11 1234 5678" 
+                      placeholder="+54 11 ..." 
                       value={phoneNumber} 
                       onChange={(e) => setPhoneNumber(e.target.value)} 
                       disabled={isLoading}
                       className="h-11"
                     />
-                    <Button onClick={handleSendSmsCode} disabled={isLoading || !phoneNumber} className="h-11 font-bold">
+                    <Button onClick={handleSendSmsCode} disabled={isLoading || !phoneNumber}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {t('Auth.mfaSendCode')}
+                      Enviar Código
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground italic">Incluye el código de país (ej: +54 para Argentina).</p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-6 animate-in slide-in-from-right-2">
+              <div className="space-y-6">
                 <div className="space-y-3 text-center">
                   <Label className="text-sm font-bold">Código recibido por SMS</Label>
                   <Input 
@@ -351,20 +337,14 @@ export function MfaEnrollment() {
                     maxLength={6}
                   />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode} className="h-12 font-bold shadow-md">
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Verificar y Activar
-                  </Button>
-                  <Button variant="ghost" className="text-xs text-muted-foreground" onClick={() => setVerificationId(null)}>
-                    {t('Actions.back')}
-                  </Button>
-                </div>
+                <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode} className="w-full h-12 font-bold shadow-md">
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Verificar y Activar
+                </Button>
               </div>
             )}
           </TabsContent>
         </Tabs>
-        <div id="recaptcha-container"></div>
       </CardContent>
     </Card>
   );

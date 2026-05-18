@@ -44,7 +44,7 @@ export function LoginForm() {
   const [mfaMethod, setMfaMethod] = useState<'sms' | 'totp' | null>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
 
-  // Initialize Recaptcha for MFA
+  // Initialize Recaptcha only when needed or on component mount for MFA
   useEffect(() => {
     if (typeof window !== 'undefined' && !recaptchaVerifier) {
       try {
