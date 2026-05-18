@@ -16,11 +16,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink, ShieldAlert, MailCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Badge } from '../ui/badge';
+import { sendEmailVerification } from 'firebase/auth';
 
 export function MfaEnrollment() {
   const auth = useAuth();
@@ -34,6 +35,7 @@ export function MfaEnrollment() {
   const [totpSecret, setTotpSecret] = useState<TotpSecret | null>(null);
   const [mfaCode, setMfaCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isMfaActive, setIsMfaActive] = useState(false);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
   const [isMethodDisabled, setIsMethodDisabled] = useState(false);
@@ -50,6 +52,23 @@ export function MfaEnrollment() {
       setRecaptchaVerifier(verifier);
     }
   }, [auth, auth.currentUser, recaptchaVerifier]);
+
+  const handleSendVerification = async () => {
+    if (!auth.currentUser) return;
+    setIsSendingVerification(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      toast({
+        variant: 'success',
+        title: 'Correo Enviado',
+        description: 'Revisa tu bandeja de entrada para validar tu cuenta.',
+      });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+      setIsSendingVerification(false);
+    }
+  };
 
   const handleSendSmsCode = async () => {
     if (!auth.currentUser || !phoneNumber || !recaptchaVerifier) return;
@@ -95,7 +114,7 @@ export function MfaEnrollment() {
       toast({ 
         variant: 'destructive', 
         title: 'Verificación Requerida', 
-        description: 'Debes verificar tu correo electrónico arriba (botón "Validar Email") antes de activar el Autenticador.' 
+        description: 'Debes verificar tu correo electrónico antes de activar el Autenticador.' 
       });
       return;
     }
@@ -113,7 +132,7 @@ export function MfaEnrollment() {
         toast({ 
           variant: 'destructive', 
           title: 'Método No Habilitado', 
-          description: 'El método "App de autenticación" no está activo en la Consola de Firebase.' 
+          description: 'Falta activar el switch de MFA en la consola de Firebase.' 
         });
       } else {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -212,9 +231,18 @@ export function MfaEnrollment() {
         {!auth.currentUser?.emailVerified && (
           <Alert variant="destructive" className="mb-6 bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertTitle className="text-red-800 font-bold uppercase text-[10px]">Verificación de Email Requerida</AlertTitle>
-            <AlertDescription className="text-red-700 text-xs">
-              Para habilitar la aplicación de autenticación, Firebase requiere que tu email esté verificado. Usa el botón "Validar Email" en la sección superior antes de continuar.
+            <AlertTitle className="text-red-800 font-bold uppercase text-[10px]">Paso 1: Verificar tu Email</AlertTitle>
+            <AlertDescription className="text-red-700 text-xs space-y-3">
+              <p>Firebase requiere que tu email esté verificado para habilitar el uso de aplicaciones como Google Authenticator.</p>
+              <Button 
+                onClick={handleSendVerification} 
+                disabled={isSendingVerification}
+                variant="outline"
+                className="bg-white border-red-200 text-red-700 hover:bg-red-100 font-bold h-8"
+              >
+                {isSendingVerification ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <MailCheck className="h-3 w-3 mr-2" />}
+                Enviar enlace de verificación
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -230,28 +258,27 @@ export function MfaEnrollment() {
               <Alert variant="destructive" className="bg-red-50 border-red-200 shadow-sm animate-in shake-1">
                 <AlertCircle className="h-5 w-5 text-red-600" />
                 <div className="space-y-3">
-                  <AlertTitle className="font-black uppercase text-[10px] tracking-widest">ACTIVACIÓN REQUERIDA (PASOS)</AlertTitle>
+                  <AlertTitle className="font-black uppercase text-[10px] tracking-widest">ACTIVACIÓN REQUERIDA EN FIREBASE</AlertTitle>
                   <AlertDescription className="text-xs space-y-4 leading-relaxed">
-                    <p>Falta habilitar el método de autenticación en la consola para este proyecto:</p>
+                    <p>Sigue estos pasos en tu consola de Firebase para habilitar el método:</p>
                     
                     <div className="bg-white/50 p-3 rounded border border-red-100 space-y-3">
-                      <p className="font-bold underline text-slate-800">Sigue estos pasos en Firebase:</p>
                       <ol className="list-decimal pl-4 space-y-2 font-medium text-slate-700">
                         <li>
-                          Haz clic en el botón <strong>"Cambiar"</strong> de la tarjeta de <em>MFA a través de SMS</em> que ves en la consola.
+                          En la ventana que tienes abierta (**Mediante SMS**), haz clic en el switch **"Habilitar"** (arriba a la izquierda).
                         </li>
                         <li>
-                          Habilita el interruptor general de MFA.
+                          Haz clic en el botón azul **"Guardar"**.
                         </li>
                         <li>
-                          Asegúrate de marcar la casilla <strong>"App de autenticación"</strong> y guarda los cambios.
+                          Una vez guardado, se activará Identity Platform y aparecerá la opción de **"App de autenticación"** para activar.
                         </li>
                       </ol>
                     </div>
                     
                     <Button variant="outline" className="w-full h-10 gap-2 border-red-200 text-red-700 font-bold bg-white" asChild>
                       <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
-                        ABRIR FIREBASE CONSOLE <ExternalLink className="h-3 w-3" />
+                        IR A LA CONSOLA <ExternalLink className="h-3 w-3" />
                       </a>
                     </Button>
                   </AlertDescription>
@@ -262,10 +289,10 @@ export function MfaEnrollment() {
             {!totpSecret ? (
               <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed">
                 <Smartphone className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa aplicaciones como Google Authenticator o Authy para generar códigos de seguridad sin depender de la red móvil.</p>
+                <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa Google Authenticator o Microsoft Authenticator para generar códigos de seguridad.</p>
                 <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified} className="h-11 px-8 font-bold">
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Configurar Autenticador
+                  Configurar con QR
                 </Button>
               </div>
             ) : (
