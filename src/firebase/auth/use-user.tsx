@@ -8,7 +8,8 @@ import type { UserProfile } from '@/lib/types';
 // This will be the new user object type throughout the app
 export type AppUser = AuthUser & Partial<UserProfile>;
 
-const ADMIN_EMAILS = ['mariano.gonzalez@telespazio.com', 'mariano.telespazio@gmail.com'];
+// Lista de correos con privilegios de Super Administrador (Bypass de reglas)
+const ADMIN_EMAILS = ['mariano.gonzalez@telespazio.com'];
 
 export const useUser = () => {
   const auth = useAuth();
@@ -52,8 +53,8 @@ export const useUser = () => {
     return {
       ...authUser,
       ...userProfile,
-      role: isSuperAdmin ? 'admin' : (userProfile?.role || null),
-      management: userProfile?.management || (isSuperAdmin ? 'Satellite Communications' : null),
+      role: isSuperAdmin ? 'admin' : (userProfile?.role || 'ejecutivo'),
+      management: userProfile?.management || (isSuperAdmin ? 'Satellite Communications' : 'Satellite Communications'),
       displayName: userProfile?.displayName || authUser.displayName,
       photoURL: userProfile?.photoURL || authUser.photoURL,
       email: authUser.email,

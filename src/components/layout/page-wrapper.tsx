@@ -94,25 +94,25 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, user, loading, permissionsLoading, canSeeMenu, router, isPublicPage, isUnauthorizedPage]);
 
+  // Manejo de obligatoriedad de MFA
   useEffect(() => {
     if (!loading && user && !isPublicPage && !isUnauthorizedPage) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
       const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
-      // Excepciones de seguridad de emergencia
+      // Excepciones críticas de seguridad
       const isBypassed = [
         'roxana.patrese@telespazio.com',
-        'mariano.telespazio@gmail.com',
         'mariano.gonzalez@telespazio.com'
       ].includes(user.email || '');
 
       if (user.mfaEnforced && !hasMfa && !isBypassed) {
-        // Solo mostramos el modal si NO estamos ya en la página de perfil
+        // Si no está configurado y no estamos en perfil, forzamos redirección y mostramos aviso
         if (pathname !== '/profile') {
           setIsMfaModalOpen(true);
           router.push('/profile');
         } else {
-          // Si ya llegamos a /profile, cerramos el modal para dejar trabajar al usuario
+          // Si YA estamos en perfil, ocultamos el aviso para que el usuario pueda ver el QR y configurar
           setIsMfaModalOpen(false);
         }
       } else {
@@ -140,10 +140,10 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
               <ShieldAlert className="h-8 w-8 text-amber-600" />
             </div>
             <DialogTitle className="text-center text-xl">
-              {t('Auth.mfaComplianceTitle')}
+              Acción de Seguridad Requerida
             </DialogTitle>
             <DialogDescription className="text-center pt-2">
-              {t('Auth.mfaComplianceDesc')}
+              El uso de Doble Factor (MFA) es obligatorio para su cuenta. Por favor, configúrelo ahora para poder acceder al resto del sistema.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center pt-4">
@@ -154,7 +154,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
                 router.push('/profile');
               }}
             >
-              Ir a Configuración de Seguridad
+              Configurar Seguridad Ahora
               <ArrowRight className="h-4 w-4" />
             </Button>
           </DialogFooter>
