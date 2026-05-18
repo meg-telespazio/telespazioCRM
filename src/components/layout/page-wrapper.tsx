@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.4.6 - MFA Technical Robustness
-const APP_VERSION = '2.4.6'; 
+// VERSIÓN 2.4.7 - Login Crash Fix & reCAPTCHA Optimization
+const APP_VERSION = '2.4.7'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -102,7 +102,6 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       
       // Excepciones críticas de seguridad
       const isBypassed = [
-        'roxana.patrese@telespazio.com',
         'mariano.gonzalez@telespazio.com'
       ].includes(user.email || '');
 
@@ -120,7 +119,12 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
   }, [user, loading, pathname, auth.currentUser, router, isPublicPage, isUnauthorizedPage]);
 
   if (isPublicPage || isUnauthorizedPage) {
-    return <main>{children}</main>;
+    return (
+      <main>
+        {children}
+        <div id="recaptcha-container" className="fixed bottom-0 right-0 opacity-0 pointer-events-none"></div>
+      </main>
+    );
   }
 
   return (
@@ -129,7 +133,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       <main className="flex flex-1 flex-col">{children}</main>
       <SessionTimeoutController />
 
-      <div id="recaptcha-container"></div>
+      <div id="recaptcha-container" className="fixed bottom-0 right-0 opacity-0 pointer-events-none"></div>
 
       <Dialog open={isMfaModalOpen} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()}>

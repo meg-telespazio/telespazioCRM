@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,18 +13,20 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/firebase';
 import { 
   signInWithEmailAndPassword, 
   getMultiFactorResolver, 
   PhoneAuthProvider, 
   PhoneMultiFactorGenerator,
-  TotpMultiFactorGenerator
+  TotpMultiFactorGenerator,
+  RecaptchaVerifier
 } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/firebase/client-provider';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Eye, EyeOff, Loader2, Smartphone, MessageSquare } from 'lucide-react';
 
 export function LoginForm() {
@@ -41,6 +42,24 @@ export function LoginForm() {
   const [verificationId, setVerificationId] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
   const [mfaMethod, setMfaMethod] = useState<'sms' | 'totp' | null>(null);
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+
+  // Initialize Recaptcha for MFA
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !recaptchaVerifier) {
+      try {
+        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+        });
+        setRecaptchaVerifier(verifier);
+      } catch (e) {
+        console.warn('Recaptcha init failed:', e);
+      }
+    }
+    return () => {
+      if (recaptchaVerifier) recaptchaVerifier.clear();
+    };
+  }, [auth]);
 
   const formSchema = useMemo(
     () =>
@@ -97,12 +116,16 @@ export function LoginForm() {
           setMfaMethod('totp');
         } else if (phoneHint) {
           setMfaMethod('sms');
-          const phoneAuthProvider = new PhoneAuthProvider(auth);
-          const vId = await phoneAuthProvider.verifyPhoneNumber(
-            { multiFactorHint: phoneHint, session: resolver.session },
-            (auth as any).recaptchaVerifier
-          );
-          setVerificationId(vId);
+          if (recaptchaVerifier) {
+            const phoneAuthProvider = new PhoneAuthProvider(auth);
+            const vId = await phoneAuthProvider.verifyPhoneNumber(
+              { multiFactorHint: phoneHint, session: resolver.session },
+              recaptchaVerifier
+            );
+            setVerificationId(vId);
+          } else {
+            toast({ variant: 'destructive', title: 'Security Error', description: 'Recaptcha not initialized.' });
+          }
         }
       } else {
         toast({
@@ -157,21 +180,22 @@ export function LoginForm() {
           </p>
         </div>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <FormLabel>{t('Auth.mfaCodeLabel')}</FormLabel>
+          <div className="space-y-2 text-left">
+            <Label className="text-xs font-bold uppercase text-slate-500 ml-1">{t('Auth.mfaCodeLabel')}</Label>
             <Input 
               placeholder="123456" 
               value={mfaCode} 
               onChange={(e) => setMfaCode(e.target.value)}
-              className="text-center tracking-[0.5em] font-bold text-2xl h-12"
+              className="text-center tracking-[0.5em] font-black text-2xl h-14 bg-slate-50 border-2"
               maxLength={6}
+              autoFocus
             />
           </div>
-          <Button className="w-full" onClick={handleVerifyMfa} disabled={isLoading || mfaCode.length !== 6}>
+          <Button className="w-full h-12 text-md font-bold shadow-md" onClick={handleVerifyMfa} disabled={isLoading || mfaCode.length !== 6}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('Auth.verifyMfa')}
           </Button>
-          <Button variant="ghost" className="w-full" onClick={() => setMfaResolver(null)}>
+          <Button variant="ghost" className="w-full text-xs" onClick={() => setMfaResolver(null)}>
             {t('Actions.back')}
           </Button>
         </div>
