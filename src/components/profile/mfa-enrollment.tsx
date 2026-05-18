@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, QrCode, Phone, Smartphone, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -27,7 +27,7 @@ export function MfaEnrollment() {
   const { t } = useI18n();
   const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState('sms');
+  const [activeTab, setActiveTab] = useState('app');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationId, setVerificationId] = useState<string | null>(null);
   const [totpSecret, setTotpSecret] = useState<TotpSecret | null>(null);
@@ -89,12 +89,11 @@ export function MfaEnrollment() {
   const handleInitiateTotp = async () => {
     if (!auth.currentUser) return;
     
-    // Hard requirement for Identity Platform: Email must be verified
     if (!auth.currentUser.emailVerified) {
       toast({ 
         variant: 'destructive', 
         title: 'Verificación Requerida', 
-        description: 'Debes verificar tu correo electrónico antes de activar el Autenticador.' 
+        description: 'Debes verificar tu correo electrónico arriba (botón "Validar Email") antes de activar el Autenticador.' 
       });
       return;
     }
@@ -188,9 +187,58 @@ export function MfaEnrollment() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="sms" className="gap-2"><Phone className="h-4 w-4" /> SMS</TabsTrigger>
             <TabsTrigger value="app" className="gap-2"><Smartphone className="h-4 w-4" /> App</TabsTrigger>
+            <TabsTrigger value="sms" className="gap-2"><Phone className="h-4 w-4" /> SMS</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="app" className="space-y-4 pt-4">
+            {!totpSecret ? (
+              <div className="py-4 text-center">
+                <Smartphone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-sm text-muted-foreground mb-6">Usa aplicaciones como Google Authenticator o Authy para generar códigos de seguridad.</p>
+                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Configurar Autenticador
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <p className="text-sm font-bold">{t('Auth.mfaAppStep1')}</p>
+                  <div className="flex justify-center bg-white p-4 rounded-lg border">
+                    <QRCodeSVG 
+                      value={totpSecret.generateQrCodeUrl(auth.currentUser?.email || '', 'T-Track Sales')} 
+                      size={200}
+                    />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">{t('Auth.mfaSecretKey')}</p>
+                    <code className="text-xs bg-muted px-2 py-1 rounded select-all font-mono border border-border p-2 block mt-1">{totpSecret.secretKey}</code>
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-t pt-4">
+                  <p className="text-sm font-bold">{t('Auth.mfaAppStep2')}</p>
+                  <Input 
+                    placeholder="123456" 
+                    value={code} 
+                    onChange={(e) => setCode(e.target.value)} 
+                    disabled={isLoading}
+                    className="text-center font-bold text-lg tracking-widest"
+                  />
+                  <div className="flex flex-col gap-2">
+                    <Button onClick={handleVerifyTotp} disabled={isLoading || code.length !== 6}>
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {t('Auth.mfaVerifyAndEnroll')}
+                    </Button>
+                    <Button variant="ghost" className="text-xs" onClick={() => setTotpSecret(null)}>
+                      {t('Actions.back')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </TabsContent>
 
           <TabsContent value="sms" className="space-y-4 pt-4">
             {!verificationId ? (
@@ -231,55 +279,6 @@ export function MfaEnrollment() {
                   <Button variant="ghost" className="text-xs" onClick={() => setVerificationId(null)}>
                     {t('Actions.back')}
                   </Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="app" className="space-y-4 pt-4">
-            {!totpSecret ? (
-              <div className="py-4 text-center">
-                <Smartphone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground mb-6">Usa aplicaciones como Google Authenticator o Authy para generar códigos de seguridad.</p>
-                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Configurar Autenticador
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <p className="text-sm font-bold">{t('Auth.mfaAppStep1')}</p>
-                  <div className="flex justify-center bg-white p-4 rounded-lg border">
-                    <QRCodeSVG 
-                      value={totpSecret.generateQrCodeUrl(auth.currentUser?.email || '', 'T-Track Sales')} 
-                      size={200}
-                    />
-                  </div>
-                  <div className="text-center space-y-1">
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">{t('Auth.mfaSecretKey')}</p>
-                    <code className="text-xs bg-muted px-2 py-1 rounded select-all">{totpSecret.secretKey}</code>
-                  </div>
-                </div>
-
-                <div className="space-y-4 border-t pt-4">
-                  <p className="text-sm font-bold">{t('Auth.mfaAppStep2')}</p>
-                  <Input 
-                    placeholder="123456" 
-                    value={code} 
-                    onChange={(e) => setCode(e.target.value)} 
-                    disabled={isLoading}
-                    className="text-center font-bold text-lg tracking-widest"
-                  />
-                  <div className="flex flex-col gap-2">
-                    <Button onClick={handleVerifyTotp} disabled={isLoading || code.length !== 6}>
-                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {t('Auth.mfaVerifyAndEnroll')}
-                    </Button>
-                    <Button variant="ghost" className="text-xs" onClick={() => setTotpSecret(null)}>
-                      {t('Actions.back')}
-                    </Button>
-                  </div>
                 </div>
               </div>
             )}

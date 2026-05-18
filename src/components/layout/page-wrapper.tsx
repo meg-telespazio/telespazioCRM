@@ -19,7 +19,7 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.4.1 - Auth DNS Bypass & Force Cache Purge
+// VERSIÓN 2.4.1 - MFA Flow Fix & Auth DNS Bypass
 const APP_VERSION = '2.4.1'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
@@ -99,12 +99,21 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
       const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
-      const isBypassed = user.email === 'roxana.patrese@telespazio.com';
+      // Excepciones de seguridad de emergencia
+      const isBypassed = [
+        'roxana.patrese@telespazio.com',
+        'mariano.telespazio@gmail.com',
+        'mariano.gonzalez@telespazio.com'
+      ].includes(user.email || '');
 
       if (user.mfaEnforced && !hasMfa && !isBypassed) {
-        setIsMfaModalOpen(true);
+        // Solo mostramos el modal si NO estamos ya en la página de perfil
         if (pathname !== '/profile') {
+          setIsMfaModalOpen(true);
           router.push('/profile');
+        } else {
+          // Si ya llegamos a /profile, cerramos el modal para dejar trabajar al usuario
+          setIsMfaModalOpen(false);
         }
       } else {
         setIsMfaModalOpen(false);
