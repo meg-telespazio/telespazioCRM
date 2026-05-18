@@ -128,7 +128,7 @@ export function MfaEnrollment() {
       toast({ 
         variant: 'destructive', 
         title: 'Servicio no disponible', 
-        description: 'No se pudo iniciar la configuración. Por favor, reintente más tarde o contacte a soporte.' 
+        description: 'No se pudo iniciar la configuración. Contacte a soporte si el error persiste.' 
       });
     } finally {
       setIsLoading(false);
@@ -146,7 +146,7 @@ export function MfaEnrollment() {
       setMfaCode('');
       toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está protegida por la App de Autenticación.' });
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Código Inválido', description: 'El código ingresado no es correcto.' });
+      toast({ variant: 'destructive', title: 'Código Inválido', description: 'El código ingresado no es correcto o ha expirado.' });
     } finally {
       setIsLoading(false);
     }
@@ -226,7 +226,7 @@ export function MfaEnrollment() {
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertTitle className="text-red-800 font-bold uppercase text-[10px]">Paso 1: Verificar tu Email</AlertTitle>
             <AlertDescription className="text-red-700 text-xs space-y-3">
-              <p>Google requiere que tu email esté verificado antes de habilitar aplicaciones de autenticación por motivos de seguridad.</p>
+              <p>Por seguridad, debes verificar tu email corporativo antes de habilitar aplicaciones de autenticación.</p>
               <Button 
                 onClick={handleSendVerification} 
                 disabled={isSendingVerification}
@@ -253,20 +253,22 @@ export function MfaEnrollment() {
                 <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa Google Authenticator o Microsoft Authenticator para generar códigos de seguridad.</p>
                 <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified} className="h-11 px-8 font-bold">
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Configurar con QR
+                  Generar Código QR
                 </Button>
               </div>
             ) : (
               <div className="space-y-6 animate-in fade-in zoom-in-95">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary">1</Badge>
-                    <p className="text-sm font-bold">Escanea este código QR</p>
+                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-[10px]">1</Badge>
+                    <p className="text-sm font-bold">Escanea este código con tu App</p>
                   </div>
                   <div className="flex justify-center bg-white p-6 rounded-xl border-2 shadow-inner">
                     <QRCodeSVG 
                       value={totpSecret.generateQrCodeUrl(auth.currentUser?.email || '', 'T-Track Sales')} 
                       size={220}
+                      includeMargin={true}
+                      level="H"
                     />
                   </div>
                   <div className="text-center space-y-1">
@@ -277,7 +279,7 @@ export function MfaEnrollment() {
 
                 <div className="space-y-4 border-t pt-6">
                   <div className="flex items-center gap-2">
-                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary">2</Badge>
+                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-[10px]">2</Badge>
                     <p className="text-sm font-bold">Ingresa el código de 6 dígitos</p>
                   </div>
                   <Input 
@@ -291,7 +293,7 @@ export function MfaEnrollment() {
                   <div className="flex flex-col gap-2">
                     <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6} className="h-12 text-md font-bold">
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {t('Auth.mfaVerifyAndEnroll')}
+                      Verificar y Activar
                     </Button>
                     <Button variant="ghost" className="text-xs text-muted-foreground" onClick={() => setTotpSecret(null)}>
                       {t('Actions.back')}
@@ -339,7 +341,7 @@ export function MfaEnrollment() {
                 <div className="flex flex-col gap-2">
                   <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode} className="h-12 font-bold">
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t('Auth.mfaVerifyAndEnroll')}
+                    Verificar y Activar
                   </Button>
                   <Button variant="ghost" className="text-xs text-muted-foreground" onClick={() => setVerificationId(null)}>
                     {t('Actions.back')}
