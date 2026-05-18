@@ -10,7 +10,7 @@ import {
   RecaptchaVerifier,
   sendEmailVerification
 } from 'firebase/auth';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -124,22 +124,24 @@ export function MfaEnrollment() {
 
     setIsLoading(true);
     try {
+      // Forzamos la obtención de una sesión fresca para evitar errores de token expirado
       const mfaSession = await multiFactor(auth.currentUser).getSession();
       const secret = await TotpMultiFactorGenerator.generateSecret(mfaSession);
       setTotpSecret(secret);
-      toast({ variant: 'default', title: 'Código QR Generado', description: 'Escanea el código con tu aplicación.' });
     } catch (error: any) {
-      console.error("MFA Secret Generation Error:", error);
-      let errorMsg = `No se pudo iniciar la configuración. Código: [${error.code}]. `;
+      console.error("MFA Error Detallado:", error);
+      let friendlyTitle = 'Servicio no disponible';
+      let friendlyMsg = 'No se pudo iniciar la configuración de seguridad. Por favor, intente de nuevo en unos minutos o contacte a soporte técnico.';
+      
       if (error.code === 'auth/operation-not-allowed') {
-        errorMsg += 'El método "Authenticator app" no está habilitado en la consola de Firebase del proyecto.';
-      } else {
-        errorMsg += error.message || 'Error de servicio desconocido.';
+        friendlyTitle = 'Método no habilitado';
+        friendlyMsg = 'La autenticación por App no está permitida en este momento. Verifique la configuración del proyecto en la consola.';
       }
+      
       toast({ 
         variant: 'destructive', 
-        title: 'Error de Configuración', 
-        description: errorMsg 
+        title: friendlyTitle, 
+        description: `${friendlyMsg} [${error.code}]` 
       });
     } finally {
       setIsLoading(false);

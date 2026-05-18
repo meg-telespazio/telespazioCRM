@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.4.5 - MFA Diagnostics & Permissive CORS
-const APP_VERSION = '2.4.5'; 
+// VERSIÓN 2.4.6 - MFA Technical Robustness
+const APP_VERSION = '2.4.6'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -100,19 +100,17 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
       const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
-      // Excepciones críticas de seguridad (SuperAdmin bypass)
+      // Excepciones críticas de seguridad
       const isBypassed = [
         'roxana.patrese@telespazio.com',
         'mariano.gonzalez@telespazio.com'
       ].includes(user.email || '');
 
       if (user.mfaEnforced && !hasMfa && !isBypassed) {
-        // Si no está configurado y no estamos en perfil, forzamos redirección y mostramos aviso
         if (pathname !== '/profile') {
           setIsMfaModalOpen(true);
           router.push('/profile');
         } else {
-          // Si YA estamos en perfil, ocultamos el aviso para que el usuario pueda ver el QR y configurar
           setIsMfaModalOpen(false);
         }
       } else {
