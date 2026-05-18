@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, AlertCircle, ExternalLink, ShieldAlert, Settings } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -113,7 +113,7 @@ export function MfaEnrollment() {
         toast({ 
           variant: 'destructive', 
           title: 'Método No Habilitado', 
-          description: 'Active "Identity Platform" y luego "Authenticator App" en la consola de Firebase.' 
+          description: 'El método "App de autenticación" no está activo en la Consola de Firebase.' 
         });
       } else {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -227,26 +227,34 @@ export function MfaEnrollment() {
 
           <TabsContent value="app" className="space-y-4 pt-4">
             {isMethodDisabled && (
-              <Alert variant="destructive" className="bg-red-50 border-red-200 shadow-sm">
+              <Alert variant="destructive" className="bg-red-50 border-red-200 shadow-sm animate-in shake-1">
                 <AlertCircle className="h-5 w-5 text-red-600" />
                 <div className="space-y-3">
-                  <AlertTitle className="font-black uppercase text-[10px] tracking-widest">CONFIGURACIÓN DE FIREBASE REQUERIDA</AlertTitle>
+                  <AlertTitle className="font-black uppercase text-[10px] tracking-widest">ACTIVACIÓN EN FIREBASE REQUERIDA</AlertTitle>
                   <AlertDescription className="text-xs space-y-4 leading-relaxed">
-                    <p>El método de <strong>Authenticator App</strong> no está habilitado en la consola de tu proyecto de Google Cloud.</p>
+                    <p>Identity Platform ya está activo en tu proyecto, pero falta habilitar el método específico de la App.</p>
                     
-                    <div className="bg-white/50 p-3 rounded border border-red-100 space-y-2">
-                      <p className="font-bold underline">Pasos para el Administrador:</p>
-                      <ol className="list-decimal pl-4 space-y-1 font-medium">
-                        <li>Ve a <strong>Authentication</strong> > <strong>Settings</strong> en Firebase Console.</li>
-                        <li>Haz clic en el botón <strong>"Upgrade to Identity Platform"</strong> (es necesario para usar TOTP/Apps).</li>
-                        <li>Selecciona <strong>Multi-factor authentication</strong> en el menú izquierdo de esa misma pestaña.</li>
-                        <li>Habilita el interruptor general y añade el método <strong>Authenticator app</strong>.</li>
+                    <div className="bg-white/50 p-3 rounded border border-red-100 space-y-3">
+                      <p className="font-bold underline text-slate-800">Pasos a seguir en la Consola:</p>
+                      <ol className="list-decimal pl-4 space-y-2 font-medium text-slate-700">
+                        <li>
+                          Ve a la pestaña <strong>"Método de acceso"</strong> (al lado de Usuarios).
+                        </li>
+                        <li>
+                          Baja hasta el final de la página, sección <strong>"Autenticación de varios factores"</strong>.
+                        </li>
+                        <li>
+                          Haz clic en <strong>"Configurar"</strong> o en el icono de edición.
+                        </li>
+                        <li>
+                          Habilita la opción <strong>"App de autenticación"</strong> y guarda.
+                        </li>
                       </ol>
                     </div>
                     
-                    <Button variant="link" className="p-0 h-auto text-[10px] gap-1 text-red-700 font-bold" asChild>
+                    <Button variant="outline" className="w-full h-10 gap-2 border-red-200 text-red-700 font-bold bg-white" asChild>
                       <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
-                        ABRIR CONSOLA DE FIREBASE <ExternalLink className="h-3 w-3" />
+                        ABRIR MÉTODOS DE ACCESO <ExternalLink className="h-3 w-3" />
                       </a>
                     </Button>
                   </AlertDescription>
@@ -258,7 +266,7 @@ export function MfaEnrollment() {
               <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed">
                 <Smartphone className="h-12 w-12 mx-auto text-slate-300 mb-4" />
                 <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa aplicaciones como Google Authenticator o Authy para generar códigos de seguridad sin depender de la red móvil.</p>
-                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified || isMethodDisabled} className="h-11 px-8 font-bold">
+                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified} className="h-11 px-8 font-bold">
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Configurar Autenticador
                 </Button>
