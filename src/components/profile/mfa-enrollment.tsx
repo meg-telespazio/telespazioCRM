@@ -113,7 +113,7 @@ export function MfaEnrollment() {
         toast({ 
           variant: 'destructive', 
           title: 'Método No Habilitado', 
-          description: 'Active "Authenticator App" en la consola de Firebase.' 
+          description: 'Active "Identity Platform" y luego "Authenticator App" en la consola de Firebase.' 
         });
       } else {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -158,7 +158,7 @@ export function MfaEnrollment() {
 
   if (isMfaActive) {
     return (
-      <Card className="mt-6 border-primary/20 bg-primary/5">
+      <Card className="mt-6 border-primary/20 bg-primary/5 shadow-md">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -166,18 +166,23 @@ export function MfaEnrollment() {
               <CardTitle>{t('Auth.mfaEnrollTitle')}</CardTitle>
             </div>
             {user?.mfaEnforced && (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 gap-1 text-[10px]">
+              <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 gap-1 text-[10px] font-bold">
                 <ShieldAlert className="h-3 w-3" />
-                OBLIGATORIO POR ADMIN
+                OBLIGATORIO
               </Badge>
             )}
           </div>
           <CardDescription>{t('Auth.mfaEnrollDesc')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4 py-4 text-center">
-          <CheckCircle2 className="h-12 w-12 text-green-600" />
-          <p className="font-bold text-green-700">{t('Auth.mfaActive')}</p>
-          <Button variant="outline" className="text-destructive border-destructive" onClick={handleDisableMfa} disabled={isLoading}>
+        <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+          <div className="p-4 bg-green-100 rounded-full">
+            <CheckCircle2 className="h-16 w-16 text-green-600" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-black text-xl text-green-700">{t('Auth.mfaActive')}</p>
+            <p className="text-xs text-muted-foreground italic">Protección activa mediante dispositivo de confianza.</p>
+          </div>
+          <Button variant="outline" className="mt-4 text-destructive border-destructive hover:bg-destructive/5" onClick={handleDisableMfa} disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('Auth.mfaDisable')}
           </Button>
@@ -187,15 +192,15 @@ export function MfaEnrollment() {
   }
 
   return (
-    <Card className="mt-6 border-primary/20 bg-primary/5">
-      <CardHeader>
+    <Card className="mt-6 border-slate-200 bg-white shadow-lg overflow-hidden">
+      <CardHeader className="bg-slate-50 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            <CardTitle>{t('Auth.mfaEnrollTitle')}</CardTitle>
+            <CardTitle className="text-lg font-bold">{t('Auth.mfaEnrollTitle')}</CardTitle>
           </div>
           {user?.mfaEnforced && (
-            <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 text-[10px]">
+            <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 text-[10px] font-bold">
               <ShieldAlert className="h-3 w-3" />
               OBLIGATORIO
             </Badge>
@@ -203,7 +208,7 @@ export function MfaEnrollment() {
         </div>
         <CardDescription>{t('Auth.mfaEnrollDesc')}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         {!auth.currentUser?.emailVerified && (
           <Alert variant="destructive" className="mb-6 bg-red-50 border-red-200">
             <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -215,79 +220,87 @@ export function MfaEnrollment() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="app" className="gap-2"><Smartphone className="h-4 w-4" /> App</TabsTrigger>
-            <TabsTrigger value="sms" className="gap-2"><Phone className="h-4 w-4" /> SMS</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-slate-100">
+            <TabsTrigger value="app" className="gap-2 font-bold"><Smartphone className="h-4 w-4" /> App de Autenticación</TabsTrigger>
+            <TabsTrigger value="sms" className="gap-2 font-bold"><Phone className="h-4 w-4" /> SMS</TabsTrigger>
           </TabsList>
 
           <TabsContent value="app" className="space-y-4 pt-4">
             {isMethodDisabled && (
-              <Alert variant="destructive" className="bg-red-50 border-red-200">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle className="font-bold uppercase text-[10px]">Configuración de Firebase Requerida</AlertTitle>
-                <AlertDescription className="text-xs space-y-4">
-                  <p>El método de <strong>Authenticator App</strong> no está habilitado en la consola de tu proyecto.</p>
-                  
-                  <div className="space-y-1">
-                    <p className="font-bold underline">Pasos para el Administrador:</p>
-                    <ol className="list-decimal pl-4 space-y-1">
-                      <li>Ve a <strong>Authentication</strong> &gt; <strong>Settings</strong> en Firebase Console.</li>
-                      <li>Si no lo has hecho, haz clic en <strong>"Upgrade to Identity Platform"</strong>.</li>
-                      <li>Selecciona <strong>Multi-factor authentication</strong> en el menú izquierdo.</li>
-                      <li>Habilita el interruptor general y añade el método <strong>Authenticator app</strong>.</li>
-                    </ol>
-                  </div>
-                  
-                  <Button variant="link" className="p-0 h-auto text-[10px] gap-1 text-red-700" asChild>
-                    <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
-                      Abrir Consola de Firebase <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </Button>
-                </AlertDescription>
+              <Alert variant="destructive" className="bg-red-50 border-red-200 shadow-sm">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <div className="space-y-3">
+                  <AlertTitle className="font-black uppercase text-[10px] tracking-widest">CONFIGURACIÓN DE FIREBASE REQUERIDA</AlertTitle>
+                  <AlertDescription className="text-xs space-y-4 leading-relaxed">
+                    <p>El método de <strong>Authenticator App</strong> no está habilitado en la consola de tu proyecto de Google Cloud.</p>
+                    
+                    <div className="bg-white/50 p-3 rounded border border-red-100 space-y-2">
+                      <p className="font-bold underline">Pasos para el Administrador:</p>
+                      <ol className="list-decimal pl-4 space-y-1 font-medium">
+                        <li>Ve a <strong>Authentication</strong> > <strong>Settings</strong> en Firebase Console.</li>
+                        <li>Haz clic en el botón <strong>"Upgrade to Identity Platform"</strong> (es necesario para usar TOTP/Apps).</li>
+                        <li>Selecciona <strong>Multi-factor authentication</strong> en el menú izquierdo de esa misma pestaña.</li>
+                        <li>Habilita el interruptor general y añade el método <strong>Authenticator app</strong>.</li>
+                      </ol>
+                    </div>
+                    
+                    <Button variant="link" className="p-0 h-auto text-[10px] gap-1 text-red-700 font-bold" asChild>
+                      <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">
+                        ABRIR CONSOLA DE FIREBASE <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  </AlertDescription>
+                </div>
               </Alert>
             )}
 
             {!totpSecret ? (
-              <div className="py-4 text-center">
-                <Smartphone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground mb-6">Usa aplicaciones como Google Authenticator o Authy para generar códigos de seguridad.</p>
-                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified || isMethodDisabled}>
+              <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed">
+                <Smartphone className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+                <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa aplicaciones como Google Authenticator o Authy para generar códigos de seguridad sin depender de la red móvil.</p>
+                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified || isMethodDisabled} className="h-11 px-8 font-bold">
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Configurar Autenticador
                 </Button>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-in fade-in zoom-in-95">
                 <div className="space-y-4">
-                  <p className="text-sm font-bold">{t('Auth.mfaAppStep1')}</p>
-                  <div className="flex justify-center bg-white p-4 rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary">1</Badge>
+                    <p className="text-sm font-bold">Escanea este código QR</p>
+                  </div>
+                  <div className="flex justify-center bg-white p-6 rounded-xl border-2 shadow-inner">
                     <QRCodeSVG 
                       value={totpSecret.generateQrCodeUrl(auth.currentUser?.email || '', 'T-Track Sales')} 
-                      size={200}
+                      size={220}
                     />
                   </div>
                   <div className="text-center space-y-1">
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">{t('Auth.mfaSecretKey')}</p>
-                    <code className="text-xs bg-muted px-2 py-1 rounded select-all font-mono border border-border p-2 block mt-1">{totpSecret.secretKey}</code>
+                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">Clave Secreta (ingreso manual)</p>
+                    <code className="text-xs bg-slate-900 text-white px-3 py-2 rounded-md select-all font-mono border block mt-1 tracking-widest">{totpSecret.secretKey}</code>
                   </div>
                 </div>
 
-                <div className="space-y-4 border-t pt-4">
-                  <p className="text-sm font-bold">{t('Auth.mfaAppStep2')}</p>
+                <div className="space-y-4 border-t pt-6">
+                  <div className="flex items-center gap-2">
+                    <Badge className="h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary">2</Badge>
+                    <p className="text-sm font-bold">Ingresa el código de 6 dígitos</p>
+                  </div>
                   <Input 
                     placeholder="123456" 
                     value={mfaCode} 
                     onChange={(e) => setMfaCode(e.target.value)} 
                     disabled={isLoading}
-                    className="text-center font-bold text-lg tracking-widest"
+                    className="text-center font-black text-2xl tracking-[0.5em] h-14 bg-slate-50 border-2"
                     maxLength={6}
                   />
                   <div className="flex flex-col gap-2">
-                    <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6}>
+                    <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6} className="h-12 text-md font-bold">
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {t('Auth.mfaVerifyAndEnroll')}
                     </Button>
-                    <Button variant="ghost" className="text-xs" onClick={() => setTotpSecret(null)}>
+                    <Button variant="ghost" className="text-xs text-muted-foreground" onClick={() => setTotpSecret(null)}>
                       {t('Actions.back')}
                     </Button>
                   </div>
@@ -300,39 +313,42 @@ export function MfaEnrollment() {
             {!verificationId ? (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>{t('Auth.mfaPhoneLabel')}</Label>
+                  <Label className="text-xs font-bold uppercase text-slate-500">Número de Teléfono</Label>
                   <div className="flex gap-2">
                     <Input 
-                      placeholder="+54 11 ..." 
+                      placeholder="+54 11 1234 5678" 
                       value={phoneNumber} 
                       onChange={(e) => setPhoneNumber(e.target.value)} 
                       disabled={isLoading}
+                      className="h-11"
                     />
-                    <Button onClick={handleSendSmsCode} disabled={isLoading || !phoneNumber}>
+                    <Button onClick={handleSendSmsCode} disabled={isLoading || !phoneNumber} className="h-11 font-bold">
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {t('Auth.mfaSendCode')}
                     </Button>
                   </div>
+                  <p className="text-[10px] text-muted-foreground italic">Incluye el código de país (ej: +54 para Argentina).</p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="space-y-2 text-center">
-                  <Label>{t('Auth.mfaCodeLabel')}</Label>
+              <div className="space-y-6 animate-in slide-in-from-right-2">
+                <div className="space-y-3 text-center">
+                  <Label className="text-sm font-bold">Código recibido por SMS</Label>
                   <Input 
                     placeholder="123456" 
                     value={mfaCode} 
                     onChange={(e) => setMfaCode(e.target.value)} 
                     disabled={isLoading}
-                    className="text-center font-bold text-lg tracking-widest"
+                    className="text-center font-black text-2xl tracking-[0.5em] h-14 bg-slate-50 border-2"
+                    maxLength={6}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode}>
+                  <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode} className="h-12 font-bold">
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {t('Auth.mfaVerifyAndEnroll')}
                   </Button>
-                  <Button variant="ghost" className="text-xs" onClick={() => setVerificationId(null)}>
+                  <Button variant="ghost" className="text-xs text-muted-foreground" onClick={() => setVerificationId(null)}>
                     {t('Actions.back')}
                   </Button>
                 </div>
