@@ -7,7 +7,8 @@ import {
   PhoneMultiFactorGenerator, 
   TotpMultiFactorGenerator,
   TotpSecret,
-  RecaptchaVerifier 
+  RecaptchaVerifier,
+  sendEmailVerification
 } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
@@ -16,12 +17,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Badge } from '../ui/badge';
-import { sendEmailVerification } from 'firebase/auth';
 
 export function MfaEnrollment() {
   const auth = useAuth();
@@ -45,10 +45,14 @@ export function MfaEnrollment() {
     setIsMfaActive(mfaUser.enrolledFactors.length > 0);
 
     if (!recaptchaVerifier && typeof window !== 'undefined') {
-      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
-      });
-      setRecaptchaVerifier(verifier);
+      try {
+        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+        });
+        setRecaptchaVerifier(verifier);
+      } catch (e) {
+        console.warn('Recaptcha initialization skipped or failed:', e);
+      }
     }
   }, [auth, auth.currentUser, recaptchaVerifier]);
 
@@ -123,12 +127,19 @@ export function MfaEnrollment() {
       const mfaSession = await multiFactor(auth.currentUser).getSession();
       const secret = await TotpMultiFactorGenerator.generateSecret(mfaSession);
       setTotpSecret(secret);
+      toast({ variant: 'default', title: 'Código QR Generado', description: 'Escanea el código con tu aplicación.' });
     } catch (error: any) {
       console.error("MFA Secret Generation Error:", error);
+      let errorMsg = 'No se pudo iniciar la configuración. ';
+      if (error.code === 'auth/operation-not-allowed') {
+        errorMsg += 'El método "Authenticator app" no está habilitado en la consola de Firebase del proyecto.';
+      } else {
+        errorMsg += error.message || 'Error de servicio desconocido.';
+      }
       toast({ 
         variant: 'destructive', 
-        title: 'Servicio no disponible', 
-        description: 'No se pudo iniciar la configuración. Contacte a soporte si el error persiste.' 
+        title: 'Error de Configuración', 
+        description: errorMsg 
       });
     } finally {
       setIsLoading(false);
@@ -249,10 +260,10 @@ export function MfaEnrollment() {
           <TabsContent value="app" className="space-y-4 pt-4">
             {!totpSecret ? (
               <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed">
-                <Smartphone className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+                <QrCode className="h-12 w-12 mx-auto text-slate-300 mb-4" />
                 <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa Google Authenticator o Microsoft Authenticator para generar códigos de seguridad.</p>
-                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified} className="h-11 px-8 font-bold">
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified} className="h-11 px-8 font-bold shadow-sm">
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Smartphone className="mr-2 h-4 w-4" />}
                   Generar Código QR
                 </Button>
               </div>
@@ -266,7 +277,7 @@ export function MfaEnrollment() {
                   <div className="flex justify-center bg-white p-6 rounded-xl border-2 shadow-inner">
                     <QRCodeSVG 
                       value={totpSecret.generateQrCodeUrl(auth.currentUser?.email || '', 'T-Track Sales')} 
-                      size={220}
+                      size={240}
                       includeMargin={true}
                       level="H"
                     />
@@ -291,7 +302,7 @@ export function MfaEnrollment() {
                     maxLength={6}
                   />
                   <div className="flex flex-col gap-2">
-                    <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6} className="h-12 text-md font-bold">
+                    <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6} className="h-12 text-md font-bold shadow-md">
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Verificar y Activar
                     </Button>
@@ -339,7 +350,7 @@ export function MfaEnrollment() {
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode} className="h-12 font-bold">
+                  <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode} className="h-12 font-bold shadow-md">
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Verificar y Activar
                   </Button>
@@ -351,6 +362,7 @@ export function MfaEnrollment() {
             )}
           </TabsContent>
         </Tabs>
+        {/* Este contenedor es necesario para el reCAPTCHA invisible de Firebase */}
         <div id="recaptcha-container"></div>
       </CardContent>
     </Card>
