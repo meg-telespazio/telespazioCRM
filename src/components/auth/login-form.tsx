@@ -21,12 +21,13 @@ import {
   PhoneAuthProvider, 
   PhoneMultiFactorGenerator,
   TotpMultiFactorGenerator,
-  RecaptchaVerifier
+  RecaptchaVerifier,
+  MultiFactorResolver
 } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/firebase/client-provider';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Eye, EyeOff, Loader2, Smartphone, MessageSquare, ShieldCheck, ChevronRight } from 'lucide-react';
 
 export function LoginForm() {
@@ -38,7 +39,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   // MFA States
-  const [mfaResolver, setMfaResolver] = useState<any>(null);
+  const [mfaResolver, setMfaResolver] = useState<MultiFactorResolver | null>(null);
   const [mfaHints, setMfaHints] = useState<any[]>([]);
   const [selectedHint, setSelectedHint] = useState<any>(null);
   const [verificationId, setVerificationId] = useState<string | null>(null);
@@ -60,7 +61,7 @@ export function LoginForm() {
     return () => {
       if (recaptchaVerifier) recaptchaVerifier.clear();
     };
-  }, [auth]);
+  }, [auth, recaptchaVerifier]);
 
   const formSchema = useMemo(
     () =>
@@ -95,6 +96,32 @@ export function LoginForm() {
     }
   };
 
+  const handleSelectMfaMethod = useCallback(async (hint: any, resolver: MultiFactorResolver) => {
+    setSelectedHint(hint);
+    setIsLoading(true);
+    try {
+      if (hint.factorId === TotpMultiFactorGenerator.FACTOR_ID) {
+        setMfaMethod('totp');
+      } else if (hint.factorId === PhoneAuthProvider.PHONE_SIGN_IN_METHOD) {
+        setMfaMethod('sms');
+        if (recaptchaVerifier) {
+          const phoneAuthProvider = new PhoneAuthProvider(auth);
+          // Usamos el resolver pasado por argumento para evitar el error de sesión null
+          const vId = await phoneAuthProvider.verifyPhoneNumber(
+            { multiFactorHint: hint, session: resolver.session },
+            recaptchaVerifier
+          );
+          setVerificationId(vId);
+        }
+      }
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error MFA', description: error.message });
+      setSelectedHint(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [auth, recaptchaVerifier, toast]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
@@ -111,9 +138,9 @@ export function LoginForm() {
         setMfaResolver(resolver);
         setMfaHints(resolver.hints);
         
-        // Si solo hay uno, lo seleccionamos automáticamente
+        // Si solo hay uno, lo seleccionamos automáticamente pasando el resolver directo
         if (resolver.hints.length === 1) {
-          handleSelectMfaMethod(resolver.hints[0]);
+          handleSelectMfaMethod(resolver.hints[0], resolver);
         }
       } else {
         toast({
@@ -126,31 +153,6 @@ export function LoginForm() {
       setIsLoading(false);
     }
   }
-
-  const handleSelectMfaMethod = async (hint: any) => {
-    setSelectedHint(hint);
-    setIsLoading(true);
-    try {
-      if (hint.factorId === TotpMultiFactorGenerator.FACTOR_ID) {
-        setMfaMethod('totp');
-      } else if (hint.factorId === PhoneAuthProvider.PHONE_SIGN_IN_METHOD) {
-        setMfaMethod('sms');
-        if (recaptchaVerifier) {
-          const phoneAuthProvider = new PhoneAuthProvider(auth);
-          const vId = await phoneAuthProvider.verifyPhoneNumber(
-            { multiFactorHint: hint, session: mfaResolver.session },
-            recaptchaVerifier
-          );
-          setVerificationId(vId);
-        }
-      }
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error MFA', description: error.message });
-      setSelectedHint(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleVerifyMfa = async () => {
     if (!mfaResolver || !mfaCode) return;
@@ -177,7 +179,7 @@ export function LoginForm() {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  // VISTA: Selección de Método (Cuando hay más de uno)
+  // VISTA: Selección de Método
   if (mfaResolver && !selectedHint) {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 text-center">
@@ -197,7 +199,7 @@ export function LoginForm() {
                 key={idx} 
                 variant="outline" 
                 className="h-16 justify-between px-6 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
-                onClick={() => handleSelectMfaMethod(hint)}
+                onClick={() => handleSelectMfaMethod(hint, mfaResolver)}
                 disabled={isLoading}
               >
                 <div className="flex items-center gap-4">
