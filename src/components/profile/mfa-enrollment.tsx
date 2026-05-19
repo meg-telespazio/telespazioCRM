@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, Info, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, Info, ExternalLink, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -138,8 +138,8 @@ export function MfaEnrollment() {
       } else {
         toast({ 
           variant: 'destructive', 
-          title: 'Error de Configuración', 
-          description: 'No se pudo iniciar el proceso. Intenta de nuevo.' 
+          title: 'Error de Servicio', 
+          description: 'No se pudo generar el secreto. Intenta recargar la página.' 
         });
       }
     } finally {
@@ -253,15 +253,17 @@ export function MfaEnrollment() {
           <Alert className="mb-6 bg-amber-50 border-amber-200 animate-in slide-in-from-top-2 shadow-inner">
             <ShieldAlert className="h-5 w-5 text-amber-600" />
             <div className="ml-2">
-              <AlertTitle className="text-amber-900 font-black uppercase text-xs mb-1">Acción Requerida en la Consola</AlertTitle>
+              <AlertTitle className="text-amber-900 font-black uppercase text-xs mb-1">Activación Maestra Requerida</AlertTitle>
               <AlertDescription className="text-amber-800 text-xs leading-relaxed space-y-2">
-                <p>El método <strong>"App de autenticación"</strong> no ha sido activado en tu proyecto. Sigue estos pasos exactos:</p>
-                <ol className="list-decimal pl-4 space-y-1.5 font-medium">
-                  <li>Ve a la pestaña <strong>"Método de acceso"</strong> (la 2da pestaña en tu consola).</li>
-                  <li>Baja hasta el final a la sección <strong>"Autenticación de varios factores"</strong>.</li>
-                  <li>Haz clic en <strong>"Configurar"</strong> o <strong>"Cambiar"</strong>.</li>
-                  <li><strong>Marca la casilla</strong> "App de autenticación" y haz clic en <strong>Guardar</strong>.</li>
-                </ol>
+                <p>El método <strong>"App de autenticación"</strong> está bloqueado por el servidor de Google Cloud.</p>
+                <div className="p-3 bg-white/50 rounded border border-amber-200 font-medium">
+                  <p>1. Ve a <a href="https://console.cloud.google.com/customer-identity/settings" target="_blank" className="text-blue-700 underline font-bold inline-flex items-center gap-1">GCP Identity Platform <ExternalLink className="h-3 w-3"/></a></p>
+                  <p>2. Ve a la pestaña <strong>"MFA"</strong>.</p>
+                  <p>3. Marca la casilla <strong>"TOTP"</strong>.</p>
+                </div>
+                <Button variant="outline" size="sm" className="w-full mt-2 h-8 font-bold border-amber-400 text-amber-900" onClick={() => window.location.reload()}>
+                   <RefreshCw className="h-3 w-3 mr-1" /> Reintentar tras activar en Consola
+                </Button>
               </AlertDescription>
             </div>
           </Alert>
