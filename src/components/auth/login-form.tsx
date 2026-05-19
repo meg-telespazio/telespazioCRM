@@ -44,7 +44,6 @@ export function LoginForm() {
   const [mfaMethod, setMfaMethod] = useState<'sms' | 'totp' | null>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
 
-  // Initialize Recaptcha only when needed or on component mount for MFA
   useEffect(() => {
     if (typeof window !== 'undefined' && !recaptchaVerifier) {
       try {
@@ -112,6 +111,7 @@ export function LoginForm() {
         const totpHint = resolver.hints.find((h: any) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
         const phoneHint = resolver.hints.find((h: any) => h.factorId === PhoneAuthProvider.PHONE_SIGN_IN_METHOD);
 
+        // Prioritize TOTP (App) over SMS
         if (totpHint) {
           setMfaMethod('totp');
         } else if (phoneHint) {
@@ -123,8 +123,6 @@ export function LoginForm() {
               recaptchaVerifier
             );
             setVerificationId(vId);
-          } else {
-            toast({ variant: 'destructive', title: 'Security Error', description: 'Recaptcha not initialized.' });
           }
         }
       } else {

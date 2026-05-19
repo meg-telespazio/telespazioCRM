@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, RefreshCw, ArrowLeft, Menu } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -230,51 +230,17 @@ export function MfaEnrollment() {
         <CardDescription>{t('Auth.mfaEnrollDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="p-6">
-        {!auth.currentUser?.emailVerified && (
-          <Alert variant="destructive" className="mb-6 bg-red-50 border-red-200">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertTitle className="text-red-800 font-bold uppercase text-[10px]">Validación Requerida</AlertTitle>
-            <AlertDescription className="text-red-700 text-xs space-y-3">
-              <p>Debes verificar tu email corporativo antes de habilitar aplicaciones de autenticación.</p>
-              <Button 
-                onClick={handleSendVerification} 
-                disabled={isSendingVerification}
-                variant="outline"
-                className="bg-white border-red-200 text-red-700 font-bold h-8"
-              >
-                {isSendingVerification ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <MailCheck className="h-3 w-3 mr-1" />}
-                Enviar enlace de verificación
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
         {isMethodDisabled && (
           <Alert className="mb-6 bg-amber-50 border-amber-200 animate-in slide-in-from-top-2 shadow-inner">
             <ShieldAlert className="h-5 w-5 text-amber-600" />
             <div className="ml-2">
-              <AlertTitle className="text-amber-900 font-black uppercase text-xs mb-1">Activación TOTP Requerida en Google Cloud</AlertTitle>
-              <AlertDescription className="text-amber-800 text-xs leading-relaxed space-y-3">
-                <p>El sistema detecta que el método de App aún no está activado en tu panel lateral de Google Cloud:</p>
-                <div className="p-4 bg-white/70 rounded-xl border border-amber-200 font-medium space-y-3">
-                  <p className="flex items-center gap-2 text-slate-900">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">1</span>
-                    En el menú de la izquierda de tu captura, haz clic en <strong>"MFA"</strong> (es la segunda opción).
-                  </p>
-                  <p className="flex items-center gap-2 text-slate-900">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">2</span>
-                    En la pantalla principal, busca el botón <strong>"EDITAR"</strong> (arriba a la derecha).
-                  </p>
-                  <p className="flex items-center gap-2 text-slate-900">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">3</span>
-                    Marca la casilla <strong>"TOTP"</strong> y presiona <strong>GUARDAR</strong>.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                   <Button variant="outline" size="sm" className="flex-1 h-9 font-bold border-amber-400 text-amber-900 bg-white" onClick={() => window.location.reload()}>
-                      <RefreshCw className="h-3.5 w-3.5 mr-2" /> Ya lo activé, reintentar
-                   </Button>
-                </div>
+              <AlertTitle className="text-amber-900 font-black uppercase text-xs mb-1">Activación TOTP Requerida</AlertTitle>
+              <AlertDescription className="text-amber-800 text-xs leading-relaxed">
+                El método de App de Autenticación no está habilitado en tu proyecto de Google Cloud. 
+                Por favor, solicita al administrador que active el checkbox <strong>"TOTP"</strong> en la pestaña MFA de Identity Platform.
+                <Button variant="link" size="sm" className="h-auto p-0 ml-2 font-bold text-amber-900 underline" onClick={() => window.location.reload()}>
+                  <RefreshCw className="h-3 w-3 mr-1" /> Reintentar
+                </Button>
               </AlertDescription>
             </div>
           </Alert>
@@ -287,11 +253,29 @@ export function MfaEnrollment() {
           </TabsList>
 
           <TabsContent value="app" className="space-y-4 pt-4">
-            {!totpSecret ? (
+            {!auth.currentUser?.emailVerified ? (
+               <div className="py-8 text-center bg-red-50 rounded-xl border border-red-100 space-y-4">
+                  <div className="bg-white p-3 rounded-full w-fit mx-auto shadow-sm">
+                    <MailCheck className="h-8 w-8 text-red-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-bold text-red-900">Email No Verificado</p>
+                    <p className="text-xs text-red-700 px-8">Para usar el Autenticador, Google exige que tu cuenta esté validada.</p>
+                  </div>
+                  <Button 
+                    onClick={handleSendVerification} 
+                    disabled={isSendingVerification}
+                    className="bg-red-600 hover:bg-red-700 font-bold"
+                  >
+                    {isSendingVerification ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <MailCheck className="h-4 w-4 mr-1" />}
+                    Enviar Email de Validación
+                  </Button>
+               </div>
+            ) : !totpSecret ? (
               <div className="py-8 text-center bg-slate-50/50 rounded-xl border border-dashed">
                 <QrCode className="h-12 w-12 mx-auto text-slate-300 mb-4" />
                 <p className="text-sm text-slate-500 mb-6 max-w-xs mx-auto font-medium">Usa Google Authenticator o Microsoft Authenticator para generar códigos.</p>
-                <Button onClick={handleInitiateTotp} disabled={isLoading || !auth.currentUser?.emailVerified} className="h-11 px-8 font-bold">
+                <Button onClick={handleInitiateTotp} disabled={isLoading} className="h-11 px-8 font-bold">
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Smartphone className="mr-2 h-4 w-4" />}
                   Generar Código QR
                 </Button>
@@ -328,6 +312,7 @@ export function MfaEnrollment() {
                     disabled={isLoading}
                     className="text-center font-black text-2xl tracking-[0.5em] h-14 bg-slate-50 border-2"
                     maxLength={6}
+                    autoFocus
                   />
                   <Button onClick={handleVerifyTotp} disabled={isLoading || mfaCode.length !== 6} className="w-full h-12 font-bold shadow-md">
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -369,6 +354,7 @@ export function MfaEnrollment() {
                     disabled={isLoading}
                     className="text-center font-black text-2xl tracking-[0.5em] h-14 bg-slate-50 border-2"
                     maxLength={6}
+                    autoFocus
                   />
                 </div>
                 <Button onClick={handleVerifySms} disabled={isLoading || !mfaCode} className="w-full h-12 font-bold shadow-md">
