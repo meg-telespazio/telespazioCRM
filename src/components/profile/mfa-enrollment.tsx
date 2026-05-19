@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   multiFactor, 
   PhoneAuthProvider, 
@@ -18,12 +18,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, RefreshCw, PlusCircle, Trash2, MessageSquare } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, Phone, MailCheck, ShieldAlert, QrCode, PlusCircle, Trash2, MessageSquare, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Badge } from '../ui/badge';
-import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 
 export function MfaEnrollment() {
@@ -42,6 +41,7 @@ export function MfaEnrollment() {
   const [enrolledFactors, setEnrolledFactors] = useState<MultiFactorInfo[]>([]);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
   const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   const syncMfaStatus = () => {
     if (!auth.currentUser) return;
@@ -64,9 +64,6 @@ export function MfaEnrollment() {
       }
     }
   }, [auth, auth.currentUser]);
-
-  const isAppActive = enrolledFactors.some(f => f.factorId === TotpMultiFactorGenerator.FACTOR_ID);
-  const isSmsActive = enrolledFactors.some(f => f.factorId === PhoneAuthProvider.PHONE_SIGN_IN_METHOD);
 
   const handleSendVerification = async () => {
     if (!auth.currentUser) return;
@@ -135,6 +132,7 @@ export function MfaEnrollment() {
     }
 
     setIsLoading(true);
+    setConfigError(null);
     try {
       const mfaUser = multiFactor(auth.currentUser);
       const mfaSession = await mfaUser.getSession();
@@ -142,11 +140,15 @@ export function MfaEnrollment() {
       setTotpSecret(secret);
     } catch (error: any) {
       console.error("MFA TOTP Error:", error);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Error de Servicio', 
-        description: 'No se pudo generar el secreto. Verifica que el método TOTP esté activo en la consola.' 
-      });
+      if (error.code === 'auth/operation-not-allowed') {
+        setConfigError('El método TOTP no está habilitado en tu servidor de Google. Un administrador debe ir a Google Cloud Console > Identity Platform > MFA y marcar la casilla "TOTP".');
+      } else {
+        toast({ 
+          variant: 'destructive', 
+          title: 'Error de Servicio', 
+          description: 'No se pudo generar el secreto. Intenta de nuevo en unos minutos.' 
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -265,6 +267,14 @@ export function MfaEnrollment() {
               </TabsList>
 
               <TabsContent value="app" className="space-y-4 pt-4">
+                {configError && (
+                  <Alert variant="destructive" className="bg-red-50 border-red-200">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Falta Configuración en Cloud</AlertTitle>
+                    <AlertDescription className="text-xs">{configError}</AlertDescription>
+                  </Alert>
+                )}
+
                 {!auth.currentUser?.emailVerified ? (
                    <div className="py-8 text-center bg-red-50 rounded-xl border border-red-100 space-y-4">
                       <div className="bg-white p-3 rounded-full w-fit mx-auto shadow-sm">

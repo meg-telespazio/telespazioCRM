@@ -9,8 +9,8 @@ import type { UserProfile } from '@/lib/types';
 export type AppUser = AuthUser & Partial<UserProfile>;
 
 // Lista de correos con privilegios de Super Administrador (Bypass de reglas)
-// mariano.telespazio@gmail.com NO está en esta lista para que actúe como Ejecutivo.
-const ADMIN_EMAILS = ['mariano.gonzalez@telespazio.com'];
+const SUPER_ADMIN_EMAIL = 'mariano.gonzalez@telespazio.com';
+const GMAIL_EXECUTIVE_EMAIL = 'mariano.telespazio@gmail.com';
 
 export const useUser = () => {
   const auth = useAuth();
@@ -45,16 +45,25 @@ export const useUser = () => {
   const user: AppUser | null = useMemo(() => {
     if (!authUser) return null;
     
-    const isSuperAdmin = authUser.email ? ADMIN_EMAILS.includes(authUser.email) : false;
+    const isSuperAdmin = authUser.email === SUPER_ADMIN_EMAIL;
+    const isGmailExecutive = authUser.email === GMAIL_EXECUTIVE_EMAIL;
     
     // Regresamos null si el perfil aún está cargando para evitar estados de identidad parciales
     // excepto si es SuperAdmin, que ya tiene bypass por reglas de email
     if (profileLoading && !isSuperAdmin) return null;
 
+    // Lógica de roles: 
+    // 1. Super Admin corporativo tiene prioridad
+    // 2. Usuario Gmail específico SIEMPRE es ejecutivo (limita visualización)
+    // 3. Otros usuarios respetan su rol en Firestore (o default ejecutivo)
+    let role = userProfile?.role || 'ejecutivo';
+    if (isSuperAdmin) role = 'admin';
+    if (isGmailExecutive) role = 'ejecutivo';
+
     return {
       ...authUser,
       ...userProfile,
-      role: isSuperAdmin ? 'admin' : (userProfile?.role || 'ejecutivo'),
+      role,
       management: userProfile?.management || 'Satellite Communications',
       displayName: userProfile?.displayName || authUser.displayName,
       photoURL: userProfile?.photoURL || authUser.photoURL,
