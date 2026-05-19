@@ -19,13 +19,13 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.4.9 - MFA Instruction Refinement & reCAPTCHA fix
-const APP_VERSION = '2.4.9'; 
+// VERSIÓN 2.5.0 - GCP MFA Configuration Alignment
+const APP_VERSION = '2.5.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading } = userLoadingState();
   const auth = useAuth();
   const { t } = useI18n();
   const { canSeeMenu, isLoading: permissionsLoading } = usePermissions();
@@ -33,6 +33,11 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
   const isPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/cotizacion';
   const isUnauthorizedPage = pathname === '/unauthorized';
+
+  // Helper inside to avoid direct hook call on null
+  function userLoadingState() {
+     return useUser();
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

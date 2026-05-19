@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, Info, ExternalLink, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, Info, ExternalLink, RefreshCw, Pencil } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -253,17 +253,28 @@ export function MfaEnrollment() {
           <Alert className="mb-6 bg-amber-50 border-amber-200 animate-in slide-in-from-top-2 shadow-inner">
             <ShieldAlert className="h-5 w-5 text-amber-600" />
             <div className="ml-2">
-              <AlertTitle className="text-amber-900 font-black uppercase text-xs mb-1">Activación Maestra Requerida</AlertTitle>
-              <AlertDescription className="text-amber-800 text-xs leading-relaxed space-y-2">
-                <p>El método <strong>"App de autenticación"</strong> está bloqueado por el servidor de Google Cloud.</p>
-                <div className="p-3 bg-white/50 rounded border border-amber-200 font-medium">
-                  <p>1. Ve a <a href="https://console.cloud.google.com/customer-identity/settings" target="_blank" className="text-blue-700 underline font-bold inline-flex items-center gap-1">GCP Identity Platform <ExternalLink className="h-3 w-3"/></a></p>
-                  <p>2. Ve a la pestaña <strong>"MFA"</strong>.</p>
-                  <p>3. Marca la casilla <strong>"TOTP"</strong>.</p>
+              <AlertTitle className="text-amber-900 font-black uppercase text-xs mb-1">Activación de Método TOTP Requerida</AlertTitle>
+              <AlertDescription className="text-amber-800 text-xs leading-relaxed space-y-3">
+                <p>El método de autenticación por App está desactivado en la infraestructura de Google Cloud.</p>
+                <div className="p-4 bg-white/70 rounded-xl border border-amber-200 font-medium space-y-3">
+                  <p className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">1</span>
+                    En la pantalla de Google Cloud que tienes abierta, haz clic en el botón <strong>"Editar"</strong> (icono del lápiz arriba).
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">2</span>
+                    Marca la casilla que dice <strong>"TOTP"</strong> o <strong>"App de autenticación"</strong>.
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">3</span>
+                    Presiona el botón azul <strong>"Guardar"</strong> abajo.
+                  </p>
                 </div>
-                <Button variant="outline" size="sm" className="w-full mt-2 h-8 font-bold border-amber-400 text-amber-900" onClick={() => window.location.reload()}>
-                   <RefreshCw className="h-3 w-3 mr-1" /> Reintentar tras activar en Consola
-                </Button>
+                <div className="flex gap-2">
+                   <Button variant="outline" size="sm" className="flex-1 h-9 font-bold border-amber-400 text-amber-900 bg-white" onClick={() => window.location.reload()}>
+                      <RefreshCw className="h-3.5 w-3.5 mr-2" /> Ya lo activé, reintentar
+                   </Button>
+                </div>
               </AlertDescription>
             </div>
           </Alert>
