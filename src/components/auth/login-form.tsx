@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/firebase/client-provider';
 import { useMemo, useState, useEffect } from 'react';
-import { Eye, EyeOff, Loader2, Smartphone, MessageSquare } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Smartphone, MessageSquare, ShieldCheck, ChevronRight } from 'lucide-react';
 
 export function LoginForm() {
   const auth = useAuth();
@@ -39,6 +39,8 @@ export function LoginForm() {
 
   // MFA States
   const [mfaResolver, setMfaResolver] = useState<any>(null);
+  const [mfaHints, setMfaHints] = useState<any[]>([]);
+  const [selectedHint, setSelectedHint] = useState<any>(null);
   const [verificationId, setVerificationId] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
   const [mfaMethod, setMfaMethod] = useState<'sms' | 'totp' | null>(null);
@@ -107,23 +109,11 @@ export function LoginForm() {
       if (error.code === 'auth/multi-factor-auth-required') {
         const resolver = getMultiFactorResolver(auth, error);
         setMfaResolver(resolver);
+        setMfaHints(resolver.hints);
         
-        const totpHint = resolver.hints.find((h: any) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
-        const phoneHint = resolver.hints.find((h: any) => h.factorId === PhoneAuthProvider.PHONE_SIGN_IN_METHOD);
-
-        // Prioritize TOTP (App) over SMS
-        if (totpHint) {
-          setMfaMethod('totp');
-        } else if (phoneHint) {
-          setMfaMethod('sms');
-          if (recaptchaVerifier) {
-            const phoneAuthProvider = new PhoneAuthProvider(auth);
-            const vId = await phoneAuthProvider.verifyPhoneNumber(
-              { multiFactorHint: phoneHint, session: resolver.session },
-              recaptchaVerifier
-            );
-            setVerificationId(vId);
-          }
+        // Si solo hay uno, lo seleccionamos automáticamente
+        if (resolver.hints.length === 1) {
+          handleSelectMfaMethod(resolver.hints[0]);
         }
       } else {
         toast({
@@ -137,14 +127,38 @@ export function LoginForm() {
     }
   }
 
+  const handleSelectMfaMethod = async (hint: any) => {
+    setSelectedHint(hint);
+    setIsLoading(true);
+    try {
+      if (hint.factorId === TotpMultiFactorGenerator.FACTOR_ID) {
+        setMfaMethod('totp');
+      } else if (hint.factorId === PhoneAuthProvider.PHONE_SIGN_IN_METHOD) {
+        setMfaMethod('sms');
+        if (recaptchaVerifier) {
+          const phoneAuthProvider = new PhoneAuthProvider(auth);
+          const vId = await phoneAuthProvider.verifyPhoneNumber(
+            { multiFactorHint: hint, session: mfaResolver.session },
+            recaptchaVerifier
+          );
+          setVerificationId(vId);
+        }
+      }
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error MFA', description: error.message });
+      setSelectedHint(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleVerifyMfa = async () => {
     if (!mfaResolver || !mfaCode) return;
     setIsLoading(true);
     try {
       let assertion;
-      if (mfaMethod === 'totp') {
-        const totpHint = mfaResolver.hints.find((h: any) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
-        assertion = TotpMultiFactorGenerator.assertionForSignIn(totpHint.uid, mfaCode);
+      if (mfaMethod === 'totp' && selectedHint) {
+        assertion = TotpMultiFactorGenerator.assertionForSignIn(selectedHint.uid, mfaCode);
       } else if (mfaMethod === 'sms' && verificationId) {
         const cred = PhoneAuthProvider.credential(verificationId, mfaCode);
         assertion = PhoneMultiFactorGenerator.assertion(cred);
@@ -155,7 +169,7 @@ export function LoginForm() {
         router.push('/dashboard');
       }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'MFA Error', description: getAuthErrorMessage(error.code) });
+      toast({ variant: 'destructive', title: 'Código Inválido', description: 'Por favor verifique el código ingresado.' });
     } finally {
       setIsLoading(false);
     }
@@ -163,39 +177,87 @@ export function LoginForm() {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  if (mfaResolver) {
+  // VISTA: Selección de Método (Cuando hay más de uno)
+  if (mfaResolver && !selectedHint) {
     return (
-      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 text-center">
+        <div className="space-y-2">
+          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <ShieldCheck className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="text-xl font-black text-slate-800">Seguridad de la Cuenta</h3>
+          <p className="text-sm text-muted-foreground">Seleccione cómo desea recibir su código de verificación:</p>
+        </div>
+        
+        <div className="grid gap-3">
+          {mfaHints.map((hint, idx) => {
+            const isTotp = hint.factorId === TotpMultiFactorGenerator.FACTOR_ID;
+            return (
+              <Button 
+                key={idx} 
+                variant="outline" 
+                className="h-16 justify-between px-6 border-2 hover:border-primary hover:bg-primary/5 transition-all group"
+                onClick={() => handleSelectMfaMethod(hint)}
+                disabled={isLoading}
+              >
+                <div className="flex items-center gap-4">
+                  {isTotp ? <Smartphone className="h-6 w-6 text-primary" /> : <MessageSquare className="h-6 w-6 text-primary" />}
+                  <div className="text-left">
+                    <p className="font-bold text-sm text-slate-900">{isTotp ? 'App de Autenticación' : 'Mensaje SMS'}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                      {isTotp ? 'Google / Microsoft Authenticator' : hint.displayName || 'Teléfono vinculado'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" />
+              </Button>
+            );
+          })}
+        </div>
+        
+        <Button variant="ghost" className="text-xs text-muted-foreground" onClick={() => setMfaResolver(null)}>
+          {t('Actions.back')}
+        </Button>
+      </div>
+    );
+  }
+
+  // VISTA: Ingreso de Código
+  if (selectedHint) {
+    return (
+      <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
         <div className="space-y-2 text-center">
           <div className="flex justify-center mb-2">
             <div className="p-3 bg-primary/10 rounded-full">
               {mfaMethod === 'totp' ? <Smartphone className="h-6 w-6 text-primary" /> : <MessageSquare className="h-6 w-6 text-primary" />}
             </div>
           </div>
-          <h3 className="font-bold text-lg">{t('Auth.mfaRequired')}</h3>
-          <p className="text-xs text-muted-foreground">
-            {mfaMethod === 'totp' ? t('Auth.mfaMethodApp') : t('Auth.mfaMethodSms')}
+          <h3 className="font-black text-xl text-slate-900">Verificación</h3>
+          <p className="text-xs text-muted-foreground px-6">
+            {mfaMethod === 'totp' ? 'Ingrese el código de 6 dígitos de su aplicación.' : 'Hemos enviado un SMS a su teléfono.'}
           </p>
         </div>
-        <div className="space-y-4">
-          <div className="space-y-2 text-left">
-            <Label className="text-xs font-bold uppercase text-slate-500 ml-1">{t('Auth.mfaCodeLabel')}</Label>
+        <div className="space-y-6">
+          <div className="space-y-2">
             <Input 
               placeholder="123456" 
               value={mfaCode} 
               onChange={(e) => setMfaCode(e.target.value)}
-              className="text-center tracking-[0.5em] font-black text-2xl h-14 bg-slate-50 border-2"
+              className="text-center tracking-[0.5em] font-black text-3xl h-16 bg-slate-50 border-2 focus-visible:ring-primary"
               maxLength={6}
               autoFocus
             />
           </div>
-          <Button className="w-full h-12 text-md font-bold shadow-md" onClick={handleVerifyMfa} disabled={isLoading || mfaCode.length !== 6}>
+          <Button className="w-full h-12 text-md font-bold shadow-lg" onClick={handleVerifyMfa} disabled={isLoading || mfaCode.length !== 6}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('Auth.verifyMfa')}
+            Validar y Entrar
           </Button>
-          <Button variant="ghost" className="w-full text-xs" onClick={() => setMfaResolver(null)}>
-            {t('Actions.back')}
-          </Button>
+          
+          <div className="flex flex-col gap-2">
+            <Button variant="ghost" className="text-xs" onClick={() => setSelectedHint(null)}>
+              Cambiar método de verificación
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -245,7 +307,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full h-11 font-bold" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {t('Auth.loginButton')}
         </Button>
