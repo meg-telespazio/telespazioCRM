@@ -9,6 +9,7 @@ import type { UserProfile } from '@/lib/types';
 export type AppUser = AuthUser & Partial<UserProfile>;
 
 // Lista de correos con privilegios de Super Administrador (Bypass de reglas)
+// mariano.telespazio@gmail.com NO está en esta lista para que actúe como Ejecutivo.
 const ADMIN_EMAILS = ['mariano.gonzalez@telespazio.com'];
 
 export const useUser = () => {

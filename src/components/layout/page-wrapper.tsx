@@ -19,13 +19,13 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.5.5 - Dynamic MFA Session Fix
-const APP_VERSION = '2.5.5'; 
+// VERSIÓN 2.5.6 - Fixed ReferenceError and Isolation
+const APP_VERSION = '2.5.6'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = userLoadingState();
+  const { user, loading } = useUser();
   const auth = useAuth();
   const { t } = useI18n();
   const { canSeeMenu, isLoading: permissionsLoading } = usePermissions();
@@ -33,11 +33,6 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
   const isPublicPage = pathname === '/login' || pathname === '/register' || pathname === '/cotizacion';
   const isUnauthorizedPage = pathname === '/unauthorized';
-
-  // Helper inside to avoid direct hook call on null
-  function userLoadingState() {
-     return useUser();
-  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
