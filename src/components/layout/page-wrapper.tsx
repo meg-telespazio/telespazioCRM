@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.5.1 - GCP MFA Configuration Alignment (TOTP/SMS)
-const APP_VERSION = '2.5.1'; 
+// VERSIÓN 2.5.2 - GCP MFA Instruction Update
+const APP_VERSION = '2.5.2'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, RefreshCw, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Loader2, CheckCircle2, Smartphone, AlertTriangle, Phone, MailCheck, ShieldAlert, QrCode, RefreshCw, ArrowLeft, Menu } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QRCodeSVG } from 'qrcode.react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -255,19 +255,19 @@ export function MfaEnrollment() {
             <div className="ml-2">
               <AlertTitle className="text-amber-900 font-black uppercase text-xs mb-1">Activación TOTP Requerida en Google Cloud</AlertTitle>
               <AlertDescription className="text-amber-800 text-xs leading-relaxed space-y-3">
-                <p>Estás en la pantalla de SMS. Para activar el Authenticator debes ir un nivel atrás:</p>
+                <p>El sistema detecta que el método de App aún no está activado en tu panel lateral de Google Cloud:</p>
                 <div className="p-4 bg-white/70 rounded-xl border border-amber-200 font-medium space-y-3">
                   <p className="flex items-center gap-2 text-slate-900">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">1</span>
-                    Haz clic en la <strong>flecha atrás (<ArrowLeft className="h-3 w-3 inline" />)</strong> que está al lado del título en Google Cloud.
+                    En el menú de la izquierda de tu captura, haz clic en <strong>"MFA"</strong> (es la segunda opción).
                   </p>
                   <p className="flex items-center gap-2 text-slate-900">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">2</span>
-                    En la pantalla general de MFA, busca el botón <strong>"EDITAR"</strong> (es un texto azul o botón arriba a la derecha).
+                    En la pantalla principal, busca el botón <strong>"EDITAR"</strong> (arriba a la derecha).
                   </p>
                   <p className="flex items-center gap-2 text-slate-900">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">3</span>
-                    Marca la casilla <strong>"TOTP"</strong> o <strong>"App de autenticación"</strong> y presiona <strong>GUARDAR</strong>.
+                    Marca la casilla <strong>"TOTP"</strong> y presiona <strong>GUARDAR</strong>.
                   </p>
                 </div>
                 <div className="flex gap-2">
