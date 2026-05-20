@@ -19,6 +19,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { ProductOrService } from '@/lib/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -132,12 +138,21 @@ export const columns = (
     cell: ({ row }) => {
       const item = row.original;
       return (
-        <span
-          onClick={() => onEdit(item)}
-          className="font-medium hover:underline cursor-pointer truncate block max-w-[150px]"
-        >
-          {item.name}
-        </span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                onClick={() => onEdit(item)}
+                className="font-medium hover:underline cursor-pointer truncate block max-w-[150px] sm:max-w-[250px]"
+              >
+                {item.name}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[300px] break-words">
+              <p className="text-xs font-semibold">{item.name}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
   },
