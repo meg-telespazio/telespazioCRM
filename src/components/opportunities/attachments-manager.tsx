@@ -4,9 +4,10 @@ import { useState, useCallback } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useStorage, useUser } from '@/firebase';
+import { useStorage, useUser, useFirestore } from '@/firebase';
 import { uploadFile, deleteFile } from '@/lib/storage';
 import { useParams } from 'next/navigation';
+import { updateDoc, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
   const { t } = useI18n();
   const { toast } = useToast();
   const storage = useStorage();
+  const firestore = useFirestore();
   const { user } = useUser();
   const { control } = useFormContext();
 
@@ -64,6 +66,14 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
           setUploadingFiles(prev => ({ ...prev, [fileId]: Math.max(1, progress) }));
         });
 
+        // PERSISTENCIA INMEDIATA: Si la oportunidad ya existe, grabamos en Firestore al instante
+        if (opportunityId && opportunityId !== 'new') {
+          const docRef = doc(firestore, 'opportunities', opportunityId);
+          await updateDoc(docRef, {
+            attachments: arrayUnion(attachment)
+          });
+        }
+
         append(attachment);
         toast({ variant: 'success', title: 'Archivo cargado', description: file.name });
       } catch (error: any) {
@@ -83,12 +93,21 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
         });
       }
     }
-  }, [append, disabled, opportunityId, storage, toast, user]);
+  }, [append, disabled, opportunityId, storage, firestore, toast, user]);
 
   const handleDelete = async (index: number, attachment: any) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
     try {
       if (attachment.path) await deleteFile(storage, attachment.path);
+      
+      // ELIMINACIÓN INMEDIATA: Si la oportunidad existe, removemos de Firestore
+      if (opportunityId && opportunityId !== 'new') {
+        const docRef = doc(firestore, 'opportunities', opportunityId);
+        await updateDoc(docRef, {
+          attachments: arrayRemove(attachment)
+        });
+      }
+      
       remove(index);
     } catch (e) {
       console.error('Delete error:', e);

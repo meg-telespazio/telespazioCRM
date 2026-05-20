@@ -4,9 +4,10 @@ import { useState, useCallback } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useStorage, useUser } from '@/firebase';
+import { useStorage, useUser, useFirestore } from '@/firebase';
 import { uploadFile, deleteFile } from '@/lib/storage';
 import { useParams } from 'next/navigation';
+import { updateDoc, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
   const { t } = useI18n();
   const { toast } = useToast();
   const storage = useStorage();
+  const firestore = useFirestore();
   const params = useParams();
   const { user } = useUser();
   const contractId = params.id as string;
@@ -65,6 +67,14 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
           setUploadingFiles(prev => ({ ...prev, [fileId]: Math.max(1, progress) }));
         });
 
+        // PERSISTENCIA INMEDIATA: Si el contrato ya existe, grabamos en Firestore al instante
+        if (contractId && contractId !== 'new') {
+          const docRef = doc(firestore, 'contracts', contractId);
+          await updateDoc(docRef, {
+            attachments: arrayUnion(attachment)
+          });
+        }
+
         append(attachment);
         toast({ variant: 'success', title: 'Archivo cargado', description: file.name });
       } catch (error: any) {
@@ -84,12 +94,21 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
         });
       }
     }
-  }, [append, disabled, contractId, storage, toast, user]);
+  }, [append, disabled, contractId, storage, firestore, toast, user]);
 
   const handleDelete = async (index: number, attachment: any) => {
     if (disabled || !window.confirm(t('Actions.confirmDelete'))) return;
     try {
       if (attachment.path) await deleteFile(storage, attachment.path);
+      
+      // ELIMINACIÓN INMEDIATA: Si el contrato existe, removemos de Firestore
+      if (contractId && contractId !== 'new') {
+        const docRef = doc(firestore, 'contracts', contractId);
+        await updateDoc(docRef, {
+          attachments: arrayRemove(attachment)
+        });
+      }
+      
       remove(index);
     } catch (e) {
       console.error('Delete error:', e);
