@@ -32,7 +32,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
-import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer, Info, ShieldCheck, Briefcase, TrendingUp, ChevronRight, Target, Hash } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Trash2, Plus, Printer, Info, ShieldCheck, Briefcase, TrendingUp, ChevronRight, Target, Hash, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -130,7 +130,6 @@ const getFormSchema = (t: (key: string) => string) => {
       applyDiscountToMrc: z.boolean().optional().default(false),
       reason: z.string().optional(),
       competition: z.string().optional(),
-      // New Fields
       risk: z.enum(['C-Low', 'B-Medium', 'A-High']),
       isPlanned: z.boolean().default(false),
       opportunityType: z.enum(['New Logo', 'New Business', 'Ampliacion', 'Renegociacion', 'Renovaciones']),
@@ -138,8 +137,14 @@ const getFormSchema = (t: (key: string) => string) => {
       contractReferenceId: z.string().optional().or(z.literal('')),
       grossMarginPercentage: z.coerce.number().min(0).max(100),
       grossMarginAmount: z.coerce.number().min(0),
+      // process checks
+      valcomAuthorized: z.boolean().default(false),
+      clientVerified: z.boolean().default(false),
+      contractSigned: z.boolean().default(false),
+      complianceChecked: z.boolean().default(false),
     })
     .superRefine((data, ctx) => {
+      // 1. Mandatory reason for negative statuses
       if (
         ['Lost', 'Canceled', 'Suspended'].includes(data.stage) &&
         (!data.reason || data.reason.trim().length < 10)
@@ -149,6 +154,65 @@ const getFormSchema = (t: (key: string) => string) => {
           message: t('Validation.reasonRequired'),
           path: ['reason'],
         });
+      }
+
+      // 2. Stage-based process validations
+      if (data.stage === 'Proposal') {
+        if (!data.valcomAuthorized) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Para avanzar a Propuesta debe estar el check de VALCOM AUTORIZADA en ON.',
+            path: ['valcomAuthorized'],
+          });
+        }
+      }
+
+      if (data.stage === 'Negotiation') {
+        if (!data.valcomAuthorized) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Para avanzar a Negociación debe estar el check de VALCOM AUTORIZADA en ON.',
+            path: ['valcomAuthorized'],
+          });
+        }
+        if (!data.clientVerified) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Para avanzar a Negociación el CLIENTE debe estar VERIFICADO.',
+            path: ['clientVerified'],
+          });
+        }
+      }
+
+      if (data.stage === 'Won') {
+        if (!data.valcomAuthorized) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Para ganar el negocio se requiere VALCOM AUTORIZADA.',
+            path: ['valcomAuthorized'],
+          });
+        }
+        if (!data.clientVerified) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Para ganar el negocio se requiere CLIENTE VERIFICADO.',
+            path: ['clientVerified'],
+          });
+        }
+        if (!data.contractSigned) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Para ganar el negocio se requiere CONTRATO FIRMADO.',
+            path: ['contractSigned'],
+          });
+        }
+        if (!data.complianceChecked) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Para ganar el negocio se requiere aprobación de COMPLIANCE.',
+            path: ['complianceChecked'],
+          });
+        }
       }
     });
 };
@@ -204,7 +268,6 @@ export default function OpportunityFormPage() {
   const isNew = opportunityId === 'new';
   const clientIdFromQuery = searchParams.get('clientId');
 
-  // Solo consultamos si hay usuario
   const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
   const { data: configData } = useDoc<SystemConfig>(configDocRef);
 
@@ -220,7 +283,6 @@ export default function OpportunityFormPage() {
   const { data: opportunityData, loading: opportunityLoading } =
     useDoc<Opportunity>(opportunityDocRef);
 
-  // Filtered clients by permission for selection
   const clientsQuery = useMemo(() => {
     if (!user || !firestore) return null;
     const ref = collection(firestore, 'clients');
@@ -237,7 +299,6 @@ export default function OpportunityFormPage() {
     return [...clientsData].sort((a, b) => a.name.localeCompare(b.name));
   }, [clientsData]);
 
-  // Fetch Engineers for PM selection
   const usersQuery = useMemo(() => (firestore ? query(collection(firestore, 'users')) : null), [firestore]);
   const { data: allUsers, loading: usersLoading } = useCollection<UserProfile>(usersQuery);
 
@@ -279,10 +340,24 @@ export default function OpportunityFormPage() {
       contractReferenceId: '',
       grossMarginPercentage: 0,
       grossMarginAmount: 0,
+      valcomAuthorized: false,
+      clientVerified: false,
+      contractSigned: false,
+      complianceChecked: false,
     },
   });
 
   const watchedClientId = form.watch('clientId');
+
+  // Automatic client verification if client type is 'client'
+  useEffect(() => {
+    if (watchedClientId && clientsData) {
+      const selectedClient = clientsData.find(c => c.id === watchedClientId);
+      if (selectedClient && selectedClient.type === 'client') {
+        form.setValue('clientVerified', true);
+      }
+    }
+  }, [watchedClientId, clientsData, form]);
 
   const contactsQuery = useMemo(() => {
     if (!user || !firestore || !watchedClientId) return null;
@@ -512,6 +587,10 @@ export default function OpportunityFormPage() {
         contractReferenceId: opportunityData.contractReferenceId || '',
         grossMarginPercentage: opportunityData.grossMarginPercentage || 0,
         grossMarginAmount: opportunityData.grossMarginAmount || 0,
+        valcomAuthorized: opportunityData.valcomAuthorized || false,
+        clientVerified: opportunityData.clientVerified || false,
+        contractSigned: opportunityData.contractSigned || false,
+        complianceChecked: opportunityData.complianceChecked || false,
       });
       isFormLoaded.current = true;
     }
@@ -566,6 +645,9 @@ export default function OpportunityFormPage() {
   }
 
   const calendarRange = { startMonth: new Date(2000, 0), endMonth: new Date(2050, 11) };
+
+  const selectedClient = clientsData?.find(c => c.id === watchedClientId);
+  const isClientType = selectedClient?.type === 'client';
 
   return (
     <div className="flex flex-1 flex-col">
@@ -746,7 +828,77 @@ export default function OpportunityFormPage() {
                 </CardContent>
               </Card>
 
-              {/* SECCIÓN 3: CRONOGRAMA Y ESTADO */}
+              {/* SECCIÓN 3: VALIDACIONES DE PROCESO (NEW) */}
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4 text-primary" /> Validaciones de Proceso
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+                  <FormField
+                    control={form.control}
+                    name="valcomAuthorized"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-white">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-xs font-bold uppercase">VALCOM AUTORIZADA</FormLabel>
+                          <p className="text-[10px] text-muted-foreground">Requerido para etapa Propuesta.</p>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="clientVerified"
+                    render={({ field }) => (
+                      <FormItem className={cn(
+                        "flex flex-row items-center justify-between rounded-lg border p-3 bg-white",
+                        isClientType && "opacity-70"
+                      )}>
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-xs font-bold uppercase">CLIENTE VERIFICADO</FormLabel>
+                          <p className="text-[10px] text-muted-foreground">Requerido para etapa Negociación.</p>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isLocked || isClientType} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="contractSigned"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-white">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-xs font-bold uppercase">CONTRATO FIRMADO</FormLabel>
+                          <p className="text-[10px] text-muted-foreground">Requerido para ganar el negocio.</p>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="complianceChecked"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-white">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-xs font-bold uppercase">COMPLIANCE</FormLabel>
+                          <p className="text-[10px] text-muted-foreground">Requerido para ganar el negocio.</p>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* SECCIÓN 4: CRONOGRAMA Y ESTADO */}
               <Card>
                 <CardHeader className="bg-muted/30 border-b">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -845,7 +997,7 @@ export default function OpportunityFormPage() {
                 </CardContent>
               </Card>
 
-              {/* SECCIÓN 4: DATOS COMERCIALES */}
+              {/* SECCIÓN 5: DATOS COMERCIALES */}
               <Card>
                 <CardHeader className="bg-muted/30 border-b">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -900,7 +1052,7 @@ export default function OpportunityFormPage() {
                 </CardContent>
               </Card>
 
-              {/* SECCIÓN 5: ÍTEMS DE LA OFERTA */}
+              {/* SECCIÓN 6: ÍTEMS DE LA OFERTA */}
               <Card>
                 <CardHeader className="bg-muted/30 border-b">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider">{t('Forms.lineItems')}</CardTitle>
@@ -979,7 +1131,7 @@ export default function OpportunityFormPage() {
                 </CardContent>
               </Card>
 
-              {/* SECCIÓN 6: DESCUENTOS Y OTROS */}
+              {/* SECCIÓN 7: DESCUENTOS Y OTROS */}
               <Card>
                 <CardHeader className="bg-muted/30 border-b">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider">{t('Forms.generalDiscount')}</CardTitle>
@@ -1011,7 +1163,7 @@ export default function OpportunityFormPage() {
                 </CardContent>
               </Card>
 
-              {/* SECCIÓN 7: ADJUNTOS Y COMPETENCIA */}
+              {/* SECCIÓN 8: ADJUNTOS Y COMPETENCIA */}
               <Card>
                 <CardHeader className="bg-muted/30 border-b">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider">{t('Forms.additionalInfo')}</CardTitle>

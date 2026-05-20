@@ -166,6 +166,11 @@ export type Opportunity = {
   contractReferenceId?: string;
   grossMarginPercentage: number;
   grossMarginAmount: number;
+  // Process Checks
+  valcomAuthorized: boolean;
+  clientVerified: boolean;
+  contractSigned: boolean;
+  complianceChecked: boolean;
 };
 
 export type ProductOrService = {
@@ -305,7 +310,7 @@ export type Service = {
   activationDate?: Date;
   createdBy: string;
   createdAt: Date;
-  updatedAt?: Date;
+  updatedAt: Date;
   management: ManagementArea;
   assignedTo: string;
 };
