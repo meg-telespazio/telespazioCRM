@@ -619,7 +619,7 @@ export default function OpportunityFormPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="title" render={({ field }) => (
                       <FormItem className="md:col-span-1">
-                        <FormLabel>{t('Dashboard.recentOpportunities.opportunityHeader')}</FormLabel>
+                        <FormLabel>{t('Dashboard.recentOpportunities.opportunityHeader')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <FormControl><Input placeholder={t('Forms.opportunityTitlePlaceholder')} {...field} disabled={isLocked} /></FormControl>
                         <FormMessage />
                       </FormItem>
@@ -639,7 +639,7 @@ export default function OpportunityFormPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="risk" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Forms.risk')}</FormLabel>
+                        <FormLabel>{t('Forms.risk')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -650,7 +650,7 @@ export default function OpportunityFormPage() {
                     )} />
                     <FormField control={form.control} name="opportunityType" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Forms.opportunityType')}</FormLabel>
+                        <FormLabel>{t('Forms.opportunityType')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -712,7 +712,7 @@ export default function OpportunityFormPage() {
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
                   <FormField control={form.control} name="clientId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Dashboard.recentOpportunities.clientHeader')}</FormLabel>
+                      <FormLabel>{t('Dashboard.recentOpportunities.clientHeader')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!isNew || isLocked || !!clientIdFromQuery}>
                         <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl>
                         <SelectContent>{clients.map((client) => <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>)}</SelectContent>
@@ -757,7 +757,7 @@ export default function OpportunityFormPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <FormField control={form.control} name="requestDate" render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>{t('Forms.requestDate')}</FormLabel>
+                        <FormLabel>{t('Forms.requestDate')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Popover open={isRequestDatePickerOpen} onOpenChange={setRequestDatePickerOpen}>
                           <PopoverTrigger asChild>
                             <FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>
@@ -789,7 +789,7 @@ export default function OpportunityFormPage() {
                     )} />
                     <FormField control={form.control} name="closeDate" render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>{t('Forms.estCloseDate')}</FormLabel>
+                        <FormLabel>{t('Forms.estCloseDate')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Popover open={isCloseDatePickerOpen} onOpenChange={setCloseDatePickerOpen}>
                           <PopoverTrigger asChild>
                             <FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>
@@ -808,7 +808,7 @@ export default function OpportunityFormPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                     <FormField control={form.control} name="stage" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Dashboard.recentOpportunities.stageHeader')}</FormLabel>
+                        <FormLabel>{t('Dashboard.recentOpportunities.stageHeader')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
                           <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectStage')} /></SelectTrigger></FormControl>
                           <SelectContent>{stages.map((stage) => <SelectItem key={stage} value={stage}>{t(`Stages.${stage}`)}</SelectItem>)}</SelectContent>
@@ -834,7 +834,7 @@ export default function OpportunityFormPage() {
                     <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
                       <FormField control={form.control} name="reason" render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-destructive font-bold">{t('Forms.reason')}</FormLabel>
+                          <FormLabel className="text-destructive font-bold">{t('Forms.reason')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                           <FormControl><Textarea placeholder={t('Forms.reasonPlaceholder')} {...field} className="border-destructive/30" /></FormControl>
                           <FormDescription>Mínimo 10 caracteres.</FormDescription>
                           <FormMessage />
@@ -856,14 +856,14 @@ export default function OpportunityFormPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <FormField control={form.control} name="value" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Forms.fcv')} ({form.watch('currency')})</FormLabel>
+                        <FormLabel>{t('Forms.fcv')} ({form.watch('currency')}) <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <FormControl><Input type="number" {...field} readOnly className="font-bold bg-muted/20" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="currency" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Table.currency')}</FormLabel>
+                        <FormLabel>{t('Table.currency')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Select onValueChange={(value) => { const oldCurrency = field.value; field.onChange(value); convertCurrency(oldCurrency, value); }} value={field.value} disabled={isLocked}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>{currencyOptions.map((currency) => <SelectItem key={currency} value={currency}>{currency}</SelectItem>)}</SelectContent>
@@ -872,7 +872,7 @@ export default function OpportunityFormPage() {
                     )} />
                     <FormField control={form.control} name="contractMonths" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Months')}</FormLabel>
+                        <FormLabel>{t('Months')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)} disabled={isLocked}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>{contractMonthsOptions.map((months) => <SelectItem key={months} value={String(months)}>{months} {t('Months').toLowerCase()}</SelectItem>)}</SelectContent>
@@ -951,7 +951,7 @@ export default function OpportunityFormPage() {
                           <TableHead className="text-right">{t('Table.mrc')}</TableHead>
                           <TableHead className="text-right">{t('Forms.discount')}</TableHead>
                           <TableHead className="text-right">{t('Table.totalNrc')}</TableHead>
-                          <TableHead className="text-right">{t('Table.totalMrc')}</TableHead>
+                          <TableHead className="text-right font-bold">{t('Table.totalMrc')}</TableHead>
                           <TableHead className="text-right px-4">{t('Table.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>

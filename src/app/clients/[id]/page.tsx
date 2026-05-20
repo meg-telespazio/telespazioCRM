@@ -430,14 +430,14 @@ export default function ClientFormPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem>
-                              <FormLabel>{t('Forms.clientName')}</FormLabel>
+                              <FormLabel>{t('Forms.clientName')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                               <FormControl><Input placeholder="Nombre Comercial" {...field} className="bg-slate-50/50" /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="legalName" render={({ field }) => (
                             <FormItem>
-                              <FormLabel>{t('Forms.legalName')}</FormLabel>
+                              <FormLabel>{t('Forms.legalName')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                               <FormControl>
                                 <div className="relative flex items-center">
                                   <Input placeholder="Razón Social Completa" {...field} className="bg-slate-50/50 pr-10" />
@@ -454,7 +454,7 @@ export default function ClientFormPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <FormField control={form.control} name="taxIdType" render={({ field }) => (
                             <FormItem>
-                              <FormLabel>{t('Forms.taxIdType')}</FormLabel>
+                              <FormLabel>{t('Forms.taxIdType')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue /></SelectTrigger></FormControl>
                                 <SelectContent>{taxIdTypeOptions.map(opt => <SelectItem key={opt} value={opt}>{t(`TaxIdTypes.${opt}`)}</SelectItem>)}</SelectContent>
@@ -463,7 +463,7 @@ export default function ClientFormPage() {
                           )} />
                           <FormField control={form.control} name="cuit" render={({ field }) => (
                             <FormItem>
-                              <FormLabel>{t('Forms.cuit')}</FormLabel>
+                              <FormLabel>{t('Forms.cuit')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                               <FormControl>
                                 <div className="relative flex items-center">
                                     <Input {...field} placeholder={getTaxIdPlaceholder(watchedTaxIdType)} className="bg-slate-50/50 pr-10" />
@@ -494,7 +494,7 @@ export default function ClientFormPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <FormField control={form.control} name="management" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('Profile.management')}</FormLabel>
+                          <FormLabel>{t('Profile.management')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={isRestricted}>
                             <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>{managementOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
@@ -503,7 +503,7 @@ export default function ClientFormPage() {
                       )} />
                       <FormField control={form.control} name="assignedTo" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Responsable</FormLabel>
+                          <FormLabel>Responsable <span className="text-red-500 ml-0.5">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value} disabled={isRestricted}>
                             <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
                             <SelectContent>{ejecutivos.map(u => <SelectItem key={u.uid} value={u.uid}>{u.displayName}</SelectItem>)}</SelectContent>
@@ -512,7 +512,7 @@ export default function ClientFormPage() {
                       )} />
                       <FormField control={form.control} name="type" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('Table.type')}</FormLabel>
+                          <FormLabel>{t('Table.type')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>{typeOptions.map(opt => <SelectItem key={opt} value={opt}>{t(`ClientType.${opt}`)}</SelectItem>)}</SelectContent>
@@ -521,7 +521,7 @@ export default function ClientFormPage() {
                       )} />
                       <FormField control={form.control} name="status" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('Forms.status')}</FormLabel>
+                          <FormLabel>{t('Forms.status')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger className={cn("bg-slate-50/50 font-bold", field.value === 'active' ? "text-green-600" : "text-slate-600")}><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{t(`Status.${s}`)}</SelectItem>)}</SelectContent>
@@ -542,7 +542,7 @@ export default function ClientFormPage() {
                   <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="sector" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Forms.sector')}</FormLabel>
+                        <FormLabel>{t('Forms.sector')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger className="bg-slate-50/50"><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
                           <SelectContent>{sectorOptions.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
@@ -610,10 +610,10 @@ export default function ClientFormPage() {
                   <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField control={form.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Auth.emailLabel')}</FormLabel><FormControl><Input placeholder="ejemplo@empresa.com" {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{t('Auth.emailLabel')} <span className="text-red-500 ml-0.5">*</span></FormLabel><FormControl><Input placeholder="ejemplo@empresa.com" {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="phone" render={({ field }) => (
-                        <FormItem><FormLabel>{t('Auth.phoneLabel')}</FormLabel><FormControl><Input placeholder="+54..." {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{t('Auth.phoneLabel')} <span className="text-red-500 ml-0.5">*</span></FormLabel><FormControl><Input placeholder="+54..." {...field} className="bg-slate-50/50" /></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

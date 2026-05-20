@@ -364,7 +364,7 @@ export default function ContractFormPage() {
                 <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField control={form.control} name="clientId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Pages.clients')}</FormLabel>
+                      <FormLabel>{t('Pages.clients')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!!clientIdFromQuery}>
                         <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl>
                         <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
@@ -395,7 +395,7 @@ export default function ContractFormPage() {
                 <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField control={form.control} name="type" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Contracts.type')}</FormLabel>
+                      <FormLabel>{t('Contracts.type')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder={t('Contracts.selectType')} /></SelectTrigger></FormControl>
                         <SelectContent>{contractTypes.map(type => <SelectItem key={type} value={type}>{t(`ContractTypes.${type}`)}</SelectItem>)}</SelectContent>
@@ -429,7 +429,7 @@ export default function ContractFormPage() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Briefcase className="h-4 w-4 text-primary" />
-                        {t('Forms.costCenter')}
+                        {t('Forms.costCenter')} <span className="text-red-500 ml-0.5">*</span>
                       </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectItem')} /></SelectTrigger></FormControl>
@@ -445,7 +445,7 @@ export default function ContractFormPage() {
                   )} />
                   <FormField control={form.control} name="status" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Contracts.status')}</FormLabel>
+                      <FormLabel>{t('Contracts.status')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                         <SelectContent>{contractStatuses.map(s => <SelectItem key={s} value={s}>{t(`ContractStatuses.${s}`)}</SelectItem>)}</SelectContent>
@@ -456,14 +456,14 @@ export default function ContractFormPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="amount" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Contracts.amount')}</FormLabel>
+                        <FormLabel>{t('Contracts.amount')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <FormControl><Input type="number" {...field} placeholder={t('Forms.chargePlaceholder')} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="currency" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Contracts.currency')}</FormLabel>
+                        <FormLabel>{t('Contracts.currency')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>{currencyOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
@@ -474,7 +474,7 @@ export default function ContractFormPage() {
                   </div>
                   <FormField control={form.control} name="country" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Contracts.country')}</FormLabel>
+                      <FormLabel>{t('Contracts.country')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                       <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -499,7 +499,7 @@ export default function ContractFormPage() {
                 <CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                   <FormField control={form.control} name="startDate" render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>{t('Contracts.startDate')}</FormLabel>
+                      <FormLabel>{t('Contracts.startDate')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                       <Popover open={isStartDateOpen} onOpenChange={setStartDateOpen}>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -546,7 +546,7 @@ export default function ContractFormPage() {
                   )} />
                   <FormField control={form.control} name="durationMonths" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Contracts.durationMonths')}</FormLabel>
+                      <FormLabel>{t('Contracts.durationMonths')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 

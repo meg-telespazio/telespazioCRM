@@ -141,7 +141,7 @@ export default function ContactFormPage() {
 
         try {
             if (isNew) {
-                await addContact(firestore, user.uid, cleanedData as Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy'>);
+                await addContact(firestore, user.uid, cleanedData as Omit<Contact, 'id' | 'publicId' | 'createdAt' | 'createdBy' | 'management' | 'assignedTo'>);
                 toast({
                     variant: 'success',
                     title: t('Forms.saveContact'),
@@ -212,7 +212,7 @@ export default function ContactFormPage() {
                                         name="name"
                                         render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>{t('Forms.contactName')}</FormLabel>
+                                            <FormLabel>{t('Forms.contactName')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                                             <FormControl>
                                             <Input
                                                 placeholder={t('Forms.contactNamePlaceholder')}
@@ -228,7 +228,7 @@ export default function ContactFormPage() {
                                         name="clientId"
                                         render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>{t('Pages.clients')}</FormLabel>
+                                            <FormLabel>{t('Pages.clients')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                                             <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
@@ -304,7 +304,7 @@ export default function ContactFormPage() {
                                     <Separator />
 
                                     <div>
-                                        <FormLabel className="text-base font-semibold">{t('Forms.emails')}</FormLabel>
+                                        <FormLabel className="text-base font-semibold">{t('Forms.emails')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                                         <div className="space-y-4 mt-2">
                                         {emailFields.map((field, index) => (
                                             <div key={field.id} className="flex items-end gap-2">
@@ -329,7 +329,7 @@ export default function ContactFormPage() {
                                                 name={`emails.${index}.address`}
                                                 render={({ field }) => (
                                                 <FormItem className="flex-1">
-                                                    <FormLabel>{t('Auth.emailLabel')}</FormLabel>
+                                                    <FormLabel>{t('Auth.emailLabel')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                                                     <FormControl><Input placeholder={t('Forms.contactEmailPlaceholder')} {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -349,7 +349,7 @@ export default function ContactFormPage() {
                                     <Separator />
 
                                     <div>
-                                        <FormLabel className="text-base font-semibold">{t('Forms.phones')}</FormLabel>
+                                        <FormLabel className="text-base font-semibold">{t('Forms.phones')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                                         <div className="space-y-4 mt-2">
                                         {phoneFields.map((field, index) => (
                                             <div key={field.id} className="flex items-end gap-2">
@@ -374,7 +374,7 @@ export default function ContactFormPage() {
                                                 name={`phones.${index}.number`}
                                                 render={({ field }) => (
                                                 <FormItem className="flex-1">
-                                                    <FormLabel>{t('Auth.phoneLabel')}</FormLabel>
+                                                    <FormLabel>{t('Auth.phoneLabel')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
                                                     <FormControl><Input placeholder={t('Forms.clientPhonePlaceholder')} {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
