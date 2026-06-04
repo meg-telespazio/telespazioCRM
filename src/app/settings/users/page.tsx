@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, User as UserIcon, PlusCircle, Loader2, CheckCircle2, ShieldAlert, ShieldCheck, Lock, Save, Users as UsersIcon, Info } from 'lucide-react';
+import { Edit, User as UserIcon, PlusCircle, Loader2, CheckCircle2, ShieldAlert, ShieldCheck, Lock, Save, Users as UsersIcon, Info, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { 
   Dialog, 
@@ -40,6 +40,7 @@ import { getFirebaseConfig } from '@/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { UserDeleteModal } from '@/components/settings/user-delete-modal';
 
 const ALLOWED_GMAIL = 'mariano.telespazio@gmail.com';
 
@@ -101,6 +102,10 @@ export default function UsersManagementPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isSavingMatrix, setIsSavingMatrix] = useState(false);
   const [localMatrix, setLocalMatrix] = useState<PermissionsMatrix | null>(null);
+  
+  // Delete User state
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     if (config?.permissionsMatrix) {
@@ -245,6 +250,11 @@ export default function UsersManagementPage() {
     }
   };
 
+  const openDeleteModal = (user: UserProfile) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
   if (loading || !config) return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
 
   return (
@@ -330,9 +340,21 @@ export default function UsersManagementPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right px-4">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => router.push(`/settings/users/${user.uid}`)}>
-                          <Edit className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => router.push(`/settings/users/${user.uid}`)}>
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          {user.uid !== currentUser?.uid && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => openDeleteModal(user)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -491,6 +513,14 @@ export default function UsersManagementPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <UserDeleteModal 
+        isOpen={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        userToDelete={userToDelete}
+        availableUsers={users || []}
+      />
     </div>
   );
 }
+

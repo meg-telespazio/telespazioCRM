@@ -233,6 +233,8 @@ export const translations = {
       costCenterId: 'Cost Center ID',
       costCenterName: 'Cost Center Name',
       addCostCenter: 'Add Cost Center',
+      saveMatrix: 'Save Permissions Matrix',
+      deleteUser: 'Delete User',
     },
     Management: {
       SatelliteCommunications: 'Satellite Communications',
@@ -269,7 +271,7 @@ export const translations = {
       Suriname: 'Suriname',
       TrinidadAndTobago: 'Trinidad and Tobago',
       Spain: 'Spain',
-      UK: 'United Kingdom',
+      UK: 'Reino Unido',
       Germany: 'Germany',
       France: 'France',
       Italy: 'Italy',
@@ -1229,6 +1231,8 @@ export const translations = {
       costCenterId: 'ID Centro de Costo',
       costCenterName: 'Nombre del Centro',
       addCostCenter: 'Agregar Centro de Costo',
+      saveMatrix: 'Guardar Matriz de Permisos',
+      deleteUser: 'Eliminar Usuario',
     },
     Management: {
       SatelliteCommunications: 'Satellite Communications',
