@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview AI Flow to generate professional market and product news with sources.
+ * @fileOverview AI Flow to generate professional market and product news with sources and dates.
  * Integrates with MediaStack API and implements 24h caching in Firestore.
  */
 import { ai } from '@/ai/genkit';
@@ -14,7 +14,8 @@ const NewsItemSchema = z.object({
   summary: z.string(),
   source: z.string().describe('The name of the news source, e.g., Bloomberg, Reuters, Starlink Blog.'),
   country: z.string().describe('The primary country associated with this news (Argentina, Brasil, Chile, Colombia, Costa Rica, Perú).'),
-  url: z.string(),
+  url: z.string().describe('The actual URL from the news source. DO NOT hallucinate or create fake links.'),
+  publishedAt: z.string().describe('The ISO date string of when the news was published.'),
 });
 
 const NewsOutputSchema = z.object({
@@ -85,27 +86,28 @@ const prompt = ai.definePrompt({
   input: { schema: z.object({ rawFeed: z.string() }) },
   output: { schema: NewsOutputSchema },
   prompt: `Eres el Analista de Inteligencia de Mercado de Telespazio. 
-Tu tarea es procesar el siguiente feed de noticias crudo y transformarlo en un reporte profesional para ejecutivos de ventas.
+Tu tarea es procesar el siguiente feed de noticias crudo de MediaStack y transformarlo en un reporte profesional para ejecutivos de ventas.
 
 FEED DE NOTICIAS (MEDIASTACK):
 {{{rawFeed}}}
 
-REQUERIMIENTOS:
-1. Clasifica las noticias en estos sectores: Oil & Gas, Retail, Finanzas, Minería, Energía, Telecomunicaciones.
-2. Máximo 2 noticias por sector. 
-3. Selecciona noticias que involucren empresas REALES (ej: YPF, Mercado Libre, Vale, Petrobras, Itaú, Enel, etc.).
-4. PRODUCT NEWS: Busca específicamente novedades sobre SpaceX, Starlink o sus competidores en la región (Argentina, Chile, Brasil, Colombia, Perú).
-5. FECHA: Todas las noticias deben ser tratadas como actuales (2025/2026).
-6. Si el feed no contiene información suficiente para un sector, usa tu conocimiento interno para generar una noticia empresarial realista y actual para ese sector.
+REQUERIMIENTOS CRÍTICOS:
+1. ENLACES (URL): Usa ÚNICAMENTE los enlaces reales provistos en el campo 'url' del feed. NUNCA inventes, completes o generes URLs que no existan en los datos de entrada. Si una noticia no tiene URL válida, descártala.
+2. FECHA: Extrae la fecha real del campo 'published_at' de cada noticia.
+3. CLASIFICACIÓN: Clasifica las noticias en estos sectores: Oil & Gas, Retail, Finanzas, Minería, Energía, Telecomunicaciones.
+4. MÁXIMOS: Máximo 2 noticias por sector.
+5. EMPRESAS: Selecciona noticias que involucren empresas REALES (ej: YPF, Mercado Libre, Vale, Petrobras, Itaú, Enel, etc.).
+6. PRODUCT NEWS: Busca específicamente novedades sobre SpaceX, Starlink o sus competidores directos en la región (Argentina, Chile, Brasil, Colombia, Perú).
 7. IDIOMA: Responde ÚNICAMENTE en Español. Tono formal y ejecutivo.
 
 Para cada ítem provee:
-- id: un string único.
+- id: un string único (puedes usar el provisto o generar uno).
 - title: Título enfocado en la empresa y su movimiento estratégico.
 - summary: Resumen de máximo 2 líneas sobre el impacto en el negocio.
 - source: La fuente real (ej: Bloomberg, Reuters, Diario Financiero).
 - country: El país específico (Argentina, Brasil, Chile, Colombia, Costa Rica, o Perú).
-- url: La URL real o una verosímil si estás completando información.`,
+- url: El enlace original exacto del feed.
+- publishedAt: La fecha original de publicación.`,
 });
 
 const newsFlow = ai.defineFlow(

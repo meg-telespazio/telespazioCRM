@@ -25,7 +25,8 @@ import {
   Pickaxe,
   RadioTower,
   Rocket,
-  Info
+  Info,
+  CalendarDays
 } from 'lucide-react';
 import { fetchProfessionalNews, type NewsOutput } from '@/ai/flows/news-flow';
 import type { SystemConfig } from '@/lib/types';
@@ -34,7 +35,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 
 // Mapeo de iconos por categoría
@@ -170,6 +171,11 @@ export default function NewsPage() {
     if (!news) return [];
     return news.productNews.filter(n => !dismissedNews.has(n.id));
   }, [news, dismissedNews]);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return isValid(d) ? format(d, 'd MMM yyyy', { locale: dateLocale }) : '-';
+  };
 
   if (userLoading) return <div className="p-12 text-center">{t('App.loading')}</div>;
 
@@ -309,8 +315,8 @@ export default function NewsPage() {
                 {filteredSectorNews.map((item) => {
                   const Icon = categoryIcons[item.category] || categoryIcons.Default;
                   return (
-                    <Card key={item.id} className="group overflow-hidden border-none shadow-md hover:shadow-lg transition-all relative bg-white">
-                      <CardHeader className="p-5 pb-2">
+                    <Card key={item.id} className="group overflow-hidden border-none shadow-md hover:shadow-lg transition-all relative bg-white flex flex-col">
+                      <CardHeader className="p-5 pb-2 shrink-0">
                         <div className="flex items-center justify-between mb-2">
                            <div className="flex items-center gap-2">
                               <div className="p-2 bg-primary/10 rounded text-primary">
@@ -325,20 +331,24 @@ export default function NewsPage() {
                             <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
+                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase mb-2">
+                          <CalendarDays className="h-3 w-3" />
+                          {formatDate(item.publishedAt)}
+                        </div>
                         <CardTitle className="text-base font-bold leading-tight group-hover:text-primary transition-colors">
                           {item.title}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-5 pt-0">
-                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed mb-4 italic">
+                      <CardContent className="p-5 pt-0 flex-1 flex flex-col">
+                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed mb-4 italic flex-1">
                           "{item.summary}"
                         </p>
-                        <div className="flex items-center justify-between border-t pt-3">
-                           <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-[9px] uppercase font-bold px-1.5 py-0 border-slate-200 text-slate-500 bg-slate-50">{item.country}</Badge>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Fuente: {item.source}</span>
+                        <div className="flex items-center justify-between border-t pt-3 mt-auto">
+                           <div className="flex items-center gap-2 overflow-hidden">
+                              <Badge variant="outline" className="text-[9px] uppercase font-bold px-1.5 py-0 border-slate-200 text-slate-500 bg-slate-50 shrink-0">{item.country}</Badge>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate">Fuente: {item.source}</span>
                            </div>
-                           <Button variant="link" className="p-0 h-auto text-[10px] font-black uppercase gap-1.5 text-primary" asChild>
+                           <Button variant="link" className="p-0 h-auto text-[10px] font-black uppercase gap-1.5 text-primary shrink-0" asChild>
                               <a href={item.url} target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="h-3 w-3" />
                               </a>
@@ -385,10 +395,14 @@ export default function NewsPage() {
                         onClick={() => handleDismiss(item.id)}
                         className="text-slate-300 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400">
+                         <CalendarDays className="h-2.5 w-2.5" />
+                         {formatDate(item.publishedAt)}
+                      </div>
                       <h4 className="text-xs font-bold leading-tight group-hover:text-primary transition-colors">
                         <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
                       </h4>
