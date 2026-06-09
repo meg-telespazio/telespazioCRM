@@ -17,7 +17,6 @@ import {
   Zap, 
   DollarSign, 
   BarChart3, 
-  RefreshCw,
   MapPin,
   Loader2,
   Droplets,
@@ -26,7 +25,7 @@ import {
   Pickaxe,
   RadioTower,
   Rocket,
-  AlertTriangle
+  Info
 } from 'lucide-react';
 import { fetchProfessionalNews, type NewsOutput } from '@/ai/flows/news-flow';
 import type { SystemConfig } from '@/lib/types';
@@ -35,6 +34,8 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
 
 // Mapeo de iconos por categoría
 const categoryIcons: Record<string, any> = {
@@ -49,10 +50,11 @@ const categoryIcons: Record<string, any> = {
 };
 
 export default function NewsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const dateLocale = locale === 'es' ? es : enUS;
 
   const [weather, setWeather] = useState<any>(null);
   const [financeData, setFinanceData] = useState<any>(null);
@@ -88,7 +90,6 @@ export default function NewsPage() {
     }
 
     setLoadingWeather(true);
-    // Explicit call to trigger the browser permission prompt
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         fetchWeatherData(pos.coords.latitude, pos.coords.longitude);
@@ -108,7 +109,6 @@ export default function NewsPage() {
   };
 
   useEffect(() => {
-    // Initial check for permissions
     if (typeof window !== 'undefined' && navigator.permissions) {
       navigator.permissions.query({ name: 'geolocation' as PermissionName }).then(res => {
         setLocationStatus(res.state as any);
@@ -144,7 +144,7 @@ export default function NewsPage() {
 
   const usdRate = useMemo(() => {
     return systemConfig?.exchangeRates?.find(r => r.from === 'Oficial')?.rate || 
-           systemConfig?.exchangeRates?.find(r => r.from === 'ARS')?.rate || 1;
+           systemConfig?.exchangeRates?.find(r => r.from === 'ARS')?.rate || 0.001;
   }, [systemConfig]);
 
   const handleDismiss = (id: string) => {
@@ -182,14 +182,10 @@ export default function NewsPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold">News & Market Insights</h2>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Inteligencia comercial estratégica</p>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Sincronización automática cada 24hs</p>
           </div>
         </div>
-      }>
-        <Button variant="ghost" size="sm" onClick={() => window.location.reload()}>
-          <RefreshCw className="h-4 w-4 mr-2" /> Actualizar
-        </Button>
-      </AppHeader>
+      } />
 
       <main className="flex-1 p-4 sm:p-6 space-y-8 overflow-y-auto pb-24">
         
@@ -224,7 +220,7 @@ export default function NewsPage() {
                     <MapPin className="h-3 w-3 mr-2" /> Habilitar Ubicación
                   </Button>
                   {locationStatus === 'denied' && (
-                    <p className="text-[9px] text-red-500 font-bold leading-tight">Acceso bloqueado en Chrome.</p>
+                    <p className="text-[9px] text-red-500 font-bold leading-tight">Acceso bloqueado en el navegador.</p>
                   )}
                 </div>
               )}
@@ -240,7 +236,7 @@ export default function NewsPage() {
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Dólar Oficial (ARS)</p>
                 <p className="text-2xl font-black text-slate-800">${(1/usdRate).toFixed(2)}</p>
-                <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700 border-green-200">SINCRONIZADO</Badge>
+                <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700 border-green-200">Sincronizado</Badge>
               </div>
             </CardContent>
           </Card>
@@ -429,6 +425,13 @@ export default function NewsPage() {
                 <Button className="w-full bg-white text-primary hover:bg-slate-100 font-bold h-10">Suscribirme</Button>
               </CardContent>
             </Card>
+            
+            {news?.lastUpdated && (
+               <div className="flex items-center justify-center gap-1 text-[9px] text-slate-400 font-medium uppercase tracking-widest pt-4">
+                  <Info className="h-2.5 w-2.5" />
+                  Sincronizado: {format(new Date(news.lastUpdated), 'PP p', { locale: dateLocale })}
+               </div>
+            )}
           </div>
         </div>
       </main>
