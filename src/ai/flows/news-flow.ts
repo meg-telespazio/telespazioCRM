@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview AI Flow to generate professional market and product news.
+ * @fileOverview AI Flow to generate professional market and product news with sources.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
@@ -10,7 +10,7 @@ const NewsItemSchema = z.object({
   category: z.string(),
   title: z.string(),
   summary: z.string(),
-  imageUrl: z.string(),
+  source: z.string().describe('The name of the news source, e.g., Bloomberg, Reuters, Starlink Blog.'),
   url: z.string(),
 });
 
@@ -48,7 +48,7 @@ INSTRUCTIONS:
 2. For each item provide:
    - title: Short and catchy.
    - summary: 2 lines max.
-   - imageUrl: Use professional looking placeholder URLs (https://picsum.photos/seed/[id]/400/250). Use a unique id for each.
+   - source: A realistic news source name.
    - url: A believable news URL or corporate blog link.
 3. The news must be business-oriented and relevant for sales executives.`,
 });

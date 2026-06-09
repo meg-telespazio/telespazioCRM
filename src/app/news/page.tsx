@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { AppHeader } from '@/components/layout/app-header';
 import { useI18n } from '@/firebase/client-provider';
@@ -16,19 +16,36 @@ import {
   X, 
   Zap, 
   DollarSign, 
-  TrendingDown, 
   BarChart3, 
   RefreshCw,
   MapPin,
-  Loader2
+  Loader2,
+  Droplets,
+  ShoppingBag,
+  Landmark,
+  Pickaxe,
+  RadioTower,
+  Rocket
 } from 'lucide-react';
 import { fetchProfessionalNews, type NewsOutput } from '@/ai/flows/news-flow';
-import type { SystemConfig, NewsItem } from '@/lib/types';
+import type { SystemConfig } from '@/lib/types';
 import { doc } from 'firebase/firestore';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+// Mapeo de iconos por categoría
+const categoryIcons: Record<string, any> = {
+  'Oil & Gas': Droplets,
+  'Retail': ShoppingBag,
+  'Finanzas': Landmark,
+  'Minería': Pickaxe,
+  'Energía': Zap,
+  'Telecomunicaciones': RadioTower,
+  'Product': Rocket,
+  'Default': Newspaper
+};
 
 export default function NewsPage() {
   const { t } = useI18n();
@@ -41,31 +58,61 @@ export default function NewsPage() {
   const [news, setNews] = useState<NewsOutput | null>(null);
   const [dismissedNews, setDismissedNews] = useState<Set<string>>(new Set());
   const [loadingNews, setLoadingNews] = useState(true);
-  const [loadingWeather, setLoadingWeather] = useState(true);
+  const [loadingWeather, setLoadingWeather] = useState(false);
+  const [selectedSector, setSelectedSector] = useState<string>('all');
+  const [locationStatus, setLocationStatus] = useState<'prompt' | 'granted' | 'denied'>('prompt');
 
   // Sync Finance Data from our DolarAPI integration
   const configDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: systemConfig } = useDoc<SystemConfig>(configDocRef);
 
-  useEffect(() => {
-    // 1. Fetch Weather
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        try {
-          const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`);
-          const data = await res.json();
-          setWeather(data.current_weather);
-        } catch (e) {
-          console.error("Weather fetch failed");
-        } finally {
-          setLoadingWeather(false);
-        }
-      }, () => setLoadingWeather(false));
-    } else {
+  const fetchWeatherData = useCallback(async (lat: number, lon: number) => {
+    setLoadingWeather(true);
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+      const data = await res.json();
+      setWeather(data.current_weather);
+      setLocationStatus('granted');
+    } catch (e) {
+      console.error("Weather fetch failed");
+    } finally {
       setLoadingWeather(false);
     }
+  }, []);
 
-    // 2. Fetch Professional News via Genkit
+  const handleRequestLocation = () => {
+    if (!navigator.geolocation) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Geolocalización no soportada por el navegador.' });
+      return;
+    }
+
+    setLoadingWeather(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        fetchWeatherData(pos.coords.latitude, pos.coords.longitude);
+      },
+      (err) => {
+        console.warn("Location access denied", err);
+        setLocationStatus('denied');
+        setLoadingWeather(false);
+        toast({ title: 'Acceso denegado', description: 'Por favor permite el acceso a la ubicación en tu navegador.' });
+      }
+    );
+  };
+
+  useEffect(() => {
+    // Attempt auto-load if permission was previously granted
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(res => {
+        if (res.state === 'granted') {
+          handleRequestLocation();
+        } else {
+          setLocationStatus(res.state as any);
+        }
+      });
+    }
+
+    // Fetch Professional News via Genkit
     const loadNews = async () => {
       setLoadingNews(true);
       try {
@@ -79,7 +126,7 @@ export default function NewsPage() {
     };
     loadNews();
 
-    // 3. Mock Economic Indices (S&P, BOVESPA, MERVAL, Riesgo Pais)
+    // Mock Economic Indices
     setFinanceData({
       riesgoPais: 1240,
       indices: [
@@ -88,7 +135,7 @@ export default function NewsPage() {
         { name: 'MERVAL', value: '1,210,400', change: '+1.20%', up: true },
       ]
     });
-  }, [toast]);
+  }, [toast, fetchWeatherData]);
 
   const usdRate = useMemo(() => {
     return systemConfig?.exchangeRates?.find(r => r.from === 'Oficial')?.rate || 
@@ -99,10 +146,20 @@ export default function NewsPage() {
     setDismissedNews(prev => new Set([...prev, id]));
   };
 
+  const sectors = useMemo(() => {
+    if (!news) return [];
+    const cats = news.sectorNews.map(n => n.category);
+    return Array.from(new Set(cats)).sort();
+  }, [news]);
+
   const filteredSectorNews = useMemo(() => {
     if (!news) return [];
-    return news.sectorNews.filter(n => !dismissedNews.has(n.id));
-  }, [news, dismissedNews]);
+    return news.sectorNews.filter(n => {
+      const isNotDismissed = !dismissedNews.has(n.id);
+      const isSelectedSector = selectedSector === 'all' || n.category === selectedSector;
+      return isNotDismissed && isSelectedSector;
+    });
+  }, [news, dismissedNews, selectedSector]);
 
   const filteredProductNews = useMemo(() => {
     if (!news) return [];
@@ -120,7 +177,7 @@ export default function NewsPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold">News & Market Insights</h2>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Información estratégica para la toma de decisiones</p>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Inteligencia comercial estratégica</p>
           </div>
         </div>
       }>
@@ -134,10 +191,15 @@ export default function NewsPage() {
         {/* Top Strip: Weather and Economy */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
           
-          {/* Weather Card */}
+          {/* Weather Card with Manual Request */}
           <Card className="bg-white border-none shadow-sm h-full">
             <CardContent className="p-4 flex items-center justify-between h-full">
-              {loadingWeather ? <Skeleton className="h-10 w-full" /> : weather ? (
+              {loadingWeather ? (
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-xs text-muted-foreground">Localizando...</span>
+                </div>
+              ) : weather ? (
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-amber-50 rounded-full text-amber-600">
                     <CloudSun className="h-6 w-6" />
@@ -146,12 +208,17 @@ export default function NewsPage() {
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Clima Actual</p>
                     <p className="text-2xl font-black text-slate-800">{weather.temperature}°C</p>
                     <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
-                      <MapPin className="h-3 w-3" /> Mi ubicación
+                      <MapPin className="h-3 w-3" /> Detectado
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground italic">Permite la ubicación para ver el clima.</p>
+                <div className="flex flex-col gap-2 w-full">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Clima Local</p>
+                  <Button variant="outline" size="sm" onClick={handleRequestLocation} className="h-8 text-[10px] uppercase font-bold">
+                    <MapPin className="h-3 w-3 mr-2" /> Habilitar Ubicación
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -211,68 +278,83 @@ export default function NewsPage() {
         {/* NEWS SECTIONS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Main Feed: Sector News */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="flex items-center justify-between border-b pb-2">
+          {/* Main Feed: Sector News with Tabs Filter */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-4">
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-bold text-slate-800">Sectores de Mercado</h3>
               </div>
-              <Badge variant="outline" className="text-[10px] uppercase font-bold">Latam Insights</Badge>
+              
+              <Tabs value={selectedSector} onValueChange={setSelectedSector} className="w-full sm:w-auto">
+                <TabsList className="bg-slate-100/80 p-1 h-9">
+                  <TabsTrigger value="all" className="text-[10px] font-bold uppercase h-7 px-3">Todos</TabsTrigger>
+                  {sectors.map(s => (
+                    <TabsTrigger key={s} value={s} className="text-[10px] font-bold uppercase h-7 px-3">{s}</TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
 
             {loadingNews ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredSectorNews.map((item) => (
-                  <Card key={item.id} className="group overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300">
-                    <div className="relative h-44 w-full overflow-hidden">
-                      <img 
-                        src={item.imageUrl} 
-                        alt={item.title} 
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        data-ai-hint="business office"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
-                      <Badge className="absolute top-3 left-3 bg-primary/90 text-white font-bold border-none uppercase text-[9px]">
-                        {item.category}
-                      </Badge>
-                      <button 
-                        onClick={() => handleDismiss(item.id)}
-                        className="absolute top-3 right-3 p-1.5 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors backdrop-blur-sm"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                    <CardHeader className="p-4 pb-2">
-                      <CardTitle className="text-base font-bold leading-tight group-hover:text-primary transition-colors cursor-pointer">
-                        <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                        {item.summary}
-                      </p>
-                    </CardContent>
-                    <CardFooter className="p-4 pt-0">
-                      <Button variant="link" className="p-0 h-auto text-[10px] font-bold uppercase gap-1.5" asChild>
-                        <a href={item.url} target="_blank" rel="noopener noreferrer">
-                          Leer artículo <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+                {filteredSectorNews.map((item) => {
+                  const Icon = categoryIcons[item.category] || categoryIcons.Default;
+                  return (
+                    <Card key={item.id} className="group overflow-hidden border-none shadow-md hover:shadow-lg transition-all relative">
+                      <CardHeader className="p-5 pb-2">
+                        <div className="flex items-center justify-between mb-2">
+                           <div className="flex items-center gap-2">
+                              <div className="p-2 bg-primary/10 rounded text-primary">
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              <span className="text-[10px] font-black uppercase text-primary tracking-widest">{item.category}</span>
+                           </div>
+                           <button 
+                            onClick={() => handleDismiss(item.id)}
+                            className="p-1.5 text-slate-300 hover:text-destructive hover:bg-destructive/5 rounded-full transition-all"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <CardTitle className="text-base font-bold leading-tight group-hover:text-primary transition-colors">
+                          {item.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-5 pt-0">
+                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed mb-4 italic">
+                          "{item.summary}"
+                        </p>
+                        <div className="flex items-center justify-between">
+                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Fuente: {item.source}</span>
+                           <Button variant="link" className="p-0 h-auto text-[10px] font-black uppercase gap-1.5 text-primary" asChild>
+                              <a href={item.url} target="_blank" rel="noopener noreferrer">
+                                Leer artículo <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+            
+            {!loadingNews && filteredSectorNews.length === 0 && (
+              <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed">
+                <Newspaper className="h-12 w-12 mx-auto text-slate-100 mb-4" />
+                <p className="text-sm text-muted-foreground italic">No hay noticias pendientes en esta categoría.</p>
               </div>
             )}
           </div>
 
           {/* Sidebar: Product & Tech News (Starlink/SpaceX focus) */}
-          <div className="space-y-8">
-            <div className="flex items-center justify-between border-b pb-2">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b pb-4">
               <div className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-bold text-slate-800">Ecosistema Starlink</h3>
@@ -284,28 +366,29 @@ export default function NewsPage() {
                 [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
               ) : filteredProductNews.map((item) => (
                 <Card key={item.id} className="group border-none shadow-sm hover:bg-primary/5 transition-colors relative overflow-hidden">
-                  <button 
-                    onClick={() => handleDismiss(item.id)}
-                    className="absolute top-2 right-2 p-1 text-slate-300 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                  <CardContent className="p-4 flex gap-4">
-                    <div className="h-16 w-16 rounded-lg overflow-hidden shrink-0 border">
-                      <img 
-                        src={item.imageUrl} 
-                        alt="Product" 
-                        className="h-full w-full object-cover" 
-                        data-ai-hint="satellite technology"
-                      />
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                       <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none text-[8px] font-black uppercase tracking-widest px-2 py-0.5">
+                         Update
+                       </Badge>
+                       <button 
+                        onClick={() => handleDismiss(item.id)}
+                        className="text-slate-300 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <h4 className="text-xs font-bold leading-tight line-clamp-2">
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary">{item.title}</a>
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold leading-tight group-hover:text-primary transition-colors">
+                        <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
                       </h4>
-                      <p className="text-[10px] text-muted-foreground line-clamp-2 italic">
+                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
                         {item.summary}
                       </p>
+                      <div className="flex items-center justify-between pt-1">
+                         <span className="text-[9px] font-bold text-slate-400">Vía: {item.source}</span>
+                         <ExternalLink className="h-2.5 w-2.5 text-primary opacity-50" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -322,13 +405,14 @@ export default function NewsPage() {
             <Card className="bg-primary text-white border-none shadow-lg">
               <CardContent className="p-6 space-y-4">
                 <div className="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Newspaper className="h-6 w-6" />
+                  <Rocket className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-black uppercase tracking-tighter text-lg">Sales Intel</h4>
-                  <p className="text-xs text-white/80 leading-relaxed">Suscríbete a nuestro boletín semanal de inteligencia de mercado de Telespazio.</p>
+                  <h4 className="font-black uppercase tracking-tighter text-lg leading-tight">Intel de Campo</h4>
+                  <p className="text-[10px] text-white/80 leading-relaxed uppercase font-bold">Boletín semanal de Telespazio</p>
                 </div>
-                <Button className="w-full bg-white text-primary hover:bg-slate-100 font-bold">Suscribirme</Button>
+                <p className="text-xs leading-relaxed opacity-90">Recibe las últimas novedades del sector directamente en tu bandeja corporativa.</p>
+                <Button className="w-full bg-white text-primary hover:bg-slate-100 font-bold h-10">Suscribirme</Button>
               </CardContent>
             </Card>
           </div>
