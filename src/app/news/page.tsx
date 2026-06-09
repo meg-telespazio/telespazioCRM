@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { AppHeader } from '@/components/layout/app-header';
 import { useI18n } from '@/firebase/client-provider';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -25,7 +25,8 @@ import {
   Landmark,
   Pickaxe,
   RadioTower,
-  Rocket
+  Rocket,
+  AlertTriangle
 } from 'lucide-react';
 import { fetchProfessionalNews, type NewsOutput } from '@/ai/flows/news-flow';
 import type { SystemConfig } from '@/lib/types';
@@ -87,6 +88,7 @@ export default function NewsPage() {
     }
 
     setLoadingWeather(true);
+    // Explicit call to trigger the browser permission prompt
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         fetchWeatherData(pos.coords.latitude, pos.coords.longitude);
@@ -95,24 +97,27 @@ export default function NewsPage() {
         console.warn("Location access denied", err);
         setLocationStatus('denied');
         setLoadingWeather(false);
-        toast({ title: 'Acceso denegado', description: 'Por favor permite el acceso a la ubicación en tu navegador.' });
-      }
+        toast({ 
+          variant: 'destructive',
+          title: 'Ubicación Bloqueada', 
+          description: 'Habilita el acceso en la configuración de Chrome para ver el clima local.' 
+        });
+      },
+      { timeout: 10000, enableHighAccuracy: false }
     );
   };
 
   useEffect(() => {
-    // Attempt auto-load if permission was previously granted
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then(res => {
+    // Initial check for permissions
+    if (typeof window !== 'undefined' && navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName }).then(res => {
+        setLocationStatus(res.state as any);
         if (res.state === 'granted') {
-          handleRequestLocation();
-        } else {
-          setLocationStatus(res.state as any);
+          navigator.geolocation.getCurrentPosition(p => fetchWeatherData(p.coords.latitude, p.coords.longitude));
         }
       });
     }
 
-    // Fetch Professional News via Genkit
     const loadNews = async () => {
       setLoadingNews(true);
       try {
@@ -191,7 +196,7 @@ export default function NewsPage() {
         {/* Top Strip: Weather and Economy */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
           
-          {/* Weather Card with Manual Request */}
+          {/* Weather Card */}
           <Card className="bg-white border-none shadow-sm h-full">
             <CardContent className="p-4 flex items-center justify-between h-full">
               {loadingWeather ? (
@@ -215,9 +220,12 @@ export default function NewsPage() {
               ) : (
                 <div className="flex flex-col gap-2 w-full">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Clima Local</p>
-                  <Button variant="outline" size="sm" onClick={handleRequestLocation} className="h-8 text-[10px] uppercase font-bold">
+                  <Button variant="outline" size="sm" onClick={handleRequestLocation} className="h-8 text-[10px] uppercase font-bold border-primary/20 text-primary">
                     <MapPin className="h-3 w-3 mr-2" /> Habilitar Ubicación
                   </Button>
+                  {locationStatus === 'denied' && (
+                    <p className="text-[9px] text-red-500 font-bold leading-tight">Acceso bloqueado en Chrome.</p>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -232,7 +240,7 @@ export default function NewsPage() {
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Dólar Oficial (ARS)</p>
                 <p className="text-2xl font-black text-slate-800">${(1/usdRate).toFixed(2)}</p>
-                <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700 border-green-200">ACTUALIZADO</Badge>
+                <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700 border-green-200">SINCRONIZADO</Badge>
               </div>
             </CardContent>
           </Card>
@@ -283,11 +291,11 @@ export default function NewsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-4">
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-bold text-slate-800">Sectores de Mercado</h3>
+                <h3 className="text-lg font-bold text-slate-800">Inteligencia de Sectores</h3>
               </div>
               
               <Tabs value={selectedSector} onValueChange={setSelectedSector} className="w-full sm:w-auto">
-                <TabsList className="bg-slate-100/80 p-1 h-9">
+                <TabsList className="bg-slate-100/80 p-1 h-9 overflow-x-auto scrollbar-hide">
                   <TabsTrigger value="all" className="text-[10px] font-bold uppercase h-7 px-3">Todos</TabsTrigger>
                   {sectors.map(s => (
                     <TabsTrigger key={s} value={s} className="text-[10px] font-bold uppercase h-7 px-3">{s}</TabsTrigger>
@@ -305,7 +313,7 @@ export default function NewsPage() {
                 {filteredSectorNews.map((item) => {
                   const Icon = categoryIcons[item.category] || categoryIcons.Default;
                   return (
-                    <Card key={item.id} className="group overflow-hidden border-none shadow-md hover:shadow-lg transition-all relative">
+                    <Card key={item.id} className="group overflow-hidden border-none shadow-md hover:shadow-lg transition-all relative bg-white">
                       <CardHeader className="p-5 pb-2">
                         <div className="flex items-center justify-between mb-2">
                            <div className="flex items-center gap-2">
@@ -329,11 +337,14 @@ export default function NewsPage() {
                         <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed mb-4 italic">
                           "{item.summary}"
                         </p>
-                        <div className="flex items-center justify-between">
-                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Fuente: {item.source}</span>
+                        <div className="flex items-center justify-between border-t pt-3">
+                           <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[9px] uppercase font-bold px-1.5 py-0 border-slate-200 text-slate-500 bg-slate-50">{item.country}</Badge>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Fuente: {item.source}</span>
+                           </div>
                            <Button variant="link" className="p-0 h-auto text-[10px] font-black uppercase gap-1.5 text-primary" asChild>
                               <a href={item.url} target="_blank" rel="noopener noreferrer">
-                                Leer artículo <ExternalLink className="h-3 w-3" />
+                                <ExternalLink className="h-3 w-3" />
                               </a>
                             </Button>
                         </div>
@@ -352,7 +363,7 @@ export default function NewsPage() {
             )}
           </div>
 
-          {/* Sidebar: Product & Tech News (Starlink/SpaceX focus) */}
+          {/* Sidebar: Starlink Feed */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b pb-4">
               <div className="flex items-center gap-2">
@@ -365,12 +376,15 @@ export default function NewsPage() {
               {loadingNews ? (
                 [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
               ) : filteredProductNews.map((item) => (
-                <Card key={item.id} className="group border-none shadow-sm hover:bg-primary/5 transition-colors relative overflow-hidden">
+                <Card key={item.id} className="group border-none shadow-sm hover:bg-primary/5 transition-colors relative overflow-hidden bg-white">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                       <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none text-[8px] font-black uppercase tracking-widest px-2 py-0.5">
-                         Update
-                       </Badge>
+                       <div className="flex gap-1.5">
+                        <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none text-[8px] font-black uppercase tracking-widest px-2 py-0.5">
+                          Enterprise
+                        </Badge>
+                        <Badge variant="outline" className="text-[8px] uppercase font-bold border-slate-200 text-slate-500">{item.country}</Badge>
+                       </div>
                        <button 
                         onClick={() => handleDismiss(item.id)}
                         className="text-slate-300 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
@@ -385,9 +399,9 @@ export default function NewsPage() {
                       <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
                         {item.summary}
                       </p>
-                      <div className="flex items-center justify-between pt-1">
-                         <span className="text-[9px] font-bold text-slate-400">Vía: {item.source}</span>
-                         <ExternalLink className="h-2.5 w-2.5 text-primary opacity-50" />
+                      <div className="flex items-center justify-between pt-1 opacity-60">
+                         <span className="text-[9px] font-bold text-slate-400">Fuente: {item.source}</span>
+                         <ExternalLink className="h-2.5 w-2.5 text-primary" />
                       </div>
                     </div>
                   </CardContent>
