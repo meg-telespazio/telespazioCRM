@@ -23,6 +23,7 @@ import {
   Settings as SettingsIcon,
   ClipboardList,
   Inbox,
+  Newspaper,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -216,6 +217,11 @@ export function AppNavbar() {
       href: '/dashboard',
       label: t('Sidebar.dashboard'),
       icon: LayoutDashboard,
+    },
+    {
+      href: '/news',
+      label: 'Noticias',
+      icon: Newspaper,
     },
     {
       href: '/opportunities',

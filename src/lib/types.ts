@@ -542,3 +542,13 @@ export type QuoteRequest = {
   convertedOpportunityId?: string;
   createdAt: Date;
 };
+
+export type NewsItem = {
+  id: string;
+  category: string;
+  title: string;
+  summary: string;
+  imageUrl: string;
+  url: string;
+  timestamp: Date;
+};
