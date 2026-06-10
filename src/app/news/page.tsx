@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { format, isValid } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 
 // Mapeo de iconos por categoría
@@ -132,7 +132,7 @@ export default function NewsPage() {
     };
     loadNews();
 
-    // Mock Economic Indices
+    // Indicadores Económicos (Mock para este reporte)
     setFinanceData({
       riesgoPais: 1240,
       indices: [
@@ -172,9 +172,14 @@ export default function NewsPage() {
     return news.productNews.filter(n => !dismissedNews.has(n.id));
   }, [news, dismissedNews]);
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return isValid(d) ? format(d, 'd MMM yyyy', { locale: dateLocale }) : '-';
+  const formatDateDisplay = (dateStr: string | undefined) => {
+    if (!dateStr) return '-';
+    try {
+      const d = parseISO(dateStr);
+      return isValid(d) ? format(d, 'd MMM yyyy', { locale: dateLocale }) : '-';
+    } catch (e) {
+      return '-';
+    }
   };
 
   if (userLoading) return <div className="p-12 text-center">{t('App.loading')}</div>;
@@ -333,7 +338,7 @@ export default function NewsPage() {
                         </div>
                         <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase mb-2">
                           <CalendarDays className="h-3 w-3" />
-                          {formatDate(item.publishedAt)}
+                          {formatDateDisplay(item.publishedAt)}
                         </div>
                         <CardTitle className="text-base font-bold leading-tight group-hover:text-primary transition-colors">
                           {item.title}
@@ -364,7 +369,7 @@ export default function NewsPage() {
             {!loadingNews && filteredSectorNews.length === 0 && (
               <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed">
                 <Newspaper className="h-12 w-12 mx-auto text-slate-100 mb-4" />
-                <p className="text-sm text-muted-foreground italic">No hay noticias pendientes en esta categoría.</p>
+                <p className="text-sm text-muted-foreground italic">No hay noticias frescas en esta categoría (Últimos 7 días).</p>
               </div>
             )}
           </div>
@@ -401,7 +406,7 @@ export default function NewsPage() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400">
                          <CalendarDays className="h-2.5 w-2.5" />
-                         {formatDate(item.publishedAt)}
+                         {formatDateDisplay(item.publishedAt)}
                       </div>
                       <h4 className="text-xs font-bold leading-tight group-hover:text-primary transition-colors">
                         <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
@@ -420,7 +425,7 @@ export default function NewsPage() {
               
               {filteredProductNews.length === 0 && !loadingNews && (
                 <div className="text-center py-12 text-muted-foreground italic text-xs">
-                  No hay noticias de producto disponibles.
+                  No hay novedades regionales de producto esta semana.
                 </div>
               )}
             </div>

@@ -2,7 +2,7 @@
 /**
  * @fileOverview AI Flow to generate professional market and product news with sources and dates.
  * Integrates with MediaStack API and implements 24h caching in Firestore.
- * Implements a strict 7-day freshness filter.
+ * Implements a strict 7-day freshness filter and prevents AI hallucinations.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
@@ -30,6 +30,7 @@ export type NewsOutput = z.infer<typeof NewsOutputSchema>;
 const MEDIASTACK_API_KEY = 'edc31eb6a4d94c24081aa99637f364f4';
 
 export async function fetchProfessionalNews(): Promise<NewsOutput> {
+  const todayDateStr = new Date().toISOString().split('T')[0];
   const cacheRef = adminDb.collection('systemConfig').doc('news_cache');
   
   try {
@@ -40,48 +41,66 @@ export async function fetchProfessionalNews(): Promise<NewsOutput> {
     if (cacheSnap.exists) {
       const cacheData = cacheSnap.data();
       const lastUpdated = cacheData?.timestamp?.toDate().getTime() || 0;
+      const cacheDateStr = cacheData?.dateStr || '';
       
-      // Si la caché tiene menos de 24 horas, devolvemos los datos guardados
-      if (now - lastUpdated < oneDayMs) {
-        console.log('Serving news from Firestore cache.');
+      // Si la caché es del mismo día y tiene menos de 24 horas, la usamos
+      if (todayDateStr === cacheDateStr && (now - lastUpdated < oneDayMs)) {
+        console.log('Serving fresh news from Firestore cache.');
         return cacheData?.news as NewsOutput;
       }
     }
 
-    console.log('Cache expired or missing. Fetching fresh news from MediaStack (Last 7 days)...');
+    console.log(`Cache expired or date changed (${todayDateStr}). Fetching from MediaStack...`);
     
     // 1. Calcular rango de fechas (Últimos 7 días)
-    const today = new Date().toISOString().split('T')[0];
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    // 2. Consultar MediaStack con rango de fechas
-    // Filtramos por países relevantes: ar (Arg), br (Brasil), cl (Chile), co (Col), pe (Peru)
-    const mediaStackUrl = `http://api.mediastack.com/v1/news?access_key=${MEDIASTACK_API_KEY}&categories=business&countries=ar,br,cl,co,pe&languages=es,en&limit=50&date=${sevenDaysAgo},${today}`;
+    // 2. Consultar MediaStack con parámetros estrictos
+    // Países: ar, br, cl, co, pe (MediaStack usa códigos ISO 2 letras)
+    const mediaStackUrl = `https://api.mediastack.com/v1/news?access_key=${MEDIASTACK_API_KEY}&categories=business&countries=ar,br,cl,co,pe&languages=es,en&limit=100&date=${sevenDaysAgo},${todayDateStr}`;
     
     let rawNewsData = "[]";
     try {
       const response = await fetch(mediaStackUrl);
       if (response.ok) {
         const json = await response.json();
-        rawNewsData = JSON.stringify(json.data || []);
+        const newsItems = json.data || [];
+        
+        // Si no hay noticias en la API, no dejamos que la IA invente.
+        if (newsItems.length === 0) {
+          console.warn("MediaStack returned zero news for the last 7 days.");
+          return { sectorNews: [], productNews: [], lastUpdated: new Date().toISOString() };
+        }
+        
+        rawNewsData = JSON.stringify(newsItems);
+      } else {
+        throw new Error(`API Error: ${response.status}`);
       }
     } catch (e) {
       console.error("MediaStack fetch failed:", e);
+      // Fallback a caché vieja si la API falla, para no dejar la pantalla en blanco si había algo
+      if (cacheSnap.exists) return cacheSnap.data()?.news as NewsOutput;
+      return { sectorNews: [], productNews: [], lastUpdated: new Date().toISOString() };
     }
 
-    // 3. Procesar con Gemini para clasificar y resumir según requerimientos de frescura
+    // 3. Procesar con Gemini para clasificar y resumir
     const result = await newsFlow({ rawFeed: rawNewsData });
     
-    // 4. Guardar en caché
+    // 4. Guardar en caché con la fecha del día para control de invalidación
+    const finalResult = {
+      ...result,
+      lastUpdated: new Date().toISOString()
+    };
+
     await cacheRef.set({
-      news: result,
+      news: finalResult,
       timestamp: new Date(),
+      dateStr: todayDateStr
     });
 
-    return result;
+    return finalResult;
   } catch (error) {
     console.error('Error in news process:', error);
-    // Fallback a una generación segura si todo lo demás falla
     return { sectorNews: [], productNews: [], lastUpdated: new Date().toISOString() };
   }
 }
@@ -91,30 +110,22 @@ const prompt = ai.definePrompt({
   input: { schema: z.object({ rawFeed: z.string() }) },
   output: { schema: NewsOutputSchema },
   prompt: `Eres el Analista de Inteligencia de Mercado de Telespazio. 
-Tu tarea es procesar el siguiente feed de noticias crudo de MediaStack y transformarlo en un reporte profesional.
+Tu tarea es procesar el siguiente feed de noticias de MediaStack y transformarlo en un reporte profesional.
 
 FECHA ACTUAL DEL SISTEMA: ${new Date().toLocaleDateString()}
 
 FEED DE NOTICIAS (MEDIASTACK):
 {{{rawFeed}}}
 
-REQUERIMIENTOS CRÍTICOS DE VIGENCIA Y CALIDAD:
-1. REGLA DE LOS 7 DÍAS: Descarta cualquier noticia que tenga más de 7 días de antigüedad respecto a la fecha actual. Solo queremos noticias MUY recientes. Si no hay noticias de la última semana, devuelve un array vacío [].
-2. ENLACES (URL): Usa ÚNICAMENTE los enlaces reales provistos en el campo 'url' del feed. NUNCA inventes o generes URLs. Si una noticia no tiene URL válida o parece un placeholder, descártala.
-3. CLASIFICACIÓN: Clasifica las noticias en estos sectores: Oil & Gas, Retail, Finanzas, Minería, Energía, Telecomunicaciones.
-4. MÁXIMOS: Máximo 3 noticias por sector.
-5. EMPRESAS: Selecciona noticias que involucren empresas REALES en la región (ej: YPF, Vale, Ecopetrol, Itaú, Falabella, etc.).
-6. PRODUCT NEWS: Busca específicamente novedades sobre SpaceX, Starlink o conectividad satelital en la región (Argentina, Chile, Brasil, Colombia, Perú).
-7. IDIOMA: Responde ÚNICAMENTE en Español con tono formal.
+REQUERIMIENTOS CRÍTICOS:
+1. REGLA DE LOS 7 DÍAS: Ignora cualquier noticia que tenga más de 7 días de antigüedad.
+2. NO HALUCINAR: Usa ÚNICAMENTE noticias que aparezcan en el feed provisto. Si el feed está vacío o no contiene noticias de los sectores solicitados, devuelve arrays vacíos [].
+3. EMPRESAS: Prioriza noticias sobre empresas reales (ej: YPF, Petrobras, Vale, Starlink, SpaceX, Mercado Libre, etc.).
+4. PRODUCT NEWS: Busca específicamente en el feed noticias sobre Starlink, SpaceX o conectividad satelital en Argentina, Chile, Brasil, Colombia, Perú o Costa Rica.
+5. FORMATO DE FECHA: El campo 'publishedAt' debe ser la fecha original del feed en formato ISO (YYYY-MM-DDTHH:mm:ssZ). ES VITAL QUE ESTE CAMPO ESTÉ PRESENTE.
+6. ENLACES: Usa la URL exacta del feed.
 
-Para cada ítem provee:
-- id: un string único.
-- title: Título ejecutivo.
-- summary: Resumen de máximo 2 líneas.
-- source: La fuente real del feed.
-- country: El país específico.
-- url: El enlace original exacto del feed.
-- publishedAt: La fecha original de publicación (ISO).`,
+Clasifica en: Oil & Gas, Retail, Finanzas, Minería, Energía, Telecomunicaciones.`,
 });
 
 const newsFlow = ai.defineFlow(
