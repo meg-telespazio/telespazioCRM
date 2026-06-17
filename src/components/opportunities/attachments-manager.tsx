@@ -129,7 +129,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
       <Card>
         <CardHeader>
           <CardTitle>Documentación de la Oferta</CardTitle>
-          <CardDescription>Archivos vinculados a esta oportunidad.</CardDescription>
+          <CardDescription>Archivos vinculados a esta oportunidad. Se permiten PDFs, imágenes y correos electrónicos (.msg).</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -150,6 +150,7 @@ export function AttachmentsManager({ opportunityId, disabled }: AttachmentsManag
               <input
                 type="file"
                 multiple
+                accept=".msg,.pdf,image/*"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 onChange={(e) => handleFileUpload(e.target.files)}
                 disabled={disabled}

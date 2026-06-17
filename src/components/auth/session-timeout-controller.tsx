@@ -6,7 +6,7 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { SessionTimeoutDialog } from './session-timeout-dialog';
 
-const INACTIVITY_MINUTES = 15;
+const INACTIVITY_MINUTES = 60; // Incrementado a 1 hora
 const WARNING_MINUTES = 1; // Show warning 1 minute before logout
 
 const INACTIVITY_MS = INACTIVITY_MINUTES * 60 * 1000;
@@ -25,8 +25,8 @@ export function SessionTimeoutController() {
 
   const handleLogout = useCallback(() => {
     setWarningOpen(false);
-    clearTimeout(warningTimer.current);
-    clearTimeout(logoutTimer.current);
+    if (warningTimer.current) clearTimeout(warningTimer.current);
+    if (logoutTimer.current) clearTimeout(logoutTimer.current);
     signOut(auth).then(() => {
       router.push('/login');
     });

@@ -130,7 +130,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
       <Card>
         <CardHeader>
           <CardTitle>{t('Contracts.attachments')}</CardTitle>
-          <CardDescription>Documentación vinculada al contrato.</CardDescription>
+          <CardDescription>Documentación vinculada al contrato. Se permiten PDFs, imágenes y correos (.msg).</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -151,6 +151,7 @@ export function AttachmentsManager({ disabled }: AttachmentsManagerProps) {
               <input
                 type="file"
                 multiple
+                accept=".msg,.pdf,image/*"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 onChange={(e) => handleFileUpload(e.target.files)}
                 disabled={disabled}

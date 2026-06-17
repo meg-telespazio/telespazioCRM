@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useI18n } from '@/firebase/client-provider';
 import { useToast } from '@/hooks/use-toast';
-import { useStorage, useFirestore, useUser } from '@/firebase';
+import { useStorage, useUser, useFirestore } from '@/firebase';
 import { uploadFile, deleteFile } from '@/lib/storage';
 import { updateDoc, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
@@ -118,7 +118,7 @@ export function SOAttachmentsManager({ soId, attachments = [], disabled }: SOAtt
             <Paperclip className="h-5 w-5 text-primary" />
             {t('SO.attachments')}
           </CardTitle>
-          <CardDescription>Documentación técnica o comercial de la Service Order.</CardDescription>
+          <CardDescription>Documentación técnica o comercial de la Service Order. Soporte para .msg, .pdf e imágenes.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -139,6 +139,7 @@ export function SOAttachmentsManager({ soId, attachments = [], disabled }: SOAtt
               <input
                 type="file"
                 multiple
+                accept=".msg,.pdf,image/*"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 onChange={(e) => handleFileUpload(e.target.files)}
                 disabled={disabled}
