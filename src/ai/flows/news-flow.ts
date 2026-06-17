@@ -16,7 +16,7 @@ const NewsItemSchema = z.object({
   source: z.string().describe('The name of the news source, e.g., Bloomberg, Reuters, Starlink Blog.'),
   country: z.string().describe('The primary country associated with this news (Argentina, Brasil, Chile, Colombia, Costa Rica, Perú).'),
   url: z.string().describe('The actual URL from the news source. DO NOT hallucinate or create fake links.'),
-  publishedAt: z.string().describe('The ISO date string of when the news was published.'),
+  publishedAt: z.string().describe('The ISO date string of when the news was published (e.g. 2026-04-24T12:00:00Z).'),
 });
 
 const NewsOutputSchema = z.object({
@@ -56,8 +56,8 @@ export async function fetchProfessionalNews(): Promise<NewsOutput> {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // 2. Consultar MediaStack con parámetros estrictos
-    // Países: ar, br, cl, co, pe (MediaStack usa códigos ISO 2 letras)
-    const mediaStackUrl = `https://api.mediastack.com/v1/news?access_key=${MEDIASTACK_API_KEY}&categories=business&countries=ar,br,cl,co,pe&languages=es,en&limit=100&date=${sevenDaysAgo},${todayDateStr}`;
+    // Países: ar, br, cl, co, cr, pe (Incluyendo Costa Rica)
+    const mediaStackUrl = `https://api.mediastack.com/v1/news?access_key=${MEDIASTACK_API_KEY}&categories=business&countries=ar,br,cl,co,cr,pe&languages=es,en&limit=100&date=${sevenDaysAgo},${todayDateStr}`;
     
     let rawNewsData = "[]";
     try {
@@ -66,7 +66,6 @@ export async function fetchProfessionalNews(): Promise<NewsOutput> {
         const json = await response.json();
         const newsItems = json.data || [];
         
-        // Si no hay noticias en la API, no dejamos que la IA invente.
         if (newsItems.length === 0) {
           console.warn("MediaStack returned zero news for the last 7 days.");
           return { sectorNews: [], productNews: [], lastUpdated: new Date().toISOString() };
@@ -78,12 +77,11 @@ export async function fetchProfessionalNews(): Promise<NewsOutput> {
       }
     } catch (e) {
       console.error("MediaStack fetch failed:", e);
-      // Fallback a caché vieja si la API falla, para no dejar la pantalla en blanco si había algo
       if (cacheSnap.exists) return cacheSnap.data()?.news as NewsOutput;
       return { sectorNews: [], productNews: [], lastUpdated: new Date().toISOString() };
     }
 
-    // 3. Procesar con Gemini para clasificar y resumir
+    // 3. Procesar con Gemini para clasificar, resumir y asegurar presencia de fechas
     const result = await newsFlow({ rawFeed: rawNewsData });
     
     // 4. Guardar en caché con la fecha del día para control de invalidación
@@ -118,14 +116,14 @@ FEED DE NOTICIAS (MEDIASTACK):
 {{{rawFeed}}}
 
 REQUERIMIENTOS CRÍTICOS:
-1. REGLA DE LOS 7 DÍAS: Ignora cualquier noticia que tenga más de 7 días de antigüedad.
-2. NO HALUCINAR: Usa ÚNICAMENTE noticias que aparezcan en el feed provisto. Si el feed está vacío o no contiene noticias de los sectores solicitados, devuelve arrays vacíos [].
-3. EMPRESAS: Prioriza noticias sobre empresas reales (ej: YPF, Petrobras, Vale, Starlink, SpaceX, Mercado Libre, etc.).
-4. PRODUCT NEWS: Busca específicamente en el feed noticias sobre Starlink, SpaceX o conectividad satelital en Argentina, Chile, Brasil, Colombia, Perú o Costa Rica.
-5. FORMATO DE FECHA: El campo 'publishedAt' debe ser la fecha original del feed en formato ISO (YYYY-MM-DDTHH:mm:ssZ). ES VITAL QUE ESTE CAMPO ESTÉ PRESENTE.
-6. ENLACES: Usa la URL exacta del feed.
+1. REGLA DE LOS 7 DÍAS: Ignora cualquier noticia que tenga más de 7 días de antigüedad comparado con la fecha actual.
+2. NO HALUCINAR: Usa ÚNICAMENTE noticias reales que aparezcan en el feed provisto. No inventes noticias ni enlaces.
+3. EMPRESAS: Prioriza noticias sobre empresas reales del sector (ej: YPF, Petrobras, Vale, Starlink, SpaceX, etc.).
+4. PRODUCT NEWS: Busca específicamente noticias sobre Starlink, SpaceX o conectividad satelital en Argentina, Chile, Brasil, Colombia, Perú o Costa Rica.
+5. FECHA OBLIGATORIA: El campo 'publishedAt' DEBE ser la fecha de publicación del artículo en formato ISO (YYYY-MM-DDTHH:mm:ssZ). No lo dejes vacío ni pongas guiones.
+6. ENLACES: Usa la URL exacta proporcionada en el feed para el campo 'url'.
 
-Clasifica en: Oil & Gas, Retail, Finanzas, Minería, Energía, Telecomunicaciones.`,
+Clasifica las noticias de sectores en: Oil & Gas, Retail, Finanzas, Minería, Energía, Telecomunicaciones. Máximo 2 por sector.`,
 });
 
 const newsFlow = ai.defineFlow(

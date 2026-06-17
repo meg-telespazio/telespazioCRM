@@ -38,7 +38,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format, isValid, parseISO } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 
-// Mapeo de iconos por categoría
 const categoryIcons: Record<string, any> = {
   'Oil & Gas': Droplets,
   'Retail': ShoppingBag,
@@ -66,7 +65,6 @@ export default function NewsPage() {
   const [selectedSector, setSelectedSector] = useState<string>('all');
   const [locationStatus, setLocationStatus] = useState<'prompt' | 'granted' | 'denied'>('prompt');
 
-  // Sync Finance Data from our DolarAPI integration
   const configDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemConfig', 'globals') : null, [firestore]);
   const { data: systemConfig } = useDoc<SystemConfig>(configDocRef);
 
@@ -132,7 +130,6 @@ export default function NewsPage() {
     };
     loadNews();
 
-    // Indicadores Económicos (Mock para este reporte)
     setFinanceData({
       riesgoPais: 1240,
       indices: [
@@ -192,7 +189,7 @@ export default function NewsPage() {
             <Newspaper className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-bold">News & Market Insights</h2>
+            <h2 className="text-xl font-bold">Market Insights</h2>
             <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Sincronización automática cada 24hs</p>
           </div>
         </div>
@@ -200,10 +197,7 @@ export default function NewsPage() {
 
       <main className="flex-1 p-4 sm:p-6 space-y-8 overflow-y-auto pb-24">
         
-        {/* Top Strip: Weather and Economy */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          
-          {/* Weather Card */}
           <Card className="bg-white border-none shadow-sm h-full">
             <CardContent className="p-4 flex items-center justify-between h-full">
               {loadingWeather ? (
@@ -217,7 +211,7 @@ export default function NewsPage() {
                     <CloudSun className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Clima Actual</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Clima Local</p>
                     <p className="text-2xl font-black text-slate-800">{weather.temperature}°C</p>
                     <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
                       <MapPin className="h-3 w-3" /> Detectado
@@ -230,15 +224,11 @@ export default function NewsPage() {
                   <Button variant="outline" size="sm" onClick={handleRequestLocation} className="h-8 text-[10px] uppercase font-bold border-primary/20 text-primary">
                     <MapPin className="h-3 w-3 mr-2" /> Habilitar Ubicación
                   </Button>
-                  {locationStatus === 'denied' && (
-                    <p className="text-[9px] text-red-500 font-bold leading-tight">Acceso bloqueado en el navegador.</p>
-                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Dolar Card */}
           <Card className="bg-white border-none shadow-sm h-full">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="p-3 bg-green-50 rounded-full text-green-600">
@@ -247,19 +237,18 @@ export default function NewsPage() {
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Dólar Oficial (ARS)</p>
                 <p className="text-2xl font-black text-slate-800">${(1/usdRate).toFixed(2)}</p>
-                <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700 border-green-200">Sincronizado</Badge>
+                <Badge variant="outline" className="text-[8px] bg-green-50 text-green-700 border-green-200">Actualizado</Badge>
               </div>
             </CardContent>
           </Card>
 
-          {/* Riesgo Pais Card */}
           <Card className="bg-white border-none shadow-sm h-full">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="p-3 bg-red-50 rounded-full text-red-600">
                 <TrendingUp className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Riesgo País Argentina</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">Riesgo País</p>
                 <p className="text-2xl font-black text-slate-800">{financeData?.riesgoPais || '---'}</p>
                 <div className="flex items-center gap-1 text-red-600 text-[10px] font-bold">
                   <TrendingUp className="h-3 w-3" /> +12 bps
@@ -268,8 +257,7 @@ export default function NewsPage() {
             </CardContent>
           </Card>
 
-          {/* Indices Strip */}
-          <Card className="bg-slate-900 border-none shadow-sm h-full col-span-1 md:col-span-3 lg:col-span-1">
+          <Card className="bg-slate-900 border-none shadow-sm h-full">
             <CardContent className="p-4 flex flex-col justify-center h-full gap-2">
               <div className="flex items-center gap-2 mb-1">
                 <BarChart3 className="h-3 w-3 text-primary" />
@@ -290,10 +278,7 @@ export default function NewsPage() {
           </Card>
         </div>
 
-        {/* NEWS SECTIONS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Feed: Sector News with Tabs Filter */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-4">
               <div className="flex items-center gap-2">
@@ -329,12 +314,7 @@ export default function NewsPage() {
                               </div>
                               <span className="text-[10px] font-black uppercase text-primary tracking-widest">{item.category}</span>
                            </div>
-                           <button 
-                            onClick={() => handleDismiss(item.id)}
-                            className="p-1.5 text-slate-300 hover:text-destructive hover:bg-destructive/5 rounded-full transition-all"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
+                           <button onClick={() => handleDismiss(item.id)} className="p-1.5 text-slate-300 hover:text-destructive hover:bg-destructive/5 rounded-full transition-all"><X className="h-3.5 w-3.5" /></button>
                         </div>
                         <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase mb-2">
                           <CalendarDays className="h-3 w-3" />
@@ -345,18 +325,14 @@ export default function NewsPage() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-5 pt-0 flex-1 flex flex-col">
-                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed mb-4 italic flex-1">
-                          "{item.summary}"
-                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed mb-4 italic flex-1">"{item.summary}"</p>
                         <div className="flex items-center justify-between border-t pt-3 mt-auto">
                            <div className="flex items-center gap-2 overflow-hidden">
                               <Badge variant="outline" className="text-[9px] uppercase font-bold px-1.5 py-0 border-slate-200 text-slate-500 bg-slate-50 shrink-0">{item.country}</Badge>
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate">Fuente: {item.source}</span>
                            </div>
                            <Button variant="link" className="p-0 h-auto text-[10px] font-black uppercase gap-1.5 text-primary shrink-0" asChild>
-                              <a href={item.url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
+                              <a href={item.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3 w-3" /></a>
                             </Button>
                         </div>
                       </CardContent>
@@ -374,7 +350,6 @@ export default function NewsPage() {
             )}
           </div>
 
-          {/* Sidebar: Starlink Feed */}
           <div className="space-y-6">
             <div className="flex items-center justify-between border-b pb-4">
               <div className="flex items-center gap-2">
@@ -391,17 +366,10 @@ export default function NewsPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
                        <div className="flex gap-1.5">
-                        <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none text-[8px] font-black uppercase tracking-widest px-2 py-0.5">
-                          Enterprise
-                        </Badge>
+                        <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none text-[8px] font-black uppercase tracking-widest px-2 py-0.5">Enterprise</Badge>
                         <Badge variant="outline" className="text-[8px] uppercase font-bold border-slate-200 text-slate-500">{item.country}</Badge>
                        </div>
-                       <button 
-                        onClick={() => handleDismiss(item.id)}
-                        className="text-slate-300 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                       <button onClick={() => handleDismiss(item.id)} className="text-slate-300 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"><X className="h-3.5 w-3.5" /></button>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400">
@@ -411,9 +379,6 @@ export default function NewsPage() {
                       <h4 className="text-xs font-bold leading-tight group-hover:text-primary transition-colors">
                         <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
                       </h4>
-                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                        {item.summary}
-                      </p>
                       <div className="flex items-center justify-between pt-1 opacity-60">
                          <span className="text-[9px] font-bold text-slate-400">Fuente: {item.source}</span>
                          <ExternalLink className="h-2.5 w-2.5 text-primary" />
@@ -424,26 +389,9 @@ export default function NewsPage() {
               ))}
               
               {filteredProductNews.length === 0 && !loadingNews && (
-                <div className="text-center py-12 text-muted-foreground italic text-xs">
-                  No hay novedades regionales de producto esta semana.
-                </div>
+                <div className="text-center py-12 text-muted-foreground italic text-xs">No hay novedades regionales de producto esta semana.</div>
               )}
             </div>
-
-            {/* Newsletter Promo */}
-            <Card className="bg-primary text-white border-none shadow-lg">
-              <CardContent className="p-6 space-y-4">
-                <div className="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Rocket className="h-6 w-6" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="font-black uppercase tracking-tighter text-lg leading-tight">Intel de Campo</h4>
-                  <p className="text-[10px] text-white/80 leading-relaxed uppercase font-bold">Boletín semanal de Telespazio</p>
-                </div>
-                <p className="text-xs leading-relaxed opacity-90">Recibe las últimas novedades del sector directamente en tu bandeja corporativa.</p>
-                <Button className="w-full bg-white text-primary hover:bg-slate-100 font-bold h-10">Suscribirme</Button>
-              </CardContent>
-            </Card>
             
             {news?.lastUpdated && (
                <div className="flex items-center justify-center gap-1 text-[9px] text-slate-400 font-medium uppercase tracking-widest pt-4">
