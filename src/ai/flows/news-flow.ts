@@ -56,7 +56,7 @@ export async function fetchProfessionalNews(): Promise<NewsOutput> {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // 2. Consultar MediaStack con parámetros estrictos
-    // Países: ar, br, cl, co, cr, pe (Incluyendo Costa Rica)
+    // Países: ar, br, cl, co, cr, pe (Argentina, Brasil, Chile, Colombia, Costa Rica, Perú)
     const mediaStackUrl = `https://api.mediastack.com/v1/news?access_key=${MEDIASTACK_API_KEY}&categories=business&countries=ar,br,cl,co,cr,pe&languages=es,en&limit=100&date=${sevenDaysAgo},${todayDateStr}`;
     
     let rawNewsData = "[]";
@@ -108,20 +108,20 @@ const prompt = ai.definePrompt({
   input: { schema: z.object({ rawFeed: z.string() }) },
   output: { schema: NewsOutputSchema },
   prompt: `Eres el Analista de Inteligencia de Mercado de Telespazio. 
-Tu tarea es procesar el siguiente feed de noticias de MediaStack y transformarlo en un reporte profesional.
+Tu tarea es procesar el siguiente feed de noticias de MediaStack y transformarlo en un reporte profesional para la región de LATAM y Costa Rica.
 
 FECHA ACTUAL DEL SISTEMA: ${new Date().toLocaleDateString()}
 
-FEED DE NOTICIAS (MEDIASTACK):
+FEED DE NOTICIAS REALES (MEDIASTACK):
 {{{rawFeed}}}
 
-REQUERIMIENTOS CRÍTICOS:
+REQUERIMIENTOS CRÍTICOS DE FILTRADO Y VERACIDAD:
 1. REGLA DE LOS 7 DÍAS: Ignora cualquier noticia que tenga más de 7 días de antigüedad comparado con la fecha actual.
 2. NO HALUCINAR: Usa ÚNICAMENTE noticias reales que aparezcan en el feed provisto. No inventes noticias ni enlaces.
-3. EMPRESAS: Prioriza noticias sobre empresas reales del sector (ej: YPF, Petrobras, Vale, Starlink, SpaceX, etc.).
+3. EMPRESAS: Prioriza noticias sobre empresas reales del sector (ej: YPF, Petrobras, Vale, Starlink, SpaceX, Mercado Libre, etc.).
 4. PRODUCT NEWS: Busca específicamente noticias sobre Starlink, SpaceX o conectividad satelital en Argentina, Chile, Brasil, Colombia, Perú o Costa Rica.
-5. FECHA OBLIGATORIA: El campo 'publishedAt' DEBE ser la fecha de publicación del artículo en formato ISO (YYYY-MM-DDTHH:mm:ssZ). No lo dejes vacío ni pongas guiones.
-6. ENLACES: Usa la URL exacta proporcionada en el feed para el campo 'url'.
+5. FECHA OBLIGATORIA: El campo 'publishedAt' DEBE ser la fecha de publicación original del artículo extraída del feed en formato ISO (YYYY-MM-DDTHH:mm:ssZ). 
+6. ENLACES: Usa la URL exacta proporcionada en el feed para el campo 'url'. Si no hay URL válida, no incluyas la noticia.
 
 Clasifica las noticias de sectores en: Oil & Gas, Retail, Finanzas, Minería, Energía, Telecomunicaciones. Máximo 2 por sector.`,
 });

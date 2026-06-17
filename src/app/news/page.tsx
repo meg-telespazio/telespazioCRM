@@ -100,7 +100,7 @@ export default function NewsPage() {
         toast({ 
           variant: 'destructive',
           title: 'Ubicación Bloqueada', 
-          description: 'Habilita el acceso en la configuración de Chrome para ver el clima local.' 
+          description: 'Por favor, habilita el acceso a la ubicación en Chrome para ver el clima local.' 
         });
       },
       { timeout: 10000, enableHighAccuracy: false }
@@ -108,6 +108,7 @@ export default function NewsPage() {
   };
 
   useEffect(() => {
+    // Check initial permission state
     if (typeof window !== 'undefined' && navigator.permissions) {
       navigator.permissions.query({ name: 'geolocation' as PermissionName }).then(res => {
         setLocationStatus(res.state as any);
@@ -130,6 +131,7 @@ export default function NewsPage() {
     };
     loadNews();
 
+    // Mock finance data for indicators not in DolarAPI
     setFinanceData({
       riesgoPais: 1240,
       indices: [
@@ -170,12 +172,12 @@ export default function NewsPage() {
   }, [news, dismissedNews]);
 
   const formatDateDisplay = (dateStr: string | undefined) => {
-    if (!dateStr) return '-';
+    if (!dateStr) return 'Fecha no disponible';
     try {
       const d = parseISO(dateStr);
-      return isValid(d) ? format(d, 'd MMM yyyy', { locale: dateLocale }) : '-';
+      return isValid(d) ? format(d, 'd MMM yyyy', { locale: dateLocale }) : 'Fecha inválida';
     } catch (e) {
-      return '-';
+      return 'Fecha no disponible';
     }
   };
 
@@ -190,7 +192,7 @@ export default function NewsPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold">Market Insights</h2>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Sincronización automática cada 24hs</p>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Sincronización automática regional</p>
           </div>
         </div>
       } />
@@ -198,6 +200,7 @@ export default function NewsPage() {
       <main className="flex-1 p-4 sm:p-6 space-y-8 overflow-y-auto pb-24">
         
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {/* Tarjeta Clima */}
           <Card className="bg-white border-none shadow-sm h-full">
             <CardContent className="p-4 flex items-center justify-between h-full">
               {loadingWeather ? (
@@ -229,6 +232,7 @@ export default function NewsPage() {
             </CardContent>
           </Card>
 
+          {/* Tarjeta Dólar */}
           <Card className="bg-white border-none shadow-sm h-full">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="p-3 bg-green-50 rounded-full text-green-600">
@@ -242,6 +246,7 @@ export default function NewsPage() {
             </CardContent>
           </Card>
 
+          {/* Tarjeta Riesgo País */}
           <Card className="bg-white border-none shadow-sm h-full">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="p-3 bg-red-50 rounded-full text-red-600">
@@ -257,6 +262,7 @@ export default function NewsPage() {
             </CardContent>
           </Card>
 
+          {/* Tarjeta Índices */}
           <Card className="bg-slate-900 border-none shadow-sm h-full">
             <CardContent className="p-4 flex flex-col justify-center h-full gap-2">
               <div className="flex items-center gap-2 mb-1">
