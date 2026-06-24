@@ -271,7 +271,7 @@ export const translations = {
       Suriname: 'Suriname',
       TrinidadAndTobago: 'Trinidad and Tobago',
       Spain: 'Spain',
-      UK: 'Reino Unido',
+      UK: 'United Kingdom',
       Germany: 'Germany',
       France: 'France',
       Italy: 'Italy',
@@ -781,6 +781,7 @@ export const translations = {
       noMentionsFound: 'No matches found',
       addFollowUp: 'Add a follow-up...',
       view: 'History',
+      type: 'Type',
     },
     PO: {
       title: 'Purchase Orders',
@@ -1779,6 +1780,7 @@ export const translations = {
       noMentionsFound: 'Sin coincidencias',
       addFollowUp: 'Añadir seguimiento...',
       view: 'Historial',
+      type: 'Tipo',
     },
     PO: {
       title: 'Órdenes de Compra',

@@ -201,9 +201,9 @@ export default function ClientActivityPage() {
           <span>{t('Dashboard.recentActivities.title')}</span>
         </div>
       }>
-          <Button variant="outline" onClick={() => router.push('/clients')}>
+          <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              {t('Actions.backToClientList')}
+              {t('Actions.back')}
           </Button>
           <Badge variant={client.status === 'active' ? 'default' : 'destructive'} className={client.status === 'active' ? 'bg-green-600' : ''}>
               {t(`Status.${client.status}`)}

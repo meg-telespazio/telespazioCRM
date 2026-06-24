@@ -30,7 +30,7 @@ export const columns = (
     },
     {
       accessorKey: 'type',
-      header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>{t('Activity.type')}<ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
+      header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>{t('Table.type')}<ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
       cell: ({ row }) => <span className="text-[11px]">{t(`Activity.types.${row.original.type}`)}</span>,
     },
     {
