@@ -303,7 +303,6 @@ export default function OpportunityFormPage() {
 
   const watchedClientId = form.watch('clientId');
 
-  // Automatic client verification if client type is 'client'
   useEffect(() => {
     if (watchedClientId && clientsData) {
       const selectedClient = clientsData.find(c => c.id === watchedClientId);
@@ -393,7 +392,6 @@ export default function OpportunityFormPage() {
     form.setValue('value', roundedFcv, { shouldValidate: true });
   }, [totalFcv, form]);
 
-  // AUTOMATION: Calculate Gross Margin Amount from Percentage
   useEffect(() => {
     const amount = (watchedFcv * (watchedGmPercentage / 100));
     form.setValue('grossMarginAmount', parseFloat(amount.toFixed(2)), { shouldValidate: true });
@@ -629,9 +627,54 @@ export default function OpportunityFormPage() {
                 <CardHeader className="bg-muted/30 border-b"><CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2"><CalendarIcon className="h-4 w-4 text-primary" /> {t('Forms.scheduleStatus')}</CardTitle></CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <FormField control={form.control} name="requestDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Forms.requestDate')} <span className="text-red-500 ml-0.5">*</span></FormLabel><Popover open={isRequestDatePickerOpen} onOpenChange={setRequestDatePickerOpen}><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>{field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setRequestDatePickerOpen(false)} onCancel={() => setRequestDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} /></PopoverContent></Popover><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="offerSentDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Forms.offerSentDate')}</FormLabel><Popover open={isOfferDatePickerOpen} onOpenChange={setOfferDatePickerOpen}><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>{field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setOfferDatePickerOpen(false)} onCancel={() => setOfferDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} /></PopoverContent></Popover><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="closeDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>{t('Forms.estCloseDate')} <span className="text-red-500 ml-0.5">*</span></FormLabel><Popover open={isCloseDatePickerOpen} onOpenChange={setCloseDatePickerOpen}><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>{field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setCloseDatePickerOpen(false)} onCancel={() => setCloseDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="requestDate" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t('Forms.requestDate')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
+                        <Popover open={isRequestDatePickerOpen} onOpenChange={setRequestDatePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>
+                              {field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button></FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setRequestDatePickerOpen(false)} onCancel={() => setRequestDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} />
+                          </PopoverContent>
+                        </Popover><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="offerSentDate" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t('Forms.offerSentDate')}</FormLabel>
+                        <Popover open={isOfferDatePickerOpen} onOpenChange={setOfferDatePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>
+                              {field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button></FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setOfferDatePickerOpen(false)} onCancel={() => setOfferDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} />
+                          </PopoverContent>
+                        </Popover><FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="closeDate" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t('Forms.estCloseDate')} <span className="text-red-500 ml-0.5">*</span></FormLabel>
+                        <Popover open={isCloseDatePickerOpen} onOpenChange={setCloseDatePickerOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl><Button variant="outline" className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')} disabled={isLocked}>
+                              {field.value ? format(field.value, 'PPP', { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button></FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setCloseDatePickerOpen(false)} onCancel={() => setCloseDatePickerOpen(false)} initialFocus locale={dateLocale} formatters={{ formatWeekdayName }} disabled={isLocked} captionLayout="dropdown" {...calendarRange} />
+                          </PopoverContent>
+                        </Popover><FormMessage />
+                      </FormItem>
+                    )} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                     <FormField control={form.control} name="stage" render={({ field }) => (
