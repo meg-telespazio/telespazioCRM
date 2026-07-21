@@ -154,9 +154,7 @@ export default function ProductServiceFormPage() {
     if (!userLoading && !user) {
       redirect('/login');
     }
-    if (user && user.role !== 'admin' && user.role !== 'gerente') {
-      redirect('/dashboard');
-    }
+    // Acceso controlado por PageWrapper/Permissions
   }, [user, userLoading]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

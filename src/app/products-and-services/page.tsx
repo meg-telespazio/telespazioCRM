@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -35,7 +34,7 @@ export default function ProductsAndServicesPage() {
 
   useEffect(() => {
     if (!userLoading && !user) redirect('/login');
-    if (user && user.role !== 'admin' && user.role !== 'gerente') redirect('/dashboard');
+    // Acceso controlado por PageWrapper/Permissions
   }, [user, userLoading]);
 
   const handleEditItem = (item: ProductOrService) => {
