@@ -100,9 +100,10 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
       const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
-      // Excepciones críticas de seguridad
+      // Excepciones críticas de seguridad (Super Admins)
       const isBypassed = [
-        'mariano.gonzalez@telespazio.com'
+        'mariano.gonzalez@telespazio.com',
+        'edoardo.fosso@telespazio.com'
       ].includes(user.email || '');
 
       if (user.mfaEnforced && !hasMfa && !isBypassed) {

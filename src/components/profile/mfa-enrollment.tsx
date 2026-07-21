@@ -43,11 +43,17 @@ export function MfaEnrollment() {
   const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
 
-  const syncMfaStatus = () => {
+  const syncMfaStatus = async () => {
     if (!auth.currentUser) return;
-    const mfaUser = multiFactor(auth.currentUser);
-    setEnrolledFactors(mfaUser.enrolledFactors);
-    setShowEnrollmentForm(mfaUser.enrolledFactors.length === 0);
+    try {
+      // Forzamos recarga del usuario para obtener el estado más reciente de MFA
+      await auth.currentUser.reload();
+      const mfaUser = multiFactor(auth.currentUser);
+      setEnrolledFactors(mfaUser.enrolledFactors);
+      setShowEnrollmentForm(mfaUser.enrolledFactors.length === 0);
+    } catch (e) {
+      console.error("Error syncing MFA status:", e);
+    }
   };
 
   useEffect(() => {
@@ -108,7 +114,7 @@ export function MfaEnrollment() {
       const cred = PhoneAuthProvider.credential(verificationId, mfaCode);
       const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(cred);
       await multiFactor(auth.currentUser).enroll(multiFactorAssertion, 'SMS Phone');
-      syncMfaStatus();
+      await syncMfaStatus();
       setVerificationId(null);
       setMfaCode('');
       toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está protegida por SMS.' });
@@ -160,7 +166,7 @@ export function MfaEnrollment() {
     try {
       const multiFactorAssertion = TotpMultiFactorGenerator.assertionForEnrollment(totpSecret, mfaCode);
       await multiFactor(auth.currentUser).enroll(multiFactorAssertion, 'Authenticator App');
-      syncMfaStatus();
+      await syncMfaStatus();
       setTotpSecret(null);
       setMfaCode('');
       toast({ variant: 'success', title: 'MFA Activado', description: 'Tu cuenta está protegida por la App.' });
@@ -179,7 +185,7 @@ export function MfaEnrollment() {
       const factor = mfaUser.enrolledFactors.find(f => f.uid === factorUid);
       if (factor) {
         await mfaUser.unenroll(factor);
-        syncMfaStatus();
+        await syncMfaStatus();
         toast({ variant: 'default', title: 'Factor Desactivado' });
       }
     } catch (error: any) {
