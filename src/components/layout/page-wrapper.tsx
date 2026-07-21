@@ -19,8 +19,8 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.5.7 - Consistencia de versión con Login
-const APP_VERSION = '2.5.7'; 
+// VERSIÓN 2.7.0 - Sincronizada con Login
+const APP_VERSION = '2.7.0'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
