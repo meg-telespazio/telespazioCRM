@@ -179,7 +179,7 @@ export function MfaEnrollment() {
 
   const handleDisableMfa = async (factorUid: string) => {
     if (!auth.currentUser || !window.confirm('¿Estás seguro de que quieres desactivar este factor de seguridad?')) return;
-    setIsLoading(true);
+    setIsLoading(false);
     try {
       const mfaUser = multiFactor(auth.currentUser);
       const factor = mfaUser.enrolledFactors.find(f => f.uid === factorUid);
