@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -14,6 +13,7 @@ import {
 import type { Location, Client } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { logAuditAction } from './audit';
 
 const LOCATIONS_COLLECTION = 'locations';
 
@@ -50,12 +50,19 @@ export async function addLocation(
         createdBy: uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        management: clientData.management,
-        assignedTo: clientData.assignedTo,
+        management: clientData.management || 'Satellite Communications',
+        assignedTo: clientData.assignedTo || uid,
       };
 
       transaction.set(newLocationRef, data);
       transaction.set(counterRef, { count: newCount }, { merge: true });
+      
+      logAuditAction(firestore, {
+        action: 'create',
+        collection: LOCATIONS_COLLECTION,
+        docId: newLocationRef.id,
+        details: `Nueva locación: ${locationData.name} para cliente ${clientData.name}`
+      });
     });
   } catch (error) {
     console.error("Location creation transaction failed: ", error);
@@ -79,7 +86,14 @@ export function updateLocation(
     ...locationData,
     updatedAt: serverTimestamp(),
   };
-  return updateDoc(locationRef, data).catch((serverError) => {
+  return updateDoc(locationRef, data).then(() => {
+    logAuditAction(firestore, {
+      action: 'update',
+      collection: LOCATIONS_COLLECTION,
+      docId: locationId,
+      details: `Campos actualizados: ${Object.keys(data).join(', ')}`
+    });
+  }).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: locationRef.path,
       operation: 'update',
@@ -92,7 +106,13 @@ export function updateLocation(
 
 export function deleteLocation(firestore: Firestore, locationId: string) {
   const locationRef = doc(firestore, LOCATIONS_COLLECTION, locationId);
-  deleteDoc(locationRef).catch((serverError) => {
+  deleteDoc(locationRef).then(() => {
+    logAuditAction(firestore, {
+      action: 'delete',
+      collection: LOCATIONS_COLLECTION,
+      docId: locationId
+    });
+  }).catch((serverError) => {
     const permissionError = new FirestorePermissionError({
       path: locationRef.path,
       operation: 'delete',
