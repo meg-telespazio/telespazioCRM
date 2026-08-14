@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
@@ -12,14 +11,14 @@ import {
   type ProductOrService,
   type OpportunityLineItem,
 } from '@/lib/types';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { format, addDays } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Printer, Loader2 } from 'lucide-react';
+import { ArrowLeft, Printer, Loader2, Save } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -97,11 +96,10 @@ export default function PrintOpportunityPage() {
 
   const opportunityId = params.id as string;
 
-  const [deliveryTime, setDeliveryTime] = useState(
-    t('Proposal.delivery_time_placeholder')
-  );
+  const [deliveryTime, setDeliveryTime] = useState('');
   const [customNote, setCustomNote] = useState('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const opportunityRef = useMemo(
     () => (firestore ? doc(firestore, 'opportunities', opportunityId) : null),
@@ -138,6 +136,31 @@ export default function PrintOpportunityPage() {
   }, [user, firestore]);
   const { data: psData, loading: psLoading } =
     useCollection<ProductOrService>(psQuery);
+
+  // Sync state with persisted data
+  useEffect(() => {
+    if (opportunity) {
+      setDeliveryTime(opportunity.proposalDeliveryTime || t('Proposal.delivery_time_placeholder'));
+      setCustomNote(opportunity.proposalCustomNote || '');
+    }
+  }, [opportunity, t]);
+
+  const handleSaveSettings = async () => {
+    if (!opportunityRef) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(opportunityRef, {
+        proposalDeliveryTime: deliveryTime,
+        proposalCustomNote: customNote,
+        updatedAt: serverTimestamp(),
+      });
+      toast({ variant: 'success', title: 'Preferencias guardadas' });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Error al guardar', description: e.message });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true);
@@ -271,8 +294,10 @@ export default function PrintOpportunityPage() {
   }
 
   const recipientName = contact?.name || client?.name || '';
+  
+  // FECHA DE VALIDEZ: Siempre 30 días a partir de la emisión (hoy)
   const validationDate = format(
-    addDays(new Date(opportunity.requestDate), 30),
+    addDays(new Date(), 30),
     'PPPP',
     { locale: dateLocale }
   );
@@ -533,7 +558,7 @@ export default function PrintOpportunityPage() {
               <CardHeader>
                 <CardTitle>{t('Proposal.customization')}</CardTitle>
                 <CardDescription>
-                  {t('Proposal.customization_desc')}
+                  Ajusta detalles antes de exportar. Presiona guardar para persistir los textos.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -567,6 +592,14 @@ export default function PrintOpportunityPage() {
                     className="bg-white"
                   />
                 </div>
+                <Button 
+                  className="w-full gap-2" 
+                  onClick={handleSaveProposalSettings} 
+                  disabled={isSaving}
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Guardar Preferencias
+                </Button>
               </CardContent>
             </Card>
           </div>

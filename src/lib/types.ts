@@ -171,6 +171,9 @@ export type Opportunity = {
   clientVerified: boolean;
   contractSigned: boolean;
   complianceChecked: boolean;
+  // Proposal customization persistence
+  proposalDeliveryTime?: string;
+  proposalCustomNote?: string;
 };
 
 export type ProductOrService = {
