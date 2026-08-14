@@ -145,7 +145,7 @@ export default function PrintOpportunityPage() {
     }
   }, [opportunity, t]);
 
-  const handleSaveSettings = async () => {
+  const handleSaveProposalSettings = async () => {
     if (!opportunityRef) return;
     setIsSaving(true);
     try {
