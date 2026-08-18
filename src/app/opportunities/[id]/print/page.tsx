@@ -522,7 +522,7 @@ export default function PrintOpportunityPage() {
                           <div className="border-2 border-red-700 p-2 space-y-2 text-[7pt]">
                             <p>
                               <span className="font-bold">{t('Proposal.notes_title')}: </span>
-                              {t('Proposal.notes_text')}
+                              {t('Proposal.notes_text', { currency: opportunity.currency || 'USD' })}
                               {customNote && (
                                 <>
                                   <br />
