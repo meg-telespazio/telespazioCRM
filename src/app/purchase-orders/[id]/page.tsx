@@ -221,7 +221,7 @@ function POForm() {
                             mode="single" 
                             selected={field.value} 
                             onSelect={(date) => {
-                                field.onChange(date);
+                                if (date) field.onChange(date);
                                 setEmissionDateOpen(false);
                             }} 
                             initialFocus 
@@ -265,8 +265,15 @@ function POForm() {
                   </div>
                   <FormField control={form.control} name="status" render={({ field }) => (
                     <FormItem><FormLabel>{t('Forms.status')}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                    <SelectContent><SelectItem value="pending">{t('Status.pending')}</SelectItem><SelectItem value="approved">{t('Status.approved')}</SelectItem><SelectItem value="canceled">{t('Status.canceled')}</SelectItem><SelectItem value="received">{t('Status.received')}</SelectItem></SelectContent></Select></FormItem>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value="pending">{t('Status.pending')}</SelectItem>
+                            <SelectItem value="approved">{t('Status.approved')}</SelectItem>
+                            <SelectItem value="canceled">{t('Status.canceled')}</SelectItem>
+                            <SelectItem value="received">{t('Status.received')}</SelectItem>
+                        </SelectContent>
+                    </Select></FormItem>
                   )} />
                   <Separator />
                   <div className="grid grid-cols-2 gap-4">

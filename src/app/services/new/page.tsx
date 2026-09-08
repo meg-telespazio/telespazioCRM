@@ -315,7 +315,7 @@ function ServiceNewForm() {
                           </Button></FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setActivationDatePickerOpen(false)} onCancel={() => setActivationDatePickerOpen(false)} initialFocus locale={dateLocale} />
+                          <Calendar mode="single" selected={field.value} onSelect={(date) => { if(date) field.onChange(date); setActivationDatePickerOpen(false); }} initialFocus locale={dateLocale} />
                         </PopoverContent>
                       </Popover>
                     </FormItem>

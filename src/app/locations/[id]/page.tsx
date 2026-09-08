@@ -146,10 +146,25 @@ function LocationFormContent() {
                             <Card>
                                 <CardContent className="space-y-6 p-6">
                                      <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('Locations.name')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                                    <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>{t('Pages.clients')}</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!clientIdFromQuery}><FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl><SelectContent>{clients?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                                    <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>{t('Pages.clients')}</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value} disabled={!!clientIdFromQuery}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl>
+                                        <SelectContent>{clients?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                      </Select>
+                                    </FormItem>)} />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>{t('Locations.type')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{locationTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></FormItem>)} />
-                                        <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>{t('Locations.status')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                                        <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>{t('Locations.type')}</FormLabel>
+                                          <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                            <SelectContent>{locationTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                                          </Select>
+                                        </FormItem>)} />
+                                        <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>{t('Locations.status')}</FormLabel>
+                                          <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                            <SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                                          </Select>
+                                        </FormItem>)} />
                                     </div>
                                 </CardContent>
                             </Card>

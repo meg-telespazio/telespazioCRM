@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 
 const positionOptions: ContactPosition[] = ['Analyst', 'CEO', 'CFO', 'CIO', 'CISO', 'Head', 'Manager'];
 const areaOptions: ContactArea[] = ['Administration', 'IT', 'Legal', 'Marketing', 'Procurement', 'Sales', 'Supplier Payments'];

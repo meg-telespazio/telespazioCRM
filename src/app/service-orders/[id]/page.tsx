@@ -241,8 +241,9 @@ function SODetailForm() {
                             <FormControl>
                               <SelectTrigger className="bg-white">
                                 <SelectValue placeholder="Seleccionar contrato..." />
-                              </FormControl>
-                              <SelectContent>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
                                 {contracts?.map(c => {
                                   const contractClient = clients?.find(cl => cl.id === c.clientId);
                                   return (
@@ -254,8 +255,8 @@ function SODetailForm() {
                                     </SelectItem>
                                   );
                                 })}
-                              </SelectContent>
-                            </Select>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )} />
