@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,6 +55,8 @@ export default function ServiceNewPage() {
   const { t, locale } = useI18n();
   const dateLocale = locale === 'es' ? es : enUS;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const clientIdFromQuery = searchParams.get('clientId');
   const { toast } = useToast();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
@@ -80,7 +82,7 @@ export default function ServiceNewPage() {
   const { data: pos, loading: posLoading } = useCollection<PurchaseOrder>(posQuery);
   const { data: catalogItems, loading: catalogLoading } = useCollection<ProductOrService>(catalogQuery);
   
-  // For context display
+  // For context display and filtering
   const contractsQuery = useMemo(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'contracts'));
@@ -99,6 +101,30 @@ export default function ServiceNewPage() {
       .filter(item => item.type === 'service' || item.type === 'bundle')
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [catalogItems]);
+
+  const filteredPos = useMemo(() => {
+    if (!pos || !contracts || !clients) return [];
+    
+    let result = pos;
+
+    // Filter by client if ID is provided in URL
+    if (clientIdFromQuery) {
+      const clientContractIds = new Set(contracts.filter(c => c.clientId === clientIdFromQuery).map(c => c.id));
+      result = pos.filter(po => clientContractIds.has(po.contractId));
+    }
+
+    return result.map(po => {
+      const contract = contracts.find(c => c.id === po.contractId);
+      const client = clients.find(c => c.id === contract?.clientId);
+      const clientName = client?.name || '...';
+      const contractPublicId = contract?.publicId || '...';
+      
+      return {
+        ...po,
+        displayName: `${clientName} - ${contractPublicId} - PO: ${po.poNumber}`
+      };
+    }).sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [pos, contracts, clients, clientIdFromQuery]);
 
   const form = useForm<ServiceNewFormData>({
     resolver: zodResolver(getFormSchema(t)),
@@ -224,12 +250,17 @@ export default function ServiceNewPage() {
                             <SelectValue placeholder="Seleccione la Orden de Compra..." />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          {pos?.map(po => (
+                        <SelectContent className="max-h-[400px]">
+                          {filteredPos.map(po => (
                             <SelectItem key={po.id} value={po.id}>
-                              {po.poNumber} ({po.id})
+                              <span className="text-[11px] font-medium leading-tight">{po.displayName}</span>
                             </SelectItem>
                           ))}
+                          {filteredPos.length === 0 && (
+                            <SelectItem value="none" disabled>
+                              {clientIdFromQuery ? "Este cliente no tiene POs disponibles" : "No se encontraron POs"}
+                            </SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />

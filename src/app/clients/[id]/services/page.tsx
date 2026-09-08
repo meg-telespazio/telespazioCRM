@@ -261,7 +261,7 @@ export default function ClientServicesPage() {
         </div>
       }>
         <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm" onClick={() => router.push('/services/new')} className="border-primary text-primary">
+           <Button variant="outline" size="sm" onClick={() => router.push(`/services/new?clientId=${clientId}`)} className="border-primary text-primary">
               <PlusCircle className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Carga Manual</span>
             </Button>
