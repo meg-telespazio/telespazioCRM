@@ -110,7 +110,6 @@ function SODetailForm() {
   });
 
   const watchedContractId = form.watch('contractId');
-  const watchedStatus = form.watch('status');
 
   const selectedContract = useMemo(() => contracts?.find(c => c.id === watchedContractId), [contracts, watchedContractId]);
   const selectedClient = useMemo(() => clients?.find(c => c.id === selectedContract?.clientId), [clients, selectedContract]);
@@ -242,22 +241,21 @@ function SODetailForm() {
                             <FormControl>
                               <SelectTrigger className="bg-white">
                                 <SelectValue placeholder="Seleccionar contrato..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {contracts?.map(c => {
-                                const contractClient = clients?.find(cl => cl.id === c.clientId);
-                                return (
-                                  <SelectItem key={c.id} value={c.id}>
-                                    <div className="flex flex-col">
-                                      <span className="font-bold">{c.publicId}</span>
-                                      <span className="text-[10px] text-muted-foreground uppercase">{contractClient?.name || 'Cliente...'}</span>
-                                    </div>
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
+                              </FormControl>
+                              <SelectContent>
+                                {contracts?.map(c => {
+                                  const contractClient = clients?.find(cl => cl.id === c.clientId);
+                                  return (
+                                    <SelectItem key={c.id} value={c.id}>
+                                      <div className="flex flex-col">
+                                        <span className="font-bold">{c.publicId}</span>
+                                        <span className="text-[10px] text-muted-foreground uppercase">{contractClient?.name || 'Cliente...'}</span>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
                           <FormMessage />
                         </FormItem>
                       )} />
@@ -406,10 +404,12 @@ function SODetailForm() {
   );
 }
 
-export default function SODetailPage() {
+export function SODetailSuspense() {
   return (
     <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
       <SODetailForm />
     </Suspense>
   );
 }
+
+export default SODetailSuspense;

@@ -427,7 +427,6 @@ function OpportunityDetailForm() {
 
   useEffect(() => {
     if (opportunityData && !isFormLoaded.current) {
-      const isStandard = [12, 24, 36].includes(opportunityData.contractMonths);
       form.reset({ 
         ...opportunityData, 
         currency: opportunityData.currency || 'USD', 
@@ -454,7 +453,6 @@ function OpportunityDetailForm() {
         clientVerified: opportunityData.clientVerified || false, 
         contractSigned: opportunityData.contractSigned || false, 
         complianceChecked: opportunityData.complianceChecked || false,
-        isNonStandardDuration: !isStandard,
       });
       isFormLoaded.current = true;
     }
@@ -464,9 +462,8 @@ function OpportunityDetailForm() {
 
   async function onSubmit(values: OpportunityFormData) {
     if (!user) return;
-    const { isNonStandardDuration, ...dataToSaveRaw } = values;
     const dataToSave = { 
-      ...dataToSaveRaw, 
+      ...values, 
       competition: values.competition ? values.competition.split(',').map((s) => s.trim()) : [] 
     };
     try {
@@ -612,10 +609,18 @@ function OpportunityDetailForm() {
                     <FormItem className="md:col-span-2">
                       <FormLabel>{t('Forms.contractReference')}</Label>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!watchedClientId || isLocked}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar contrato vigente (opcional)" /></SelectTrigger></FormControl>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar contrato vigente (opcional)" />
+                          </SelectTrigger>
+                        </FormControl>
                         <SelectContent>
                           <SelectItem value="none">-- Sin referencia --</SelectItem>
-                          {clientContracts?.map((contract) => <SelectItem key={contract.id} value={contract.id}>{contract.publicId} ({contract.type})</SelectItem>)}
+                          {clientContracts?.map((contract) => (
+                            <SelectItem key={contract.id} value={contract.id}>
+                              {contract.publicId} ({contract.type})
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select><FormMessage />
                     </FormItem>
@@ -979,10 +984,12 @@ function OpportunityDetailForm() {
   );
 }
 
-export default function OpportunityFormPage() {
+export function OpportunityDetailSuspense() {
   return (
     <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
       <OpportunityDetailForm />
     </Suspense>
   );
 }
+
+export default OpportunityDetailSuspense;

@@ -66,7 +66,6 @@ function POForm() {
   const docRef = useMemo(() => (!firestore || !poId || isNew) ? null : doc(firestore, 'purchaseOrders', poId), [firestore, poId, isNew]);
   const { data: poData, loading: poLoading } = useDoc<PurchaseOrder>(docRef);
 
-  // Management filter logic
   const managementFilter = user?.role === 'admin' ? null : user?.management;
 
   const contractsQuery = useMemoFirebase(() => {
@@ -187,15 +186,7 @@ function POForm() {
                     <Select onValueChange={field.onChange} value={field.value} disabled={!!contractIdFromQuery}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar contrato activo...">
-                            {field.value && contracts ? (
-                              (() => {
-                                const c = contracts.find(con => con.id === field.value);
-                                const cl = clients?.find(client => client.id === c?.clientId);
-                                return c ? `${c.publicId} - ${cl?.name || '...'}` : 'Seleccionar...';
-                              })()
-                            ) : "Seleccionar contrato activo..."}
-                          </SelectValue>
+                          <SelectValue placeholder="Seleccionar contrato activo..." />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -210,7 +201,6 @@ function POForm() {
                             </SelectItem>
                           );
                         })}
-                        {(!contracts || contracts.length === 0) && <SelectItem value="none" disabled>No se encontraron contratos activos</SelectItem>}
                       </SelectContent>
                     </Select><FormMessage /></FormItem>
                   )} />
@@ -266,17 +256,9 @@ function POForm() {
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar moneda..."/></SelectTrigger></FormControl>
                         <SelectContent>
-                          {systemConfig?.currencies ? (
-                            systemConfig.currencies.map((curr: string) => (
-                              <SelectItem key={curr} value={curr}>{curr}</SelectItem>
-                            ))
-                          ) : (
-                            <>
-                              <SelectItem value="USD">USD</SelectItem>
-                              <SelectItem value="EUR">EUR</SelectItem>
-                              <SelectItem value="ARS">ARS</SelectItem>
-                            </>
-                          )}
+                          {systemConfig?.currencies?.map((curr: string) => (
+                            <SelectItem key={curr} value={curr}>{curr}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select><FormMessage /></FormItem>
                     )} />
@@ -311,10 +293,12 @@ function POForm() {
   );
 }
 
-export default function POFormPage() {
+export function POFormSuspense() {
   return (
     <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
       <POForm />
     </Suspense>
   );
 }
+
+export default POFormSuspense;

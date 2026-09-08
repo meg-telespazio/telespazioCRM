@@ -2,13 +2,13 @@
 
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { collection, query, where } from 'firebase/firestore';
-import type { PurchaseOrder, ProductOrService, Contract, Client } from '@/lib/types';
+import { collection, query, where, doc } from 'firebase/firestore';
+import type { PurchaseOrder, ProductOrService, Contract, Client, SystemConfig } from '@/lib/types';
 import { addServiceWithEquipment } from '@/lib/firestore/services';
 
 import { AppHeader } from '@/components/layout/app-header';
@@ -29,7 +29,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
-  // Service Data
   serviceNickname: z.string().min(1, t('Validation.fieldRequired')),
   serviceLineNumber: z.string().min(1, t('Validation.fieldRequired')),
   servicePlan: z.string().min(1, t('Validation.fieldRequired')),
@@ -39,9 +38,7 @@ const getFormSchema = (t: (key: string) => string) => z.object({
   isTelespazioOwned: z.boolean().default(true),
   poId: z.string().min(1, t('Validation.fieldRequired')),
   activationDate: z.date().optional(),
-  
-  // Equipment Data
-  equipmentId: z.string().min(1, t('Validation.fieldRequired')), // UUID
+  equipmentId: z.string().min(1, t('Validation.fieldRequired')),
   equipmentSerial: z.string().min(1, t('Validation.fieldRequired')),
   equipmentType: z.string().min(1, t('Validation.fieldRequired')),
   equipmentStatus: z.enum(['Activa', 'En reparación', 'Retirada']),
@@ -64,29 +61,26 @@ function ServiceNewForm() {
   const [isSaving, setIsSaving] = useState(false);
   const [isActivationDatePickerOpen, setActivationDatePickerOpen] = useState(false);
 
-  // Data fetching
-  const posQuery = useMemo(() => {
+  const posQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     if (user.role === 'admin') return query(collection(firestore, 'purchaseOrders'));
     return query(collection(firestore, 'purchaseOrders'), where('management', '==', user.management));
   }, [user, firestore]);
 
-  const catalogQuery = useMemo(() => {
+  const catalogQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    return query(
-      collection(firestore, 'productsAndServices'),
-      where('status', '==', 'active')
-    );
+    return query(collection(firestore, 'productsAndServices'), where('status', '==', 'active'));
   }, [user, firestore]);
 
   const { data: pos, loading: posLoading } = useCollection<PurchaseOrder>(posQuery);
   const { data: catalogItems, loading: catalogLoading } = useCollection<ProductOrService>(catalogQuery);
   
-  const contractsQuery = useMemo(() => {
+  const contractsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'contracts'));
   }, [user, firestore]);
-  const clientsQuery = useMemo(() => {
+  
+  const clientsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'clients'));
   }, [user, firestore]);
@@ -105,7 +99,6 @@ function ServiceNewForm() {
     if (!pos || !contracts || !clients) return [];
     
     let result = pos;
-
     if (clientIdFromQuery) {
       const clientContractIds = new Set(contracts.filter(c => c.clientId === clientIdFromQuery).map(c => c.id));
       result = pos.filter(po => clientContractIds.has(po.contractId));
@@ -114,12 +107,9 @@ function ServiceNewForm() {
     return result.map(po => {
       const contract = contracts.find(c => c.id === po.contractId);
       const client = clients.find(c => c.id === contract?.clientId);
-      const clientName = client?.name || '...';
-      const contractPublicId = contract?.publicId || '...';
-      
       return {
         ...po,
-        displayName: `${clientName} - ${contractPublicId} - PO: ${po.poNumber}`
+        displayName: `${client?.name || '...'} - ${contract?.publicId || '...'} - PO: ${po.poNumber}`
       };
     }).sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [pos, contracts, clients, clientIdFromQuery]);
@@ -152,8 +142,7 @@ function ServiceNewForm() {
     const po = pos.find(p => p.id === watchedPoId);
     if (!po) return null;
     const contract = contracts.find(c => c.id === po.contractId);
-    if (!contract) return null;
-    const client = clients.find(c => c.id === contract.clientId);
+    const client = clients.find(c => c.id === contract?.clientId);
     return { po, contract, client };
   }, [watchedPoId, pos, contracts, clients]);
 
@@ -184,45 +173,23 @@ function ServiceNewForm() {
       };
 
       await addServiceWithEquipment(firestore, user.uid, serviceData, equipmentData);
-      
-      toast({
-        variant: 'success',
-        title: t('Actions.saveSuccess'),
-        description: 'Servicio y equipo creados correctamente.',
-      });
+      toast({ variant: 'success', title: t('Actions.saveSuccess') });
       router.push('/services');
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: t('Actions.saveErrorGeneric'),
-        description: error.message,
-      });
+      toast({ variant: 'destructive', title: t('Actions.saveErrorGeneric'), description: error.message });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const isLoading = userLoading || posLoading || catalogLoading;
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 flex-col">
-        <AppHeader title={t('App.loading')} />
-        <main className="flex-1 p-4 sm:p-6 space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-96 w-full" />
-        </main>
-      </div>
-    );
+  if (userLoading || posLoading || catalogLoading) {
+    return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
   }
 
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader title={t('Pages.services')}>
-        <Button variant="outline" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('Actions.back')}
-        </Button>
+        <Button variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" />{t('Actions.back')}</Button>
       </AppHeader>
 
       <main className="flex-1 p-4 sm:p-6 pb-24">
@@ -232,8 +199,7 @@ function ServiceNewForm() {
               <Card className="border-primary/20 bg-primary/5">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                    <ShoppingCart className="h-4 w-4 text-primary" />
-                    Vínculo Comercial
+                    <ShoppingCart className="h-4 w-4 text-primary" /> Vínculo Comercial
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -259,7 +225,7 @@ function ServiceNewForm() {
                   )} />
 
                   {selectedPoContext && (
-                    <div className="grid grid-cols-2 gap-4 text-xs bg-white p-3 rounded border animate-in fade-in slide-in-from-top-1">
+                    <div className="grid grid-cols-2 gap-4 text-xs bg-white p-3 rounded border animate-in fade-in">
                       <div className="space-y-1">
                         <span className="text-muted-foreground font-bold uppercase block">Cliente</span>
                         <span className="font-bold text-primary">{selectedPoContext.client?.name}</span>
@@ -276,8 +242,7 @@ function ServiceNewForm() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-yellow-500" />
-                    Detalles del Servicio
+                    <Zap className="h-5 w-5 text-yellow-500" /> Detalles del Servicio
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-6">
@@ -285,34 +250,28 @@ function ServiceNewForm() {
                     <FormField control={form.control} name="serviceNickname" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.serviceNickname')}</FormLabel>
-                        <FormControl><Input {...field} placeholder="Nickname único..." /></FormControl>
+                        <FormControl><Input {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="serviceLineNumber" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.serviceLineNumber')}</FormLabel>
-                        <FormControl><Input {...field} placeholder="Ej: LINE-001" /></FormControl>
+                        <FormControl><Input {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                   </div>
-
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="servicePlan" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.servicePlan')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Seleccione plan..." /></SelectTrigger>
-                          </FormControl>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar plan..." /></SelectTrigger></FormControl>
                           <SelectContent>
-                            {servicePlans.map(plan => (
-                              <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>
-                            ))}
+                            {servicePlans.map(plan => <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>)}
                           </SelectContent>
-                        </Select>
-                        <FormMessage />
+                        </Select><FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="serviceAllocationGb" render={({ field }) => (
@@ -323,20 +282,18 @@ function ServiceNewForm() {
                       </FormItem>
                     )} />
                   </div>
-
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="currency" render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('Forms.currency')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.currency')} /></SelectTrigger></FormControl>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
                             <SelectItem value="USD">USD</SelectItem>
                             <SelectItem value="EUR">EUR</SelectItem>
                             <SelectItem value="ARS">ARS</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="monthlyFee" render={({ field }) => (
@@ -347,52 +304,20 @@ function ServiceNewForm() {
                       </FormItem>
                     )} />
                   </div>
-
                   <FormField control={form.control} name="activationDate" render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>{t('Forms.activationDate')}</FormLabel>
                       <Popover open={isActivationDatePickerOpen} onOpenChange={setActivationDatePickerOpen}>
                         <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: dateLocale })
-                              ) : (
-                                <span>{t('Forms.pickDate')}</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
+                          <FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? format(field.value, "PPP", { locale: dateLocale }) : <span>{t('Forms.pickDate')}</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button></FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            onAccept={() => setActivationDatePickerOpen(false)}
-                            onCancel={() => setActivationDatePickerOpen(false)}
-                            initialFocus
-                            locale={dateLocale}
-                          />
+                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} onAccept={() => setActivationDatePickerOpen(false)} onCancel={() => setActivationDatePickerOpen(false)} initialFocus locale={dateLocale} />
                         </PopoverContent>
                       </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="isTelespazioOwned" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/20">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">{t('Forms.isTelespazioOwned')}</FormLabel>
-                        <FormDescription>{field.value ? 'El equipo pertenece a la empresa.' : 'Equipo del cliente.'}</FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                   )} />
                 </CardContent>
@@ -401,88 +326,47 @@ function ServiceNewForm() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <HardDrive className="h-5 w-5 text-primary" />
-                    Datos del Equipo Asociado
+                    <HardDrive className="h-5 w-5 text-primary" /> Datos del Equipo Asociado
                   </CardTitle>
-                  <CardDescription>Esta información creará un registro en el inventario.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-6">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="equipmentId" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.userTerminalId')}</FormLabel>
-                        <FormControl><Input {...field} placeholder="UUID / Terminal ID..." /></FormControl>
-                        <FormMessage />
-                      </FormItem>
+                      <FormItem><FormLabel>{t('Forms.userTerminalId')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="equipmentSerial" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.userTerminal')}</FormLabel>
-                        <FormControl><Input {...field} placeholder="Serial o Kit Number..." /></FormControl>
-                        <FormMessage />
-                      </FormItem>
+                      <FormItem><FormLabel>{t('Forms.userTerminal')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                   </div>
-
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField control={form.control} name="equipmentType" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.type')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="Antena Standard">Antena Standard</SelectItem>
-                            <SelectItem value="Antena HP">Antena HP</SelectItem>
-                            <SelectItem value="KIT Enterprise">KIT Enterprise</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
+                      <FormItem><FormLabel>{t('Forms.type')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="Antena Standard">Antena Standard</SelectItem>
+                          <SelectItem value="Antena HP">Antena HP</SelectItem>
+                          <SelectItem value="KIT Enterprise">KIT Enterprise</SelectItem>
+                        </SelectContent>
+                      </Select></FormItem>
                     )} />
                     <FormField control={form.control} name="equipmentStatus" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Forms.physicalStatus')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="Activa">Activa</SelectItem>
-                            <SelectItem value="En reparación">En reparación</SelectItem>
-                            <SelectItem value="Retirada">Retirada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
+                      <FormItem><FormLabel>{t('Forms.physicalStatus')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="Activa">Activa</SelectItem>
+                          <SelectItem value="En reparación">En reparación</SelectItem>
+                          <SelectItem value="Retirada">Retirada</SelectItem>
+                        </SelectContent>
+                      </Select></FormItem>
                     )} />
                   </div>
-
-                  <Separator />
-
-                  <FormField control={form.control} name="isClientOwned" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/10">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">{t('Forms.isClientOwned')}</FormLabel>
-                        <FormDescription>Si el equipo es propiedad del cliente.</FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    </FormItem>
-                  )} />
-
-                  {!form.watch('isClientOwned') && (
-                    <FormField control={form.control} name="comodatoFee" render={({ field }) => (
-                      <FormItem className="animate-in fade-in">
-                        <FormLabel>{t('Forms.comodatoFee')}</FormLabel>
-                        <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  )}
                 </CardContent>
               </Card>
 
               <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSaving}>
-                  {t('Auth.cancelLabel')}
-                </Button>
+                <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSaving}>{t('Auth.cancelLabel')}</Button>
                 <Button type="submit" disabled={isSaving}>
                   {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   {t('Services.save')}
@@ -496,7 +380,7 @@ function ServiceNewForm() {
   );
 }
 
-export default function ServiceNewPage() {
+export default function ServiceNewSuspense() {
   return (
     <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
       <ServiceNewForm />

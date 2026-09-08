@@ -33,7 +33,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
-import dynamic from 'next/dynamic';
 
 const locationTypes: LocationType[] = ['branch', 'headquarters', 'warehouse', 'office', 'property', 'field'];
 const statusOptions: LocationStatus[] = ['active', 'suspended'];
@@ -50,8 +49,8 @@ const getFormSchema = (t: (key: string) => string) =>
     province: z.string().min(1, t('Validation.fieldRequired')),
     country: z.string().min(1, t('Validation.fieldRequired')),
     postalCode: z.string().min(1, t('Validation.fieldRequired')),
-    latitude: z.coerce.number({ invalid_type_error: t('Validation.isNumber') }),
-    longitude: z.coerce.number({ invalid_type_error: t('Validation.isNumber') }),
+    latitude: z.coerce.number(),
+    longitude: z.coerce.number(),
     notes: z.string().optional(),
   });
 
@@ -70,20 +69,17 @@ function LocationFormContent() {
     const isNew = locationId === 'new';
     const clientIdFromQuery = searchParams.get('clientId');
 
-    // Fetch location data if editing
     const locationDocRef = useMemo(() => {
         if (!firestore || isNew) return null;
         return doc(firestore, 'locations', locationId);
     }, [firestore, locationId, isNew]);
     const { data: locationData, loading: locationLoading } = useDoc<Location>(locationDocRef);
 
-    // Filtered clients by permission for selection
     const clientsQuery = useMemo(() => {
       if (!user || !firestore) return null;
       const ref = collection(firestore, 'clients');
       if (user.role === 'admin') return query(ref);
-      if (user.role === 'gerente') return query(ref, where('management', '==', user.management));
-      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
+      return query(ref, where('management', '==', user.management));
     }, [firestore, user]);
 
     const { data: clients, loading: clientsLoading } = useCollection<Client>(clientsQuery);
@@ -122,55 +118,22 @@ function LocationFormContent() {
 
     async function onSubmit(values: LocationFormData) {
         if (!user) return;
-        
         try {
             if (isNew) {
-                await addLocation(firestore, user.uid, values);
-                toast({
-                    variant: 'success',
-                    title: t('Locations.save'),
-                    description: `Location ${values.name} has been created.`,
-                });
+                await addLocation(firestore, user.uid, values as any);
+                toast({ variant: 'success', title: t('Locations.save') });
             } else {
-                await updateLocation(firestore, locationId, values);
-                toast({
-                    variant: 'success',
-                    title: t('Locations.save'),
-                    description: `Location ${values.name} has been updated.`,
-                });
+                await updateLocation(firestore, locationId, values as any);
+                toast({ variant: 'success', title: t('Locations.save') });
             }
             router.push(`/clients/${values.clientId}/locations`);
         } catch (error: any) {
-            console.error('Failed to save location:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Error saving location',
-                description: error.message,
-            });
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
     }
 
-    const pageIsLoading = userLoading || clientsLoading || (locationLoading && !isNew);
-
-    const canModify = useMemo(() => {
-        if (isNew) return true;
-        if (!locationData || !user) return false;
-        if (user.role === 'admin') return true;
-        if (user.role === 'gerente' && user.management === locationData.management) return true;
-        return user.uid === locationData.assignedTo || user.uid === locationData.createdBy;
-    }, [isNew, locationData, user]);
-
-    if (pageIsLoading) {
-        return (
-            <div className="flex flex-1 flex-col">
-                <AppHeader title={isNew ? t('Locations.add') : t('Locations.edit')} />
-                <main className="flex-1 p-4 sm:p-6">
-                    <div className="mx-auto max-w-2xl">
-                        <Skeleton className="h-[70vh] w-full" />
-                    </div>
-                </main>
-            </div>
-        );
+    if (userLoading || clientsLoading || (locationLoading && !isNew)) {
+        return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
     }
     
     return (
@@ -182,77 +145,17 @@ function LocationFormContent() {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <Card>
                                 <CardContent className="space-y-6 p-6">
-                                     <FormField control={form.control} name="name" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('Locations.name')}</FormLabel>
-                                            <FormControl><Input {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                     )} />
-                                    <FormField control={form.control} name="clientId" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>{t('Pages.clients')}</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} disabled={!!clientIdFromQuery}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    {clients?.sort((a,b) => a.name.localeCompare(b.name)).map((client) => (
-                                                        <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        <FormField control={form.control} name="type" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>{t('Locations.type')}</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                                    <SelectContent>{locationTypes.map(type => <SelectItem key={type} value={type}>{t(`LocationTypes.${type}`)}</SelectItem>)}</SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="status" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>{t('Locations.status')}</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                                    <SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{t(`Status.${s}`)}</SelectItem>)}</SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
+                                     <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('Locations.name')}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                                    <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>{t('Pages.clients')}</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!clientIdFromQuery}><FormControl><SelectTrigger><SelectValue placeholder={t('Forms.selectClient')} /></SelectTrigger></FormControl><SelectContent>{clients?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>{t('Locations.type')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{locationTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                                        <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>{t('Locations.status')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></FormItem>)} />
                                     </div>
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        <FormField control={form.control} name="streetName" render={({ field }) => (<FormItem><FormLabel>{t('Locations.streetName')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="streetNumber" render={({ field }) => (<FormItem><FormLabel>{t('Locations.streetNumber')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
-                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>{t('Locations.city')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="province" render={({ field }) => (<FormItem><FormLabel>{t('Locations.province')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
-                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>{t('Locations.country')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="postalCode" render={({ field }) => (<FormItem><FormLabel>{t('Locations.postalCode')}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
-                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        <FormField control={form.control} name="latitude" render={({ field }) => (<FormItem><FormLabel>{t('Locations.latitude')}</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="longitude" render={({ field }) => (<FormItem><FormLabel>{t('Locations.longitude')}</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
-                                    <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>{t('Locations.notes')}</FormLabel><FormControl><Textarea className="resize-none" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </CardContent>
                             </Card>
-
-                             <div className="flex items-center justify-end gap-4 pt-4">
-                                <Button type="button" variant="outline" onClick={() => router.back()}>
-                                    <ArrowLeft className="mr-2 h-4 w-4" />
-                                    {t('Actions.back')}
-                                </Button>
-                                <Button type="submit" disabled={form.formState.isSubmitting || !canModify}>
-                                    {form.formState.isSubmitting ? t('App.loading') : t('Locations.save')}
-                                </Button>
+                             <div className="flex justify-end gap-4 pt-4">
+                                <Button type="button" variant="outline" onClick={() => router.back()}>{t('Actions.back')}</Button>
+                                <Button type="submit">{t('Locations.save')}</Button>
                              </div>
                         </form>
                     </Form>
@@ -262,7 +165,7 @@ function LocationFormContent() {
     );
 }
 
-export default function LocationFormPage() {
+export default function LocationFormSuspense() {
   return (
     <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
       <LocationFormContent />
