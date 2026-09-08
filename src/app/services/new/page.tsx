@@ -82,7 +82,6 @@ export default function ServiceNewPage() {
   const { data: pos, loading: posLoading } = useCollection<PurchaseOrder>(posQuery);
   const { data: catalogItems, loading: catalogLoading } = useCollection<ProductOrService>(catalogQuery);
   
-  // For context display and filtering
   const contractsQuery = useMemo(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'contracts'));
@@ -107,7 +106,6 @@ export default function ServiceNewPage() {
     
     let result = pos;
 
-    // Filter by client if ID is provided in URL
     if (clientIdFromQuery) {
       const clientContractIds = new Set(contracts.filter(c => c.clientId === clientIdFromQuery).map(c => c.id));
       result = pos.filter(po => clientContractIds.has(po.contractId));
@@ -232,7 +230,6 @@ export default function ServiceNewPage() {
         <div className="mx-auto max-w-3xl space-y-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Context Section */}
               <Card className="border-primary/20 bg-primary/5">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -256,11 +253,6 @@ export default function ServiceNewPage() {
                               <span className="text-[11px] font-medium leading-tight">{po.displayName}</span>
                             </SelectItem>
                           ))}
-                          {filteredPos.length === 0 && (
-                            <SelectItem value="none" disabled>
-                              {clientIdFromQuery ? "Este cliente no tiene POs disponibles" : "No se encontraron POs"}
-                            </SelectItem>
-                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -282,7 +274,6 @@ export default function ServiceNewPage() {
                 </CardContent>
               </Card>
 
-              {/* Service Details */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -408,7 +399,6 @@ export default function ServiceNewPage() {
                 </CardContent>
               </Card>
 
-              {/* Equipment Details */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useUser, useAuth, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -29,12 +29,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, ArrowLeft, ClipboardList, User, ShieldCheck, Clock, Loader2, MapPin, ShieldAlert, Paperclip, FileText } from 'lucide-react';
+import { Save, ArrowLeft, ClipboardList, User, ShieldCheck, Clock, Loader2, MapPin, ShieldAlert, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SOItemManager } from '@/components/service-orders/so-item-manager';
 import { SOComments } from '@/components/service-orders/so-comments';
 import { SOAttachmentsManager } from '@/components/service-orders/so-attachments-manager';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -169,7 +168,6 @@ export default function SODetailPage() {
         toast({ variant: 'success', title: t('SO.saveSuccess') });
         router.push(`/service-orders/${newId}`);
       } else {
-        // Validacion de cierre
         if (values.status === 'Cerrada') {
           const allItemsClosed = items?.every(i => i.isClosed);
           if (!allItemsClosed) {
@@ -181,7 +179,6 @@ export default function SODetailPage() {
 
         await updateServiceOrder(firestore, soId, data);
         
-        // Log status change if changed
         if (so.status !== values.status) {
           await addSOComment(firestore, soId, user as any, `Estado cambiado de ${so.status} a ${values.status}`, values.status);
         }
@@ -219,7 +216,6 @@ export default function SODetailPage() {
       <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
           
-          {/* Main Column */}
           <div className="lg:col-span-8 space-y-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -237,7 +233,7 @@ export default function SODetailPage() {
                           <FormLabel className="text-sm font-bold flex items-center gap-2 text-primary">
                             <ShieldAlert className="h-4 w-4" />
                             {t('Forms.specialEntryConditions')}
-                          </Label>
+                          </FormLabel>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
                       </FormItem>
@@ -250,14 +246,7 @@ export default function SODetailPage() {
                           <Select onValueChange={field.onChange} value={field.value} disabled={!isNew || isLocked}>
                             <FormControl>
                               <SelectTrigger className="bg-white">
-                                <SelectValue placeholder="Seleccionar contrato...">
-                                  {selectedContract ? (
-                                    <div className="flex items-center gap-2">
-                                      <FileText className="h-3 w-3 text-primary" />
-                                      <span className="font-bold">{selectedContract.publicId}</span>
-                                    </div>
-                                  ) : "Contrato..."}
-                                </SelectValue>
+                                <SelectValue placeholder="Seleccionar contrato..." />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -272,7 +261,6 @@ export default function SODetailPage() {
                                   </SelectItem>
                                 );
                               })}
-                              {(!contracts || contracts.length === 0) && <SelectItem value="none" disabled>No se encontraron contratos disponibles</SelectItem>}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -294,7 +282,7 @@ export default function SODetailPage() {
                     </div>
 
                     {selectedClient && (
-                      <div className="p-4 bg-primary/5 border border-primary/10 rounded-lg grid grid-cols-2 gap-4 animate-in fade-in">
+                      <div className="p-4 bg-primary/5 border border-primary/10 rounded-lg grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <span className="text-[10px] font-bold text-muted-foreground uppercase">Cliente</span>
                           <p className="text-sm font-bold text-slate-800">{selectedClient.name}</p>
@@ -385,7 +373,6 @@ export default function SODetailPage() {
             )}
           </div>
 
-          {/* Sidebar Column */}
           <div className="lg:col-span-4 space-y-6">
             <Card className="bg-slate-50 border-dashed">
               <CardHeader className="pb-3">
