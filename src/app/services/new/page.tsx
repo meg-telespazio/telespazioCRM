@@ -8,12 +8,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { collection, query, where, doc } from 'firebase/firestore';
-import type { PurchaseOrder, ProductOrService, Contract, Client, SystemConfig } from '@/lib/types';
+import type { PurchaseOrder, ProductOrService, Contract, Client } from '@/lib/types';
 import { addServiceWithEquipment } from '@/lib/firestore/services';
 
 import { AppHeader } from '@/components/layout/app-header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Save, ArrowLeft, Zap, Loader2, HardDrive, ShoppingCart, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

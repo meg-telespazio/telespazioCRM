@@ -480,7 +480,7 @@ function OpportunityDetailForm() {
   const currencyOptions: string[] = configData?.currencies || ['USD', 'EUR', 'ARS'];
 
   if (userLoading || clientsLoading || contactsLoading || productsAndServicesLoading || usersLoading || (opportunityLoading && !isNew) || !configData) {
-    return <div className="flex flex-1 flex-col"><AppHeader title={t('App.loading')} /><main className="p-6"><Skeleton className="h-[70vh] w-full" /></main></div>;
+    return <div className="p-6"><Skeleton className="h-96 w-full" /></div>;
   }
 
   const calendarRange = { startMonth: new Date(2000, 0), endMonth: new Date(2050, 11) };
@@ -607,7 +607,7 @@ function OpportunityDetailForm() {
                   )} />
                   <FormField control={form.control} name="contractReferenceId" render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>{t('Forms.contractReference')}</Label>
+                      <FormLabel>{t('Forms.contractReference')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!watchedClientId || isLocked}>
                         <FormControl>
                           <SelectTrigger>
@@ -709,7 +709,7 @@ function OpportunityDetailForm() {
                 </CardContent>
               </Card>
 
-              {/* PROPUESTA ECONÓMICA (Consolidada) */}
+              {/* PROPUESTA ECONÓMICA */}
               <Card className="border-primary/20 bg-primary/5">
                 <CardHeader className="border-b bg-white/50">
                   <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -797,7 +797,6 @@ function OpportunityDetailForm() {
 
                   <Separator />
 
-                  {/* Commercial Data (FCV, GM, Currency) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
                       <h4 className="text-xs font-black uppercase text-slate-500 tracking-tighter flex items-center gap-2">

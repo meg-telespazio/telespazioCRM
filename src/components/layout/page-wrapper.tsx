@@ -19,7 +19,6 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useI18n } from '@/firebase/client-provider';
 import { usePermissions } from '@/hooks/use-permissions';
 
-// VERSIÓN 2.7.4 - Sincronizada con Login
 const APP_VERSION = '2.7.4'; 
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
@@ -94,13 +93,11 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, user, loading, permissionsLoading, canSeeMenu, router, isPublicPage, isUnauthorizedPage]);
 
-  // Manejo de obligatoriedad de MFA
   useEffect(() => {
     if (!loading && user && !isPublicPage && !isUnauthorizedPage) {
       const mfaUser = auth.currentUser ? multiFactor(auth.currentUser) : null;
       const hasMfa = mfaUser ? mfaUser.enrolledFactors.length > 0 : false;
       
-      // Excepciones críticas de seguridad (Super Admins)
       const isBypassed = [
         'mariano.gonzalez@telespazio.com',
         'edoardo.fosso@telespazio.com'
