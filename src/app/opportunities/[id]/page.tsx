@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef, Suspense } from 'react';
 import {
   useUser,
   useFirestore,
@@ -191,7 +191,7 @@ const probabilityMap: Record<string, number> = {
   Suspended: 0,
 };
 
-export default function OpportunityFormPage() {
+function OpportunityDetailForm() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
@@ -610,7 +610,7 @@ export default function OpportunityFormPage() {
                   )} />
                   <FormField control={form.control} name="contractReferenceId" render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>{t('Forms.contractReference')}</FormLabel>
+                      <FormLabel>{t('Forms.contractReference')}</Label>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!watchedClientId || isLocked}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar contrato vigente (opcional)" /></SelectTrigger></FormControl>
                         <SelectContent>
@@ -976,5 +976,13 @@ export default function OpportunityFormPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function OpportunityFormPage() {
+  return (
+    <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+      <OpportunityDetailForm />
+    </Suspense>
   );
 }

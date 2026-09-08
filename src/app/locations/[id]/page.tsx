@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Suspense } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
@@ -58,7 +57,7 @@ const getFormSchema = (t: (key: string) => string) =>
 
 type LocationFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
-export default function LocationFormPage() {
+function LocationFormContent() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
     const router = useRouter();
@@ -261,4 +260,12 @@ export default function LocationFormPage() {
             </main>
         </div>
     );
+}
+
+export default function LocationFormPage() {
+  return (
+    <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+      <LocationFormContent />
+    </Suspense>
+  );
 }

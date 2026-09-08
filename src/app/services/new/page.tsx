@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
@@ -51,7 +51,7 @@ const getFormSchema = (t: (key: string) => string) => z.object({
 
 type ServiceNewFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
-export default function ServiceNewPage() {
+function ServiceNewForm() {
   const { t, locale } = useI18n();
   const dateLocale = locale === 'es' ? es : enUS;
   const router = useRouter();
@@ -146,7 +146,6 @@ export default function ServiceNewPage() {
   });
 
   const watchedPoId = form.watch('poId');
-  const watchedIsTelespazioOwned = form.watch('isTelespazioOwned');
 
   const selectedPoContext = useMemo(() => {
     if (!watchedPoId || !pos || !contracts || !clients) return null;
@@ -494,5 +493,13 @@ export default function ServiceNewPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ServiceNewPage() {
+  return (
+    <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+      <ServiceNewForm />
+    </Suspense>
   );
 }

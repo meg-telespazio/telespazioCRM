@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Suspense } from 'react';
 import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
 import { redirect, useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -36,7 +36,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
-
 const positionOptions: ContactPosition[] = ['Analyst', 'CEO', 'CFO', 'CIO', 'CISO', 'Head', 'Manager'];
 const areaOptions: ContactArea[] = ['Administration', 'IT', 'Legal', 'Marketing', 'Procurement', 'Sales', 'Supplier Payments'];
 
@@ -67,7 +66,7 @@ const getFormSchema = (t: (key: string) => string) =>
 
 type ContactFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
-export default function ContactFormPage() {
+function ContactDetailForm() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
     const router = useRouter();
@@ -427,5 +426,13 @@ export default function ContactFormPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function ContactFormPage() {
+    return (
+        <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+            <ContactDetailForm />
+        </Suspense>
     );
 }

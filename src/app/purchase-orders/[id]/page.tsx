@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -41,7 +41,7 @@ const getFormSchema = (t: (key: string) => string) => z.object({
 
 type POFormData = z.infer<ReturnType<typeof getFormSchema>>;
 
-export default function POFormPage() {
+function POForm() {
   const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
@@ -72,10 +72,7 @@ export default function POFormPage() {
   const contractsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     const ref = collection(firestore, 'contracts');
-    
-    // Habilitar contratos activos y renovados para gestión de POs
     let q = query(ref, where('status', 'in', ['activo', 'renovado automatico', 'renovado']));
-    
     if (managementFilter) {
       q = query(q, where('management', '==', managementFilter));
     }
@@ -302,7 +299,7 @@ export default function POFormPage() {
               </Card>
               <div className="flex justify-end gap-4">
                 <Button type="submit" className="gap-2" disabled={isSaving}>
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4"/>}
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   {t('Forms.save')}
                 </Button>
               </div>
@@ -311,5 +308,13 @@ export default function POFormPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function POFormPage() {
+  return (
+    <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+      <POForm />
+    </Suspense>
   );
 }

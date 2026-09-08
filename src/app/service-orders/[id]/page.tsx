@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
@@ -46,7 +46,7 @@ const formSchema = z.object({
   specialEntryConditions: z.boolean().default(false),
 });
 
-export default function SODetailPage() {
+function SODetailForm() {
   const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
@@ -70,10 +70,7 @@ export default function SODetailPage() {
   const contractsQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'contracts');
-    
-    // Habilitar contratos activos y renovados para gestión de SOs
     let q = query(ref, where('status', 'in', ['activo', 'renovado automatico', 'renovado']));
-    
     if (managementFilter) {
       q = query(q, where('management', '==', managementFilter));
     }
@@ -120,7 +117,6 @@ export default function SODetailPage() {
 
   const engineers = useMemo(() => allUsers?.filter(u => u.role === 'ingeniero' || u.role === 'admin') || [], [allUsers]);
 
-  // Sync contractId from URL if it's a new SO
   useEffect(() => {
     if (isNew && contractIdFromQuery) {
       form.setValue('contractId', contractIdFromQuery);
@@ -215,7 +211,6 @@ export default function SODetailPage() {
 
       <main className="flex-1 p-4 sm:p-6 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
-          
           <div className="lg:col-span-8 space-y-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -361,13 +356,11 @@ export default function SODetailPage() {
                   soType={so?.type || 'Alta'} 
                   disabled={isLocked}
                 />
-                
                 <SOAttachmentsManager 
                   soId={soId} 
                   attachments={so?.attachments}
                   disabled={isLocked}
                 />
-
                 <SOComments soId={soId} />
               </>
             )}
@@ -410,5 +403,13 @@ export default function SODetailPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function SODetailPage() {
+  return (
+    <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+      <SODetailForm />
+    </Suspense>
   );
 }
