@@ -1,3 +1,4 @@
+
 'use client';
 import {
   collection,
@@ -213,6 +214,7 @@ export function deleteService(firestore: Firestore, id: string) {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,
       operation: 'delete',
+      requestResourceData: cleaned,
     } satisfies SecurityRuleContext);
     errorEmitter.emit('permission-error', permissionError);
   });

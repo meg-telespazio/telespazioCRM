@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -25,6 +26,7 @@ import {
   Eye,
   Settings2,
   ShieldAlert,
+  User as UserIcon
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client, ServiceStatus } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -70,7 +72,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 
-const SERVICES_PER_PAGE = 10;
+const SERVICES_PER_PAGE = 15;
 
 type SortConfig = {
   key: string;
@@ -91,7 +93,7 @@ function InlineFeeEdit({
   disabled
 }: { 
   service: Service, 
-  onUpdate: (id: string, fee: number) => Promise<void>,
+  onUpdate: (id: string, monthlyFee: number) => Promise<void>,
   disabled: boolean
 }) {
   const [val, setVal] = useState(service.monthlyFee?.toString() || '0');
@@ -180,35 +182,28 @@ export default function ServicesPage() {
     return query(ref, where('management', '==', user?.management));
   }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
 
+  // CRITICAL FIX: Executives need to see ALL POs and Contracts of their gerencia 
+  // to resolve the context of services, even if the PO/Contract is not assigned to them (e.g. Master POs or Expired ones)
   const posQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'purchaseOrders');
     if (user?.role === 'admin') return query(ref);
-    if (user?.role === 'ejecutivo') {
-      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
   const contractsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'contracts');
     if (user?.role === 'admin') return query(ref);
-    if (user?.role === 'ejecutivo') {
-      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
   const clientsQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'clients');
     if (user?.role === 'admin') return query(ref);
-    if (user?.role === 'ejecutivo') {
-      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
   const { data: services, loading: servicesLoading } = useCollection<Service>(servicesQuery);
   const { data: pos } = useCollection<PurchaseOrder>(posQuery);
@@ -245,9 +240,9 @@ export default function ServicesPage() {
           const contractA = poA ? contractMap.get(poA.contractId) : null;
           valA = clientMap.get(contractA?.clientId || '')?.name || '';
 
-          const poB = b.poId ? poMap.get(b.poId) : null;
+          const poB = poMap.get(b.poId);
           const contractB = poB ? contractMap.get(poB.contractId) : null;
-          valB = clientMap.get(cB?.clientId || '')?.name || '';
+          valB = clientMap.get(contractB?.clientId || '')?.name || '';
         } else {
           valA = (a as any)[sortConfig.key] || '';
           valB = (b as any)[sortConfig.key] || '';
@@ -426,6 +421,7 @@ export default function ServicesPage() {
                 <TableHead className="text-white"><button onClick={() => handleSort('monthlyFee')} className="flex items-center">{t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}</button></TableHead>
                 <TableHead className="text-white"><button onClick={() => handleSort('servicePlan')} className="flex items-center">{t('Forms.servicePlan')} {getSortIcon('servicePlan')}</button></TableHead>
                 <TableHead className="text-white"><button onClick={() => handleSort('client')} className="flex items-center">{t('Pages.clients')} {getSortIcon('client')}</button></TableHead>
+                <TableHead className="text-white">Propiedad</TableHead>
                 <TableHead className="text-white">Estado</TableHead>
                 <TableHead className="text-right text-white px-4">{t('Table.actions.title')}</TableHead>
               </TableRow>
@@ -447,7 +443,14 @@ export default function ServicesPage() {
                     </TableCell>
                     <TableCell><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} disabled={isIngeniero} /></TableCell>
                     <TableCell className="text-xs">{s.servicePlan}</TableCell>
-                    <TableCell>{client?.name || '-'}</TableCell>
+                    <TableCell className="text-[11px] font-medium">{client?.name || '-'}</TableCell>
+                    <TableCell>
+                      {s.isTelespazioOwned !== false ? (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] font-bold uppercase py-0 px-2 h-4">Telespazio</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[9px] font-bold uppercase py-0 px-2 h-4 text-slate-500">Cliente</Badge>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn("rounded-full", statusClasses[s.status || 'active'])}>
                         {t(`Status.${s.status || 'active'}`)}
@@ -475,7 +478,7 @@ export default function ServicesPage() {
               })}
               {paginatedServices.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground italic">
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground italic">
                     {t('Services.noServices')}
                   </TableCell>
                 </TableRow>
