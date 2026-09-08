@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter, redirect } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import type { ServiceOrder, UserProfile, ServiceOrderItem, Contract } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -71,10 +71,12 @@ export default function ServiceOrdersPage() {
     if (!userLoading && !user) redirect('/login');
   }, [user, userLoading]);
 
-  // Data fetching
-  const soQuery = useMemo(() => {
+  // Data fetching - Add management filter for visibility security
+  const soQuery = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collection(firestore, 'service_orders'), orderBy('createdAt', 'desc'));
+    const ref = collection(firestore, 'service_orders');
+    if (user.role === 'admin') return query(ref, orderBy('createdAt', 'desc'));
+    return query(ref, where('management', '==', user.management), orderBy('createdAt', 'desc'));
   }, [user, firestore]);
 
   const { data: serviceOrders, loading: soLoading } = useCollection<ServiceOrder>(soQuery);
@@ -203,7 +205,7 @@ export default function ServiceOrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedOrders.length > 0 ? paginatedOrders.map((so) => {
+              {filteredOrders.length > 0 ? paginatedOrders.map((so) => {
                 const canClose = so.status !== 'Cerrada' && (isAdmin || user?.uid === so.pmAssignedId);
                 const contractPublicId = contractMap.get(so.contractId) || '-';
                 return (
@@ -271,7 +273,7 @@ export default function ServiceOrdersPage() {
                             </DropdownMenuItem>
                             {isAdmin && (
                               <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteAttempt(so)}>
-                                <Trash2 className="h-4 w-4 mr-2" />
+                                <Trash2 className="mr-2 h-4 w-4 mr-2" />
                                 {t('Table.actions.delete')}
                               </DropdownMenuItem>
                             )}

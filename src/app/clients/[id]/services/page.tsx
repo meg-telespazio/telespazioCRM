@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -8,6 +8,7 @@ import {
   useFirestore,
   useDoc,
   useCollection,
+  useMemoFirebase,
 } from '@/firebase';
 import { useI18n } from '@/firebase/client-provider';
 import { collection, query, where, doc } from 'firebase/firestore';
@@ -178,7 +179,7 @@ function PaginatedServiceTable({
   );
 }
 
-export default function ClientServicesPage() {
+function ClientServicesContent() {
   const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
@@ -190,35 +191,41 @@ export default function ClientServicesPage() {
   const [isImporterOpen, setImporterOpen] = useState(false);
   const [targetPoId, setTargetPoId] = useState<string | null>(null);
 
-  // Data fetching
-  const clientDocRef = useMemo(() => {
+  // Data fetching - Stabilized with management area awareness
+  const clientDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return doc(firestore, 'clients', clientId);
   }, [firestore, clientId, user]);
   const { data: client, loading: clientLoading } = useDoc<Client>(clientDocRef);
 
-  const contractsQuery = useMemo(() => {
+  const contractsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'contracts'), where('clientId', '==', clientId));
   }, [firestore, clientId, user]);
   const { data: contracts, loading: contractsLoading } = useCollection<Contract>(contractsQuery);
 
-  const posQuery = useMemo(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'purchaseOrders'), where('createdBy', '==', user.uid));
-  }, [firestore, user]);
+  const posQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'purchaseOrders');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: allPos, loading: posLoading } = useCollection<PurchaseOrder>(posQuery);
 
-  const servicesQuery = useMemo(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'services'), where('createdBy', '==', user.uid));
-  }, [firestore, user]);
+  const servicesQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'services');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: allServices, loading: servicesLoading } = useCollection<Service>(servicesQuery);
 
-  const equipQuery = useMemo(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'equipment'), where('createdBy', '==', user.uid));
-  }, [firestore, user]);
+  const equipQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    const ref = collection(firestore, 'equipment');
+    if (user.role === 'admin') return query(ref);
+    return query(ref, where('management', '==', user.management));
+  }, [user, firestore]);
   const { data: allEquip } = useCollection<Equipment>(equipQuery);
 
   const isLoading = userLoading || clientLoading || contractsLoading || posLoading || servicesLoading;
@@ -359,5 +366,13 @@ export default function ClientServicesPage() {
         defaultPoId={targetPoId || undefined}
       />
     </div>
+  );
+}
+
+export default function ClientServicesPage() {
+  return (
+    <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
+      <ClientServicesContent />
+    </Suspense>
   );
 }
