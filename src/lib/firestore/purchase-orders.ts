@@ -1,4 +1,3 @@
-
 'use client';
 import {
   collection,
@@ -9,6 +8,7 @@ import {
   getDoc,
   serverTimestamp,
   type Firestore,
+  setDoc,
 } from 'firebase/firestore';
 import type { PurchaseOrder, Contract } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -19,7 +19,7 @@ const COLLECTION = 'purchaseOrders';
 const cleanData = (data: any) => {
   const result: any = {};
   Object.keys(data).forEach(key => {
-    if (data[key] !== undefined) {
+    if (data[key] !== undefined && data[key] !== null) {
       result[key] = data[key];
     }
   });
@@ -33,33 +33,45 @@ export async function addPurchaseOrder(
 ) {
   // Inherit security fields from contract
   const contractRef = doc(firestore, 'contracts', data.contractId);
-  const contractSnap = await getDoc(contractRef);
-  if (!contractSnap.exists()) throw new Error('Contract not found');
-  const contractData = contractSnap.data() as Contract;
-
-  const collectionRef = collection(firestore, COLLECTION);
-  const cleaned = cleanData(data);
-  const fullData = {
-    ...cleaned,
-    createdBy: uid,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-    management: contractData.management,
-    assignedTo: contractData.assignedTo,
-  };
-
+  
   try {
-    return await addDoc(collectionRef, fullData);
-  } catch (serverError: any) {
-    if (serverError.code === 'permission-denied') {
+    const contractSnap = await getDoc(contractRef);
+    if (!contractSnap.exists()) throw new Error('Contract not found');
+    const contractData = contractSnap.data() as Contract;
+
+    const collectionRef = collection(firestore, COLLECTION);
+    const cleaned = cleanData(data);
+    const fullData = {
+      ...cleaned,
+      createdBy: uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      management: contractData.management,
+      assignedTo: contractData.assignedTo,
+    };
+
+    const newDocRef = doc(collectionRef);
+    
+    // NO await here to leverage optimistic updates
+    setDoc(newDocRef, fullData).catch(async (serverError) => {
       const permissionError = new FirestorePermissionError({
-        path: collectionRef.path,
+        path: newDocRef.path,
         operation: 'create',
         requestResourceData: fullData,
       } satisfies SecurityRuleContext);
       errorEmitter.emit('permission-error', permissionError);
+    });
+
+    return newDocRef.id;
+  } catch (error: any) {
+    if (error.code === 'permission-denied') {
+      const permissionError = new FirestorePermissionError({
+        path: contractRef.path,
+        operation: 'get',
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
     }
-    throw serverError;
+    throw error;
   }
 }
 
@@ -73,6 +85,8 @@ export function updatePurchaseOrder(
     ...cleanData(data),
     updatedAt: serverTimestamp(),
   };
+  
+  // NO await here
   updateDoc(docRef, cleaned).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,
@@ -85,6 +99,8 @@ export function updatePurchaseOrder(
 
 export function deletePurchaseOrder(firestore: Firestore, poId: string) {
   const docRef = doc(firestore, COLLECTION, poId);
+  
+  // NO await here
   deleteDoc(docRef).catch(async (serverError) => {
     const permissionError = new FirestorePermissionError({
       path: docRef.path,

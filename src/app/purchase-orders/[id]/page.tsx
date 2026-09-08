@@ -22,9 +22,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { CalendarIcon, Save, ArrowLeft, ChevronRight, FileText } from 'lucide-react';
+import { CalendarIcon, Save, ArrowLeft, ChevronRight, FileText, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 const getFormSchema = (t: (key: string) => string) => z.object({
   poNumber: z.string().min(1, t('Validation.fieldRequired')),
@@ -45,19 +46,22 @@ export default function POFormPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const poId = params?.id as string;
   const isNew = poId === 'new';
   const contractIdFromQuery = searchParams.get('contractId');
 
   const [mounted, setMounted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isEmissionDateOpen, setEmissionDateOpen] = useState(false);
-  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
-  const { data: systemConfig } = useDoc<any>(configDocRef);
 
   useEffect(() => { setMounted(true); }, []);
 
   const { user } = useUser();
   const firestore = useFirestore();
+
+  const configDocRef = useMemo(() => (firestore && user) ? doc(firestore, 'systemConfig', 'globals') : null, [firestore, user]);
+  const { data: systemConfig } = useDoc<any>(configDocRef);
 
   const docRef = useMemo(() => (!firestore || !poId || isNew) ? null : doc(firestore, 'purchaseOrders', poId), [firestore, poId, isNew]);
   const { data: poData, loading: poLoading } = useDoc<PurchaseOrder>(docRef);
@@ -78,8 +82,12 @@ export default function POFormPage() {
 
   const clientsQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    return query(collection(firestore, 'clients'));
-  }, [user, firestore]);
+    const ref = collection(firestore, 'clients');
+    if (managementFilter) {
+        return query(ref, where('management', '==', managementFilter));
+    }
+    return query(ref);
+  }, [user, firestore, managementFilter]);
 
   const { data: contracts } = useCollection<Contract>(contractsQuery);
   const { data: clients } = useCollection<Client>(clientsQuery);
@@ -129,15 +137,25 @@ export default function POFormPage() {
 
   const onSubmit = async (values: POFormData) => {
     if (!user) return;
+    setIsSaving(true);
     try {
       if (isNew) {
         await addPurchaseOrder(firestore, user.uid, values);
+        toast({ variant: 'success', title: t('Actions.saveSuccess') });
       } else {
         await updatePurchaseOrder(firestore, poId, values);
+        toast({ variant: 'success', title: t('Actions.saveSuccess') });
       }
       router.back();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Error al guardar', 
+        description: err.message || 'Ocurrió un error inesperado.' 
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -213,9 +231,10 @@ export default function POFormPage() {
                           <Calendar 
                             mode="single" 
                             selected={field.value} 
-                            onSelect={field.onChange} 
-                            onAccept={() => setEmissionDateOpen(false)} 
-                            onCancel={() => setEmissionDateOpen(false)} 
+                            onSelect={(date) => {
+                                field.onChange(date);
+                                setEmissionDateOpen(false);
+                            }} 
                             initialFocus 
                             captionLayout="dropdown" 
                             startMonth={new Date(2000, 0)} 
@@ -280,8 +299,8 @@ export default function POFormPage() {
                 </CardContent>
               </Card>
               <div className="flex justify-end gap-4">
-                <Button type="submit" className="gap-2">
-                  <Save className="h-4 w-4"/>
+                <Button type="submit" className="gap-2" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4"/>}
                   {t('Forms.save')}
                 </Button>
               </div>
