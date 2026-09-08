@@ -71,9 +71,14 @@ export default function SODetailPage() {
   const contractsQuery = useMemoFirebase(() => {
     if (!user) return null;
     const ref = collection(firestore, 'contracts');
-    return managementFilter 
-      ? query(ref, where('management', '==', managementFilter)) 
-      : query(ref);
+    
+    // Habilitar contratos activos y renovados para gestión de SOs
+    let q = query(ref, where('status', 'in', ['activo', 'renovado automatico', 'renovado']));
+    
+    if (managementFilter) {
+      q = query(q, where('management', '==', managementFilter));
+    }
+    return q;
   }, [firestore, user, managementFilter]);
 
   const clientsQuery = useMemoFirebase(() => {
@@ -232,7 +237,7 @@ export default function SODetailPage() {
                           <FormLabel className="text-sm font-bold flex items-center gap-2 text-primary">
                             <ShieldAlert className="h-4 w-4" />
                             {t('Forms.specialEntryConditions')}
-                          </FormLabel>
+                          </Label>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isLocked} /></FormControl>
                       </FormItem>
