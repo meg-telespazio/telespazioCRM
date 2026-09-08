@@ -23,6 +23,8 @@ import {
   Link2,
   PlusCircle,
   Eye,
+  Settings2,
+  ShieldAlert,
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client, ServiceStatus } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -66,6 +68,7 @@ import { useRouter, redirect } from 'next/navigation';
 import { bulkUpdateServices, deleteService, updateService } from '@/lib/firestore/services';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 const SERVICES_PER_PAGE = 10;
 
@@ -74,7 +77,7 @@ type SortConfig = {
   direction: 'asc' | 'desc' | null;
 };
 
-type BulkMode = 'price' | 'plan' | 'po' | null;
+type BulkMode = 'price' | 'plan' | 'po' | 'status' | null;
 
 const statusClasses: Record<ServiceStatus, string> = {
   active: 'bg-green-100 text-green-700 border-none font-bold text-[9px]',
@@ -156,6 +159,7 @@ export default function ServicesPage() {
   const [bulkFee, setBulkFee] = useState<string>('');
   const [bulkCurrency, setBulkCurrency] = useState<'USD' | 'EUR' | 'ARS'>('USD');
   const [bulkPoId, setBulkPoId] = useState<string>('');
+  const [bulkStatus, setBulkStatus] = useState<ServiceStatus>('active');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   // Guard: Only load if user and their management area is ready
@@ -243,7 +247,7 @@ export default function ServicesPage() {
 
           const poB = b.poId ? poMap.get(b.poId) : null;
           const contractB = poB ? contractMap.get(poB.contractId) : null;
-          valB = clientMap.get(contractB?.clientId || '')?.name || '';
+          valB = clientMap.get(cB?.clientId || '')?.name || '';
         } else {
           valA = (a as any)[sortConfig.key] || '';
           valB = (b as any)[sortConfig.key] || '';
@@ -308,6 +312,10 @@ export default function ServicesPage() {
     }
     if (bulkMode === 'po' && bulkPoId) {
       updates.poId = bulkPoId;
+    }
+    if (bulkMode === 'status' && bulkStatus) {
+      updates.status = bulkStatus;
+      updates.statusUpdateDate = new Date();
     }
     
     try {
@@ -394,10 +402,13 @@ export default function ServicesPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="border-primary text-primary">
+                  <Settings2 className="h-4 w-4 mr-2" />
                   {t('Actions.bulkActions')} ({selectedIds.length})
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground">Acciones Disponibles</DropdownMenuLabel>
+                <DropdownMenuItem onSelect={() => setBulkMode('status')}><Zap className="mr-2 h-4 w-4" />{t('Actions.bulkStatusUpdate')}</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setBulkMode('price')}><DollarSign className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePrice')}</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setBulkMode('plan')}><LayoutGrid className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePlan')}</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setBulkMode('po')}><Link2 className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePo')}</DropdownMenuItem>
@@ -502,6 +513,75 @@ export default function ServicesPage() {
           </div>
         )}
       </main>
+
+      <Dialog open={bulkMode !== null} onOpenChange={() => setBulkMode(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajuste Masivo de Servicios</DialogTitle>
+            <DialogDescription>{t('Services.bulkUpdateServicesDesc', { count: selectedIds.length })}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {bulkMode === 'status' && (
+              <div className="space-y-2">
+                <Label>Nuevo Estado</Label>
+                <Select value={bulkStatus} onValueChange={(v:any) => setBulkStatus(v)}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Activo</SelectItem>
+                    <SelectItem value="paused">Pausa / Standby</SelectItem>
+                    <SelectItem value="canceled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <ShieldAlert className="h-3 w-3" /> Se registrará la fecha de hoy como fecha de cambio.
+                </p>
+              </div>
+            )}
+            {bulkMode === 'plan' && (
+              <div className="space-y-2">
+                <Label>Nuevo Plan de Servicio</Label>
+                <Input value={bulkPlan} onChange={(e) => setBulkPlan(e.target.value)} placeholder="Ej: Mobile 50GB" className="bg-white" />
+              </div>
+            )}
+            {bulkMode === 'price' && (
+              <div className="space-y-2">
+                <Label>Nuevo Abono Mensual</Label>
+                <div className="flex gap-2">
+                  <Input type="number" step="0.01" value={bulkFee} onChange={(e) => setBulkFee(e.target.value)} placeholder="0.00" className="bg-white" />
+                  <Select value={bulkCurrency} onValueChange={(v:any) => setBulkCurrency(v)}>
+                    <SelectTrigger className="w-24 bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="ARS">ARS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            {bulkMode === 'po' && (
+              <div className="space-y-2">
+                <Label>Vincular a Nueva PO</Label>
+                <Select value={bulkPoId} onValueChange={setBulkPoId}>
+                  <SelectTrigger className="bg-white"><SelectValue placeholder="PO de destino..." /></SelectTrigger>
+                  <SelectContent>
+                    {pos?.map(po => <SelectItem key={po.id} value={po.id}>{po.poNumber} ({po.id})</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkMode(null)} disabled={isBulkUpdating}>{t('Auth.cancelLabel')}</Button>
+            <Button onClick={handleBulkUpdate} disabled={isBulkUpdating}>
+              {isBulkUpdating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+              {t('Forms.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ServiceImporter 
         isOpen={isImporterOpen} 

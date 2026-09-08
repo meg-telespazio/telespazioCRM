@@ -260,10 +260,16 @@ export default function ClientServicesPage() {
           <span>{t('Pages.services')}</span>
         </div>
       }>
-        <Button variant="outline" onClick={() => router.push(`/clients/${clientId}/summary`)}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('Actions.back')}
-        </Button>
+        <div className="flex items-center gap-2">
+           <Button variant="outline" size="sm" onClick={() => router.push('/services/new')} className="border-primary text-primary">
+              <PlusCircle className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Carga Manual</span>
+            </Button>
+            <Button variant="outline" onClick={() => router.push(`/clients/${clientId}/summary`)}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {t('Actions.back')}
+            </Button>
+        </div>
       </AppHeader>
 
       <main className="flex-1 p-4 sm:p-6 space-y-6">

@@ -111,7 +111,7 @@ export default function ServiceNewPage() {
       monthlyFee: 0,
       isTelespazioOwned: true,
       poId: '',
-      activationDate: undefined,
+      activationDate: new Date(),
       equipmentId: '',
       equipmentSerial: '',
       equipmentType: 'Antena Standard',
