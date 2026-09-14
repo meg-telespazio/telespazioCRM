@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -45,10 +46,22 @@ import {
   ChevronRight,
   ShieldCheck,
   User,
+  Search,
+  Download,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  FileSpreadsheet
 } from 'lucide-react';
 import { ServiceImporter } from '@/components/services/service-importer';
+import { cn } from '@/lib/utils';
 
 const SERVICES_PER_PAGE = 10;
+
+type SortConfig = {
+  key: keyof Service | 'userTerminal';
+  direction: 'asc' | 'desc' | null;
+};
 
 function PaginatedServiceTable({ 
   services, 
@@ -62,12 +75,82 @@ function PaginatedServiceTable({
   const { t } = useI18n();
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'serviceNickname', direction: 'asc' });
 
-  const totalPages = Math.ceil(services.length / SERVICES_PER_PAGE);
+  // Filtering and Sorting logic
+  const filteredAndSortedServices = useMemo(() => {
+    let result = [...services];
+
+    // Filter
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      result = result.filter(s => 
+        s.serviceNickname?.toLowerCase().includes(q) || 
+        s.serviceLineNumber?.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    if (sortConfig.key && sortConfig.direction) {
+      result.sort((a: any, b: any) => {
+        let valA = a[sortConfig.key];
+        let valB = b[sortConfig.key];
+
+        if (sortConfig.key === 'userTerminal') {
+          valA = equipment.find(e => e.id === a.equipmentId)?.userTerminal || '';
+          valB = equipment.find(e => e.id === b.equipmentId)?.userTerminal || '';
+        }
+
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [services, searchTerm, sortConfig, equipment]);
+
+  const totalPages = Math.ceil(filteredAndSortedServices.length / SERVICES_PER_PAGE);
   const paginatedServices = useMemo(() => {
     const start = (currentPage - 1) * SERVICES_PER_PAGE;
-    return services.slice(start, start + SERVICES_PER_PAGE);
-  }, [services, currentPage]);
+    return filteredAndSortedServices.slice(start, start + SERVICES_PER_PAGE);
+  }, [filteredAndSortedServices, currentPage]);
+
+  const handleSort = (key: SortConfig['key']) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const getSortIcon = (key: SortConfig['key']) => {
+    if (sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-50" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />;
+  };
+
+  const handleExport = async () => {
+    const XLSX = await import('xlsx');
+    const exportData = filteredAndSortedServices.map(s => {
+      const equip = equipment.find(e => e.id === s.equipmentId);
+      return {
+        'Nickname': s.serviceNickname,
+        'Línea': s.serviceLineNumber,
+        'Plan': s.servicePlan,
+        'Abono': s.monthlyFee,
+        'Moneda': s.currency,
+        'Terminal (UUID)': s.equipmentId,
+        'Terminal (Serial)': equip?.userTerminal || '',
+        'Propiedad': s.isTelespazioOwned ? 'Telespazio' : 'Cliente',
+        'Estado': s.status
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Servicios');
+    XLSX.writeFile(wb, `servicios_${new Date().getTime()}.xlsx`);
+  };
 
   if (services.length === 0) {
     return (
@@ -79,16 +162,48 @@ function PaginatedServiceTable({
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input 
+            placeholder="Buscar por nickname o línea..." 
+            className="pl-9 h-9 text-xs" 
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          />
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExport} className="w-full sm:w-auto h-9 gap-2">
+          <FileSpreadsheet className="h-4 w-4" />
+          Exportar Listado
+        </Button>
+      </div>
+
       <div className="rounded-md border bg-background overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-[200px]">{t('Forms.serviceNickname')}</TableHead>
-              <TableHead>{t('Forms.servicePlan')}</TableHead>
-              <TableHead>{t('Forms.monthlyFee')}</TableHead>
-              <TableHead>{t('Forms.userTerminal')}</TableHead>
-              <TableHead>{t('Forms.isTelespazioOwned')}</TableHead>
-              <TableHead className="text-right">{t('Table.actions')}</TableHead>
+              <TableHead className="w-[200px]">
+                <button onClick={() => handleSort('serviceNickname')} className="flex items-center hover:text-primary transition-colors font-bold uppercase text-[10px]">
+                  {t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button onClick={() => handleSort('servicePlan')} className="flex items-center hover:text-primary transition-colors font-bold uppercase text-[10px]">
+                  {t('Forms.servicePlan')} {getSortIcon('servicePlan')}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button onClick={() => handleSort('monthlyFee')} className="flex items-center hover:text-primary transition-colors font-bold uppercase text-[10px]">
+                  {t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button onClick={() => handleSort('userTerminal')} className="flex items-center hover:text-primary transition-colors font-bold uppercase text-[10px]">
+                  {t('Forms.userTerminal')} {getSortIcon('userTerminal')}
+                </button>
+              </TableHead>
+              <TableHead className="font-bold uppercase text-[10px]">{t('Forms.isTelespazioOwned')}</TableHead>
+              <TableHead className="text-right font-bold uppercase text-[10px] pr-4">{t('Actions.title')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -101,56 +216,63 @@ function PaginatedServiceTable({
                       <Zap className="h-3 w-3 text-yellow-500" />
                       <button 
                         onClick={() => router.push(`/services/${service.id}`)}
-                        className="font-bold text-primary hover:underline text-left"
+                        className="font-bold text-primary hover:underline text-left text-[11px]"
                       >
                         {service.serviceNickname}
                       </button>
                     </div>
                     <p className="text-[10px] text-muted-foreground font-mono">{service.serviceLineNumber}</p>
                   </TableCell>
-                  <TableCell className="text-xs">{service.servicePlan}</TableCell>
-                  <TableCell className="text-xs font-semibold">
+                  <TableCell className="text-[11px] font-medium">{service.servicePlan}</TableCell>
+                  <TableCell className="text-[11px] font-black text-slate-800">
                     {service.monthlyFee ? `${service.currency || 'USD'} ${service.monthlyFee.toLocaleString()}` : '-'}
                   </TableCell>
                   <TableCell>
                     {equip ? (
                       <div className="flex items-center gap-2">
                         <HardDrive className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs">{equip.userTerminal}</span>
-                        <Badge variant="outline" className="text-[9px] h-4">{equip.physicalStatus}</Badge>
+                        <span className="text-[11px] font-mono">{equip.userTerminal}</span>
+                        <Badge variant="outline" className="text-[8px] h-4 py-0 uppercase font-bold">{equip.physicalStatus}</Badge>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground italic">No linked equipment</span>
+                      <span className="text-[10px] text-muted-foreground italic">Sin equipo vinculado</span>
                     )}
                   </TableCell>
                   <TableCell>
                     {service.isTelespazioOwned !== false ? (
-                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1">
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1 px-2 py-0">
                         <ShieldCheck className="h-3 w-3" />
                         Telespazio
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-[10px] gap-1">
+                      <Badge variant="outline" className="text-[10px] gap-1 px-2 py-0 border-slate-200 text-slate-500">
                         <User className="h-3 w-3" />
                         {t('Dashboard.recentOpportunities.clientHeader')}
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => onViewEquipment(service.equipmentId)}>
-                      {t('Equipment.view')}
+                  <TableCell className="text-right pr-4">
+                    <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => router.push(`/services/${service.id}`)}>
+                      {t('Activity.view')}
                     </Button>
                   </TableCell>
                 </TableRow>
               );
             })}
+            {paginatedServices.length === 0 && searchTerm && (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">
+                  No se encontraron servicios que coincidan con "{searchTerm}"
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase">
             {t('Table.pagination.pageInfo', { page: currentPage, totalPages })}
           </p>
           <div className="flex gap-2">
