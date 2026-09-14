@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -25,8 +24,9 @@ import {
   PlusCircle,
   Eye,
   Settings2,
+  LayoutGrid,
   ShieldAlert,
-  User as UserIcon
+  Save
 } from 'lucide-react';
 import type { Service, PurchaseOrder, Contract, Client, ServiceStatus } from '@/lib/types';
 import { useI18n } from '@/firebase/client-provider';
@@ -171,19 +171,14 @@ export default function ServicesPage() {
     if (!userLoading && !user) redirect('/login');
   }, [user, userLoading]);
 
-  // Data fetching - Services filtered by management and assignedTo for Executives
+  // Data fetching - Services filtered by management area only to ensure visibility of Master/Old POs services
   const servicesQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'services');
     if (user?.role === 'admin') return query(ref);
-    if (user?.role === 'ejecutivo') {
-      return query(ref, where('management', '==', user.management), where('assignedTo', '==', user.uid));
-    }
     return query(ref, where('management', '==', user?.management));
-  }, [canLoadData, user?.role, user?.management, user?.uid, firestore]);
+  }, [canLoadData, user?.role, user?.management, firestore]);
 
-  // CRITICAL FIX: Executives need to see ALL POs and Contracts of their gerencia 
-  // to resolve the context of services, even if the PO/Contract is not assigned to them (e.g. Master POs or Expired ones)
   const posQuery = useMemoFirebase(() => {
     if (!canLoadData) return null;
     const ref = collection(firestore, 'purchaseOrders');
