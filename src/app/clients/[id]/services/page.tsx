@@ -182,52 +182,57 @@ function PaginatedServiceTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-[200px]">
+              <TableHead className="w-[200px] h-9">
                 <button onClick={() => handleSort('serviceNickname')} className="flex items-center hover:text-primary transition-colors font-bold uppercase text-[10px]">
                   {t('Forms.serviceNickname')} {getSortIcon('serviceNickname')}
                 </button>
               </TableHead>
-              <TableHead>
+              <TableHead className="h-9">
                 <button onClick={() => handleSort('servicePlan')} className="flex items-center hover:text-primary transition-colors font-bold uppercase text-[10px]">
                   {t('Forms.servicePlan')} {getSortIcon('servicePlan')}
                 </button>
               </TableHead>
-              <TableHead>
+              <TableHead className="h-9">
                 <button onClick={() => handleSort('monthlyFee')} className="flex items-center hover:text-primary transition-colors font-bold uppercase text-[10px]">
                   {t('Forms.monthlyFee')} {getSortIcon('monthlyFee')}
                 </button>
               </TableHead>
-              <TableHead>
+              <TableHead className="h-9">
                 <button onClick={() => handleSort('userTerminal')} className="flex items-center hover:text-primary transition-colors font-bold uppercase text-[10px]">
                   {t('Forms.userTerminal')} {getSortIcon('userTerminal')}
                 </button>
               </TableHead>
-              <TableHead className="font-bold uppercase text-[10px]">{t('Forms.isTelespazioOwned')}</TableHead>
-              <TableHead className="text-right font-bold uppercase text-[10px] pr-4">{t('Actions.title')}</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] h-9">{t('Forms.isTelespazioOwned')}</TableHead>
+              <TableHead className="text-right font-bold uppercase text-[10px] pr-4 h-9">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedServices.map(service => {
               const equip = equipment.find(e => e.id === service.equipmentId);
+              const isCanceled = service.status === 'canceled';
+
               return (
-                <TableRow key={service.id}>
-                  <TableCell>
+                <TableRow key={service.id} className={cn(
+                  "transition-colors",
+                  isCanceled ? "bg-slate-100/60 grayscale-[0.8] opacity-70" : ""
+                )}>
+                  <TableCell className="py-1">
                     <div className="flex items-center gap-2">
-                      <Zap className="h-3 w-3 text-yellow-500" />
+                      <Zap className={cn("h-3 w-3", isCanceled ? "text-slate-400" : "text-yellow-500")} />
                       <button 
                         onClick={() => router.push(`/services/${service.id}`)}
-                        className="font-bold text-primary hover:underline text-left text-[11px]"
+                        className={cn("font-bold hover:underline text-left text-[11px]", isCanceled ? "text-slate-500" : "text-primary")}
                       >
                         {service.serviceNickname}
                       </button>
                     </div>
                     <p className="text-[10px] text-muted-foreground font-mono">{service.serviceLineNumber}</p>
                   </TableCell>
-                  <TableCell className="text-[11px] font-medium">{service.servicePlan}</TableCell>
-                  <TableCell className="text-[11px] font-black text-slate-800">
+                  <TableCell className="py-1 text-[11px] font-medium">{service.servicePlan}</TableCell>
+                  <TableCell className="py-1 text-[11px] font-black text-slate-800">
                     {service.monthlyFee ? `${service.currency || 'USD'} ${service.monthlyFee.toLocaleString()}` : '-'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-1">
                     {equip ? (
                       <div className="flex items-center gap-2">
                         <HardDrive className="h-3 w-3 text-muted-foreground" />
@@ -238,7 +243,7 @@ function PaginatedServiceTable({
                       <span className="text-[10px] text-muted-foreground italic">Sin equipo vinculado</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-1">
                     {service.isTelespazioOwned !== false ? (
                       <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1 px-2 py-0">
                         <ShieldCheck className="h-3 w-3" />
@@ -251,7 +256,7 @@ function PaginatedServiceTable({
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right pr-4">
+                  <TableCell className="py-1 text-right pr-4">
                     <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => router.push(`/services/${service.id}`)}>
                       {t('Activity.view')}
                     </Button>

@@ -84,7 +84,7 @@ type BulkMode = 'price' | 'plan' | 'po' | 'status' | null;
 const statusClasses: Record<ServiceStatus, string> = {
   active: 'bg-green-100 text-green-700 border-none font-bold text-[9px]',
   paused: 'bg-amber-100 text-amber-700 border-none font-bold text-[9px]',
-  canceled: 'bg-slate-100 text-slate-700 border-none font-bold text-[9px]',
+  canceled: 'bg-slate-200 text-slate-600 border-none font-bold text-[9px]',
 };
 
 function InlineFeeEdit({ 
@@ -235,7 +235,7 @@ export default function ServicesPage() {
           const contractA = poA ? contractMap.get(poA.contractId) : null;
           valA = clientMap.get(contractA?.clientId || '')?.name || '';
 
-          const poB = poMap.get(b.poId);
+          const poB = b.poId ? poMap.get(b.poId) : null;
           const contractB = poB ? contractMap.get(poB.contractId) : null;
           valB = clientMap.get(contractB?.clientId || '')?.name || '';
         } else {
@@ -398,6 +398,7 @@ export default function ServicesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground">Acciones Disponibles</DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setBulkMode('status')}><Zap className="mr-2 h-4 w-4" />{t('Actions.bulkStatusUpdate')}</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setBulkMode('price')}><DollarSign className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePrice')}</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setBulkMode('plan')}><LayoutGrid className="mr-2 h-4 w-4" />{t('Actions.bulkUpdatePlan')}</DropdownMenuItem>
@@ -426,34 +427,38 @@ export default function ServicesPage() {
                 const po = poMap.get(s.poId);
                 const contract = po ? contractMap.get(po.contractId) : null;
                 const client = contract ? clientMap.get(contract.clientId) : null;
+                const isCanceled = s.status === 'canceled';
 
                 return (
-                  <TableRow key={s.id}>
-                    <TableCell><Checkbox checked={selectedIds.includes(s.id)} onCheckedChange={(checked) => toggleSelect(s.id, !!checked)} disabled={isIngeniero} /></TableCell>
-                    <TableCell>
-                      <button onClick={() => router.push(`/services/${s.id}`)} className="font-bold text-primary hover:underline flex items-center gap-2">
-                        <Zap className="h-3 w-3 text-yellow-500" /> {s.serviceNickname}
+                  <TableRow key={s.id} className={cn(
+                    "transition-colors",
+                    isCanceled ? "bg-slate-100/60 grayscale-[0.8] opacity-70" : "hover:bg-muted/50"
+                  )}>
+                    <TableCell className="py-1"><Checkbox checked={selectedIds.includes(s.id)} onCheckedChange={(checked) => toggleSelect(s.id, !!checked)} disabled={isIngeniero} /></TableCell>
+                    <TableCell className="py-1">
+                      <button onClick={() => router.push(`/services/${s.id}`)} className={cn("font-bold hover:underline flex items-center gap-2", isCanceled ? "text-slate-500" : "text-primary")}>
+                        <Zap className={cn("h-3 w-3", isCanceled ? "text-slate-400" : "text-yellow-500")} /> {s.serviceNickname}
                       </button>
                       <p className="text-[10px] text-muted-foreground ml-5">{s.serviceLineNumber}</p>
                     </TableCell>
-                    <TableCell><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} disabled={isIngeniero} /></TableCell>
-                    <TableCell className="text-xs">{s.servicePlan}</TableCell>
-                    <TableCell className="text-[11px] font-medium">{client?.name || '-'}</TableCell>
-                    <TableCell>
+                    <TableCell className="py-1"><InlineFeeEdit service={s} onUpdate={handleInlineUpdate} disabled={isIngeniero || isCanceled} /></TableCell>
+                    <TableCell className="py-1 text-xs">{s.servicePlan}</TableCell>
+                    <TableCell className="py-1 text-[11px] font-medium">{client?.name || '-'}</TableCell>
+                    <TableCell className="py-1">
                       {s.isTelespazioOwned !== false ? (
                         <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] font-bold uppercase py-0 px-2 h-4">Telespazio</Badge>
                       ) : (
                         <Badge variant="outline" className="text-[9px] font-bold uppercase py-0 px-2 h-4 text-slate-500">Cliente</Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-1">
                       <Badge variant="outline" className={cn("rounded-full", statusClasses[s.status || 'active'])}>
                         {t(`Status.${s.status || 'active'}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right px-4">
+                    <TableCell className="py-1 text-right px-4">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => router.push(`/services/${s.id}`)}>
                             {isIngeniero ? <Eye className="mr-2 h-4 w-4" /> : <Edit className="mr-2 h-4 w-4" />}
