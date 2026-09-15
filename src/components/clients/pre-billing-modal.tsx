@@ -20,10 +20,9 @@ import {
 } from '@/components/ui/table';
 import { useI18n } from '@/firebase/client-provider';
 import type { Client, Service, Equipment, Contract, PurchaseOrder } from '@/lib/types';
-import { Download, FileSpreadsheet, Loader2, Info } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { format, endOfMonth, startOfMonth, differenceInDays, isSameMonth, isBefore, isAfter } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { Download, FileSpreadsheet, Loader2, ListChecks, Zap } from 'lucide-react';
+import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
 
 interface PreBillingModalProps {
   isOpen: boolean;
@@ -44,86 +43,55 @@ export function PreBillingModal({
   contracts,
   pos,
 }: PreBillingModalProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'es' ? es : enUS;
   const [isExporting, setIsExporting] = useState(false);
 
-  const billingData = useMemo(() => {
-    const today = new Date();
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
-    const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
+  // Requerimiento: Solo servicios activos
+  const activeServices = useMemo(() => {
+    return services.filter(s => s.status === 'active' || !s.status);
+  }, [services]);
 
-    return services.map(service => {
+  const billingData = useMemo(() => {
+    return activeServices.map(service => {
       const equip = equipment.find(e => e.id === service.equipmentId);
-      const po = pos.find(p => p.id === service.poId);
-      const contract = contracts.find(c => c.id === po?.contractId);
       
       const equipmentFee = (!equip?.isClientOwned) ? (equip?.comodatoFee || 0) : 0;
-      let serviceFee = service.monthlyFee || 0;
-      let billingNote = '';
-      let billingType: 'full' | 'pro-rata' | 'standby' | 'none' = 'full';
-
-      // 1. Logic for CANCELED services
-      if (service.status === 'canceled') {
-        const cancelDate = service.statusUpdateDate;
-        
-        if (!cancelDate) {
-          serviceFee = 0;
-          billingType = 'none';
-          billingNote = 'Sin fecha de cancelación';
-        } else if (isBefore(cancelDate, monthStart)) {
-          // Canceled before current month
-          serviceFee = 0;
-          billingType = 'none';
-          billingNote = 'Cancelado previo al periodo';
-        } else if (isSameMonth(cancelDate, today)) {
-          // Canceled during current month: Pro-rata
-          const activeDays = differenceInDays(cancelDate, monthStart) + 1;
-          const dailyRate = serviceFee / daysInMonth;
-          serviceFee = dailyRate * activeDays;
-          billingType = 'pro-rata';
-          billingNote = `Prorrateado (${activeDays} días)`;
-        } else if (isAfter(cancelDate, monthEnd)) {
-          // Canceled after current month
-          billingType = 'full';
-        }
-      }
-
-      // 2. Logic for PAUSED services (Standby)
-      else if (service.status === 'paused') {
-        // Look for standby price in contract
-        const standbyItem = contract?.priceList?.find(p => 
-          p.planName.toLowerCase().includes('standby') || 
-          p.planName.toLowerCase().includes('pausa')
-        );
-        
-        if (standbyItem) {
-          serviceFee = standbyItem.price;
-          billingNote = `Standby (Contrato: ${standbyItem.planName})`;
-        } else {
-          serviceFee = 15; // Default 15 USD
-          billingNote = 'Standby (Default 15 USD)';
-        }
-        billingType = 'standby';
-      }
+      const serviceFee = service.monthlyFee || 0;
 
       return {
         id: service.id,
         nickname: service.serviceNickname,
         lineNumber: service.serviceLineNumber,
-        plan: service.servicePlan,
+        plan: service.servicePlan || 'Sin Plan',
         currency: service.currency || 'USD',
         serviceFee,
         equipmentFee,
         total: serviceFee + equipmentFee,
-        billingNote,
-        billingType,
-        status: service.status
       };
-    }).filter(item => item.billingType !== 'none'); // Don't show fully canceled items from past months
-  }, [services, equipment, contracts, pos]);
+    });
+  }, [activeServices, equipment]);
 
-  const totals = useMemo(() => {
+  // Totales por Tipo de Plan (Requerimiento d)
+  const totalsByPlan = useMemo(() => {
+    const planMap = new Map<string, { count: number, total: number, currency: string }>();
+    
+    billingData.forEach(item => {
+      const current = planMap.get(item.plan) || { count: 0, total: 0, currency: item.currency };
+      planMap.set(item.plan, {
+        count: current.count + 1,
+        total: current.total + item.total,
+        currency: item.currency
+      });
+    });
+
+    return Array.from(planMap.entries()).map(([name, stats]) => ({
+      name,
+      ...stats
+    })).sort((a, b) => b.total - a.total);
+  }, [billingData]);
+
+  const grandTotals = useMemo(() => {
     return billingData.reduce((acc, curr) => {
       acc.services += curr.serviceFee;
       acc.equipment += curr.equipmentFee;
@@ -138,34 +106,40 @@ export function PreBillingModal({
       const XLSX = await import('xlsx');
       
       const data = billingData.map(item => ({
-        [t('PreBilling.serviceHeader')]: item.nickname,
-        [t('PreBilling.lineHeader')]: item.lineNumber,
-        [t('PreBilling.planHeader')]: item.plan,
-        'Estado': item.status,
-        [t('PreBilling.serviceFeeHeader')]: item.serviceFee,
-        [t('PreBilling.equipmentFeeHeader')]: item.equipmentFee,
-        [t('PreBilling.totalHeader')]: item.total,
-        'Currency': item.currency,
-        'Observaciones': item.billingNote
+        'Ítem / Nickname': item.nickname,
+        'Línea de Servicio': item.lineNumber,
+        'Plan': item.plan,
+        'Abono Servicio': item.serviceFee,
+        'Abono Equipo (Comodato)': item.equipmentFee,
+        'Total Fila': item.total,
+        'Moneda': item.currency
       }));
 
-      // Add totals row
-      data.push({
-        [t('PreBilling.serviceHeader')]: 'TOTALES',
-        [t('PreBilling.lineHeader')]: '',
-        [t('PreBilling.planHeader')]: '',
-        'Estado': '',
-        [t('PreBilling.serviceFeeHeader')]: totals.services,
-        [t('PreBilling.equipmentFeeHeader')]: totals.equipment,
-        [t('PreBilling.totalHeader')]: totals.grandTotal,
-        'Currency': billingData[0]?.currency || 'USD',
-        'Observaciones': ''
+      // Separador
+      data.push({} as any);
+      data.push({ 'Ítem / Nickname': 'RESUMEN POR PLANES' } as any);
+
+      totalsByPlan.forEach(p => {
+        data.push({
+          'Ítem / Nickname': p.name,
+          'Línea de Servicio': `${p.count} servicios`,
+          'Total Fila': p.total,
+          'Moneda': p.currency
+        } as any);
       });
+
+      // Totales finales
+      data.push({} as any);
+      data.push({
+        'Ítem / Nickname': 'TOTAL GENERAL',
+        'Total Fila': grandTotals.grandTotal,
+        'Moneda': billingData[0]?.currency || 'USD'
+      } as any);
 
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Pre-billing");
-      XLSX.writeFile(workbook, `PreBilling_${client.name}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(workbook, `PreBilling_${client.name}_${format(new Date(), 'yyyy-MM')}.xlsx`);
     } finally {
       setIsExporting(false);
     }
@@ -173,81 +147,62 @@ export function PreBillingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="p-6 border-b bg-muted/10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <FileSpreadsheet className="h-6 w-6" />
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col p-0 border-none shadow-2xl">
+        <DialogHeader className="p-6 border-b bg-slate-900 text-white shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-primary rounded-xl shadow-lg">
+              <FileSpreadsheet className="h-6 w-6 text-white" />
             </div>
             <div>
-              <DialogTitle>{t('PreBilling.title')}</DialogTitle>
-              <DialogDescription>
-                {client.name} - Periodo: {format(new Date(), 'MMMM yyyy')}
+              <DialogTitle className="text-xl font-black uppercase tracking-tight">{t('PreBilling.title')}</DialogTitle>
+              <DialogDescription className="text-slate-400 font-medium">
+                {client.name} • Periodo: <span className="capitalize">{format(new Date(), 'MMMM yyyy', { locale: dateLocale })}</span>
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="rounded-md border bg-card overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/50 scrollbar-hide">
+          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="font-bold">{t('PreBilling.serviceHeader')}</TableHead>
-                  <TableHead className="font-bold">{t('PreBilling.planHeader')}</TableHead>
-                  <TableHead className="font-bold text-center">Estado</TableHead>
-                  <TableHead className="text-right font-bold">{t('PreBilling.serviceFeeHeader')}</TableHead>
-                  <TableHead className="text-right font-bold">{t('PreBilling.equipmentFeeHeader')}</TableHead>
-                  <TableHead className="text-right font-bold">{t('PreBilling.totalHeader')}</TableHead>
+                <TableRow className="bg-slate-100 hover:bg-slate-100 border-none h-10">
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">{t('PreBilling.serviceHeader')}</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">{t('PreBilling.planHeader')}</TableHead>
+                  <TableHead className="text-right font-black text-[10px] uppercase tracking-widest text-slate-500">{t('PreBilling.serviceFeeHeader')}</TableHead>
+                  <TableHead className="text-right font-black text-[10px] uppercase tracking-widest text-slate-500">{t('PreBilling.equipmentFeeHeader')}</TableHead>
+                  <TableHead className="text-right font-black text-[10px] uppercase tracking-widest text-slate-500">{t('PreBilling.totalHeader')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {billingData.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-slate-50/50">
-                    <TableCell>
-                      <div className="font-bold text-slate-700">{item.nickname}</div>
+                  <TableRow key={item.id} className="hover:bg-slate-50/80 h-10 border-b border-slate-50">
+                    <TableCell className="py-2">
+                      <div className="font-bold text-slate-800 text-[11px]">{item.nickname}</div>
                       <p className="text-[10px] text-muted-foreground font-mono">{item.lineNumber}</p>
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="py-2 text-[11px] font-medium text-slate-600">
                       {item.plan}
-                      {item.billingNote && (
-                        <div className="flex items-center gap-1 mt-1 text-[9px] text-amber-600 font-bold uppercase">
-                          <Info className="h-3 w-3" />
-                          {item.billingNote}
-                        </div>
+                    </TableCell>
+                    <TableCell className="py-2 text-right">
+                      <span className="font-bold text-[11px]">{item.serviceFee.toLocaleString()} <span className="text-[9px] text-slate-400 font-normal">{item.currency}</span></span>
+                    </TableCell>
+                    <TableCell className="py-2 text-right">
+                      {item.equipmentFee > 0 ? (
+                        <span className="text-blue-600 font-bold text-[11px]">{item.equipmentFee.toLocaleString()} <span className="text-[9px] text-slate-400 font-normal">{item.currency}</span></span>
+                      ) : (
+                        <span className="text-slate-300">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className={cn(
-                        "text-[9px] uppercase font-bold",
-                        item.status === 'active' ? "bg-green-50 text-green-700 border-green-200" :
-                        item.status === 'paused' ? "bg-amber-50 text-amber-700 border-amber-200" :
-                        "bg-slate-100 text-slate-700"
-                      )}>
-                        {t(`Status.${item.status}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="font-semibold text-xs">{item.serviceFee.toLocaleString()} {item.currency}</span>
-                        {item.billingType === 'pro-rata' && <Badge className="text-[8px] h-3 px-1 bg-blue-100 text-blue-700 border-none">Pro-rata</Badge>}
-                        {item.billingType === 'standby' && <Badge className="text-[8px] h-3 px-1 bg-amber-100 text-amber-700 border-none">Standby</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right text-xs font-medium">
-                      {item.equipmentFee > 0 ? (
-                        <span className="text-blue-600">{item.equipmentFee.toLocaleString()} {item.currency}</span>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-primary">
-                      {item.total.toLocaleString()} {item.currency}
+                    <TableCell className="py-2 text-right">
+                      <span className="font-black text-primary text-[11px]">{item.total.toLocaleString()} <span className="text-[9px] font-normal">{item.currency}</span></span>
                     </TableCell>
                   </TableRow>
                 ))}
                 {billingData.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center italic text-muted-foreground">
-                      No hay servicios activos o facturables para este periodo.
+                    <TableCell colSpan={5} className="h-32 text-center italic text-slate-400 text-sm">
+                      No se detectaron servicios activos para facturar en este cliente.
                     </TableCell>
                   </TableRow>
                 )}
@@ -255,42 +210,67 @@ export function PreBillingModal({
             </Table>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg bg-slate-50">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                {t('PreBilling.totalServices')}
-              </span>
-              <p className="text-xl font-bold">
-                {totals.services.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">{billingData[0]?.currency || 'USD'}</span>
+          {/* Desglose por tipo de servicio */}
+          {totalsByPlan.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] flex items-center gap-2">
+                <ListChecks className="h-4 w-4" /> Desglose por Plan de Servicio
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {totalsByPlan.map(plan => (
+                  <Card key={plan.name} className="border-none shadow-sm bg-white">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="space-y-1 overflow-hidden">
+                        <p className="text-[10px] font-black text-slate-400 uppercase truncate pr-2">{plan.name}</p>
+                        <p className="text-lg font-black text-slate-800">{plan.total.toLocaleString()} <span className="text-xs font-normal text-slate-400">{plan.currency}</span></p>
+                      </div>
+                      <Badge variant="secondary" className="h-6 px-2 bg-slate-100 text-slate-600 font-bold">x{plan.count}</Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Resumen de Totales Finales */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-6">
+            <div className="p-5 rounded-2xl bg-white border shadow-sm space-y-1">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Total Abonos Servicios</span>
+              <p className="text-2xl font-black text-slate-800">
+                {grandTotals.services.toLocaleString()} <span className="text-sm font-normal text-slate-400">{billingData[0]?.currency || 'USD'}</span>
               </p>
             </div>
-            <div className="p-4 border rounded-lg bg-slate-50">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                {t('PreBilling.totalEquipment')}
-              </span>
-              <p className="text-xl font-bold text-blue-700">
-                {totals.equipment.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">{billingData[0]?.currency || 'USD'}</span>
+            <div className="p-5 rounded-2xl bg-white border shadow-sm space-y-1 border-blue-100">
+              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">Total Abonos Equipos</span>
+              <p className="text-2xl font-black text-blue-700">
+                {grandTotals.equipment.toLocaleString()} <span className="text-sm font-normal text-slate-400">{billingData[0]?.currency || 'USD'}</span>
               </p>
             </div>
-            <div className="p-4 border rounded-lg bg-primary/5 border-primary/20">
-              <span className="text-[10px] font-bold text-primary uppercase tracking-wider block mb-1">
-                {t('PreBilling.grandTotal')}
-              </span>
-              <p className="text-xl font-bold text-primary">
-                {totals.grandTotal.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">{billingData[0]?.currency || 'USD'}</span>
+            <div className="p-5 rounded-2xl bg-primary shadow-xl shadow-primary/20 space-y-1">
+              <span className="text-[10px] font-black text-white/70 uppercase tracking-widest block">Total General Facturable</span>
+              <p className="text-2xl font-black text-white">
+                {grandTotals.grandTotal.toLocaleString()} <span className="text-sm font-normal text-white/70">{billingData[0]?.currency || 'USD'}</span>
               </p>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="p-6 border-t bg-muted/10">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isExporting}>
-            {t('Auth.cancelLabel')}
-          </Button>
-          <Button onClick={handleExport} disabled={billingData.length === 0 || isExporting} className="gap-2">
-            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {t('PreBilling.exportExcel')}
-          </Button>
+        <DialogFooter className="p-6 border-t bg-white shrink-0">
+          <div className="flex w-full justify-between items-center">
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase">
+              <Zap className="h-3 w-3 text-yellow-500" />
+              {billingData.length} Servicios operativos detectados
+            </div>
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isExporting}>
+                {t('Auth.cancelLabel')}
+              </Button>
+              <Button onClick={handleExport} disabled={billingData.length === 0 || isExporting} className="gap-2 px-8 shadow-lg shadow-primary/20">
+                {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {t('PreBilling.exportExcel')}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
