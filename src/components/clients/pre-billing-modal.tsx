@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/firebase/client-provider';
 import type { Client, Service, Equipment, Contract, PurchaseOrder } from '@/lib/types';
 import { Download, FileSpreadsheet, Loader2, ListChecks, Zap } from 'lucide-react';
