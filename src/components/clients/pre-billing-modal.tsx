@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
 import { useI18n } from '@/firebase/client-provider';
 import type { Client, Service, Equipment, Contract, PurchaseOrder } from '@/lib/types';
 import { Download, FileSpreadsheet, Loader2, ListChecks, Zap } from 'lucide-react';
@@ -72,7 +73,7 @@ export function PreBillingModal({
     });
   }, [activeServices, equipment]);
 
-  // Totales por Tipo de Plan (Requerimiento d)
+  // Totales por Tipo de Plan
   const totalsByPlan = useMemo(() => {
     const planMap = new Map<string, { count: number, total: number, currency: string }>();
     
