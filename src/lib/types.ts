@@ -91,6 +91,8 @@ export type PhoneEntry = {
 export type ContactPosition = 'Analyst' | 'CEO' | 'CFO' | 'CIO' | 'CISO' | 'Head' | 'Manager';
 export type ContactArea = 'Administration' | 'IT' | 'Legal' | 'Marketing' | 'Procurement' | 'Sales' | 'Supplier Payments';
 
+export type ContactSource = 'Directo' | 'LinkedIn' | 'Referido';
+
 export type Contact = {
   id: string;
   publicId: string;
@@ -106,6 +108,13 @@ export type Contact = {
   createdBy: string;
   management: ManagementArea;
   assignedTo: string;
+  // New fields
+  source?: ContactSource;
+  linkedinProfile?: string;
+  birthDate?: Date;
+  hasWhatsapp: boolean;
+  isContactable: boolean;
+  status: 'active' | 'suspended' | 'canceled';
 };
 
 export type OpportunityLineItem = {
@@ -313,7 +322,7 @@ export type Service = {
   activationDate?: Date;
   createdBy: string;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt?: Date;
   management: ManagementArea;
   assignedTo: string;
 };

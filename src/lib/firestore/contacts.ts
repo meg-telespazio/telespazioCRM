@@ -90,7 +90,7 @@ export function updateContact(
     ...cleanData(contactData),
     updatedAt: serverTimestamp(),
   };
-  updateDoc(contactRef, data).catch((serverError) => {
+  return updateDoc(contactRef, data).catch((serverError) => {
     if (serverError.code === 'permission-denied') {
       const permissionError = new FirestorePermissionError({
         path: contactRef.path,
@@ -99,6 +99,7 @@ export function updateContact(
       });
       errorEmitter.emit('permission-error', permissionError);
     }
+    throw serverError;
   });
 }
 
