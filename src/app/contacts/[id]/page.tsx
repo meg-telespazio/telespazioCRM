@@ -33,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, ArrowLeft, ChevronRight, User, Mail, Phone, Calendar as CalendarIcon, Link2, MessageSquare, ShieldCheck, BadgeInfo, Info, Plus } from 'lucide-react';
+import { Trash2, ArrowLeft, ChevronRight, User, Mail, Phone, Calendar as CalendarIcon, Link2, MessageSquare, ShieldCheck, BadgeInfo, Plus, Save, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -71,7 +71,6 @@ const getFormSchema = (t: (key: string) => string) =>
       )
       .optional(),
     notes: z.string().optional(),
-    // New fields
     source: z.enum(sourceOptions).optional(),
     linkedinProfile: z.string().url().optional().or(z.literal('')),
     birthDate: z.date().optional().nullable(),
@@ -193,7 +192,6 @@ function ContactDetailForm() {
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             
-                            {/* SECCIÓN 1: IDENTIDAD Y EMPRESA */}
                             <Card className="border-none shadow-md">
                                 <CardHeader className="bg-slate-50 border-b">
                                   <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -235,7 +233,6 @@ function ContactDetailForm() {
                                 </CardContent>
                             </Card>
 
-                            {/* SECCIÓN 2: DATOS DE CONTACTO */}
                             <Card className="border-none shadow-md">
                                 <CardHeader className="bg-slate-50 border-b">
                                   <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -243,7 +240,6 @@ function ContactDetailForm() {
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-8">
-                                    {/* EMAILS ARRAY */}
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                           <Label className="text-xs font-black uppercase text-slate-500 tracking-tighter">{t('Forms.emails')}</Label>
@@ -278,7 +274,6 @@ function ContactDetailForm() {
                                         </div>
                                     </div>
 
-                                    {/* PHONES ARRAY */}
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                           <Label className="text-xs font-black uppercase text-slate-500 tracking-tighter">{t('Forms.phones')}</Label>
@@ -330,7 +325,6 @@ function ContactDetailForm() {
                                 </CardContent>
                             </Card>
 
-                            {/* SECCIÓN 3: PERFIL ADICIONAL */}
                             <Card className="border-none shadow-md">
                                 <CardHeader className="bg-slate-50 border-b">
                                   <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -409,10 +403,12 @@ function ContactDetailForm() {
     );
 }
 
-export default function ContactDetailSuspense() {
+export function ContactDetailSuspense() {
     return (
         <Suspense fallback={<div className="p-6"><Skeleton className="h-96 w-full" /></div>}>
             <ContactDetailForm />
         </Suspense>
     );
 }
+
+export default ContactDetailSuspense;
