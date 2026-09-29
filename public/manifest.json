@@ -1,21 +1,20 @@
-
 {
-  "name": "T-Track CRM Telespazio",
-  "short_name": "T-Track",
-  "description": "Sistema integral de gestión comercial de Telespazio Argentina",
+  "name": "Acizer Sales CRM",
+  "short_name": "Acizer Sales",
+  "description": "Sistema integral de gestión comercial de Acizer (www.acizer.com)",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#EC1C24",
+  "theme_color": "#1D4ED8",
   "icons": [
     {
-      "src": "/img/logoSmall.png",
+      "src": "/img/acizer-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/img/logoLarge.png",
+      "src": "/img/acizer-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

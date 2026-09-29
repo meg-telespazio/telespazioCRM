@@ -13,12 +13,13 @@ export default function UnauthorizedPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
       <div className="text-center mb-8 flex flex-col items-center">
         <Image
-          src="/img/logoLarge.png"
-          alt="T-Track Logo"
-          width={100}
-          height={100}
+          src="/img/acizer-logo.png"
+          alt="Acizer Logo"
+          width={140}
+          height={60}
           priority
-          className="mb-4 opacity-20 grayscale"
+          className="mb-4 opacity-40 grayscale"
+          style={{ height: 'auto', objectFit: 'contain' }}
         />
       </div>
       
@@ -42,7 +43,7 @@ export default function UnauthorizedPage() {
       </div>
       
       <p className="mt-12 text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-        Telespazio Argentina - T-Track CRM
+        Acizer (www.acizer.com) - T-Track CRM
       </p>
     </div>
   );

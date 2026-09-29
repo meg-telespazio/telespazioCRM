@@ -5,26 +5,26 @@ import { FirebaseClientProvider } from '@/firebase';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 
 export const metadata: Metadata = {
-  title: 'T-Track Sales',
-  description: 'Sistema Integral de Gestión Comercial - Telespazio Argentina',
+  title: 'Acizer Sales',
+  description: 'Sistema Integral de Gestión Comercial - Acizer (www.acizer.com)',
   manifest: '/manifest.json',
-  applicationName: 'T-Track Sales',
+  applicationName: 'Acizer Sales',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'T-Track Sales',
+    title: 'Acizer Sales',
   },
   formatDetection: {
     telephone: false,
   },
   icons: {
-    icon: '/img/logoLarge.png',
-    apple: '/img/logoLarge.png',
+    icon: '/img/acizer-logo.png',
+    apple: '/img/acizer-logo.png',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#EC1C24',
+  themeColor: '#1D4ED8',
 };
 
 export default function RootLayout({

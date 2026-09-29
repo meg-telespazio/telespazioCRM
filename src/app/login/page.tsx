@@ -11,26 +11,20 @@ export default function LoginPage() {
   const { t } = useI18n();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-destructive p-4">
-      <div className="text-center mb-6 flex flex-col items-center">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-4">
+      <div className="text-center mb-8 flex flex-col items-center">
         <Image
-          src="/img/logoLarge.png"
-          alt="T-Track Logo"
-          width={140}
-          height={140}
+          src="/img/acizer-logo-white.png"
+          alt="Acizer Logo"
+          width={220}
+          height={90}
           priority
-          className="mb-6 drop-shadow-xl"
+          className="drop-shadow-xl"
           style={{ height: 'auto', objectFit: 'contain' }}
         />
-        <Image
-          src="/img/logoBlancoChico.png"
-          alt="Telespazio Logo"
-          width={160}
-          height={40}
-          priority
-          className="opacity-90"
-          style={{ height: 'auto', objectFit: 'contain' }}
-        />
+        <p className="mt-3 text-blue-200/80 text-[11px] font-semibold uppercase tracking-[0.25em]">
+          Sales Management System
+        </p>
       </div>
       <AuthFormCard
         title={t('Auth.loginTitle')}
@@ -46,8 +40,8 @@ export default function LoginPage() {
         <p className="text-white text-[10px] font-bold uppercase tracking-widest">
           © {new Date().getFullYear()} Todos los derechos reservados
         </p>
-        <p className="text-white text-[10px] font-medium uppercase">
-          Telespazio Argentina S.A. - T-track Sales version: {APP_VERSION}
+        <p className="text-white text-[10px] font-medium uppercase tracking-wider">
+          Acizer S.A. (www.acizer.com) - T-track Sales version: {APP_VERSION}
         </p>
       </div>
     </div>

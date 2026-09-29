@@ -237,22 +237,18 @@ export function AppNavbar() {
   if (!user) return null;
 
   return (
-    <header className="sticky top-0 z-[100] w-full border-b bg-destructive text-destructive-foreground">
+    <header className="sticky top-0 z-[100] w-full border-b bg-primary text-primary-foreground shadow-md">
       <div className="flex h-16 w-full items-center px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="relative h-8 w-8">
-              <Image
-                src="/img/logoSmall.png"
-                alt="T-Track Logo"
-                fill
-                style={{ objectFit: 'contain' }}
-                priority
-              />
-            </div>
-            <h1 className="hidden text-xl font-bold sm:inline-block">
-              {t('App.appName')}
-            </h1>
+            <Image
+              src="/img/acizer-logo-white.png"
+              alt="Acizer Logo"
+              width={110}
+              height={32}
+              style={{ height: 'auto', objectFit: 'contain' }}
+              priority
+            />
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
             {menuItems.map((item) => (
@@ -305,15 +301,15 @@ export function AppNavbar() {
 
         <div className="ml-auto flex items-center gap-4">
           <div className="hidden items-center gap-2 md:flex">
-            <CurrencySwitcher className="text-white hover:bg-red-700" />
+            <CurrencySwitcher className="text-white hover:bg-white/10" />
             <div className="h-4 w-px bg-white/20 mx-1" />
-            <LanguageSwitcher className="text-white hover:bg-red-700" />
+            <LanguageSwitcher className="text-white hover:bg-white/10" />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative h-9 w-9 rounded-full hover:bg-red-700"
+                  className="relative h-9 w-9 rounded-full hover:bg-white/10"
                 >
                   <div className="relative">
                     <Avatar className="h-9 w-9">
@@ -327,7 +323,7 @@ export function AppNavbar() {
                       </AvatarFallback>
                     </Avatar>
                     {alertsCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-destructive shadow-lg ring-2 ring-destructive/20 animate-in zoom-in-50">
+                      <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-blue-900 shadow-lg ring-2 ring-blue-900/20 animate-in zoom-in-50">
                         {alertsCount}
                       </span>
                     )}
@@ -372,7 +368,7 @@ export function AppNavbar() {
           <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-red-700 relative">
+                <Button variant="ghost" size="icon" className="hover:bg-white/10 relative">
                   <Menu className="h-6 w-6" />
                   {alertsCount > 0 && (
                     <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-white" />
@@ -382,7 +378,7 @@ export function AppNavbar() {
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-full border-0 bg-destructive text-destructive-foreground sm:max-w-xs"
+                className="w-full border-0 bg-slate-900 text-white sm:max-w-xs"
               >
                 <SheetHeader className="p-6">
                   <SheetTitle className="sr-only">
@@ -396,22 +392,20 @@ export function AppNavbar() {
                       className="mb-6 flex items-center gap-2"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      <div className="relative h-8 w-8">
-                        <Image
-                          src="/img/logoSmall.png"
-                          alt="T-Track Logo"
-                          fill
-                          style={{ objectFit: 'contain' }}
-                          priority
-                        />
-                      </div>
-                      <h1 className="text-xl font-bold">{t('App.appName')}</h1>
+                      <Image
+                        src="/img/acizer-logo-white.png"
+                        alt="Acizer Logo"
+                        width={110}
+                        height={32}
+                        style={{ height: 'auto', objectFit: 'contain' }}
+                        priority
+                      />
                     </Link>
                     <nav className="flex flex-col gap-1">
                       {menuItems.map((item) => (
                         item.subItems ? (
                           <Collapsible key={item.label} className="w-full">
-                            <CollapsibleTrigger className="-mx-3 flex w-full items-center justify-between rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-red-700">
+                            <CollapsibleTrigger className="-mx-3 flex w-full items-center justify-between rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-white/10">
                               <div className='flex items-center gap-4'>
                                 <item.icon className="h-5 w-5" />
                                 {item.label}
@@ -425,8 +419,8 @@ export function AppNavbar() {
                                   href={subItem.href}
                                   onClick={() => setMobileMenuOpen(false)}
                                   className={cn(
-                                    '-mx-3 flex items-center gap-4 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-red-700',
-                                    pathname.startsWith(subItem.href) ? 'bg-red-800' : ''
+                                    '-mx-3 flex items-center gap-4 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-white/10',
+                                    pathname.startsWith(subItem.href) ? 'bg-white/20' : ''
                                   )}
                                 >
                                   <subItem.icon className="h-5 w-5" />
@@ -441,8 +435,8 @@ export function AppNavbar() {
                             href={item.href!}
                             onClick={() => setMobileMenuOpen(false)}
                             className={cn(
-                              '-mx-3 flex items-center gap-4 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-red-700',
-                              pathname.startsWith(item.href!) ? 'bg-red-800' : ''
+                              '-mx-3 flex items-center gap-4 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-white/10',
+                              pathname.startsWith(item.href!) ? 'bg-white/20' : ''
                             )}
                           >
                             <item.icon className="h-5 w-5" />
@@ -453,10 +447,10 @@ export function AppNavbar() {
                     </nav>
                   </div>
 
-                  <div className="mt-auto border-t border-red-600 p-6 space-y-4">
+                  <div className="mt-auto border-t border-slate-800 p-6 space-y-4">
                     <div className="flex items-center justify-between gap-2">
-                      <CurrencySwitcher className="w-1/2 justify-start text-white hover:bg-red-700" />
-                      <LanguageSwitcher className="w-1/2 justify-start text-white hover:bg-red-700" />
+                      <CurrencySwitcher className="w-1/2 justify-start text-white hover:bg-white/10" />
+                      <LanguageSwitcher className="w-1/2 justify-start text-white hover:bg-white/10" />
                     </div>
                     <div className="mb-4 flex items-center gap-3">
                       <Link
@@ -475,7 +469,7 @@ export function AppNavbar() {
                             </AvatarFallback>
                           </Avatar>
                           {alertsCount > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-destructive ring-2 ring-destructive/20">
+                            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-blue-900 ring-2 ring-blue-900/20">
                               {alertsCount}
                             </span>
                           )}
@@ -494,7 +488,7 @@ export function AppNavbar() {
                         handleLogout();
                         setMobileMenuOpen(false);
                       }}
-                      className="-mx-3 mt-2 w-full justify-start gap-4 p-3 text-base font-medium hover:bg-red-700"
+                      className="-mx-3 mt-2 w-full justify-start gap-4 p-3 text-base font-medium hover:bg-white/10"
                     >
                       <LogOut className="h-5 w-5" />
                       {t('Sidebar.logout')}
