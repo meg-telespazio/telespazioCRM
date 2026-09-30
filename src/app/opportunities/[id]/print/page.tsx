@@ -40,11 +40,11 @@ type EnrichedLineItem = OpportunityLineItem & {
 };
 
 const ProposalHeader = ({ t, publicId }: { t: any, publicId: string }) => (
-  <header className="flex items-start justify-between border-b-2 border-red-700 pb-2">
-    <div className="relative h-8 w-32">
+  <header className="flex items-start justify-between border-b-2 border-blue-700 pb-2">
+    <div className="relative h-9 w-36">
       <Image
-        src="/img/logoRojoLargo.png"
-        alt="Telespazio Logo"
+        src="/img/acizer-logo.png"
+        alt="Acizer Logo"
         fill
         style={{ objectFit: 'contain' }}
         priority
@@ -52,7 +52,7 @@ const ProposalHeader = ({ t, publicId }: { t: any, publicId: string }) => (
     </div>
     <div className="text-right">
       <h1 className="text-md font-bold">{t('Proposal.title')}</h1>
-      <p className="text-[10px] font-bold text-red-700">{publicId}</p>
+      <p className="text-[10px] font-bold text-blue-700">{publicId}</p>
     </div>
   </header>
 );
@@ -75,7 +75,7 @@ const ProposalFooter = ({
   totalPages: number;
   t: any
 }) => (
-  <footer className="mt-auto border-t-2 border-red-700 pt-2">
+  <footer className="mt-auto border-t-2 border-blue-700 pt-2">
     <div className="flex items-center justify-between text-[9px]">
       <p className="font-bold">{t('Proposal.confidential')}</p>
       <p>
@@ -199,7 +199,7 @@ export default function PrintOpportunityPage() {
       const canvas2 = await html2canvas(page2, { scale: 2, useCORS: true });
       pdf.addImage(canvas2.toDataURL('image/jpeg', 0.75), 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
 
-      pdf.save(`propuesta-${opportunity?.publicId || 'telespazio'}.pdf`);
+      pdf.save(`propuesta-${opportunity?.publicId || 'acizer'}.pdf`);
       
       toast({ variant: 'success', title: 'PDF Generado' });
     } catch (error) {
@@ -351,7 +351,7 @@ export default function PrintOpportunityPage() {
                         </p>
                       </div>
                       <section className="mt-4">
-                        <h2 className="text-lg font-bold uppercase text-red-700">
+                        <h2 className="text-lg font-bold uppercase text-blue-700">
                           {t('Proposal.proposalData')}
                         </h2>
                         <table className="mt-2 w-2/3">
@@ -378,52 +378,52 @@ export default function PrintOpportunityPage() {
                         </table>
                       </section>
                       <section className="mt-4 flex-grow">
-                        <h2 className="text-lg font-bold uppercase text-red-700">
+                        <h2 className="text-lg font-bold uppercase text-blue-700">
                           {t('Proposal.products_services')}
                         </h2>
                         <table className="mt-2 w-full border-collapse text-[10px]">
                           <thead>
-                            <tr className="bg-red-700 text-white">
-                              <th className="w-[5%] border border-red-700 p-0.5 text-center">
+                            <tr className="bg-blue-700 text-white">
+                              <th className="w-[5%] border border-blue-700 p-0.5 text-center">
                                 {t('Proposal.item')}
                               </th>
-                              <th className="w-[10%] border border-red-700 p-0.5 text-left">
+                              <th className="w-[10%] border border-blue-700 p-0.5 text-left">
                                 {t('Proposal.type')}
                               </th>
-                              <th className="border border-red-700 p-0.5 text-left">
+                              <th className="border border-blue-700 p-0.5 text-left">
                                 {t('Proposal.description')}
                               </th>
-                              <th className="w-[5%] border border-red-700 p-0.5 text-center">
+                              <th className="w-[5%] border border-blue-700 p-0.5 text-center">
                                 {t('Proposal.qty')}
                               </th>
-                              <th className="w-[5%] border border-red-700 p-0.5 text-center">
+                              <th className="w-[5%] border border-blue-700 p-0.5 text-center">
                                 {t('Proposal.disc')}
                               </th>
                               <th
-                                className="w-[20%] border border-red-700 p-0.5 text-center"
+                                className="w-[20%] border border-blue-700 p-0.5 text-center"
                                 colSpan={2}
                               >
                                 {t('Proposal.unit_price')}
                               </th>
                               <th
-                                className="w-[20%] border border-red-700 p-0.5 text-center"
+                                className="w-[20%] border border-blue-700 p-0.5 text-center"
                                 colSpan={2}
                               >
                                 {t('Proposal.subtotals')}
                               </th>
                             </tr>
-                            <tr className="bg-red-700 text-white">
+                            <tr className="bg-blue-700 text-white">
                               <th colSpan={5}></th>
-                              <th className="border border-red-700 p-0.5 text-center font-normal">
+                              <th className="border border-blue-700 p-0.5 text-center font-normal">
                                 {t('Proposal.otc')}
                               </th>
-                              <th className="border border-red-700 p-0.5 text-center font-normal">
+                              <th className="border border-blue-700 p-0.5 text-center font-normal">
                                 {t('Proposal.mrc')}
                               </th>
-                              <th className="border border-red-700 p-0.5 text-center font-normal">
+                              <th className="border border-blue-700 p-0.5 text-center font-normal">
                                 {t('Proposal.otc')}
                               </th>
-                              <th className="border border-red-700 p-0.5 text-center font-normal">
+                              <th className="border border-blue-700 p-0.5 text-center font-normal">
                                 {t('Proposal.mrc')}
                               </th>
                             </tr>
@@ -508,18 +508,18 @@ export default function PrintOpportunityPage() {
                       <section className="mt-6 flex-grow">
                         <div className="space-y-4">
                           <div>
-                            <span className="font-bold text-red-700">
+                            <span className="font-bold text-blue-700">
                               {t('Proposal.delivery_time')}:{' '}
                             </span>
                             <span>{deliveryTime}</span>
                           </div>
-                          <div className="font-bold text-red-700">
+                          <div className="font-bold text-blue-700">
                             <span>{t('Proposal.total_contract_value')}: </span>
                             <span>{`${
                               opportunity.currency || 'USD'
                             } ${totals.finalFcv.toFixed(2)}`}</span>
                           </div>
-                          <div className="border-2 border-red-700 p-2 space-y-2 text-[7pt]">
+                          <div className="border-2 border-blue-700 p-2 space-y-2 text-[7pt]">
                             <p>
                               <span className="font-bold">{t('Proposal.notes_title')}: </span>
                               {t('Proposal.notes_text', { currency: opportunity.currency || 'USD' })}
