@@ -14,6 +14,7 @@ import { logAuditAction } from './audit';
 
 /**
  * Reasigna todos los registros vinculados a un usuario y luego elimina su perfil de Firestore.
+ * Maneja lotes (batches) de hasta 400 operaciones para no exceder los límites de Firestore (500 ops por lote).
  */
 export async function deleteUserAndReassignData(
   firestore: Firestore,
@@ -21,7 +22,6 @@ export async function deleteUserAndReassignData(
   newOwnerId: string,
   newManagement: ManagementArea
 ) {
-  const batch = writeBatch(firestore);
   const updatedAt = serverTimestamp();
   const updateFields = { assignedTo: newOwnerId, management: newManagement, updatedAt };
 
@@ -39,34 +39,52 @@ export async function deleteUserAndReassignData(
     'service_orders'
   ];
 
-  // 1. Iterar por cada colección y reasignar documentos
-  for (const collName of collectionsToUpdate) {
-    const q = query(collection(firestore, collName), where('assignedTo', '==', deletedUid));
-    const snap = await getDocs(q);
-    snap.forEach(d => {
-      batch.update(d.ref, updateFields);
-    });
-  }
+  let currentBatch = writeBatch(firestore);
+  let opCount = 0;
 
-  // 2. Manejo especial para Service Orders (donde puede ser EECC o PM)
-  const soQueryPm = query(collection(firestore, 'service_orders'), where('pmAssignedId', '==', deletedUid));
-  const soSnapPm = await getDocs(soQueryPm);
-  soSnapPm.forEach(d => {
-    batch.update(d.ref, { pmAssignedId: newOwnerId, updatedAt });
-  });
-
-  // 3. Eliminar el documento del usuario en Firestore
-  batch.delete(doc(firestore, 'users', deletedUid));
+  const commitIfNeeded = async () => {
+    opCount++;
+    if (opCount >= 400) {
+      await currentBatch.commit();
+      currentBatch = writeBatch(firestore);
+      opCount = 0;
+    }
+  };
 
   try {
-    await batch.commit();
-    
-    logAuditAction(firestore, {
-      action: 'delete',
-      collection: 'users',
-      docId: deletedUid,
-      details: `Usuario eliminado. Datos traspasados a ${newOwnerId} (${newManagement})`
-    });
+    // 1. Iterar por cada colección y reasignar documentos
+    for (const collName of collectionsToUpdate) {
+      const q = query(collection(firestore, collName), where('assignedTo', '==', deletedUid));
+      const snap = await getDocs(q);
+      for (const d of snap.docs) {
+        currentBatch.update(d.ref, updateFields);
+        await commitIfNeeded();
+      }
+    }
+
+    // 2. Manejo especial para Service Orders (donde puede ser PM asignado)
+    const soQueryPm = query(collection(firestore, 'service_orders'), where('pmAssignedId', '==', deletedUid));
+    const soSnapPm = await getDocs(soQueryPm);
+    for (const d of soSnapPm.docs) {
+      currentBatch.update(d.ref, { pmAssignedId: newOwnerId, updatedAt });
+      await commitIfNeeded();
+    }
+
+    // 3. Eliminar el documento del usuario en Firestore
+    currentBatch.delete(doc(firestore, 'users', deletedUid));
+    await currentBatch.commit();
+
+    // 4. Registro de auditoría
+    try {
+      await logAuditAction(firestore, {
+        action: 'delete',
+        collection: 'users',
+        docId: deletedUid,
+        details: `Usuario eliminado. Datos traspasados a ${newOwnerId} (${newManagement})`
+      });
+    } catch (auditErr) {
+      console.warn("Audit logging failed:", auditErr);
+    }
     
     return { success: true };
   } catch (error: any) {
